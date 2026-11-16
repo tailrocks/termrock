@@ -93,7 +93,7 @@ fn reveal_idle(app: &App, glyph: &str, must_scroll: bool) -> TerminalSnapshot {
     let opened = opened_hints(app);
     if !text(&opened).contains(IDLE) {
         let anchor = find(&opened, "Layers");
-        app.wheel(anchor, true, 2);
+        app.wheel(anchor, true, 3);
     } else if must_scroll {
         panic!("indexing row was already on screen\n{}", text(&opened));
     }

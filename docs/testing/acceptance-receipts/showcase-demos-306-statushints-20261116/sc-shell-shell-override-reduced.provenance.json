@@ -1,0 +1,75 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/306/debug/showcase",
+  "binary_sha256": "15669dbc5e5658b824815eb997f9f668dbaaccd7132b7376e1baa62f331a103a",
+  "fixture_args": [
+    "--page",
+    "statushints"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "63178276c0d17a79b05f4d07c483df3949d00074851fce2a9e7db027cfbe9a00",
+  "expect_baseline": "6d40e24ae5ec06ccb4191d431153736f902fdb0c70b3cd669799adae51f4aaef",
+  "precondition": "Status and hints page scrolled to the indexing row (x03) and the Shell override capture that embeds the Status and hints page",
+  "session": null,
+  "expected_test_id": "sc-shell-shell-override-reduced",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/showcase-demos-306-statushints-20261116/sc-shell-shell-override-reduced.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/showcase-demos-306-statushints-20261116/sc-shell-shell-override-reduced.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/showcase-demos-306-statushints-20261116/superseded/sc-shell-shell-override-reduced.tui.pb",
+  "test_id": "sc-shell-shell-override-reduced",
+  "acceptance": {
+    "expected_baseline_sha256": "6d40e24ae5ec06ccb4191d431153736f902fdb0c70b3cd669799adae51f4aaef",
+    "accepted_baseline_sha256": "63178276c0d17a79b05f4d07c483df3949d00074851fce2a9e7db027cfbe9a00",
+    "candidate_sha256": "63178276c0d17a79b05f4d07c483df3949d00074851fce2a9e7db027cfbe9a00",
+    "transaction_receipt": "docs/testing/acceptance-receipts/showcase-demos-306-statushints-20261116/sc-shell-shell-override-reduced.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "6d40e24ae5ec06ccb4191d431153736f902fdb0c70b3cd669799adae51f4aaef"
+  },
+  "candidate": {
+    "sha256": "63178276c0d17a79b05f4d07c483df3949d00074851fce2a9e7db027cfbe9a00",
+    "path": "tests/functional/baselines/pre_refactor/S01.shell/sc-shell-shell-override-reduced.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/showcase-demos-306-statushints-20261116/superseded/sc-shell-shell-override-reduced.tui.pb",
+    "superseded_baseline_sha256": "6d40e24ae5ec06ccb4191d431153736f902fdb0c70b3cd669799adae51f4aaef"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/S01.shell/sc-shell-shell-override-reduced.tui.pb",
+    "candidate_sha256": "63178276c0d17a79b05f4d07c483df3949d00074851fce2a9e7db027cfbe9a00",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/306/debug/showcase",
+    "binary_sha256": "15669dbc5e5658b824815eb997f9f668dbaaccd7132b7376e1baa62f331a103a",
+    "note": "The Status and hints page gained a second row of notice buttons and a note line, which lengthens the page by four rows. The same page appears in these captures, so the scrollbar thumb and the rows that wrap into view moved. Real cells changed, not the scrollbar alone. x03_motion now scrolls three notches to reach the indexing row."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "sc-shell-shell-override-reduced",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-306/target/functional/s01-shell-override-28118-1794820339697913000-0/check-artifacts/sc-shell-shell-override-reduced/63178276c0d17a79b05f4d07c483df3949d00074851fce2a9e7db027cfbe9a00/sample.tui.pb"
+    },
+    "candidate_sha256": "63178276c0d17a79b05f4d07c483df3949d00074851fce2a9e7db027cfbe9a00",
+    "baseline_sha256": "63178276c0d17a79b05f4d07c483df3949d00074851fce2a9e7db027cfbe9a00",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-306/tests/functional/baselines/pre_refactor/S01.shell/sc-shell-shell-override-reduced.tui.pb"
+    },
+    "error_code": null
+  }
+}

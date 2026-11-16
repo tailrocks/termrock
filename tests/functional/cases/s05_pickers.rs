@@ -1829,3 +1829,85 @@ fn option_remote_stalls_stays_loading() {
     app.key("escape");
     app.finish();
 }
+
+#[test]
+fn option_preselect_checks_multi_rows_through_toggle_checked() {
+    let app = page("s05-preselect", Some("pickers.preselect=on"), 120, 40);
+    app.wait_text("Open quickly");
+    confirm_control(&app, |screen| {
+        assert_toggle(screen, "Preselect multi rows", "on");
+    });
+    click_button(&app, "Multi select");
+    let opened = app.wait_text("Row3");
+    see(&opened, &["Row1", "Row3", "Row4"], &["ChoseMany"]);
+    app.key("enter");
+    let chosen = app.wait_text("ChoseMany: Row1, Row3");
+    see(&chosen, &["ChoseMany: Row1, Row3"], &["Row4 "]);
+
+    click_button(&app, "Multi select");
+    app.wait_text("Row3");
+    app.key("space");
+    app.key("enter");
+    app.wait_text("ChoseMany: Row3");
+    click_button(&app, "Multi search");
+    app.wait_text("Row3");
+    app.key("enter");
+    app.wait_text("ChoseMany: Row1, Row3");
+    app.finish();
+}
+
+#[test]
+fn alt_arrows_resize_the_open_picker_through_set_max_rows() {
+    let app = page("s05-live-rows", None, 120, 40);
+    app.wait_text("Open quickly");
+    click_button(&app, "Run command");
+    let opened = app.wait_text("Reconnect");
+    see(&opened, &["Run query", "Reconnect"], &["Max rows"]);
+    for _ in 0..9 {
+        app.key("alt+up");
+    }
+    let shrunk = app.wait_screen("rows shrink to 3", |screen| {
+        row_text(screen, screen.rows() - 1).contains("Max rows 3")
+    });
+    see(
+        &shrunk,
+        &["Run query", "Explain query"],
+        &["Reconnect", "Format SQL"],
+    );
+    assert!(
+        row_text(&shrunk, shrunk.rows() - 1).contains("Max rows 3"),
+        "the footer reports the new limit\n{}",
+        text(&shrunk)
+    );
+    for _ in 0..4 {
+        app.key("alt+down");
+    }
+    let grown = app.wait_screen("rows grow to 7", |screen| {
+        row_text(screen, screen.rows() - 1).contains("Max rows 7")
+    });
+    see(&grown, &["Run query", "Reconnect"], &[]);
+    assert!(
+        row_text(&grown, grown.rows() - 1).contains("Max rows 7"),
+        "the footer reports the new limit\n{}",
+        text(&grown)
+    );
+    app.key("escape");
+    let closed = app.wait_screen("picker closed", |screen| {
+        let body = text(screen);
+        body.contains("Cancelled") && !body.contains("Reconnect")
+    });
+    see(&closed, &["Cancelled"], &["set_max_rows(7)", "Reconnect"]);
+
+    click_button(&app, "Run command");
+    app.wait_text("Reconnect");
+    app.key("alt+up");
+    let reopened = app.wait_screen("a reopened picker starts from the option", |screen| {
+        row_text(screen, screen.rows() - 1).contains("Max rows 11")
+    });
+    see(&reopened, &["Run query"], &[]);
+    app.key("escape");
+    app.wait_screen("picker closed again", |screen| {
+        !text(screen).contains("Reconnect")
+    });
+    app.finish();
+}

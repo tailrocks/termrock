@@ -6,6 +6,7 @@
 //! that every referenced scenario has exactly one case here. One line per
 //! case keeps a restack mechanical.
 
+use junie_tui::clock::Moment;
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::focus::{Focus, FocusRing};
 use junie_tui::core::hit::Axis;
@@ -13,25 +14,33 @@ use junie_tui::core::hit::HitRegistry;
 use junie_tui::core::id::{ItemKey, WidgetId};
 use junie_tui::core::refusal::{Reason, clear_refusal, take_refusal};
 use junie_tui::core::text::TextBuffer;
+use junie_tui::shell::{Cx, Request, StatusLine, background};
 use junie_tui::terminal::{TerminalState, TerminalViewport};
-use junie_tui::theme::{ColorLevel, SyntaxTone, Theme};
+use junie_tui::theme::{ColorLevel, SyntaxTone, Theme, Tone};
 use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::ui::layout::Split;
+use junie_tui::ui::layout::{Split, SplitDir};
 use junie_tui::ui::popup::{Dismiss, Placement};
 use junie_tui::widgets::choice::Checkbox;
+use junie_tui::widgets::choice_dialog::ChoiceDialog;
 use junie_tui::widgets::code::{CodeEditor, Diagnostic, Highlighter, Segmenter, Severity};
 use junie_tui::widgets::dialog::{Dialog, DialogResult};
 use junie_tui::widgets::edit::{EditField, Validator};
+use junie_tui::widgets::form_dialog::{FormAction, FormDialog, FormField};
 use junie_tui::widgets::grid::{
     CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, FinishEdit, GridAction,
     GridCommitFailure, GridDataError, GridEditError, GridKeyError, GridRows, GridUndoKind,
     RowTotal,
 };
+use junie_tui::widgets::info_dialog::InfoDialog;
 use junie_tui::widgets::input::TextInput;
 use junie_tui::widgets::list_detail::{Action, Event, Frame, Line, ListDetail, ListRow};
-use junie_tui::widgets::option_editor::{ColumnEditor, OptionItem, Options};
+use junie_tui::widgets::option_editor::{
+    ChoiceEditor, ColumnEditor, EditorConfig, OptionItem, Options,
+};
 use junie_tui::widgets::option_list::Item;
 use junie_tui::widgets::picker::{Picker, PickerAction, PickerItemsError, VisibleKey};
+use junie_tui::widgets::props::Prop;
+use junie_tui::widgets::splitter::Splitter;
 use junie_tui::widgets::viewport_ops::ViewportOps;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
@@ -56,6 +65,11 @@ pub const CASES: &[ScenarioCase] = &[
     ScenarioCase { id: ScenarioId::FixedControlsPolicy, run: fixed_controls_policy },
     ScenarioCase { id: ScenarioId::FixedDialogsPolicy, run: fixed_dialogs_policy },
     ScenarioCase { id: ScenarioId::ListDetailNavigation, run: list_detail_navigation },
+    ScenarioCase { id: ScenarioId::StatusNotice, run: status_notice },
+    ScenarioCase { id: ScenarioId::PickerLiveControl, run: picker_live_control },
+    ScenarioCase { id: ScenarioId::TextInputSetValue, run: text_input_set_value },
+    ScenarioCase { id: ScenarioId::ChoiceEditorOptions, run: choice_editor_options },
+    ScenarioCase { id: ScenarioId::SplitterCancelDrag, run: splitter_cancel_drag },
     ScenarioCase { id: ScenarioId::CodeEditorProviders, run: code_editor_providers },
     ScenarioCase { id: ScenarioId::CodeEditorDiagnosticsFind, run: code_editor_diagnostics_find },
     ScenarioCase { id: ScenarioId::GridEditSession, run: grid_edit_session },
@@ -220,6 +234,51 @@ fn overlay_dismiss_policy() {
             dialog.result.is_some(),
             escape,
             "Esc follows the escape policy"
+        );
+
+        let ring = FocusRing::default();
+        let mut choice = ChoiceDialog::new(
+            WidgetId::of("scenario.choice"),
+            "Channel",
+            "Updates come from",
+            &["Stable", "Beta"],
+            0,
+        )
+        .dismiss(policy);
+        choice.on_key(&key(KeyCode::Esc), &mut Focus::default(), &ring);
+        assert_eq!(
+            choice.result,
+            escape.then_some(None),
+            "a dismissed choice dialog resolves to cancelled, never to a choice"
+        );
+
+        let mut info = InfoDialog::new(
+            WidgetId::of("scenario.info"),
+            "Server",
+            vec![Prop::new("Host", "db.internal")],
+        )
+        .dismiss(policy);
+        info.on_key(&key(KeyCode::Esc), &mut Focus::default(), &ring);
+        assert_eq!(info.result.is_some(), escape, "info Esc follows the policy");
+
+        let mut form = FormDialog::new(
+            WidgetId::of("scenario.form"),
+            "Connection",
+            vec![FormField::input(
+                "name",
+                TextInput::new(WidgetId::of("scenario.form.name"), "Name"),
+            )],
+        )
+        .dismiss(policy);
+        form.on_key(&key(KeyCode::Esc), &mut Focus::default(), &ring);
+        assert_eq!(
+            form.events,
+            if escape {
+                vec![FormAction::Cancel]
+            } else {
+                vec![]
+            },
+            "a dismissed form resolves to Cancel and keeps its values"
         );
     }
 }
@@ -936,6 +995,175 @@ fn catalog_picker_setters_and_accessors_behave() {
     assert_eq!(PickerKeyProfile::current(), PickerKeyProfile::Vim);
     PickerKeyProfile::Desktop.install();
     assert_eq!(PickerKeyProfile::current(), PickerKeyProfile::Desktop);
+}
+
+fn status_notice() {
+    let mut focus = Focus::default();
+    let ring = FocusRing::default();
+    let mut cx: Cx<'_, ()> = Cx::new(&mut focus, &ring);
+    cx.notice("Refresh failed", Tone::Warning);
+    cx.status_in("Saved 3 rows", Tone::Secondary);
+    let requests = cx.take();
+    assert!(
+        requests
+            .iter()
+            .any(|r| matches!(r, Request::Notice(text, Tone::Warning) if text == "Refresh failed")),
+        "a page posts a notice through its Cx"
+    );
+    assert_eq!(
+        background(requests).count(),
+        2,
+        "a notice is allowed from a screen that is not shown"
+    );
+
+    let mut line = StatusLine::<()>::new();
+    line.notice_at("Sync paused", Tone::Secondary, Moment::ZERO);
+    line.notice_at("Refresh failed", Tone::Warning, Moment::from_millis(10));
+    assert_eq!(line.get(), Some(("Refresh failed", Tone::Warning)));
+    line.set_at("Saved 3 rows", Tone::Secondary, Moment::from_millis(20));
+    line.notice("Sync paused", Tone::Secondary);
+    assert_eq!(
+        line.text(),
+        Some("Saved 3 rows"),
+        "a notice never hides a post"
+    );
+    assert!(line.expire(Moment::from_millis(5_100)));
+    assert_eq!(line.text(), None);
+    line.notice("Sync paused", Tone::Secondary);
+    assert_eq!(
+        line.text(),
+        Some("Sync paused"),
+        "a free line takes a notice"
+    );
+}
+
+fn picker_live_control() {
+    let mut picker = Picker::new(WidgetId::of("scenario.live_rows"), "Choose")
+        .width(40)
+        .max_rows(2)
+        .multi_select(true)
+        .expect("an empty picker accepts multi-selection");
+    let group = ItemKey::text("pair");
+    picker
+        .set_items(vec![
+            Item::new("Alpha").key(ItemKey::text("alpha")),
+            Item::new("Beta")
+                .key(ItemKey::text("beta"))
+                .selection_group(group),
+            Item::new("Gamma")
+                .key(ItemKey::text("gamma"))
+                .selection_group(group),
+            Item::new("Delta").key(ItemKey::text("delta")),
+            Item::new("Epsilon").key(ItemKey::text("epsilon")),
+        ])
+        .expect("keyed items are accepted");
+    let area = Rect::new(0, 0, 60, 16);
+    let shown = |picker: &mut Picker| text_of(&paint(area, |a, b, c| picker.draw(a, b, c)));
+    let two = shown(&mut picker);
+    assert!(two.contains("Alpha") && !two.contains("Delta"), "{two}");
+    picker.set_max_rows(4);
+    let four = shown(&mut picker);
+    assert!(
+        four.contains("Delta") && !four.contains("Epsilon"),
+        "{four}"
+    );
+    picker.set_max_rows(0);
+    let one = shown(&mut picker);
+    assert!(
+        one.contains("Alpha") && !one.contains("Beta"),
+        "zero rows means one row:\n{one}"
+    );
+
+    assert_eq!(picker.toggle_checked(0), None);
+    assert_eq!(picker.toggle_checked(1), None);
+    assert_eq!(
+        picker.toggle_checked(2),
+        Some(PickerAction::SelectionConflict {
+            attempted: ItemKey::text("gamma"),
+            selected: ItemKey::text("beta"),
+        }),
+        "a row of an occupied selection group is refused"
+    );
+    assert_eq!(
+        picker.checked(),
+        &[ItemKey::text("alpha"), ItemKey::text("beta")]
+    );
+    assert_eq!(picker.toggle_checked(0), None);
+    assert_eq!(
+        picker.checked(),
+        &[ItemKey::text("beta")],
+        "a second toggle unchecks"
+    );
+}
+
+fn text_input_set_value() {
+    let mut title = TextInput::new(WidgetId::of("scenario.title"), "Title")
+        .required(true)
+        .value("Q3 settlement report");
+    title.begin_edit();
+    title.on_key(&key(KeyCode::Char('X')));
+    assert!(title.is_dirty(), "typing marks the field edited");
+    title.set_error(Some("stale".to_owned()));
+
+    title.set_value("Q3 settlement report");
+    assert_eq!(title.text(), "Q3 settlement report");
+    assert_eq!(title.error(), None, "a programmatic value clears the error");
+    assert!(!title.is_dirty(), "the new value is the cancel baseline");
+    assert!(!title.editing, "the field leaves edit mode");
+    let buf = paint(Rect::new(0, 0, 60, 3), |area, buf, ctx| {
+        title.render(area, buf, ctx, ctx.theme.canvas)
+    });
+    assert!(text_of(&buf).contains("Q3 settlement report"));
+}
+
+fn choice_editor_options() {
+    let options = Options::new(["eu-west-1", "us-east-1", "ap-south-1"].map(|value| {
+        let item = OptionItem::new(value);
+        if value == "ap-south-1" {
+            item.disabled("Region is not enabled")
+        } else {
+            item
+        }
+    }));
+    let editor = ColumnEditor::Select(options.clone());
+    let chooser = ChoiceEditor::open(
+        WidgetId::of("scenario.chooser"),
+        &editor,
+        "us-east-1",
+        &EditorConfig::default(),
+    )
+    .expect("a select column opens a choice editor");
+    assert_eq!(
+        chooser.options(),
+        &options,
+        "the editor reports the option set it was opened with"
+    );
+    assert!(chooser.options().0[2].is_disabled());
+    assert!(
+        ChoiceEditor::open(
+            WidgetId::of("scenario.text"),
+            &ColumnEditor::Text,
+            "",
+            &EditorConfig::default()
+        )
+        .is_none(),
+        "a text column has no options to open"
+    );
+}
+
+fn splitter_cancel_drag() {
+    let mut seam = Splitter::new(WidgetId::of("scenario.seam"), SplitDir::Horizontal);
+    let mut split = Split::new(40, 1, 1);
+    let container = Rect::new(0, 0, 40, 5);
+    seam.on_press(&split, container, 1, Position::new(20, 2));
+    assert_eq!(
+        seam.on_drag(&mut split, container, 1, Position::new(25, 2)),
+        Outcome::Changed
+    );
+    let dragged = split;
+    assert!(seam.cancel_drag(), "the held grab is dropped");
+    assert!(!seam.cancel_drag(), "a second cancel finds nothing to drop");
+    assert_eq!(split, dragged, "cancelling never undoes the drag");
 }
 
 static TONE_RUNS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);

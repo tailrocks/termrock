@@ -28,6 +28,7 @@ use junie_tui::widgets::picker::{
 };
 use junie_tui::widgets::props::{self, Prop};
 use junie_tui::widgets::tree::TreeNode;
+use ratatui::crossterm::event::KeyCode;
 
 const ID: WidgetId = WidgetId::of("pickers");
 const MULTI_ROWS: [&str; 4] = ["Row1", "Row2", "Row3", "Row4"];
@@ -152,6 +153,13 @@ const BRANCHES: &[&str] = &[
 
 const FETCH_TICKS: u32 = 3;
 
+/// The most rows Alt+Down grows an open picker to.
+const LIVE_ROWS_MAX: u16 = 24;
+
+/// Rows the multi pickers open with checked when "Preselect" is on: Row1 and
+/// Row3, by position.
+const PRESELECTED: [usize; 2] = [0, 2];
+
 fn international_entries() -> Vec<Entry> {
     GRAPHEME_SAMPLES
         .iter()
@@ -192,6 +200,16 @@ pub struct PickersPage {
     opened: u32,
 
     fetching: Option<u32>,
+    /// The row limit of the open picker, which Alt+Up and Alt+Down change live.
+    live_rows: u16,
+}
+
+/// Checks the rows of `PRESELECTED` the way application code restores a saved
+/// selection. A conflict or a disabled row is skipped, as it is for a click.
+fn preselect(p: &mut Picker) {
+    for row in PRESELECTED {
+        p.toggle_checked(row);
+    }
 }
 
 struct Rows {
@@ -397,6 +415,7 @@ impl PickersPage {
             last: "none yet · QueryChanged · Chosen(i) · ChosenAlt(i) · Submit · Secondary(i) · NextScope · PrevScope · Back · Cancelled".into(),
             opened: 0,
             fetching: None,
+            live_rows: 12,
         }
     }
 
@@ -531,11 +550,15 @@ impl PickersPage {
             Kind::MultiSearch => "Type Filter · Enter Confirm · Esc Close",
         });
         let mut p = self.style(p, anchor);
+        self.live_rows = p.list().max_rows;
         self.opened += 1;
         if kind == Kind::Remote {
             self.fetching = Some(FETCH_TICKS);
         }
         self.rows().fill(kind, &mut p);
+        if self.opts.on("pickers.preselect") && matches!(kind, Kind::Multi | Kind::MultiSearch) {
+            preselect(&mut p);
+        }
         cx.open(p, LayerTag::new("picker").n(i));
         self.open = Some(kind);
     }
@@ -824,7 +847,7 @@ impl PickersPage {
         let n = lines.len() as u16;
         let [top, applied_h, _] = self.heights(area.width);
         let rows = crate::pages::layout::rows(area, &[top, 1, applied_h, 1, 0]);
-        let panel = Panel::card(Some("Open a picker")).meta("Enter · click");
+        let panel = Panel::card(Some("Open a picker")).meta(OPEN_META);
         let bg = panel.bg(t);
         let inner = panel.render(rows[0], buf, t);
         for (r, line) in lines.iter().enumerate() {
@@ -855,6 +878,7 @@ impl PickersPage {
 }
 
 const QUICK_NOTE: &str = "Quick: fuzzy as you type, Tab scope, Alt+Enter alternate · Tabs: live, Delete closes · Level: no search box · Commands: disabled rows say why · Remote: loads, r retries";
+const OPEN_META: &str = "Enter · click · Alt+↑↓ rows in an open picker";
 const APPLIED_META: &str = "read back from a built picker";
 
 fn states_grid() -> StateGrid {
@@ -972,6 +996,18 @@ impl Page for PickersPage {
     }
 
     fn on_layer_key(&mut self, key: &Key, cx: &mut Cx) -> Outcome {
+        if self.open.is_some() && key.alt() && matches!(key.code, KeyCode::Up | KeyCode::Down) {
+            let rows = if key.code == KeyCode::Down {
+                (self.live_rows + 1).min(LIVE_ROWS_MAX)
+            } else {
+                self.live_rows.saturating_sub(1).max(1)
+            };
+            self.live_rows = rows;
+            cx.with_top::<Picker>(move |p: &mut Picker| p.set_max_rows(rows));
+            self.last = format!("set_max_rows({rows})");
+            cx.status(format!("Max rows {rows}"));
+            return Outcome::Changed;
+        }
         let failed = self.fetching.is_none() && self.opts.value("pickers.remote") == "fails";
         if !(key.is_char('r') && self.kind() == Some(Kind::Remote) && failed) {
             return Outcome::Ignored;
