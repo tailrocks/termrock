@@ -67,8 +67,11 @@ fail-fast = false
 test-threads = 1
 slow-timeout = { period = "120s", terminate-after = 5 }
 
+# Builds the binaries the functional-cross cases launch into target/app-bins and
+# exports TCB_BIN_<NAME>, so it cannot replace the feature-matched binaries
+# that the other functional targets launch from target/<profile>/.
 [scripts.setup.app-bins]
-command = ["cargo", "build", "--locked", "--workspace", "--bins"]
+command = ["sh", "scripts/build-app-bins.sh"]
 slow-timeout = { period = "120s", terminate-after = 2 }
 
 [[profile.default.scripts]]
