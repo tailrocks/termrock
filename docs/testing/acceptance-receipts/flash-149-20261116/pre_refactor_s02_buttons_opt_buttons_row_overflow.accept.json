@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s02_buttons/opt_buttons_row_overflow",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/target/functional/s02-overflow-42743-1794769794941450000-0/check-artifacts/pre_refactor/s02_buttons/opt_buttons_row_overflow/68e2862bf129707fc0daadc315edcb17a2c44afadffa461e2fce2e443da5df3f/sample.tui.pb"
+  },
+  "candidate_sha256": "68e2862bf129707fc0daadc315edcb17a2c44afadffa461e2fce2e443da5df3f",
+  "baseline_sha256": "68e2862bf129707fc0daadc315edcb17a2c44afadffa461e2fce2e443da5df3f",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/tests/functional/baselines/pre_refactor/s02_buttons/opt_buttons_row_overflow.tui.pb"
+  },
+  "error_code": null
+}

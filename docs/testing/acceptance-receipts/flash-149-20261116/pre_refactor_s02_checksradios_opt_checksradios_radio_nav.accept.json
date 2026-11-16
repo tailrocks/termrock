@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s02_checksradios/opt_checksradios_radio_nav",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/target/functional/s02-checksradios-radio-vim-56873-1794769365805849000-0/check-artifacts/pre_refactor/s02_checksradios/opt_checksradios_radio_nav/1e5e433724d2e05b5addc610de5cad95b315ef052c8e178bf88e63238dcf2d05/sample.tui.pb"
+  },
+  "candidate_sha256": "1e5e433724d2e05b5addc610de5cad95b315ef052c8e178bf88e63238dcf2d05",
+  "baseline_sha256": "1e5e433724d2e05b5addc610de5cad95b315ef052c8e178bf88e63238dcf2d05",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/tests/functional/baselines/pre_refactor/s02_checksradios/opt_checksradios_radio_nav.tui.pb"
+  },
+  "error_code": null
+}

@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-field_keys-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/target/functional/s01_field_keys_desktop-28362-1794769161098720000-0/check-artifacts/opt-shell-field_keys-boundary/e366c060b011a523acc0ffd3f0a980031dc4ad28546be5c0ac96e02b80e347ea/sample.tui.pb"
+  },
+  "candidate_sha256": "e366c060b011a523acc0ffd3f0a980031dc4ad28546be5c0ac96e02b80e347ea",
+  "baseline_sha256": "e366c060b011a523acc0ffd3f0a980031dc4ad28546be5c0ac96e02b80e347ea",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-field_keys-boundary.tui.pb"
+  },
+  "error_code": null
+}

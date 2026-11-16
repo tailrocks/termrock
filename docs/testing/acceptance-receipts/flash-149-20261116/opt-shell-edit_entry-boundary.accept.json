@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-edit_entry-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/target/functional/s01_edit_entry_explicit-5718-1794769981822892000-0/check-artifacts/opt-shell-edit_entry-boundary/3f45e61bf508e83dda09662d11be7b8c2064bbadad626ab82cb8541da672537b/sample.tui.pb"
+  },
+  "candidate_sha256": "3f45e61bf508e83dda09662d11be7b8c2064bbadad626ab82cb8541da672537b",
+  "baseline_sha256": "3f45e61bf508e83dda09662d11be7b8c2064bbadad626ab82cb8541da672537b",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-edit_entry-boundary.tui.pb"
+  },
+  "error_code": null
+}
