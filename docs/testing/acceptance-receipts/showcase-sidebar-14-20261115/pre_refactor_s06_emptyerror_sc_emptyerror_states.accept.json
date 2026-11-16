@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s06_emptyerror/sc_emptyerror_states",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s06_emptyerror__sc_emptyerror_states.tui.pb"
+  },
+  "candidate_sha256": "65eb80c03b6acbdbf11e99dc9e004c1e1c2af241f29128e140bf12cbfe19cb1c",
+  "baseline_sha256": "65eb80c03b6acbdbf11e99dc9e004c1e1c2af241f29128e140bf12cbfe19cb1c",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s06_emptyerror/sc_emptyerror_states.tui.pb"
+  },
+  "error_code": null
+}

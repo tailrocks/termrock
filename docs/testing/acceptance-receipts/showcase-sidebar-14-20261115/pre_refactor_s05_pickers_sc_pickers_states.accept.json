@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s05_pickers/sc_pickers_states",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s05_pickers__sc_pickers_states.tui.pb"
+  },
+  "candidate_sha256": "2a41a92581de6782a6ce768a4a69b7042afb840e5b1683d33507fb1a1b7f8565",
+  "baseline_sha256": "2a41a92581de6782a6ce768a4a69b7042afb840e5b1683d33507fb1a1b7f8565",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s05_pickers/sc_pickers_states.tui.pb"
+  },
+  "error_code": null
+}
