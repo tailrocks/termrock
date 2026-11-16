@@ -20,6 +20,8 @@ mod state;
 #[cfg(feature = "work-metrics")]
 pub use state::{measure, record, reset, snapshot, suspended};
 
+pub mod measurement;
+
 #[cfg(feature = "work-metrics")]
 pub mod harness;
 #[cfg(feature = "work-metrics")]

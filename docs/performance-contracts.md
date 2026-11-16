@@ -232,12 +232,22 @@ list, table, grid and tree widget in the frame.
 
 ### Not covered
 
-These are listed in the PR as unmet acceptance items: the `performance` nextest
-profile and its required-suite inventory gate, and ignored release measurements
-and their elapsed-time report schema. `CodeEditor` bracket matching, `Picker`
+`CodeEditor` bracket matching, `Picker`
 `retain` scans and the `CodeEditor` find state are not counted.
 
 Also unmet, and absent from every scenario above:
+
+- No editor or app-page measurement scenario exists. The release measurements
+  time `TextViewport`, `ListBox`, `TreeView` and `ScrollView` only. There is no
+  `CodeEditor` or `TextArea` timing, and none for a Holla, TablePro, Showcase
+  or Jackin page.
+- The timing oracle runs after each operation only. #56 asks for a check
+  before and after every operation, so the first round has no pre-check and a
+  state that was already wrong before round 0 would go unnoticed.
+- No `performance` suite exists in `.velnor/config.toml`, so the profile
+  does not run as its own CI job. The same tests run in the `Rust / <crate>`
+  jobs through the `ci` profile. Adding the suite changes the generated
+  workflows and needs the owner's decision.
 
 - No test shows that a background tab or page projection that is irrelevant to
   a change does not rebuild. The idle and unrelated-change scenarios measure
@@ -272,6 +282,126 @@ test checked. It has no timing fields. A report is written to a temp file in
 the same directory and renamed into place, so concurrent writers of one
 scenario never leave a truncated file.
 
+## The performance profile and its inventory gate
+
+`cargo nextest run --profile performance --workspace --all-features --no-tests fail`
+runs every deterministic cost contract in one command: the counter core, the
+fit linearity tests, the library budgets, the four apps' scenarios, Holla's
+and Jackin's projection-reuse tests, the measurement sampling check and the
+gate below. The profile is `[profile.performance]` in `.config/nextest.toml`.
+It needs `--all-features` because the counters compile away without
+`work-metrics`; without it the budgets would not run at all.
+
+`tests/regressions/performance_inventory.rs` (the `performance_inventory`
+module of the shared `regressions` target) is the required-suite gate. It reads
+the inventory from `tests/regressions/performance-inventory.tsv`, which lists each required suite with its nextest binary, the filter that selects it,
+its source file and the tests it must hold, and fails when
+
+- nextest does not list a required test, lists it `#[ignore]`d, or the profile
+  filter does not match it. This is checked on the real output of
+  `cargo nextest list --profile performance --workspace --all-features
+  --message-format json`, which the gate runs itself, so a removed `mod` line,
+  an `#[ignore]`, a `#[cfg]` that drops the test or a filter that no longer
+  selects it all fail;
+- the profile no longer has the operand for a suite, so nextest would skip it;
+- the operand would not select one of the suite's required tests, for example
+  after a module rename or a narrowed regex;
+- a required test is no longer a `#[test]` function in its file.
+
+The list check runs only under `--profile performance`: there the nested list
+is a cache hit on the build the run just made. Under any other profile it
+prints that it is skipped, because a list in the wrong feature shape would
+rebuild the workspace. Run the profile with the documented command; a run with
+other `-p` or feature flags still works but rebuilds for the nested list.
+The gate cannot vouch for itself: an `#[ignore]` on the gate's own tests
+removes the check, and only `--no-tests fail` and review notice that.
+
+The profile filter is read as text, not evaluated, so it must stay a plain
+union of `binary_id(=ID) & test(MATCHER)` terms. The gate refuses `not` and set
+difference, and any matcher richer than `/^prefix/`, `/substring/` or `=exact`,
+instead of guessing. The inventory is a floor: a new test in an existing
+suite needs no edit while the operand still selects it. A new suite needs an
+inventory entry and an operand together. `gate_logic::*` runs the same checks
+on synthetic input, including a removed suite and a narrowed matcher.
+
+Both measurement files live in the shared `regressions` target
+(`tests/regressions/work_measurements.rs`, `performance_inventory.rs`), as
+`docs/ci.md` prescribes, so the generated workflows list no new test target.
+
+`[profile.performance-measure]` selects the ignored timing tests and sets
+`test-threads = 1`, so that parallel tests do not time each other. The gate
+checks both, and that each timing test is `#[ignore]`d.
+
+## Timing reports
+
+A timing report is a different file from a count report. It is
+`<target dir>/performance/<scenario>-<operation>-<records>.timing.json`, schema
+version 2, written by `junie_tui::metrics::measurement::MeasurementReport`.
+Fields:
+
+| Field | Meaning |
+| --- | --- |
+| `schema_version`, `scenario`, `operation`, `record_count`, `viewport` | As in a count report. `record_count` is the fixture's real size. |
+| `warmups`, `samples` | 20 warm-ups, then 200 timed samples. Warm-ups are not in the statistics. |
+| `median_ns`, `p95_ns` | `sorted[(n - 1) / 2]` and `sorted[ceil(0.95 n) - 1]` over the samples. `min_ns` and `max_ns` come with them. |
+| `work_delta` | The operation's counts, or `null`. Timing runs have the counters off, so it is `null` there: unavailable, not zero. Counts come from the count reports. |
+| `allocations_or_null` | Always `null`: no allocation instrumentation exists. |
+| `rustc`, `profile`, `target`, `os`, `cpu` | Read from `rustc`, the build, `uname` and the CPU on the machine that ran. A value that could not be read is `"unknown"`. `target` is the host triple, so cross builds are not supported. |
+| `backend` | What was drawn into: the in-memory ratatui `Buffer`. |
+| `terminal_io_included` | `false`: no terminal, child process or backend I/O is in any interval. |
+| `instrumentation_enabled` | Whether `work-metrics` was on. The measuring test refuses to run when it is. |
+| `correctness_oracle` | What each round checked, outside the timed interval. |
+| `setup_ns_or_null` | Fixture build and warm-up cost, kept out of the samples. |
+| `commit`, `commit_dirty` | `git rev-parse HEAD` and whether tracked files differed from it. |
+| `load_average` | `uptime`, read when that scenario's test starts. |
+
+`measurement::REQUIRED_FIELDS` lists them, and `measurement_required_fields_are_all_present`
+fails when one goes missing. Nothing gates on a time: no wall-clock threshold is
+enabled until repeatable baselines exist.
+
+## Release measurements
+
+`scripts/measure-performance.sh` is the procedure. It builds `tests/regressions/work_measurements.rs`
+in the release profile without `work-metrics`, runs the ignored tests one at a
+time through `performance-measure`, and prints a summary table of the reports
+with the commit, machine, CPU, compiler and the load average before and after.
+
+```sh
+scripts/measure-performance.sh
+```
+
+The measured operations, each on the real library path at 1,000 / 10,000 /
+100,000 records (1,000 / 10,000 / 60,000 rows for `ScrollView`):
+
+| Scenario | Operation timed | Oracle, outside the interval |
+| --- | --- | --- |
+| `viewport_prepared` | `push` of one new line, then `set_area` | the last row shows that round's line and the row above shows the previous round's |
+| `viewport_prepared` | one prepared `draw` into a fresh 100x30 `Buffer` | the frame shows the last 30 lines |
+| `list_box` | one settled `ListBox` frame | the frame equals the warm frame |
+| `tree_view` | `set_filter`, alternating `node 5` and `node 55` | the visible rows equal the matching labels and differ from the previous round |
+| `scroll_view` | `render` of overflowing content (the content-sized canvas of #20) | row 0 shows the first content row |
+
+Rules the procedure follows:
+
+- Run it on an otherwise idle machine and read the load average it prints. It
+  does not refuse a busy machine. A report from a loaded machine says so
+  through `load_average` and the printed load, and should be repeated.
+- Fixtures are built before the timer. An append grows the history by one line
+  per round, 220 rounds in all, so a sample appends to a different history
+  each time. The filter alternates two queries so no round is an equal write.
+  `measurement_edit_samples_are_real_changes` runs both at a tiny size in the
+  `performance` profile and fails if a round does not change the state.
+- Each draw allocates its own 100x30 `Buffer`, `HitRegistry` and `FocusRing`
+  inside the interval, as the budgets' frames do. A timing here is the cost
+  of that frame, not of the widget's paint loop alone.
+- Counters are off in the timing build. Do not compare these numbers with a
+  build that has `work-metrics`, and do not read them as a speedup between
+  commits unless both ran on the same machine under comparable load.
+- A debug build refuses to measure.
+
+Results are not committed. The report files and the summary stay in
+`<target dir>/performance`.
+
 ## Commands
 
 ```sh
@@ -285,6 +415,8 @@ cargo nextest run -p junie-tui --features work-metrics --lib --no-tests fail \
     -E 'test(/metrics/) | test(/work_contract_/)'
 cargo nextest run -p jackin-console --features demo,work-metrics --lib --no-tests fail \
     -E 'test(/work_contract_/)'
+cargo nextest run --profile performance --workspace --all-features --no-tests fail
+scripts/measure-performance.sh
 ```
 
 CI builds both Rust jobs with `--all-features`, so these tests already run in
