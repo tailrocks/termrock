@@ -142,6 +142,25 @@ pub enum ScenarioId {
     // lane:state begin: this lane adds its ScenarioId variants between these two lines only
     // lane:state end
     // lane:scroll begin: this lane adds its ScenarioId variants between these two lines only
+    ScrollStateGeometry,
+    ScrollPaneAxes,
+    ScrollbarRendering,
+    ScrollViewHorizontal,
+    ScrollViewLayout,
+    ScrollViewFollow,
+    ScrollViewCommands,
+    RevealInline,
+    RevealTooltip,
+    RevealHelpers,
+    PanelChrome,
+    ScrollPanelInput,
+    TextViewportContent,
+    TextViewportInput,
+    TextViewportLayout,
+    TerminalGridState,
+    TerminalGridView,
+    TerminalViewportPointer,
+    TerminalKeyEncoding,
     // lane:scroll end
     // lane:gridtable begin: this lane adds its ScenarioId variants between these two lines only
     // lane:gridtable end
