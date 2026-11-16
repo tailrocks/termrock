@@ -684,3 +684,79 @@ fn issue45_keyboard_and_menu_copy_use_logical_text() {
     panel.edit_run(TextCmd::Copy);
     assert_eq!(clipboard::text().as_deref(), Some(all.as_str()));
 }
+
+fn projection(panel: &ScrollPanel) -> (Vec<String>, String) {
+    let cache = panel.wrapped_cache.as_ref().expect("wrapped cache");
+    (cache.rows.clone(), format!("{:?}", cache.maps))
+}
+
+fn full_rewrap(panel: &ScrollPanel, width: u16) -> (Vec<String>, String) {
+    let mut fresh = ScrollPanel::new(ID, panel.lines().to_vec()).wrap(true);
+    paint(&mut fresh, width, 5);
+    projection(&fresh)
+}
+
+#[test]
+fn issue291_append_extends_wrapped_prefix_identically_to_a_full_rewrap() {
+    let mut panel = ScrollPanel::new(ID, vec![words("alpha"), String::new()]).wrap(true);
+    paint(&mut panel, 14, 5);
+    let builds = panel.work.wrap_builds.get();
+    assert_eq!(builds, 1);
+
+    panel.push(words("beta"));
+    paint(&mut panel, 14, 5);
+    assert_eq!(projection(&panel), full_rewrap(&panel, 14));
+
+    panel.extend_lines(vec![
+        "wide \u{4e2d}\u{6587}\u{4e2d}\u{6587}\u{4e2d}\u{6587}\u{4e2d}\u{6587}".to_owned(),
+        "unbrokenunbrokenunbroken".to_owned(),
+        String::new(),
+    ]);
+    paint(&mut panel, 14, 5);
+    assert_eq!(projection(&panel), full_rewrap(&panel, 14));
+    assert_eq!(
+        panel.work.wrap_builds.get(),
+        builds,
+        "appends at an unchanged width never rebuild the prefix"
+    );
+
+    // A width change rebuilds, and appends then extend the new width.
+    paint(&mut panel, 9, 5);
+    assert_eq!(panel.work.wrap_builds.get(), builds + 1);
+    assert_eq!(projection(&panel), full_rewrap(&panel, 9));
+    panel.push(words("gamma"));
+    paint(&mut panel, 9, 5);
+    assert_eq!(projection(&panel), full_rewrap(&panel, 9));
+    assert_eq!(panel.work.wrap_builds.get(), builds + 1);
+
+    // A non-append edit rebuilds from scratch.
+    panel.replace_line(0, words("delta")).expect("line exists");
+    paint(&mut panel, 9, 5);
+    assert_eq!(panel.work.wrap_builds.get(), builds + 2);
+    assert_eq!(projection(&panel), full_rewrap(&panel, 9));
+    panel.push(words("eps"));
+    panel.set_lines(vec![words("only")]);
+    paint(&mut panel, 9, 5);
+    assert_eq!(panel.work.wrap_builds.get(), builds + 3);
+    assert_eq!(projection(&panel), full_rewrap(&panel, 9));
+}
+
+#[test]
+fn issue291_several_appends_between_frames_and_unwrapped_gap() {
+    let mut panel = ScrollPanel::new(ID, numbered(3)).wrap(true);
+    paint(&mut panel, 20, 4);
+    panel.push("one".into());
+    panel.push("two".into());
+    panel.extend_lines(vec!["three".into()]);
+    paint(&mut panel, 20, 4);
+    assert_eq!(projection(&panel), full_rewrap(&panel, 20));
+
+    // Appends made while the panel is not wrapping are caught up on return.
+    panel.wrap = false;
+    panel.push("while flat".into());
+    paint(&mut panel, 20, 4);
+    panel.wrap = true;
+    paint(&mut panel, 20, 4);
+    assert_eq!(projection(&panel), full_rewrap(&panel, 20));
+    assert_eq!(panel.work.wrap_builds.get(), 1);
+}

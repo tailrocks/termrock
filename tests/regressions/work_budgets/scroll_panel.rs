@@ -123,12 +123,19 @@ fn work_contract_scroll_panel_flat_measures_once_and_appends_incrementally() {
     }
 }
 
+/// One pushed line, then a frame, on a settled wrapping panel: the added line
+/// is the only source row read, whatever the history length.
+const APPEND_THEN_FRAME: [(Metric, u64); 4] = [
+    (Metric::SourceRowsRead, 1),
+    (Metric::VisibleRowsPainted, ROWS),
+    (Metric::IntrinsicWidthCalls, 46),
+    (Metric::TextBytesMeasured, PAINTED_BYTES + 24),
+];
+
 #[test]
 fn work_contract_scroll_panel_wrapped_builds_once_per_content_change() {
-    // Known gap: every append drops the wrapped rows, so the next frame wraps
-    // the whole history again (#39 only caches the widest line). The push row
-    // records today's behaviour; a fix that wraps only the added line lowers
-    // it to 1.
+    // An append keeps the wrapped prefix and wraps only the added line (#291),
+    // so the push row does not depend on n. Any other mutation rebuilds.
     for n in SIZES {
         let nn = n as u64;
         let mut panel = wrapped(n);
@@ -168,25 +175,37 @@ fn work_contract_scroll_panel_wrapped_builds_once_per_content_change() {
             "the wrapped rows are reused: no source row is read",
         );
 
-        let (_, appended) = measure(|| {
+        let (buf, appended) = measure(|| {
             panel.push(ADDED.to_owned());
             paint(&mut panel)
         });
-        assert_exact(
-            &appended,
-            "push then frame",
-            &[
-                (Metric::SourceRowsRead, nn + 1),
-                (Metric::VisibleRowsPainted, ROWS),
-                (Metric::IntrinsicWidthCalls, 39 * nn + 46),
-                (Metric::TextBytesMeasured, 61 * nn + PAINTED_BYTES + 24),
-            ],
-        );
+        assert_shows(&buf, 0, &line_text(0));
+        assert_exact(&appended, "push then frame", &APPEND_THEN_FRAME);
         publish_all(
             "wrapped_push_then_frame",
             n,
             appended,
-            "known gap: an append wraps every line again (n + 1 source rows)",
+            "only the pushed line is wrapped; the cached prefix is kept",
+        );
+
+        // Mutation proof: a full rewrap is exactly what `set_lines` does, so
+        // the same one-line change made that way reads n + 1 source rows and
+        // must fail the append contract above.
+        let mut rewrapped = wrapped(n);
+        paint(&mut rewrapped);
+        let (_, full) = measure(|| {
+            let mut all = lines(n);
+            all.push(ADDED.to_owned());
+            rewrapped.set_lines(all);
+            paint(&mut rewrapped)
+        });
+        assert_eq!(full.get(Metric::SourceRowsRead), nn + 1);
+        let failed = std::panic::catch_unwind(|| {
+            assert_exact(&full, "full rewrap", &APPEND_THEN_FRAME);
+        });
+        assert!(
+            failed.is_err(),
+            "a full rewrap must fail the incremental append contract at n = {n}"
         );
     }
 }
