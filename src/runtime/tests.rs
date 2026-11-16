@@ -363,3 +363,12 @@ fn input_queued_behind_a_resize_event_is_delivered() {
         },
     );
 }
+
+#[test]
+fn session_terminal_is_metered_exactly_when_work_metrics_is_on() {
+    let name = std::any::type_name::<crate::runtime::SessionTerminal>();
+    assert_eq!(
+        name.contains("MeteredBackend"),
+        cfg!(feature = "work-metrics")
+    );
+}
