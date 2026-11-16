@@ -20,8 +20,14 @@ use junie_tui::ui::popup::{Dismiss, Placement};
 use junie_tui::widgets::choice::Checkbox;
 use junie_tui::widgets::dialog::{Dialog, DialogResult};
 use junie_tui::widgets::edit::{EditField, Validator};
+use junie_tui::widgets::grid::{
+    CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, FinishEdit, GridAction,
+    GridCommitFailure, GridDataError, GridEditError, GridKeyError, GridRows, GridUndoKind,
+    RowTotal,
+};
 use junie_tui::widgets::input::TextInput;
 use junie_tui::widgets::list_detail::{Action, Event, Frame, Line, ListDetail, ListRow};
+use junie_tui::widgets::option_editor::{ColumnEditor, OptionItem, Options};
 use junie_tui::widgets::option_list::Item;
 use junie_tui::widgets::picker::{Picker, PickerAction, PickerItemsError, VisibleKey};
 use junie_tui::widgets::viewport_ops::ViewportOps;
@@ -48,6 +54,11 @@ pub const CASES: &[ScenarioCase] = &[
     ScenarioCase { id: ScenarioId::FixedControlsPolicy, run: fixed_controls_policy },
     ScenarioCase { id: ScenarioId::FixedDialogsPolicy, run: fixed_dialogs_policy },
     ScenarioCase { id: ScenarioId::ListDetailNavigation, run: list_detail_navigation },
+    ScenarioCase { id: ScenarioId::GridEditSession, run: grid_edit_session },
+    ScenarioCase { id: ScenarioId::GridChangeCapture, run: grid_change_capture },
+    ScenarioCase { id: ScenarioId::GridSubmissionLock, run: grid_submission_lock },
+    ScenarioCase { id: ScenarioId::GridSourceIdentity, run: grid_source_identity },
+    ScenarioCase { id: ScenarioId::GridUndoKinds, run: grid_undo_kinds },
     ScenarioCase { id: ScenarioId::ExternalFeedBounds, run: external_feed_bounds },
     ScenarioCase { id: ScenarioId::ScrollWindowWork, run: scroll_window_work },
     ScenarioCase { id: ScenarioId::ModalFocusPolicy, run: modal_focus_policy },
@@ -408,6 +419,318 @@ fn list_detail_navigation() {
     list.open_detail(&mut focus);
     list.close_detail(&mut focus);
     let _ = Position::new(0, 0);
+}
+
+const GRID_NAME: usize = 0;
+const GRID_SEATS: usize = 1;
+
+fn grid_columns() -> Vec<ColumnSpec> {
+    vec![
+        ColumnSpec::new("name", CellKind::Text),
+        ColumnSpec::new("seats", CellKind::Number),
+    ]
+}
+
+fn grid_rows(n: i64) -> GridRows {
+    GridRows {
+        rows: (0..n)
+            .map(|i| vec![CellValue::Text(format!("row{i}")), CellValue::Int(3 + i)])
+            .collect(),
+        total: RowTotal::Exact(n as usize),
+        more: false,
+    }
+}
+
+fn seeded_grid(name: &'static str, n: i64) -> DataGrid {
+    let mut grid = DataGrid::new(WidgetId::of(name), grid_columns());
+    grid.try_set_rows(grid_rows(n)).expect("rectangular rows");
+    grid
+}
+
+fn grid_action(grid: &mut DataGrid, code: KeyCode) -> Option<GridAction> {
+    grid.on_key(&key(code))
+        .try_into_single()
+        .expect("at most one action")
+        .1
+}
+
+fn grid_edit_session() {
+    let mut grid = seeded_grid("scenario.grid.edit", 3);
+    assert_eq!(
+        grid.try_edit_text(0, GRID_SEATS, "40"),
+        Ok(CellEditResult::Changed)
+    );
+    assert_eq!(
+        grid.try_edit_text(0, GRID_SEATS, "40"),
+        Ok(CellEditResult::Unchanged),
+        "the same value records nothing twice"
+    );
+    assert!(matches!(
+        grid.try_edit_text(0, GRID_SEATS, "lots"),
+        Err(GridEditError::Validation(_))
+    ));
+    assert_eq!(
+        grid.try_edit_text(9, GRID_SEATS, "1"),
+        Err(GridEditError::InvalidTarget)
+    );
+    assert_eq!(
+        grid.pending().total(),
+        1,
+        "a refusal leaves the draft as it was"
+    );
+
+    grid.cursor = (1, GRID_SEATS);
+    let pasted = grid
+        .paste_into_cell("7")
+        .try_into_single()
+        .expect("one action");
+    assert_eq!(
+        pasted.1,
+        Some(GridAction::CellChanged {
+            row: 1,
+            col: GRID_SEATS
+        })
+    );
+    assert_eq!(grid.value(1, GRID_SEATS), &CellValue::Int(7));
+
+    assert_eq!(grid.finish_edit_session(), Ok(FinishEdit::NoSession));
+    grid.cursor = (2, GRID_NAME);
+    grid_action(&mut grid, KeyCode::Enter);
+    for c in "ab".chars() {
+        grid_action(&mut grid, KeyCode::Char(c));
+    }
+    assert_eq!(
+        grid.finish_edit_session(),
+        Ok(FinishEdit::Accepted {
+            row: 2,
+            col: GRID_NAME,
+            result: CellEditResult::Changed
+        })
+    );
+
+    let mut combo = DataGrid::new(
+        WidgetId::of("scenario.grid.combo"),
+        vec![
+            ColumnSpec::new("pick", CellKind::Text).editor(ColumnEditor::Combo(Options::new(
+                ["a", "b"].map(OptionItem::new),
+            ))),
+        ],
+    );
+    combo
+        .try_set_rows(GridRows {
+            rows: vec![vec![CellValue::Text("a".into())]],
+            total: RowTotal::Exact(1),
+            more: false,
+        })
+        .expect("rectangular rows");
+    grid_action(&mut combo, KeyCode::Enter);
+    for c in "zz".chars() {
+        grid_action(&mut combo, KeyCode::Char(c));
+    }
+    assert_eq!(
+        combo.finish_edit_session(),
+        Err(GridEditError::NoChoice),
+        "text that matches no option commits nothing"
+    );
+
+    let snapshot = grid.snapshot_changes();
+    let token = grid
+        .begin_submission(snapshot)
+        .expect("a fresh capture locks");
+    assert_eq!(
+        grid.try_edit_text(0, GRID_SEATS, "5"),
+        Err(GridEditError::Busy)
+    );
+    grid.cancel_submission(token).expect("the lock's own token");
+}
+
+fn grid_change_capture() {
+    let mut grid = seeded_grid("scenario.grid.capture", 3);
+    grid.record_cell(0, GRID_SEATS, CellValue::Int(40))
+        .expect("an unlocked grid");
+    grid.toggle_delete(1).expect("an unlocked grid");
+    grid.insert_row().expect("an unlocked grid");
+    let deleted = grid.row_key(1).expect("row 1 has a key");
+    let inserted = grid.row_key(3).expect("the new row has a key");
+
+    let pending = grid.pending();
+    assert_eq!(pending.cells().count(), 1);
+    assert_eq!(pending.deleted().collect::<Vec<_>>(), vec![deleted]);
+    assert_eq!(pending.inserted().collect::<Vec<_>>(), vec![inserted]);
+    assert!(pending.is_deleted(deleted) && !pending.is_inserted(deleted));
+    assert!(pending.is_inserted(inserted) && !pending.is_deleted(inserted));
+
+    let snapshot = grid.snapshot_changes();
+    assert_eq!(snapshot.counts(), (1, 1, 1));
+    let updated = &snapshot.updated()[0];
+    assert_eq!(Some(updated.key()), grid.row_key(0));
+    assert_eq!(updated.before()[GRID_SEATS], CellValue::Int(3));
+    let change = &updated.cells()[0];
+    assert_eq!(grid.columns()[change.column()].name, "seats");
+    assert_eq!(change.after(), &CellValue::Int(40));
+    let insert = &snapshot.inserted()[0];
+    assert_eq!(insert.key(), inserted);
+    assert_eq!(insert.values().len(), grid.columns().len());
+    let delete = &snapshot.deleted()[0];
+    assert_eq!(delete.before()[GRID_NAME], CellValue::Text("row1".into()));
+
+    grid.record_cell(2, GRID_SEATS, CellValue::Int(9))
+        .expect("an unlocked grid");
+    assert_eq!(
+        snapshot.counts(),
+        (1, 1, 1),
+        "a capture never sees a later edit"
+    );
+}
+
+fn grid_submission_lock() {
+    let mut grid = seeded_grid("scenario.grid.submit", 3);
+    grid.record_cell(0, GRID_SEATS, CellValue::Int(40))
+        .expect("an unlocked grid");
+    assert!(!grid.submission_pending());
+
+    let snapshot = grid.snapshot_changes();
+    let token = grid.begin_submission(snapshot.clone()).expect("locks");
+    assert!(grid.submission_pending());
+    assert_eq!(
+        grid.record_cell(1, GRID_SEATS, CellValue::Int(5)),
+        Err(GridEditError::Busy),
+        "a locked draft refuses edits"
+    );
+    grid.cancel_submission(token).expect("the lock's own token");
+    assert!(!grid.submission_pending());
+    assert_eq!(grid.pending().total(), 1, "a cancel keeps the draft");
+
+    let token = grid
+        .begin_submission(snapshot.clone())
+        .expect("locks again");
+    let refused = GridCommitFailure {
+        key: grid.row_key(0),
+        message: "seats above the plan limit".into(),
+    };
+    grid.complete_submission(token, Err(refused))
+        .expect("the lock's own token");
+    assert!(!grid.submission_pending(), "a failure unlocks");
+    assert_eq!(grid.pending().total(), 1, "and keeps the draft");
+    assert!(grid.row_errors.contains_key(&0), "and marks the row");
+
+    let token = grid
+        .begin_submission(snapshot.clone())
+        .expect("locks again");
+    grid.complete_submission(token, Ok(snapshot.identity_receipt()))
+        .expect("the receipt names the captured rows");
+    assert!(grid.pending().is_empty(), "a saved draft is gone");
+    assert_eq!(grid.value(0, GRID_SEATS), &CellValue::Int(40));
+}
+
+fn grid_source_identity() {
+    let key = ItemKey::num;
+    let mut grid = DataGrid::new(WidgetId::of("scenario.grid.source"), grid_columns());
+    grid.try_set_rows_keyed(grid_rows(3), vec![key(10), key(20), key(30)])
+        .expect("three distinct keys");
+    assert_eq!(grid.row_key(1), Some(key(20)));
+    assert_eq!(grid.source_index(key(30)), Some(2));
+    assert_eq!(grid.source_index(key(99)), None);
+
+    let revision = grid.revision();
+    assert_eq!(
+        grid.try_set_rows_keyed(grid_rows(3), vec![key(1), key(1), key(2)]),
+        Err(GridDataError::Key(GridKeyError::DuplicateKey(key(1))))
+    );
+    assert_eq!(
+        grid.try_set_rows_keyed(grid_rows(3), vec![key(1)]),
+        Err(GridDataError::Key(GridKeyError::KeyCount {
+            expected: 3,
+            actual: 1
+        }))
+    );
+    assert_eq!(
+        grid.revision(),
+        revision,
+        "a refused source changes nothing"
+    );
+    assert_eq!(grid.row_key(0), Some(key(10)));
+
+    grid.try_set_rows(grid_rows(2)).expect("local keys");
+    assert_eq!(grid.len(), 2);
+    assert!(
+        grid.revision().source > revision.source,
+        "a new source bumps the revision"
+    );
+    grid.try_append_rows(grid_rows(2)).expect("a second page");
+    assert_eq!(grid.len(), 4);
+
+    let wide = || {
+        let mut cols = grid_columns();
+        cols.push(ColumnSpec::new("tier", CellKind::Text));
+        cols
+    };
+    let wide_rows = |n: i64| GridRows {
+        rows: (0..n)
+            .map(|i| {
+                vec![
+                    CellValue::Text(format!("row{i}")),
+                    CellValue::Int(i),
+                    CellValue::Null,
+                ]
+            })
+            .collect(),
+        total: RowTotal::Exact(n as usize),
+        more: false,
+    };
+    grid.try_set_model(wide(), wide_rows(2))
+        .expect("a wider model");
+    assert_eq!(grid.columns().len(), 3);
+    grid.try_set_model_keyed(wide(), wide_rows(2), vec![key(7), key(8)])
+        .expect("a keyed model");
+    assert_eq!(grid.row_key(1), Some(key(8)));
+
+    let before = grid.revision();
+    assert_eq!(grid.update_column(0, |c| c.read_only = true), Ok(true));
+    assert_eq!(grid.update_column(0, |c| c.read_only = true), Ok(false));
+    assert_eq!(grid.revision().source, before.source + 1);
+    assert_eq!(
+        grid.update_column(9, |c| c.read_only = true),
+        Err(GridEditError::InvalidTarget)
+    );
+    assert_eq!(grid.update_column(1, |c| c.max_width = 12), Ok(true));
+    assert_eq!(
+        grid.revision().source,
+        before.source + 1,
+        "a width change is not a new schema"
+    );
+}
+
+fn grid_undo_kinds() {
+    let mut grid = seeded_grid("scenario.grid.undo", 3);
+    grid.record_cell(0, GRID_SEATS, CellValue::Int(40))
+        .expect("an unlocked grid");
+    grid.toggle_delete(1).expect("an unlocked grid");
+    grid.insert_row().expect("an unlocked grid");
+    grid.toggle_delete(3).expect("removing a draft row");
+    let marked = grid.row_key(1).expect("row 1 has a key");
+    let first = grid.row_key(0).expect("row 0 has a key");
+
+    let mut seen = Vec::new();
+    while let Some(GridAction::Undone(undone)) = grid_action(&mut grid, KeyCode::Char('u')) {
+        seen.push(undone.kind);
+        match undone.kind {
+            GridUndoKind::DeleteMark => assert_eq!(undone.key, marked),
+            GridUndoKind::Cell => assert_eq!(undone.key, first),
+            GridUndoKind::Insert | GridUndoKind::RemovedInsert => {}
+        }
+    }
+    assert_eq!(
+        seen,
+        [
+            GridUndoKind::RemovedInsert,
+            GridUndoKind::Insert,
+            GridUndoKind::DeleteMark,
+            GridUndoKind::Cell
+        ],
+        "undo walks the draft back newest first"
+    );
+    assert!(grid.pending().is_empty());
 }
 
 #[test]
