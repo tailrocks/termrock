@@ -3,11 +3,11 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/t01_basic/` and each checkpoint's dots become underscores.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, Point, TABLEPRO, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, TABLEPRO, find_all, flash_settle, row_text, text, try_launch,
+};
 
 const HOST: &str = "prod-db-1.acme.io";
 const HOST_PORT: &str = "prod-db-1.acme.io:5432";
@@ -43,7 +43,6 @@ fn open() -> App {
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());
     launch.motion = Some("reduced".to_string());
-    launch.clock = true;
     let app = try_launch(launch).unwrap_or_else(|error| panic!("{error}"));
     app.wait_text("Filter connections");
     app
@@ -163,32 +162,6 @@ fn click_cancel(app: &App) {
     flash_settle(app);
 }
 
-/// The 140ms press flash stays painted while motion is paused, so a shot after
-/// a released click has to redraw once the deadline has passed. Below about 100
-/// columns the header omits the size chip, and the narrow nudge waits on the
-/// terminal size instead.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
-}
-
 fn replace_focused(app: &App, value: &str) {
     app.key("ctrl+l");
     app.key("backspace");
@@ -222,18 +195,6 @@ fn set_port(app: &App, value: &str) -> TerminalSnapshot {
 fn submit(app: &App) -> TerminalSnapshot {
     app.key("ctrl+s");
     app.settle()
-}
-
-fn wait_size(app: &App, cols: u16, rows: u16) -> TerminalSnapshot {
-    app.resize(cols, rows);
-    app.wait_screen(&format!("size {cols}x{rows}"), |screen| {
-        let visible = text(screen);
-        screen.cols() == u32::from(cols)
-            && screen.rows() == u32::from(rows)
-            && (visible.contains("TablePro")
-                || visible.contains(TITLE)
-                || visible.contains("Filter connections"))
-    })
 }
 
 fn has_token(screen: &TerminalSnapshot, token: &str) -> bool {
@@ -415,7 +376,16 @@ fn basic_fields_reject_blank_names_and_invalid_ports() {
     assert_eq!((failed.cols(), failed.rows()), (120, 40));
     app.visual(&visual_id("T01.basic.fields.120x40"));
 
-    let fields_narrow = wait_size(&app, 80, 24);
+    app.wait_size(80, 24);
+    // The resized frame is drawn in more than one pass, and the status line
+    // comes last. Wait for it along with the clipped port error.
+    let fields_narrow = app.wait_screen("narrow field errors", |screen| {
+        let visible = text(screen);
+        screen.cols() == 80
+            && screen.rows() == 24
+            && visible.contains(STATUS)
+            && visible.contains(NARROW_PORT_ERROR)
+    });
     assert_eq!((fields_narrow.cols(), fields_narrow.rows()), (80, 24));
     assert_required(&fields_narrow);
     assert_eq!(
@@ -436,7 +406,7 @@ fn basic_fields_reject_blank_names_and_invalid_ports() {
         &[SAVED, "65536", "abc"],
     );
     app.visual(&visual_id("T01.basic.fields.narrow"));
-    let fields_back = wait_size(&app, 120, 40);
+    let fields_back = app.wait_size(120, 40);
     assert_eq!((fields_back.cols(), fields_back.rows()), (120, 40));
 
     click_cancel(&app);
@@ -444,7 +414,10 @@ fn basic_fields_reject_blank_names_and_invalid_ports() {
     assert_original_detail(&closed);
 
     app.key("e");
-    let reopened = app.wait_text(TITLE);
+    let reopened = app.wait_screen("reopened form keeps status", |screen| {
+        let visible = text(screen);
+        visible.contains(TITLE) && visible.contains(STATUS)
+    });
     assert_stored_form(&reopened, false);
     assert!(
         text(&reopened).contains(STATUS),
@@ -454,7 +427,7 @@ fn basic_fields_reject_blank_names_and_invalid_ports() {
     assert_eq!((reopened.cols(), reopened.rows()), (120, 40));
     app.visual(&visual_id("T01.basic.reopen.120x40"));
 
-    let reopen_narrow = wait_size(&app, 80, 24);
+    let reopen_narrow = app.wait_size(80, 24);
     assert_eq!((reopen_narrow.cols(), reopen_narrow.rows()), (80, 24));
     see(&reopen_narrow, &[TITLE, NAME, HOST, PORT], &[SAVED]);
     assert_eq!(
@@ -470,7 +443,7 @@ fn basic_fields_reject_blank_names_and_invalid_ports() {
         text(&reopen_narrow)
     );
     app.visual(&visual_id("T01.basic.reopen.narrow"));
-    let reopen_back = wait_size(&app, 120, 40);
+    let reopen_back = app.wait_size(120, 40);
     assert_eq!((reopen_back.cols(), reopen_back.rows()), (120, 40));
 
     app.click(form_hit(&app, PORT));

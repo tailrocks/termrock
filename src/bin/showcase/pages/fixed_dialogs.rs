@@ -12,11 +12,13 @@ use junie_tui::core::pointer::MouseTarget;
 use junie_tui::core::refusal::Reason;
 use junie_tui::ui::ctx::RenderCtx;
 use junie_tui::ui::layer::LayerTag;
+use junie_tui::ui::layers::LayerResult;
 use junie_tui::ui::specimen::StateGrid;
 use junie_tui::widgets::button::{Button, row_layout};
+use junie_tui::widgets::choice::{Checkbox, RadioGroup};
 use junie_tui::widgets::choice_dialog::ChoiceDialog;
 use junie_tui::widgets::file_browser::{FileBrowser, FileEntry, MemorySource};
-use junie_tui::widgets::form_dialog::{FormDialog, FormField};
+use junie_tui::widgets::form_dialog::{FormAction, FormDialog, FormField};
 use junie_tui::widgets::input::TextInput;
 use junie_tui::widgets::panel::Panel;
 
@@ -28,6 +30,8 @@ const BROWSER: WidgetId = ID.sub("browser");
 const OPENERS: [&str; 3] = ["Choice dialog…", "Form dialog…", "File browser…"];
 
 const PLAIN: &str = "Not available · managed by policy";
+const KEEP_AWAKE: &str = "Always off · the host decides";
+const TYPED_KEY: &str = "Not available · managed by policy";
 const READ_ONLY: &str = "Always read-only · the host decides";
 
 pub fn page() -> Box<dyn Page> {
@@ -39,6 +43,7 @@ pub struct FixedDialogsPage {
     opts: PageValues,
     openers: Vec<Button>,
     last: Option<String>,
+    changes: usize,
 }
 
 impl FixedDialogsPage {
@@ -52,6 +57,7 @@ impl FixedDialogsPage {
                 .map(|(i, label)| Button::secondary(ID.child(i), label))
                 .collect(),
             last: None,
+            changes: 0,
         }
     }
 
@@ -78,13 +84,31 @@ impl FixedDialogsPage {
         } else {
             plain
         };
+        let keep_awake = Checkbox::new(FORM.sub("keep"), "Keep awake", false);
+        let keep_awake = if self.fixed() {
+            keep_awake.fixed(Reason::new(KEEP_AWAKE).short("managed"))
+        } else {
+            keep_awake
+        };
+        let source = RadioGroup::new(
+            FORM.sub("source"),
+            "Credential source",
+            &["Local folder", "Password manager", "Typed key"],
+            0,
+        );
+        let source = if self.fixed() {
+            source.fixed_option(2, Reason::new(TYPED_KEY).short("managed"))
+        } else {
+            source
+        };
         FormDialog::new(
             FORM,
             "Account",
-            vec![FormField::input(
-                "name",
-                TextInput::new(FORM.sub("name"), "Name"),
-            )],
+            vec![
+                FormField::input("name", TextInput::new(FORM.sub("name"), "Name")),
+                FormField::check("keep", keep_awake),
+                FormField::radio("source", source),
+            ],
         )
         .action("plain", plain)
         .action("check", Button::subtle(FORM.sub("check"), "Check"))
@@ -145,7 +169,8 @@ impl Page for FixedDialogsPage {
                     button.render(rect, buf, ctx, bg);
                 }
                 if let Some(last) = &self.last {
-                    buf.set_string(inner.x, inner.y + 2, last, t.secondary().bg(bg));
+                    let line = format!("{last} · {} form changes", self.changes);
+                    buf.set_string(inner.x, inner.y + 2, line, t.secondary().bg(bg));
                 }
             }
             Section::Options => self.template.render_options(body, buf, ctx),
@@ -176,7 +201,7 @@ impl Page for FixedDialogsPage {
             PageEvent::Pointer(ev) => {
                 for i in 0..self.openers.len() {
                     if let Some(r) = self.openers[i].route(ev) {
-                        if ev.is(Phase::Click) && r.into_action().is_some() {
+                        if ev.is(Phase::Click) && r.has_actions() {
                             self.open(i, cx);
                         }
                         return Outcome::Changed;
@@ -196,6 +221,9 @@ impl Page for FixedDialogsPage {
     }
 
     fn on_layer(&mut self, tag: &LayerTag, report: Report, _cx: &mut Cx) -> Outcome {
+        if let Some(LayerResult::Form(FormAction::Changed(_))) = &report.result {
+            self.changes += 1;
+        }
         if report.closed.is_some() {
             self.last = Some(format!("{} closed", tag.kind));
         }

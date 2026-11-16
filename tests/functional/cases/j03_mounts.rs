@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, JACKIN, Launch, Point, find_all, row_text, text, try_launch};
+use crate::support::{App, JACKIN, Launch, Point, button, row_text, step_until, text, try_launch};
 
 const DIRECTORY: &str = "Current directory";
 const PAYMENTS: &str = "payments-platform";
@@ -179,32 +179,6 @@ fn focus_mounts_list(app: &App) {
     });
 }
 
-fn step_until(app: &App, key: &str, marker: &str) {
-    for _ in 0..12 {
-        if focused_line(&app.screen()).contains(marker) {
-            return;
-        }
-        let before = focused_line(&app.screen());
-        app.key(key);
-        let deadline = std::time::Instant::now() + Duration::from_millis(800);
-        loop {
-            let line = focused_line(&app.screen());
-            if line.contains(marker) || line != before || std::time::Instant::now() >= deadline {
-                break;
-            }
-            std::thread::sleep(Duration::from_millis(25));
-        }
-        if focused_line(&app.screen()).contains(marker) {
-            return;
-        }
-        if focused_line(&app.screen()) == before {
-            break;
-        }
-    }
-    let screen = app.screen();
-    panic!("never focused {marker} with {key}\n{}", text(&screen));
-}
-
 fn focus_dest(app: &App, marker: &str) {
     step_until(app, "tab", marker);
 }
@@ -231,19 +205,6 @@ fn set_destination(app: &App, marker: &str, value: &str) {
         "destination field\n{}",
         focused_line(&typed)
     );
-}
-
-fn button(app: &App, label: &str, row_ok: impl Fn(&str) -> bool) -> Point {
-    let screen = app.screen();
-    let hits: Vec<_> = find_all(&screen, label)
-        .into_iter()
-        .filter(|point| row_ok(&row_text(&screen, u32::from(point.y))))
-        .collect();
-    assert_eq!(hits.len(), 1, "one button {label:?}:\n{}", text(&screen));
-    Point {
-        x: hits[0].x + 2,
-        y: hits[0].y,
-    }
 }
 
 fn form_save(app: &App) -> Point {

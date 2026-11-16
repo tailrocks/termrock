@@ -3,11 +3,11 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/s07_scrolling/` and each case id's dots become underscores.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, Point, SHOWCASE, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, SHOWCASE, find_all, flash_settle, row_text, text, try_launch,
+};
 
 const CRUMB: &str = "Layout › Scrolling";
 const TITLE: &str = "Scrolling";
@@ -231,14 +231,14 @@ fn reveal_side(app: &App, label: &str) {
         if find_all(&screen, label).into_iter().any(|hit| hit.x < 24) {
             return;
         }
-        app.wheel(point, false, 3);
+        app.wheel_applied(point, false, 3);
     }
     for _ in 0..30 {
         let screen = app.settle();
         if find_all(&screen, label).into_iter().any(|hit| hit.x < 24) {
             return;
         }
-        app.wheel(point, true, 3);
+        app.wheel_applied(point, true, 3);
     }
 }
 
@@ -248,7 +248,7 @@ fn reveal_text(app: &App, needle: &str) {
         if text(&app.settle()).contains(needle) {
             return;
         }
-        app.wheel(point, true, 3);
+        app.wheel_applied(point, true, 3);
     }
     app.wait_text(needle);
 }
@@ -259,7 +259,7 @@ fn wheel_until(app: &App, needle: &str) {
         if text(&app.settle()).contains(needle) {
             return;
         }
-        app.wheel(point, false, 3);
+        app.wheel_applied(point, false, 3);
     }
     app.wait_text(needle);
 }
@@ -272,32 +272,6 @@ fn assert_size(app: &App, cols: u16, rows: u16) {
         "terminal size\n{}",
         text(&screen)
     );
-}
-
-/// The 140ms press flash stays painted while motion is paused, so a shot after
-/// a released click has to redraw once the deadline has passed. Below about 100
-/// columns the header omits the size chip, and the narrow nudge waits on the
-/// terminal size instead.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn shot(app: &App, case_id: &str) {
@@ -845,7 +819,7 @@ fn compare_levels_narrows_before_restore() {
         if visible.contains("no color") {
             break;
         }
-        app.wheel(point, true, 3);
+        app.wheel_applied(point, true, 3);
     }
     let bands = app.settle();
     assert_size(&app, 120, 40);
@@ -1647,5 +1621,51 @@ fn option_nested_scrollbars_on_from_the_options_tab_drags_the_child_thumb() {
         text(&back)
     );
     app.up(thumb);
+    app.finish();
+}
+
+fn virtual_first_row(screen: &TerminalSnapshot) -> Option<u32> {
+    (0..screen.rows())
+        .flat_map(|row| {
+            let line = row_text(screen, row);
+            let words: Vec<String> = line.split_whitespace().map(str::to_owned).collect();
+            words
+                .windows(2)
+                .filter(|pair| pair[0] == "Row" && pair[1].len() == 5)
+                .filter_map(|pair| pair[1].parse::<u32>().ok())
+                .collect::<Vec<_>>()
+        })
+        .min()
+}
+
+#[test]
+fn option_virtual_rows_10000_keys_and_wheel_move_a_bounded_window() {
+    let app = page("s07-virtual", "scrolling.window=10000", 120, 40);
+    let playground = app.wait_text("of 10000");
+    see(&playground, &["Virtual", "Row 00001"], &["Row 10000"]);
+
+    click_tab(&app, "Options");
+    let options = app.wait_text("Page options");
+    see(&options, &["Virtual rows", "Nested scrollbars"], &[]);
+    click_tab(&app, "Playground");
+    let back = app.wait_text("of 10000");
+
+    app.click(find_all(&back, "Row 00002")[0]);
+    app.key("end");
+    let end = app.wait_text("Row 10000");
+    see(&end, &["of 10000"], &["Row 00001"]);
+    app.key("home");
+    let top = app.wait_text("Row 00001");
+    assert_eq!(virtual_first_row(&top), Some(1));
+
+    let at = find_all(&top, "Row 00001")[0];
+    app.wheel(at, true, 3);
+    let moved = app.settle();
+    let first = virtual_first_row(&moved).expect("rows stay visible while wheeling");
+    assert!(
+        first > 1,
+        "the wheel scrolls the virtual rows, first row {first}\n{}",
+        text(&moved)
+    );
     app.finish();
 }

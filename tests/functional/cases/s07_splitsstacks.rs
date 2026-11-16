@@ -4,12 +4,12 @@
 //! `pre_refactor/s07_splitsstacks/` and each case id's dots become underscores.
 
 use std::path::PathBuf;
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 use tuiscotti_latest::check::CheckOutcome;
 
-use crate::support::{App, Launch, Point, SHOWCASE, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, SHOWCASE, find_all, flash_settle, row_text, text, try_launch,
+};
 
 const CRUMB: &str = "Layout › Splits & stacks";
 const TITLE: &str = "Splits & stacks";
@@ -181,14 +181,14 @@ fn reveal_side(app: &App, label: &str) {
         if find_all(&screen, label).into_iter().any(|hit| hit.x < 24) {
             return;
         }
-        app.wheel(point, false, 3);
+        app.wheel_applied(point, false, 3);
     }
     for _ in 0..30 {
         let screen = app.settle();
         if find_all(&screen, label).into_iter().any(|hit| hit.x < 24) {
             return;
         }
-        app.wheel(point, true, 3);
+        app.wheel_applied(point, true, 3);
     }
 }
 
@@ -198,7 +198,7 @@ fn reveal_text(app: &App, needle: &str) {
         if text(&app.settle()).contains(needle) {
             return;
         }
-        app.wheel(point, true, 3);
+        app.wheel_applied(point, true, 3);
     }
     app.wait_text(needle);
 }
@@ -209,7 +209,7 @@ fn wheel_until(app: &App, needle: &str) {
         if text(&app.settle()).contains(needle) {
             return;
         }
-        app.wheel(point, false, 3);
+        app.wheel_applied(point, false, 3);
     }
     app.wait_text(needle);
 }
@@ -228,32 +228,6 @@ fn gutter_count(screen: &TerminalSnapshot) -> usize {
     (0..screen.rows())
         .filter(|row| row_text(screen, *row).contains(GUTTER))
         .count()
-}
-
-/// The 140ms press flash stays painted while motion is paused, so a shot after
-/// a released click has to redraw once the deadline has passed. Below about
-/// 100 columns the header omits the size chip, and the narrow nudge waits on
-/// the terminal size instead.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn shot(app: &App, case_id: &str) {
@@ -738,7 +712,7 @@ fn compare_levels_narrows_before_restore() {
         if visible.contains("no color") {
             break;
         }
-        app.wheel(point, true, 3);
+        app.wheel_applied(point, true, 3);
     }
     let bands = app.settle();
     assert_size(&app, 120, 40);

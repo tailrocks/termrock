@@ -132,6 +132,29 @@ fn read_disposition_sample(path: &Path) -> tuiscotti_latest::sample::Sample {
         .unwrap_or_else(|error| panic!("read disposition sample {}: {error}", path.display()))
 }
 
+/// Decodes every sample and checks that it carries the test ID its record
+/// names. Decoding one sample costs about 10 ms of CPU, and the manifest holds
+/// about two thousand, so one thread needs 20 s of CPU and, on a loaded machine,
+/// outlasts the 90 s nextest terminates a functional test at. The samples are
+/// independent, so they are split across threads, which also gives the test
+/// more than one share of a busy machine.
+fn assert_sample_ids(samples: Vec<(PathBuf, String)>) {
+    let workers = std::thread::available_parallelism()
+        .map_or(4, usize::from)
+        .clamp(4, 16);
+    let chunk = samples.len().div_ceil(workers).max(1);
+    std::thread::scope(|scope| {
+        for part in samples.chunks(chunk) {
+            scope.spawn(move || {
+                for (path, test_id) in part {
+                    let sample = read_disposition_sample(path);
+                    assert_eq!(sample.test_id(), test_id, "{test_id}");
+                }
+            });
+        }
+    });
+}
+
 fn active_baseline_path(root: &Path, test_id: &str) -> PathBuf {
     root.join(format!("{test_id}.tui.pb"))
 }
@@ -639,6 +662,7 @@ fn g05_approved_binary_manifest_matches_active_samples() {
         lines.next(),
         Some("test_id\tbaseline_path\tsha256\treceipt_path\tacceptance_sequence\tsource_lineage")
     );
+    let mut sample_ids: Vec<(PathBuf, String)> = Vec::new();
     let mut ids = std::collections::BTreeSet::new();
     let mut paths = std::collections::BTreeSet::new();
     let mut active_records = std::collections::BTreeMap::new();
@@ -691,8 +715,7 @@ fn g05_approved_binary_manifest_matches_active_samples() {
             path.display()
         );
         assert_eq!(sha256_file(&path), *expected_sha, "{test_id}");
-        let sample = read_disposition_sample(&path);
-        assert_eq!(sample.test_id(), *test_id);
+        sample_ids.push((path.clone(), (*test_id).to_owned()));
         let receipt_relative_path = *receipt_path;
         let receipt_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(receipt_relative_path);
         let receipt: Value = serde_json::from_slice(
@@ -715,7 +738,7 @@ fn g05_approved_binary_manifest_matches_active_samples() {
         );
         count += 1;
     }
-    assert_eq!(count, 105);
+    assert_eq!(count, 109);
     assert!(!ids.contains("functional/tablepro_query_syntax_error"));
     let historical_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("docs/testing/acceptance-receipts/historical-binary-20261108/transactions.jsonl");
@@ -742,12 +765,54 @@ fn g05_approved_binary_manifest_matches_active_samples() {
             .or_default()
             .push(fields[1..].to_vec());
     }
+    let mut inherited_approved = std::collections::BTreeMap::new();
+    let inherited_early = std::fs::read_to_string(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("docs/testing/acceptance-receipts/inherited-main-20261108/baselines.tsv"),
+    )
+    .expect("inherited main baseline manifest");
+    for line in inherited_early.lines().skip(1) {
+        let fields: Vec<_> = line.split('\t').collect();
+        let (Some(test_id), Some(baseline_path), Some(approved)) =
+            (fields.first(), fields.get(1), fields.get(2))
+        else {
+            continue;
+        };
+        let Some(chain) = refreshes.get(*test_id) else {
+            continue;
+        };
+        let last = chain.last().expect("nonempty refresh chain");
+        active_records.insert(
+            (*test_id).to_owned(),
+            (
+                (*baseline_path).to_owned(),
+                last[1].clone(),
+                last[4].clone(),
+            ),
+        );
+        inherited_approved.insert((*test_id).to_owned(), (*approved).to_owned());
+    }
     let mut refreshed_ids = std::collections::BTreeSet::new();
     for (test_id, chain) in &refreshes {
         let Some((active_path, active_sha, active_receipt)) = active_records.get(test_id) else {
             continue;
         };
+        if let Some(approved) = inherited_approved.get(test_id) {
+            assert_eq!(
+                &chain[0][2], approved,
+                "refresh chain starts from the inherited approval {test_id}"
+            );
+        }
         let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        if ids.contains(test_id.as_str()) {
+            // The manifest row carries the latest digest, so nothing else ties the first
+            // refresh to the approval it replaced. An original approval receipt of this id
+            // outside the refresh chain does.
+            assert!(
+                original_approval_receipt_digests(test_id).contains(&chain[0][2]),
+                "first refresh of {test_id} replaces no original approval receipt"
+            );
+        }
         let active_path = repo_root.join(active_path);
         let mut prior_active_sha = None;
         for fields in chain {
@@ -904,8 +969,7 @@ fn g05_approved_binary_manifest_matches_active_samples() {
                 .expect("historical sample")
                 .starts_with(b"TUISCPB\0")
         );
-        let sample = read_disposition_sample(&sample_path);
-        assert_eq!(sample.test_id(), test_id, "{test_id}");
+        sample_ids.push((sample_path, test_id.to_owned()));
 
         let historical_json_relative = PathBuf::from(
             receipt["historical_json"]
@@ -1001,6 +1065,7 @@ fn g05_approved_binary_manifest_matches_active_samples() {
         historical_count += 1;
     }
     assert_eq!(historical_count, 1868);
+    assert_sample_ids(sample_ids);
     assert_eq!(
         refreshed_ids.len(),
         refreshes.len(),
@@ -1079,7 +1144,10 @@ fn g05_approved_binary_manifest_matches_active_samples() {
             "duplicate inherited path {baseline_path}"
         );
         let path = root.join(relative);
-        assert_eq!(sha256_file(&path), *expected_sha, "{test_id}");
+        let active_sha = inherited_approved.get(*test_id).map_or(*expected_sha, |_| {
+            refreshes[*test_id].last().expect("chain")[1].as_str()
+        });
+        assert_eq!(sha256_file(&path), active_sha, "{test_id}");
         let receipt = inherited_receipts
             .get(*test_id)
             .unwrap_or_else(|| panic!("missing inherited main approval receipt for {test_id}"));
@@ -1245,12 +1313,52 @@ fn assert_acceptance_receipts() {
             "{file}"
         );
         let baseline = baseline_root().join(format!("{baseline_id}.tui.pb"));
+        let accepted =
+            first_refresh_previous_sha(baseline_id).unwrap_or_else(|| sha256_file(&baseline));
         assert_eq!(
             receipt["candidate_sha256"].as_str(),
-            Some(sha256_file(&baseline).as_str()),
+            Some(accepted.as_str()),
             "{file}"
         );
     }
+}
+
+fn original_approval_receipt_digests(test_id: &str) -> Vec<String> {
+    let safe = test_id.replace('/', "_");
+    let receipts =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("docs/testing/acceptance-receipts");
+    let mut digests = Vec::new();
+    for dir in std::fs::read_dir(&receipts).expect("acceptance receipts dir") {
+        let dir = dir.expect("receipt dir entry").path();
+        let name = dir.file_name().and_then(|name| name.to_str()).unwrap_or("");
+        if !dir.is_dir() || name.starts_with("refreshes-") || name.starts_with("flash-") {
+            continue;
+        }
+        for file in [format!("{safe}.json"), format!("{safe}.accept.json")] {
+            let Ok(bytes) = std::fs::read(dir.join(&file)) else {
+                continue;
+            };
+            let receipt: Value = serde_json::from_slice(&bytes).expect("original approval receipt");
+            if let Some(digest) = receipt["candidate_sha256"].as_str() {
+                digests.push(digest.to_owned());
+            }
+        }
+    }
+    digests
+}
+
+fn first_refresh_previous_sha(test_id: &str) -> Option<String> {
+    let manifest = std::fs::read_to_string(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("docs/testing/baseline-refreshes-20261108.tsv"),
+    )
+    .expect("baseline refresh manifest");
+    manifest
+        .lines()
+        .skip(1)
+        .map(|line| line.split('\t').collect::<Vec<_>>())
+        .find(|fields| fields.first() == Some(&test_id))
+        .map(|fields| fields[3].to_owned())
 }
 
 fn refuse_candidate(bin: &Path) {

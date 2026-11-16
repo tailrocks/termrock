@@ -160,8 +160,8 @@ fn draw_quit_and_stay(app: &App) {
     });
     see(
         &dialog,
-        &["Stop and quit", "Stay", "still running"],
-        &["program exited"],
+        &["Stop and quit", "Stay", "running. Quitting stops"],
+        &["program exited", "detached monitors keep running"],
     );
     assert!(app.child_running(), "quit dialog closed the process");
     app.key("escape");

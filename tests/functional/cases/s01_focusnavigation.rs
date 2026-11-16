@@ -32,9 +32,15 @@ const FORWARD: &[&str] = &[
     "Gamma tag",
     "Delta tag",
     "Mailbox list",
+    "Passive tip button",
+    "Restore on button",
+    "Restore off button",
     "outside the page",
 ];
 const BACK: &[&str] = &[
+    "Restore off button",
+    "Restore on button",
+    "Passive tip button",
     "Mailbox list",
     "Delta tag",
     "Gamma tag",
@@ -762,5 +768,33 @@ fn option_nav_vim_boundary() {
         "opt.focusnavigation.nav",
         "focusnavigation.nav=vim shows vim keys and j moves the mailbox cursor; Tab in a field stays moves",
     );
+    app.finish();
+}
+
+#[test]
+fn keyboard_only_focus_returns_on_the_first_no_op_key() {
+    let app = open_page("s01-focusnavigation-keyboard-only", 120, 40);
+    app.click_text("Options");
+    let options = app.wait_text("Page options");
+    expect(&options, &["Focus ring", "always"], &["keyboard-only"]);
+    app.click_text("always");
+    app.wait_text("Enter Set");
+    app.click_text("keyboard-only");
+    app.wait_absent("Enter Set");
+    app.click_text("Playground");
+    app.wait_text("Ada Lovelace");
+    click_at(&app, "Gamma", |hit| hit.x >= 24);
+    let clicked = app.wait_screen("Gamma holds pointer focus without a gutter", |screen| {
+        text(screen).contains("Gamma tag") && gutters(screen) == 0
+    });
+    assert_eq!(focus_value(&clicked), "Gamma tag", "{}", text(&clicked));
+
+    app.key("x");
+    let keyed = app.wait_screen(
+        "the first no-op key paints the keyboard focus gutter",
+        |s| gutters(s) == 1,
+    );
+    assert_one_gutter(&keyed);
+    assert_eq!(focus_value(&keyed), "Gamma tag", "{}", text(&keyed));
     app.finish();
 }

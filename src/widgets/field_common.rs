@@ -364,12 +364,12 @@ pub fn apply_edit(
         EditAction::Apply(f) => {
             let mut probe = buf.clone();
             f(&mut probe);
-            if !read_only || probe.text() == buf.text() {
+            if !read_only || probe.revision() == buf.revision() {
                 *buf = probe;
             }
         }
     }
-    if buf.text() != before.text() {
+    if buf.revision() != before.revision() {
         undo.record(&before, kind);
         Some(Applied::Edited)
     } else {

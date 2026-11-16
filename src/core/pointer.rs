@@ -237,9 +237,11 @@ impl PointerState {
         }
     }
 
-    pub fn suppress_hover(&mut self) {
+    pub fn suppress_hover(&mut self) -> bool {
+        let changed = (!self.hover_suppressed && self.hover.is_some()) || self.pointer_focus;
         self.hover_suppressed = true;
         self.pointer_focus = false;
+        changed
     }
 
     pub fn focused_by_click(&mut self) {
@@ -660,6 +662,14 @@ impl PointerEvent {
         self.hit.part.item.and_then(ItemKey::as_index)
     }
 
+    /// The logical key of the hit item when this event is on `part`.
+    pub fn key_of(&self, part: Part) -> Option<ItemKey> {
+        if self.hit.part.part != part {
+            return None;
+        }
+        self.hit.part.item
+    }
+
     pub fn phase(&self) -> Option<Phase> {
         match self.intent {
             Intent::Pointer { phase, .. } => Some(phase),
@@ -845,11 +855,15 @@ impl PointerRouter {
 
     pub fn tick<H: PointerHost + ?Sized>(host: &mut H) -> Outcome {
         let now = host.now_ms();
-        let due = host.pointer_parts().router.state.autoscroll_due(now);
-        let out = match due {
-            Some((_, pos)) => Self::route(host, Mouse::new(MouseKind::Drag, pos)),
-            None => Outcome::Ignored,
+        let mut out = if host.pointer_parts().router.state.expire_flash(now) {
+            Outcome::Changed
+        } else {
+            Outcome::Ignored
         };
+        let due = host.pointer_parts().router.state.autoscroll_due(now);
+        if let Some((_, pos)) = due {
+            out = out.or(Self::route(host, Mouse::new(MouseKind::Drag, pos)));
+        }
         let due = host.pointer_parts().router.state.track_repeat_due(now);
         match due {
             Some(pos) => out.or(Self::route(host, Mouse::new(MouseKind::Down, pos))),
@@ -1074,6 +1088,70 @@ impl PointerRouter {
             p.focus.focus(id);
         }
         out.or(Outcome::Changed)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn state(hover: Option<WidgetId>, suppressed: bool, pointer_focus: bool) -> PointerState {
+        PointerState {
+            hover,
+            hover_suppressed: suppressed,
+            pointer_focus,
+            ..PointerState::default()
+        }
+    }
+
+    #[test]
+    fn suppress_hover_reports_only_visual_transition() {
+        let id = WidgetId::of("pointer.tests.target");
+        for hover in [None, Some(id)] {
+            for suppressed in [false, true] {
+                for pointer_focus in [false, true] {
+                    let mut s = state(hover, suppressed, pointer_focus);
+                    let live_hover = hover.is_some() && !suppressed;
+                    let changed = s.suppress_hover();
+                    let label =
+                        format!("hover={hover:?} suppressed={suppressed} focus={pointer_focus}");
+                    assert_eq!(changed, live_hover || pointer_focus, "{label}");
+                    assert!(s.hover_suppressed, "{label}");
+                    assert!(!s.pointer_focus, "{label}");
+                    assert_eq!(s.hover, hover, "the raw hover identity survives: {label}");
+                    assert!(!s.suppress_hover(), "a repeat is not a transition: {label}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn suppress_hover_does_not_decide_on_enabled_state() {
+        let mut hits = HitRegistry::default();
+        let id = WidgetId::of("pointer.tests.disabled");
+        hits.register(id, ratatui::layout::Rect::new(0, 0, 4, 1));
+        let mut s = PointerState::default();
+        s.on_move(&hits, Position::new(1, 0));
+        assert_eq!(s.hover, Some(id));
+        assert!(s.suppress_hover());
+        assert_eq!(s.hover, Some(id));
+    }
+
+    #[test]
+    fn a_move_after_suppression_restores_hover() {
+        let mut hits = HitRegistry::default();
+        let id = WidgetId::of("pointer.tests.move");
+        hits.register(id, ratatui::layout::Rect::new(0, 0, 4, 1));
+        let mut s = PointerState::default();
+        s.on_move(&hits, Position::new(1, 0));
+        assert!(s.suppress_hover());
+        assert_eq!(s.on_move(&hits, Position::new(2, 0)), Outcome::Changed);
+        assert!(!s.hover_suppressed);
+        assert_eq!(s.hover, Some(id));
+        assert!(
+            s.suppress_hover(),
+            "hover is live again, so a key is a transition"
+        );
     }
 }
 

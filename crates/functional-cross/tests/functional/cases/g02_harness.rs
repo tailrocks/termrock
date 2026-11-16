@@ -418,6 +418,76 @@ fn harness_startup_failure_is_saved() {
     assert!(!body.trim().is_empty());
 }
 
+const CHECKPOINT_RUN: usize = 20;
+const READY: &str = r#"printf 'ready\n'; sleep 30"#;
+
+fn record_checkpoints(app: &App, count: usize) {
+    for index in 0..count {
+        app.wait_screen(&format!("ready {index}"), |screen| {
+            text(screen).contains("ready")
+        });
+    }
+}
+
+fn checkpoint_files(evidence: &Path, extension: &str) -> Vec<String> {
+    let mut names: Vec<String> = std::fs::read_dir(evidence)
+        .expect("read evidence directory")
+        .map(|entry| entry.expect("evidence entry").file_name())
+        .filter_map(|name| name.into_string().ok())
+        .filter(|name| {
+            name.strip_suffix(extension)
+                .and_then(|stem| stem.strip_suffix('.'))
+                .is_some_and(|stem| stem.len() == 3 && stem.bytes().all(|b| b.is_ascii_digit()))
+        })
+        .collect();
+    names.sort();
+    names
+}
+
+#[test]
+fn harness_passing_run_saves_checkpoint_text_not_cells() {
+    let app = shell("harness-checkpoints-pass", READY, false, false);
+    let evidence = app.evidence_dir().to_path_buf();
+    record_checkpoints(&app, CHECKPOINT_RUN);
+    drop(app);
+    let texts = checkpoint_files(&evidence, "txt");
+    assert_eq!(texts.len(), CHECKPOINT_RUN, "{texts:?}");
+    assert_eq!(texts[0], "000.txt");
+    assert_eq!(texts[CHECKPOINT_RUN - 1], "019.txt");
+    assert_eq!(checkpoint_files(&evidence, "json"), Vec::<String>::new());
+    let actions = std::fs::read_to_string(evidence.join("actions.txt")).expect("action trace");
+    let logged = actions
+        .lines()
+        .filter(|line| line.contains("checkpoint "))
+        .count();
+    assert_eq!(logged, CHECKPOINT_RUN, "{actions}");
+    assert!(evidence.join("last.json").is_file());
+}
+
+#[test]
+fn harness_failing_run_saves_the_latest_checkpoint_cells() {
+    let evidence = std::cell::RefCell::new(PathBuf::new());
+    let result = std::panic::catch_unwind(AssertUnwindSafe(|| {
+        let app = shell("harness-checkpoints-fail", READY, false, false);
+        *evidence.borrow_mut() = app.evidence_dir().to_path_buf();
+        record_checkpoints(&app, CHECKPOINT_RUN);
+        panic!("failing assertion");
+    }));
+    assert!(result.is_err(), "the run must fail");
+    let evidence = evidence.into_inner();
+    let cells = checkpoint_files(&evidence, "json");
+    let kept: Vec<_> = (4..CHECKPOINT_RUN)
+        .map(|n| format!("{n:03}.json"))
+        .collect();
+    assert_eq!(cells, kept, "the latest checkpoints keep their cells");
+    let texts = checkpoint_files(&evidence, "txt");
+    assert_eq!(texts.len(), CHECKPOINT_RUN, "{texts:?}");
+    let body = std::fs::read_to_string(evidence.join("019.json")).expect("latest cells");
+    let json: serde_json::Value = serde_json::from_str(&body).expect("cells are JSON");
+    assert!(json.is_object(), "{body:.200}");
+    assert!(evidence.join("last.json").is_file());
+}
+
 #[test]
 #[should_panic(expected = "empty app binary path")]
 fn harness_empty_binary_path_fails_fast() {

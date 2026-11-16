@@ -9,8 +9,8 @@ license = "MIT"
 default-run = "showcase"
 
 [workspace]
-members = [".", "apps/jackin", "crates/functional-cross"]
-default-members = [".", "apps/jackin", "crates/functional-cross"]
+members = [".", "apps/jackin", "crates/termrock", "crates/functional-cross"]
+default-members = [".", "apps/jackin", "crates/termrock", "crates/functional-cross"]
 
 [workspace.dependencies]
 clap = { version = "4.6", features = ["derive"] }
@@ -22,9 +22,10 @@ tuiscotti-latest = { package = "tuiscotti", git = "https://github.com/tailrocks/
 
 [features]
 default = ["cli", "terminal"]
-cli = ["dep:clap", "dep:serde_json"]
+cli = ["dep:clap", "dep:regex"]
 terminal = ["dep:termpane"]
 product = ["terminal"]
+work-metrics = []
 
 [lib]
 name = "junie_tui"
@@ -58,7 +59,8 @@ termpane = { git = "https://github.com/tailrocks/termpane", rev = "46cc0977d8ee9
 ratatui = { workspace = true }
 unicode-width = "0.2.3"
 unicode-segmentation = "1"
-serde_json = { workspace = true, optional = true }
+regex = { version = "1.13", optional = true }
+serde_json = { workspace = true }
 
 [target.'cfg(unix)'.dependencies]
 

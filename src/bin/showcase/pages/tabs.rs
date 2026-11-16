@@ -6,7 +6,7 @@ use crate::app::PageId;
 use crate::pages::layout::{sheet_height, sheet_width};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, CxExt, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
+use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::id::WidgetId;
 use junie_tui::core::intent::Phase;
 use junie_tui::core::keymap::{Actions, KeyBinding, KeyMap, NavKeys, hint_key, label_for};
@@ -188,33 +188,31 @@ impl TabsPage {
         let items = if reset {
             editor_items(self.opts.on("tabs.count"))
         } else {
-            self.editor.items.clone()
+            self.editor.items().to_vec()
         };
         let (active, cursor) = (self.editor.active, self.editor.cursor);
         self.editor = editor_strip(&self.opts, items);
         self.editor
-            .set_active(active.min(self.editor.items.len().saturating_sub(1)));
-        self.editor.cursor = cursor.min(self.editor.items.len().saturating_sub(1));
+            .set_active(active.min(self.editor.items().len().saturating_sub(1)));
+        self.editor.cursor = cursor.min(self.editor.items().len().saturating_sub(1));
     }
 
     fn act(&mut self, a: TabAction, cx: &mut Cx) {
         match a {
             TabAction::Activated(i) => {
-                self.last = format!("{a:?} · {}", self.editor.items[i].label);
+                self.last = format!("{a:?} · {}", self.editor.items()[i].label);
             }
             TabAction::New => {
                 self.opened += 1;
                 let name = format!("untitled-{}.sql", self.opened);
-                self.editor
-                    .items
-                    .push(TabItem::new(&name).prefix("▷").closable());
-                let n = self.editor.items.len() - 1;
+                self.editor.push(TabItem::new(&name).prefix("▷").closable());
+                let n = self.editor.items().len() - 1;
                 self.editor.set_active(n);
                 self.editor.cursor = n;
                 self.last = format!("{a:?} · opened {name}");
             }
             TabAction::Close(i) => {
-                let it = &self.editor.items[i];
+                let it = &self.editor.items()[i];
                 if it.dirty {
                     self.closing = Some(i);
                     self.last = format!("{a:?} · {} has unsaved changes: asked first", it.label);
@@ -232,8 +230,46 @@ impl TabsPage {
         cx.status(self.last.clone());
     }
 
+    /// `d` toggles the active tab's dirty mark. `[` and `]` move it left or
+    /// right. Both show in the hint bar. A refused move still consumes the key,
+    /// so `[` and `]` do not leak to page navigation at the strip's ends.
+    fn edit_active_tab(&mut self, key: &Key, cx: &mut Cx) -> Option<Outcome> {
+        if !key.plain() {
+            return None;
+        }
+        let active = self.editor.active;
+        let label = self.editor.items().get(active)?.label.clone();
+        let changed = match key.code {
+            KeyCode::Char('d') => {
+                let changed = self.editor.update_item(active, |it| it.dirty = !it.dirty);
+                if changed {
+                    self.last = format!("Toggled unsaved mark on {label}");
+                }
+                changed
+            }
+            KeyCode::Char(c @ ('[' | ']')) => {
+                let to = if c == '[' {
+                    active.saturating_sub(1)
+                } else {
+                    active + 1
+                };
+                let changed = self.editor.reorder(active, to);
+                if changed {
+                    self.last = format!("Moved {label} to position {}", to + 1);
+                }
+                changed
+            }
+            _ => return None,
+        };
+        if !changed {
+            return Some(Outcome::Consumed);
+        }
+        cx.status(self.last.clone());
+        Some(Outcome::Changed)
+    }
+
     fn facts(&self) -> Vec<Prop> {
-        let active = self.editor.items.get(self.editor.active);
+        let active = self.editor.items().get(self.editor.active);
         let state = active.map_or(String::new(), |it| {
             let mut s = vec![];
             if it.dirty {
@@ -309,10 +345,10 @@ impl TabsPage {
                 self.sub.render(strip, buf, ctx, nbg);
                 format!(
                     "orders › Structure › {}",
-                    self.sub.items[self.sub.active].label
+                    self.sub.items()[self.sub.active].label
                 )
             }
-            i => format!("orders › {}", self.outer.items[i].label),
+            i => format!("orders › {}", self.outer.items()[i].label),
         };
         buf.set_string(body.x, body.y, crumb, t.muted().bg(nbg));
     }
@@ -451,7 +487,7 @@ impl Page for TabsPage {
         }
         match ev {
             PageEvent::Tick => {
-                if self.editor.items.iter().any(|t| t.busy) {
+                if self.editor.items().iter().any(|t| t.busy) {
                     Outcome::Changed
                 } else {
                     Outcome::Ignored
@@ -465,6 +501,9 @@ impl Page for TabsPage {
                     let (out, a) = self.editor.on_key(key);
                     if let Some(a) = a {
                         self.act(a, cx);
+                    }
+                    if out == Outcome::Ignored {
+                        return self.edit_active_tab(key, cx).unwrap_or(out);
                     }
                     return out;
                 }
@@ -480,8 +519,8 @@ impl Page for TabsPage {
                     if click {
                         cx.focus.focus(self.editor.id);
                     }
-                    let (out, a) = r.into_parts();
-                    if let Some(a) = a {
+                    let (out, actions) = r.into_parts();
+                    for a in actions {
                         self.act(a, cx);
                     }
                     return if click { out.or(Outcome::Changed) } else { out };
@@ -507,7 +546,7 @@ impl Page for TabsPage {
                 let Some(i) = self.closing.take() else {
                     return Outcome::Ignored;
                 };
-                let label = self.editor.items[i].label.clone();
+                let label = self.editor.items()[i].label.clone();
                 self.last = match result {
                     DialogResult::Action(1) => {
                         self.editor.remove(i);
@@ -545,6 +584,8 @@ impl Page for TabsPage {
                 {
                     h.push((k, "New tab"));
                 }
+                h.push(("d", "Dirty"));
+                h.push(("[ ]", "Move"));
                 h
             }
             Some(f) if f == self.outer.id || f == self.sub.id => {
@@ -555,7 +596,7 @@ impl Page for TabsPage {
     }
 
     fn animating(&self) -> bool {
-        self.template.section() == Section::Playground && self.editor.items.iter().any(|t| t.busy)
+        self.template.section() == Section::Playground && self.editor.items().iter().any(|t| t.busy)
     }
 
     fn layer_open(&self) -> bool {

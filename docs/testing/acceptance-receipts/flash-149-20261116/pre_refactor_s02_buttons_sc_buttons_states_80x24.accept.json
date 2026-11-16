@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s02_buttons/sc_buttons_states_80x24",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/target/functional/s02-sections-50839-1794770436925211000-0/check-artifacts/pre_refactor/s02_buttons/sc_buttons_states_80x24/5b7927d9fc488338d598b5c71ead164977b65e0fe9d26c026f9fbd82b98a15c7/sample.tui.pb"
+  },
+  "candidate_sha256": "5b7927d9fc488338d598b5c71ead164977b65e0fe9d26c026f9fbd82b98a15c7",
+  "baseline_sha256": "5b7927d9fc488338d598b5c71ead164977b65e0fe9d26c026f9fbd82b98a15c7",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/tests/functional/baselines/pre_refactor/s02_buttons/sc_buttons_states_80x24.tui.pb"
+  },
+  "error_code": null
+}

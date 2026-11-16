@@ -3,7 +3,7 @@ use ratatui::layout::Rect;
 use ratatui::style::Style;
 
 use crate::theme::Theme;
-use crate::ui::text::center_x;
+use crate::ui::text::{paint_clipped, truncate, width};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TooSmall<'a> {
@@ -60,12 +60,17 @@ impl<'a> TooSmall<'a> {
             (need.as_str(), canvas(t.muted())),
             (self.quit_hint, canvas(t.faint())),
         ];
-        let y0 = area.y + area.height.saturating_sub(5) / 2;
+        let owner = area.intersection(*buf.area());
+        let y0 = usize::from(owner.height.saturating_sub(5)) / 2;
         for (i, (text, style)) in lines.into_iter().enumerate() {
-            let y = y0 + i as u16 + u16::from(i == 3);
-            if y < area.bottom() {
-                buf.set_string(center_x(area, text), y, text, style);
-            }
+            let row = y0 + i + usize::from(i == 3);
+            let Some(row) = u16::try_from(row).ok().filter(|&r| r < owner.height) else {
+                continue;
+            };
+            let text = truncate(text, usize::from(owner.width));
+            let x = usize::from(owner.width).saturating_sub(width(&text)) / 2;
+            let line = Rect::new(owner.x, owner.y + row, owner.width, 1);
+            paint_clipped(buf, line, x, &text, style);
         }
     }
 }

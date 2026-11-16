@@ -628,7 +628,7 @@ impl Page for LaunchCockpitPage {
                     if let Some(r) = btn.route(ev)
                         && r.outcome() != Outcome::Ignored
                     {
-                        if r.into_action().is_some() {
+                        if r.has_actions() {
                             cx.focus.focus(b);
                             self.act(b, cx);
                         }

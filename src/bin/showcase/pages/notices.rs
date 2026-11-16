@@ -288,7 +288,7 @@ impl Page for NoticesPage {
                 if let Some(r) = self.test.route(ev)
                     && r.outcome() != Outcome::Ignored
                 {
-                    if r.into_action().is_some() {
+                    if r.has_actions() {
                         self.test_connection(cx);
                     }
                     return Outcome::Changed;

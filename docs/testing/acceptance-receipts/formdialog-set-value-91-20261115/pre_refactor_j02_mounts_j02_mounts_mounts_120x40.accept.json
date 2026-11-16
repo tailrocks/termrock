@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/j02_mounts/j02_mounts_mounts_120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "target/functional/j02-mounts-mounts-41711-1794753290755030000-0/check-artifacts/pre_refactor/j02_mounts/j02_mounts_mounts_120x40/bfbb33649684fcbd1c71f2a6b5279b2ad87ec89b8314e8263e4cc88c2efacc76/sample.tui.pb"
+  },
+  "candidate_sha256": "bfbb33649684fcbd1c71f2a6b5279b2ad87ec89b8314e8263e4cc88c2efacc76",
+  "baseline_sha256": "bfbb33649684fcbd1c71f2a6b5279b2ad87ec89b8314e8263e4cc88c2efacc76",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/cifix-262/tests/functional/baselines/pre_refactor/j02_mounts/j02_mounts_mounts_120x40.tui.pb"
+  },
+  "error_code": null
+}

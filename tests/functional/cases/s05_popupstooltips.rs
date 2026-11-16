@@ -1012,6 +1012,9 @@ fn option_reveal_key_r_uses_r_and_ignores_right() {
         &["r Full text", "README.md", "popup.rs"],
         &["→ Full text", "← Collapse"],
     );
+    // The ignored key repaints nothing. Let the flash expire first so its
+    // order against the tick cannot change the settled frame.
+    app.stable_screen();
     app.key("right");
     let stayed = app.settle();
     see(&stayed, &["r Full text", "README.md"], &["← Collapse"]);

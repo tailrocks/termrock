@@ -64,7 +64,10 @@ impl HasHints for Completion {
         }
 
         let mut v = nav_hints(&self.list.nav, false, false);
-        v.extend([hint("Enter", "Accept"), hint("Esc", "Close")]);
+        if self.has_eligible() {
+            v.push(hint("Enter", "Accept"));
+        }
+        v.push(hint("Esc", "Close"));
         v
     }
 }

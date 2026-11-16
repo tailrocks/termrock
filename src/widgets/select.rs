@@ -39,7 +39,7 @@ struct Press {
     moved: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Select {
     pub id: WidgetId,
     pub label: String,
@@ -69,6 +69,34 @@ pub struct Select {
 
     label_area: Rect,
     press: Option<Press>,
+}
+
+impl Clone for Select {
+    fn clone(&self) -> Self {
+        #[cfg(test)]
+        crate::core::work::add(crate::core::work::Counter::OptionClones, self.options.len());
+        Self {
+            id: self.id,
+            label: self.label.clone(),
+            options: self.options.clone(),
+            selected: self.selected,
+            open: self.open,
+            disabled: self.disabled,
+            control: self.control.clone(),
+            help: self.help.clone(),
+            area: self.area,
+            list: self.list.clone(),
+            reveal: self.reveal,
+            arrows: self.arrows,
+            tab_in_open: self.tab_in_open,
+            mixed: self.mixed.clone(),
+            type_ahead_precedence: self.type_ahead_precedence,
+            press_drag: self.press_drag,
+            label_hit: self.label_hit,
+            label_area: self.label_area,
+            press: self.press,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -198,11 +226,59 @@ impl Select {
         self.control(Control::fixed(reason))
     }
 
-    fn would_edit(&self, key: &Key) -> bool {
-        let mut probe = self.clone();
-        probe.control = Control::Live;
-        let (out, action) = probe.on_key(key);
-        out != Outcome::Ignored || action.is_some()
+    fn typeahead_precedence(&self) -> crate::core::list::TypeAheadPrecedence {
+        if self.open {
+            crate::core::list::TypeAheadPrecedence::TypeAhead
+        } else {
+            self.type_ahead_precedence
+                .unwrap_or_else(crate::core::list::TypeAheadPrecedence::current)
+        }
+    }
+
+    /// Predicts `outcome != Ignored || action.is_some()` for the live path
+    /// without copying options, searching labels or changing state.
+    fn would_handle_live_key(&self, key: &Key) -> bool {
+        let step = KeyStep::ordered(
+            key,
+            &self.list.nav,
+            self.list.type_ahead,
+            self.typeahead_precedence(),
+        );
+        if let Some(KeyStep::Type(_)) = step {
+            return !self.options.is_empty();
+        }
+        if self.open {
+            if let Some(KeyStep::Nav(_)) = step {
+                return true;
+            }
+            return match key.code {
+                KeyCode::Tab | KeyCode::BackTab => match self.tab_in_open {
+                    TabInOpen::Choose => {
+                        self.list.cursor.index != self.selected || self.mixed.is_some()
+                    }
+                    TabInOpen::Close => false,
+                    TabInOpen::Swallow => true,
+                },
+                KeyCode::Char('?') | KeyCode::F(_) => false,
+                _ => true,
+            };
+        }
+        if matches!(key.code, KeyCode::Enter | KeyCode::Char(' ')) {
+            return true;
+        }
+        let nav = self
+            .list
+            .nav
+            .action(key)
+            .filter(|_| !matches!(key.code, KeyCode::Char(_)));
+        match nav {
+            Some(Nav::Up | Nav::Down) if key.plain() && self.arrows == SelectArrows::Open => true,
+            Some(Nav::Left | Nav::Right) if self.arrows == SelectArrows::Open => false,
+            Some(Nav::Up | Nav::Left | Nav::Down | Nav::Right) if key.plain() => {
+                !self.options.is_empty()
+            }
+            _ => false,
+        }
     }
 
     pub fn mixed(mut self, placeholder: &str) -> Self {
@@ -267,20 +343,19 @@ impl Select {
             return (Outcome::Ignored, None);
         }
         if self.control.is_fixed() {
-            if self.would_edit(key) {
+            if self.would_handle_live_key(key) {
                 self.control.refuse();
                 return (Outcome::Consumed, None);
             }
             return (Outcome::Ignored, None);
         }
 
-        let precedence = if self.open {
-            crate::core::list::TypeAheadPrecedence::TypeAhead
-        } else {
-            self.type_ahead_precedence
-                .unwrap_or_else(crate::core::list::TypeAheadPrecedence::current)
-        };
-        let step = KeyStep::ordered(key, &self.list.nav, self.list.type_ahead, precedence);
+        let step = KeyStep::ordered(
+            key,
+            &self.list.nav,
+            self.list.type_ahead,
+            self.typeahead_precedence(),
+        );
         if let Some(KeyStep::Type(c)) = step {
             if !self.open {
                 self.list.cursor.index = self.selected;
@@ -641,30 +716,28 @@ impl Select {
         self.list.layout(inner, &self.options[..], ctx);
 
         self.list.chosen = self.mixed.is_none().then_some(self.selected);
-        let list = self.list.clone();
-        let options = self.options.clone();
+        let options = &self.options;
+        let snapshot = self.list.snapshot(inner, &options[..], |i| {
+            crate::record_work!(PayloadBytesCloned, options[i].len());
+            options[i].clone()
+        });
         let (id, dismiss, reveal) = (self.id, self.list.dismiss, self.reveal);
-        let scroll = list.scroll.offset;
-        let visible = list.scroll.viewport_len;
-        let more_above = scroll > 0;
-        let more_below = scroll + visible < options.len();
         ctx.overlay(move |buf, ctx| {
             let t = ctx.theme;
             let inner = surface_for(pa, buf, ctx, t, Some((id, dismiss)));
 
             ctx.scrollable(id, inner);
-            list.paint_rows(
+            snapshot.paint_rows(
                 inner,
                 t.surface_elevated,
-                &options[..],
                 buf,
                 ctx,
-                |i, row, buf, ctx| {
-                    let opt = &options[i];
-                    let area = row.area;
-                    let st = row.style();
-                    if row.state.selected {
-                        let ink = st.fg(row.ink(ctx, t.text_secondary));
+                |row, paint, buf, ctx| {
+                    let opt = &row.payload;
+                    let area = paint.area;
+                    let st = paint.style();
+                    if paint.state.selected {
+                        let ink = st.fg(paint.ink(ctx, t.text_secondary));
                         buf.set_string(area.x + 1, area.y, t.glyphs.current, ink);
                     }
                     buf.set_string(
@@ -674,13 +747,13 @@ impl Select {
                         st,
                     );
                     let cut = Rect::new(area.x + 3, area.y, area.width.saturating_sub(3), 1);
-                    crate::ui::reveal::truncated(ctx, reveal, list.row_id(i), cut, opt);
+                    crate::ui::reveal::truncated(ctx, reveal, snapshot.row_id(row.index), cut, opt);
                 },
             );
 
             let edge = t.text_secondary;
             let x = pa.right().saturating_sub(3);
-            if more_above {
+            if snapshot.more_above() {
                 buf.set_string(
                     x,
                     pa.y,
@@ -688,7 +761,7 @@ impl Select {
                     ratatui::style::Style::new().fg(edge).bg(t.surface_elevated),
                 );
             }
-            if more_below {
+            if snapshot.more_below() {
                 buf.set_string(
                     x,
                     pa.bottom().saturating_sub(1),
@@ -714,7 +787,7 @@ impl RowSource for Select {
         self.options.len()
     }
     fn label(&self, i: usize) -> &str {
-        &self.options[i]
+        <[String] as RowSource>::label(&self.options, i)
     }
 }
 

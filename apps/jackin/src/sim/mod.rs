@@ -431,7 +431,11 @@ impl Backend for SimBackend {
                         .ok_or_else(|| format!("{account} is not in the registry")),
                 })
             }
-            Effect::ValidateAccount { account, source } => {
+            Effect::ValidateAccount {
+                ticket,
+                account,
+                source,
+            } => {
                 let result = match world.accounts.get(account) {
                     None => Err(format!("{account} is not in the registry")),
                     Some(a) => Ok(match source {
@@ -448,6 +452,7 @@ impl Backend for SimBackend {
                     }),
                 };
                 Some(Msg::AccountValidated {
+                    ticket: *ticket,
                     account: account.clone(),
                     source: Box::new(source.clone()),
                     result,

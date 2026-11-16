@@ -391,10 +391,14 @@ impl SettingsScreen {
     }
 
     fn render_general(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, w: &World) {
+        if area.is_empty() {
+            return;
+        }
         let t = ctx.theme;
         let bg = t.canvas;
         let x = area.x + 2;
         let mut y = area.y;
+        let field = |y: u16| Rect::new(x, y, 40, 1).intersection(area);
         buf.set_string(
             x,
             y,
@@ -402,7 +406,10 @@ impl SettingsScreen {
             t.secondary().bg(bg).add_modifier(Modifier::BOLD),
         );
         y += 1;
-        self.coauthor.render(Rect::new(x, y, 40, 1), buf, ctx, bg);
+        if y >= area.bottom() {
+            return;
+        }
+        self.coauthor.render(field(y), buf, ctx, bg);
         if self.pending.coauthor_trailer != self.original.coauthor_trailer {
             buf.set_string(
                 x + 41,
@@ -412,7 +419,10 @@ impl SettingsScreen {
             );
         }
         y += 1;
-        self.dco.render(Rect::new(x, y, 40, 1), buf, ctx, bg);
+        if y >= area.bottom() {
+            return;
+        }
+        self.dco.render(field(y), buf, ctx, bg);
         if self.pending.dco_signoff != self.original.dco_signoff {
             buf.set_string(
                 x + 41,
@@ -422,6 +432,9 @@ impl SettingsScreen {
             );
         }
         y += 2;
+        if y >= area.bottom() {
+            return;
+        }
         let note = match &w.surfaces.fixed {
             Some(f) => f.commits.text.as_str(),
             None => "Two independent flags; both apply to every Workspace.",
@@ -433,6 +446,9 @@ impl SettingsScreen {
             t.faint().bg(bg),
         );
         y += 2;
+        if y >= area.bottom() {
+            return;
+        }
         buf.set_string(
             x,
             y,
@@ -440,6 +456,9 @@ impl SettingsScreen {
             t.secondary().bg(bg).add_modifier(Modifier::BOLD),
         );
         y += 1;
+        if y >= area.bottom() {
+            return;
+        }
         buf.set_string(
             x,
             y,
@@ -1048,9 +1067,11 @@ impl Page<Jackin> for SettingsScreen {
             return o;
         }
         if let Some(r) = self.tabs.route(ev) {
-            let (o, act) = r.into_parts();
-            if let Some(TabAction::Activated(i)) = act {
-                self.tab = StTab::ALL[i.min(4)];
+            let (o, actions) = r.into_parts();
+            for action in actions {
+                if let TabAction::Activated(i) = action {
+                    self.tab = StTab::ALL[i.min(4)];
+                }
             }
             if !click {
                 return o;
@@ -1194,7 +1215,7 @@ impl Page<Jackin> for SettingsScreen {
                 area.x,
                 area.bottom().saturating_sub(lines),
                 area.width.saturating_sub(4),
-                1,
+                lines,
             ),
             &widths,
             3,

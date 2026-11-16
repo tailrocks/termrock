@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use syn::visit::Visit;
 use syn::{Expr, ImplItem, Item, Pat, Type, Visibility};
 
+#[allow(dead_code)]
 #[path = "../src/bin/showcase/coverage.rs"]
 mod coverage;
 
@@ -283,7 +284,12 @@ impl PageUsage {
     fn record_type(&mut self, name: &str) {
         if matches!(
             name,
-            "Picker" | "PickerAction" | "PickerCmd" | "PickerKeyProfile" | "PickerStatus"
+            "Picker"
+                | "PickerAction"
+                | "PickerCmd"
+                | "PickerKeyProfile"
+                | "PickerStatus"
+                | "VisibleKey"
         ) && self.exported.contains(&format!("widgets::picker::{name}"))
         {
             self.api.insert(format!("widgets::picker::{name}"));
@@ -459,10 +465,37 @@ impl<'ast> Visit<'ast> for PageUsage {
             self.api.insert("widgets::picker::Picker::new".to_owned());
             self.record_type("Picker");
         }
+        if let Expr::Path(path) = node.func.as_ref()
+            && path
+                .path
+                .segments
+                .iter()
+                .map(|part| part.ident.to_string())
+                .collect::<Vec<_>>()
+                == ["VisibleKey", "new"]
+        {
+            self.api
+                .insert("widgets::picker::VisibleKey::new".to_owned());
+            self.record_type("VisibleKey");
+        }
         syn::visit::visit_expr_call(self, node);
     }
 
     fn visit_expr_method_call(&mut self, node: &'ast syn::ExprMethodCall) {
+        if node.method == "matched"
+            && let Expr::Call(call) = node.receiver.as_ref()
+            && let Expr::Path(path) = call.func.as_ref()
+            && path
+                .path
+                .segments
+                .iter()
+                .map(|part| part.ident.to_string())
+                .collect::<Vec<_>>()
+                == ["VisibleKey", "new"]
+        {
+            self.api
+                .insert("widgets::picker::VisibleKey::matched".to_owned());
+        }
         let id = format!("widgets::picker::Picker::{}", node.method);
         let is_picker = self.is_picker_expr(&node.receiver);
         if is_picker && self.exported.contains(&id) {
@@ -665,19 +698,19 @@ fn typed_picker_closures_respect_shadowing_and_restore_outer_bindings() {
     let has_items = |source: &str| {
         PageUsage::from_source(source, &exported, &catalog)
             .api
-            .contains("widgets::picker::Picker::items")
+            .contains("widgets::picker::Picker::visible_items")
     };
     assert!(has_items(
-        "fn show() { value.map(|p: &Picker| p.items()); }"
+        "fn show() { value.map(|p: &Picker| p.visible_items()); }"
     ));
     assert!(!has_items(
-        "fn show(p: Picker) { value.map(|p: &Other| p.items()); }"
+        "fn show(p: Picker) { value.map(|p: &Other| p.visible_items()); }"
     ));
     assert!(!has_items(
-        "fn show() { value.map(|p: &Other| p.items()); } fn other(p: &Other) { p.items(); }"
+        "fn show() { value.map(|p: &Other| p.visible_items()); } fn other(p: &Other) { p.visible_items(); }"
     ));
     assert!(has_items(
-        "fn show(p: Picker) { value.map(|p: &Other| p.items()); p.items(); }"
+        "fn show(p: Picker) { value.map(|p: &Other| p.visible_items()); p.visible_items(); }"
     ));
 }
 
@@ -742,4 +775,16 @@ fn picker_scope_respects_let_else_pattern_shadow() {
     assert!(!page_uses_picker_list(
         "fn show(p: Picker) { let Some(p) = value else { return; }; p.list(); }"
     ));
+}
+
+#[test]
+fn terminal_session_coverage_declares_catalog_capabilities() {
+    let mut seen = BTreeSet::new();
+    for id in coverage::TERMINAL_SESSION_COVERAGE {
+        assert!(
+            junie_tui::catalog::find(id).is_some(),
+            "declared id is not a catalog capability: {id}"
+        );
+        assert!(seen.insert(*id), "duplicate coverage entry: {id}");
+    }
 }

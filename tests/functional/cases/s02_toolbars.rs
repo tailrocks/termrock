@@ -1077,3 +1077,92 @@ fn option_overflow_off() {
     );
     app.finish();
 }
+
+/// Opt-in page wiring (`toolbars.mutate_open`): `m` removes or restores "Run all"
+/// on the narrow bar while its » menu is open.
+#[test]
+fn stale_overflow_menu_closes_when_the_bar_changes() {
+    let app = page(
+        "s02-toolbars-stale-menu",
+        Some("toolbars.mutate_open=on"),
+        120,
+        40,
+    );
+    app.wait_screen("toolbars playground", toolbars_ready);
+    click_first(&app, "»", "Run all");
+    let open = app.wait_text("Close");
+    see(
+        &open,
+        &["Esc Close", "m Edit bar", "Format", "Line numbers"],
+        &[ACTIVATED_RUN, "Run all removed"],
+    );
+    let old_row = find_all(&open, "Line numbers")
+        .into_iter()
+        .find(|hit| hit.x > 55 && hit.y > 17)
+        .unwrap_or_else(|| panic!("no Line numbers menu row\n{}", text(&open)));
+
+    app.key("m");
+    let closed = app.wait_screen("menu closed by the bar change", |screen| {
+        let visible = text(screen);
+        visible.contains("Run all removed while » was open") && !visible.contains("Esc Close")
+    });
+    see(
+        &closed,
+        &[
+            NONE,
+            "Run F5   Stop  │  Format",
+            "behind »: Explain · Wrap · Line numbers",
+            "Enter / ↓ Show hidden",
+        ],
+        &["╭", "Esc Close"],
+    );
+
+    app.click(old_row);
+    let after_click = app.settle();
+    see(
+        &after_click,
+        &[NONE, "behind »: Explain · Wrap · Line numbers"],
+        &["╭"],
+    );
+
+    app.key("enter");
+    let reopened = app.wait_text("Esc Close");
+    see(&reopened, &["╭", "Explain", "Wrap", NONE], &[]);
+    app.key("enter");
+    let ran = app.wait_text("Activated(3) · Explain");
+    see(&ran, &["Activated(3) · Explain"], &["╭", NONE, "Esc Close"]);
+    app.finish();
+}
+
+#[test]
+fn option_stress_items_and_long_label() {
+    let items = page(
+        "s02-toolbars-stress-items",
+        Some("toolbars.stress=20k items"),
+        120,
+        40,
+    );
+    let play = items.wait_text("Action 00001");
+    assert!(
+        text(&play).contains("behind »: Action 00002 · Action 00003")
+            && text(&play).contains("and 19991 more"),
+        "overflow readout does not count the stress items\n{}",
+        text(&play)
+    );
+    see(
+        &play,
+        &[QUERY, FORMAT_ROW, IDLE],
+        &[NARROW_ROW, ACTIVATED_RUN],
+    );
+    items.finish();
+
+    let label = page(
+        "s02-toolbars-stress-label",
+        Some("toolbars.stress=65k label"),
+        120,
+        40,
+    );
+    let play = label.wait_text("long label");
+    see(&play, &[QUERY, FORMAT_ROW, IDLE], &[ACTIVATED_RUN]);
+    label.finish();
+}

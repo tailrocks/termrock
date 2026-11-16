@@ -11,7 +11,7 @@ pub mod snapshot;
 use junie_tui::core::event::Outcome;
 use junie_tui::core::scroll::ScrollState;
 use junie_tui::theme::Tone;
-use junie_tui::ui::layer::{LayerEntry, ShellLayers};
+use junie_tui::ui::layer::{LayerEntry, LayerTag, ShellLayers};
 use junie_tui::ui::layers::LayerResult;
 use junie_tui::widgets::menu::MenuAction;
 use junie_tui::widgets::picker::PickerAction;
@@ -21,6 +21,35 @@ use ratatui::layout::{Position, Rect};
 
 use crate::domain::context::Scope;
 use crate::sim::world::{Msg, World};
+
+/// A detail or preview pane that describes one item. Every move of the
+/// selection goes through `track_detail`, the single rule for the pane's
+/// scroll: it rewinds only when the described item changes, so re-selecting
+/// the current item (or a reorder that keeps it) keeps the reader's place.
+pub trait DetailRewind: Sized {
+    type Item: PartialEq;
+
+    /// The item the pane currently describes.
+    fn described_item(&self) -> Self::Item;
+
+    fn detail_scroll_mut(&mut self) -> &mut ScrollState;
+
+    fn track_detail<R>(&mut self, mv: impl FnOnce(&mut Self) -> R) -> R {
+        let before = self.described_item();
+        let out = mv(self);
+        self.rewind_if_changed(&before);
+        out
+    }
+
+    /// Rewinds the pane when it no longer describes `before`. A rebuild that
+    /// replaces the rows moves the cursor without a user move, so it calls
+    /// this directly with the item captured before the rebuild.
+    fn rewind_if_changed(&mut self, before: &Self::Item) {
+        if self.described_item() != *before {
+            self.detail_scroll_mut().jump_start();
+        }
+    }
+}
 
 pub type Layers = ShellLayers<ModalResult, (), usize>;
 
@@ -188,7 +217,7 @@ impl junie_tui::shell::PageTypes for Holla {
     type Go = Go;
 }
 
-pub use junie_tui::shell::{open_context, rebuild_on_tick, row_anchor, row_choice};
+pub use junie_tui::shell::{open_context, row_anchor, row_choice};
 
 impl ModalResult {
     pub fn menu_chosen(&self) -> Option<usize> {
@@ -199,7 +228,72 @@ impl ModalResult {
     }
 }
 
+/// The one row menu a page has open. The page keeps the captured target and actions
+/// here. The layer tag carries only a token, so a result for an earlier menu cannot
+/// consume a newer request, and no row position or key string is ever replayed.
+pub struct PendingMenu<C> {
+    last: u64,
+    pending: Option<(u64, C)>,
+}
+
+/// What a layer result meant for the pending menu.
+pub enum MenuTake<C> {
+    /// Another kind or token: the result is not for the pending request, which stays.
+    Stale,
+    /// The pending request was dismissed and retired without an action.
+    Dismissed,
+    /// The user chose item `index` of the pending request.
+    Chosen(C, usize),
+}
+
+impl<C> Default for PendingMenu<C> {
+    fn default() -> Self {
+        Self {
+            last: 0,
+            pending: None,
+        }
+    }
+}
+
+impl<C> PendingMenu<C> {
+    /// Replaces any earlier pending request and returns the tag key for the new menu.
+    pub fn capture(&mut self, context: C) -> String {
+        self.last = self
+            .last
+            .checked_add(1)
+            .expect("row menu token space exhausted");
+        self.pending = Some((self.last, context));
+        self.last.to_string()
+    }
+
+    /// Takes the request this result answers. A result whose kind or token does not
+    /// match the pending request is stale, and it leaves that request in place.
+    pub fn take(&mut self, tag: &LayerTag, kind: &str, result: &ModalResult) -> MenuTake<C> {
+        let token = (tag.kind == kind)
+            .then(|| tag.key.parse::<u64>().ok())
+            .flatten();
+        match (self.pending.as_ref(), token) {
+            (Some((pending, _)), Some(token)) if *pending == token => {}
+            _ => return MenuTake::Stale,
+        }
+        let Some((_, context)) = self.pending.take() else {
+            return MenuTake::Stale;
+        };
+        match result.menu_chosen() {
+            Some(index) => MenuTake::Chosen(context, index),
+            None => MenuTake::Dismissed,
+        }
+    }
+}
+
 pub trait Screen: junie_tui::shell::Page<Holla> {
+    /// Whether this page needs its tick while another tab is shown. A page
+    /// whose tick only refreshes a projection of the world returns false: the
+    /// domain keeps running, and the page catches up once when it is entered.
+    fn background_tick(&self) -> bool {
+        true
+    }
+
     fn on_context_key(&mut self, _w: &mut World, _cx: &mut Cx) -> Outcome {
         Outcome::Ignored
     }
@@ -252,5 +346,71 @@ pub(crate) fn scroll_drag(area: Rect, pos: Position, scroll: &mut ScrollState) -
         Outcome::Changed
     } else {
         Outcome::Consumed
+    }
+}
+
+/// Drives a page the way the shell does: render to register hit regions, then route a
+/// secondary click through the page's own `pointer` handler.
+#[cfg(test)]
+pub(crate) mod pointer_tests {
+    use super::{Cx, Holla, LayerTag, World};
+    use junie_tui::core::focus::{Focus, FocusRing};
+    use junie_tui::core::hit::HitRegistry;
+    use junie_tui::core::id::WidgetId;
+    use junie_tui::core::intent::Phase;
+    use junie_tui::core::pointer::PointerEvent;
+    use junie_tui::shell::{Page as ShellPage, Request};
+    use junie_tui::theme::{ColorLevel, Theme};
+    use junie_tui::ui::ctx::{Interaction, RenderCtx};
+    use ratatui::buffer::Buffer;
+    use ratatui::crossterm::event::KeyModifiers;
+    use ratatui::layout::{Position, Rect};
+
+    /// A screen tall enough that every row of the test fixtures is visible.
+    pub(crate) const AREA: Rect = Rect::new(0, 0, 120, 300);
+
+    pub(crate) fn render_hits(page: &mut impl ShellPage<Holla>, w: &World) -> HitRegistry {
+        let theme = Theme::for_level(ColorLevel::TrueColor);
+        let mut hits = HitRegistry::default();
+        let mut ring = FocusRing::default();
+        let mut buffer = Buffer::empty(AREA);
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        page.render(AREA, &mut buffer, &mut ctx, w);
+        ctx.flush_overlays(&mut buffer);
+        drop(ctx);
+        hits
+    }
+
+    /// A cell inside the region a rendered widget or row registered under `id`.
+    pub(crate) fn cell_of(hits: &HitRegistry, id: WidgetId) -> Position {
+        let area = hits
+            .regions()
+            .iter()
+            .find(|r| r.id == id)
+            .expect("the row was rendered")
+            .area;
+        Position::new(area.x, area.y)
+    }
+
+    /// Delivers a secondary click at `pos` and returns the tag of the menu it opened.
+    pub(crate) fn secondary_open(
+        page: &mut impl ShellPage<Holla>,
+        w: &mut World,
+        hits: &HitRegistry,
+        pos: Position,
+    ) -> LayerTag {
+        let id = hits.hit(pos).expect("a rendered row is under the pointer");
+        let event = PointerEvent::new(hits, Phase::Secondary, id, pos, 1, KeyModifiers::NONE);
+        let mut focus = Focus::default();
+        let ring = FocusRing::default();
+        let mut cx = Cx::new(&mut focus, &ring);
+        page.pointer(&event, w, &mut cx);
+        cx.requests
+            .iter()
+            .find_map(|r| match r {
+                Request::Open(_, tag) => Some(tag.clone()),
+                _ => None,
+            })
+            .expect("the secondary click opened the row menu")
     }
 }

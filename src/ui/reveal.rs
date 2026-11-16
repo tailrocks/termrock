@@ -726,6 +726,20 @@ pub(crate) fn scroll_cuts_since(from: usize, content: Rect, window: Rect, to: Po
     });
 }
 
+pub(crate) fn clip_cuts_since(from: usize, viewport: Rect) {
+    CUTS.with(|q| {
+        let mut q = q.borrow_mut();
+        let from = from.min(q.len());
+        let tail: Vec<(Rect, String)> = q.drain(from..).collect();
+        for (area, full) in tail {
+            let area = area.intersection(viewport);
+            if !area.is_empty() {
+                q.push((area, full));
+            }
+        }
+    });
+}
+
 pub(crate) fn clear_cuts() {
     CUTS.with(|q| q.borrow_mut().clear());
 }

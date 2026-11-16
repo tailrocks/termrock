@@ -9,11 +9,11 @@
 //! so its Triggers tab is the empty state and must not keep the previous
 //! object's trigger name.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, Point, TABLEPRO, find_all, row_text, text, try_launch};
+use crate::support::{
+    App, Launch, Point, TABLEPRO, find_all, flash_settle, row_text, text, try_launch,
+};
 
 const WIDE_ID: &str = "pre_refactor/t02_structure/t02_structure_tabs_120x40";
 const NARROW_ID: &str = "pre_refactor/t02_structure/t02_structure_tabs_narrow";
@@ -112,30 +112,6 @@ fn narrow_connected(screen: &TerminalSnapshot) -> bool {
         && screen.rows() == 24
         && text(screen).contains(NO_TRIGGERS)
         && footer_connected(screen)
-}
-
-/// The 140ms press flash stays painted until a later frame. A same-size resize
-/// does not force that frame, so the nudge goes one column out and back.
-fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{nudged}×{rows}"));
-        app.resize(cols, rows);
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow nudge", |screen| {
-            screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-        });
-        app.resize(cols, rows);
-        app.wait_screen("narrow restored", |screen| {
-            screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-        });
-    }
 }
 
 fn open_table(app: &App, name: &str) {
@@ -378,16 +354,16 @@ fn structure_tabs_follow_the_open_object_including_an_empty_trigger_list() {
         "6",
         &[
             "DDL",
-            "CREATE TABLE public.customers (",
-            "organization_id uuid NOT NULL",
-            "CONSTRAINT customers_organization_id_fkey FOREIGN KEY (organization_id) …",
-            "CREATE INDEX customers_org_idx ON public.customers USING btree (organization…",
+            "CREATE TABLE \"public\".\"customers\" (",
+            "\"organization_id\" uuid NOT NULL",
+            "CONSTRAINT \"customers_organization_id_fkey\" FOREIGN KEY",
+            "CREATE INDEX \"customers_org_idx\" ON \"public\".\"customers\"",
         ],
         &[
             ORG_TRIGGER,
             CUSTOMER_TRIGGER,
             NO_TRIGGERS,
-            "CREATE TABLE public.products",
+            "CREATE TABLE \"public\".\"products\"",
             CATALOG,
         ],
     );
@@ -409,7 +385,7 @@ fn structure_tabs_follow_the_open_object_including_an_empty_trigger_list() {
             "organization_id",
             "full_name",
             CUSTOMER_TRIGGER,
-            "CREATE TABLE public.customers",
+            "CREATE TABLE \"public\".\"customers\"",
         ],
     );
     section(
@@ -465,12 +441,12 @@ fn structure_tabs_follow_the_open_object_including_an_empty_trigger_list() {
         "6",
         &[
             "DDL",
-            "CREATE TABLE public.products (",
-            "sku text NOT NULL",
-            "unit_price numeric(12,2) NOT NULL",
+            "CREATE TABLE \"public\".\"products\" (",
+            "\"sku\" text NOT NULL",
+            "\"unit_price\" numeric(12,2) NOT NULL",
         ],
         &[
-            "CREATE TABLE public.customers",
+            "CREATE TABLE \"public\".\"customers\"",
             ORG_TRIGGER,
             CUSTOMER_TRIGGER,
             NO_TRIGGERS,

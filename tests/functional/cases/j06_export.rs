@@ -228,8 +228,15 @@ fn plain_export_dialog(screen: &TerminalSnapshot) -> bool {
 
 fn path_dialog(screen: &TerminalSnapshot, cols: u32, rows: u32) -> bool {
     let visible = text(screen);
+    // A resize keeps the previous layout on screen until the app repaints. A
+    // stale wide paint clips the Export button at 80 columns, so require the
+    // button row to show whole.
+    let button_row = visible
+        .lines()
+        .any(|line| line.contains("Cancel") && line.contains("Export"));
     screen.cols() == cols
         && screen.rows() == rows
+        && button_row
         && visible.contains(PATH)
         && visible.contains(TITLE)
         && visible.contains(HELP)

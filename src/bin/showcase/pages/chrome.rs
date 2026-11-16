@@ -4,6 +4,7 @@ use ratatui::layout::Rect;
 use crate::app::PageId;
 use crate::options::page_options;
 use crate::pages::row_menu::RowMenu;
+use crate::pages::stress::{self, Mode};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
 use junie_tui::core::event::Outcome;
@@ -59,6 +60,7 @@ pub struct ChromePage {
     zoomed: bool,
     hint_area: Rect,
 
+    status: StatusBar,
     opts: Vec<usize>,
 }
 
@@ -86,9 +88,11 @@ impl ChromePage {
             action: None,
             zoomed: false,
             hint_area: Rect::ZERO,
+            status: StatusBar::new(),
             opts,
         };
         page.bar = page.build_bar();
+        page.status = page.build_status_bar();
         page
     }
 
@@ -234,7 +238,9 @@ impl ChromePage {
         (left, right)
     }
 
-    fn status_bar(&self) -> StatusBar {
+    fn build_status_bar(&self) -> StatusBar {
+        #[cfg(test)]
+        STATUS_BUILDS.with(|n| n.set(n.get() + 1));
         let mut b = StatusBar::new();
         b.left.push(
             StatusItem::new("payments-platform", Tone::Normal)
@@ -276,6 +282,20 @@ impl ChromePage {
         );
         b.right
             .push(StatusItem::new("run 9c41", Tone::Faint).priority(2));
+        match stress::mode(self.opt("chrome.stress")) {
+            Mode::Off => {}
+            Mode::Items => {
+                for (n, label) in stress::numbered("job").enumerate() {
+                    let priority = (n % 8) as u8 + 1;
+                    b.right
+                        .push(StatusItem::new(label, Tone::Muted).priority(priority));
+                }
+            }
+            Mode::Label => b.left.insert(
+                0,
+                StatusItem::new(stress::long_label(), Tone::Muted).priority(9),
+            ),
+        }
         b
     }
 
@@ -408,7 +428,8 @@ impl ChromePage {
     }
 
     fn placed_text(&self, w: u16) -> String {
-        let placed = self.status_bar().layout(Rect::new(0, 0, w, 1));
+        let bar = &self.status;
+        let placed = bar.layout(Rect::new(0, 0, w, 1));
         let groups: Vec<String> = [Group::Left, Group::Center, Group::Right]
             .into_iter()
             .map(|g| {
@@ -416,7 +437,8 @@ impl ChromePage {
                 format!("{g:?} {n}")
             })
             .collect();
-        format!("places {} of 8 · {}", placed.len(), groups.join(", "))
+        let total = bar.left.len() + bar.center.len() + bar.right.len();
+        format!("places {} of {total} · {}", placed.len(), groups.join(", "))
     }
 
     fn natural_width(&self, ctx: &RenderCtx) -> u16 {
@@ -432,7 +454,7 @@ impl ChromePage {
             .width;
         let (left, right) = self.strip(0, t);
 
-        let status = self.status_bar().min_width(any, ctx);
+        let status = self.status.min_width(any, ctx);
         let captions = [
             STRIP_CAPTION.to_owned(),
             format!(
@@ -546,7 +568,7 @@ impl ChromePage {
         segments::render(row, buf, ctx, &left, &right, t.surface);
         y += 3;
 
-        let status = self.status_bar();
+        let status = &self.status;
         for (caption, w) in [
             (
                 format!(
@@ -705,8 +727,10 @@ impl Page for ChromePage {
 
             PageEvent::Pointer(ev) => {
                 if let Some(r) = self.bar.route(ev) {
-                    let (o, a) = r.into_parts();
-                    self.bar_action(a, cx);
+                    let (o, actions) = r.into_parts();
+                    for a in actions {
+                        self.bar_action(Some(a), cx);
+                    }
                     if o.consumed() || !ev.is(Phase::Click) {
                         return o;
                     }
@@ -783,6 +807,7 @@ impl Page for ChromePage {
         self.opts[i] = value.min(table[i].values.len() - 1);
         self.bar.close();
         self.bar = self.build_bar();
+        self.status = self.build_status_bar();
     }
 
     fn template(&self) -> Option<&Template> {
@@ -791,5 +816,49 @@ impl Page for ChromePage {
 
     fn template_mut(&mut self) -> Option<&mut Template> {
         Some(&mut self.template)
+    }
+}
+
+#[cfg(test)]
+thread_local! {
+    static STATUS_BUILDS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pages::stress::testing::{index, measuring};
+
+    fn items(page: &ChromePage) -> usize {
+        page.status.left.len() + page.status.center.len() + page.status.right.len()
+    }
+
+    fn builds() -> usize {
+        STATUS_BUILDS.with(|n| n.get())
+    }
+
+    #[test]
+    fn measuring_reads_the_cached_status_bar() {
+        let mut page = ChromePage::new();
+        page.set_option("chrome.stress", index("20k items"));
+        STATUS_BUILDS.with(|n| n.set(0));
+        for _ in 0..3 {
+            measuring(|ctx| page.measure(ratatui::layout::Size::new(0, 1), ctx));
+        }
+        assert_eq!(builds(), 0, "measure rebuilt the status bar");
+        page.set_option("chrome.stress", index("off"));
+        assert_eq!(builds(), 1, "an option change rebuilds it once");
+    }
+
+    #[test]
+    fn the_status_bar_is_rebuilt_when_the_stress_option_changes() {
+        let mut page = ChromePage::new();
+        let plain = items(&page);
+        page.set_option("chrome.stress", index("20k items"));
+        assert_eq!(items(&page), plain + stress::COUNT);
+        page.set_option("chrome.stress", index("65k label"));
+        assert_eq!(items(&page), plain + 1);
+        page.set_option("chrome.stress", index("off"));
+        assert_eq!(items(&page), plain);
     }
 }

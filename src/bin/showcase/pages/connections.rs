@@ -699,9 +699,12 @@ impl ConnectionsPage {
             if click && self.tree.row_at(ev).is_some() {
                 cx.focus.focus(self.tree.id);
             }
-            let (o, a) = r.into_parts();
+            let (o, actions) = r.into_parts();
             self.sync_selected();
-            if let Some(TreeAction::Activate(_)) = a {
+            if actions
+                .into_iter()
+                .any(|a| matches!(a, TreeAction::Activate(_)))
+            {
                 self.start_connect(cx);
                 return Outcome::Changed;
             }
@@ -710,7 +713,7 @@ impl ConnectionsPage {
         let mut hit = None;
         for b in self.buttons() {
             if let Some(r) = b.route(ev) {
-                hit = Some((b.id, r.outcome(), r.into_action().is_some()));
+                hit = Some((b.id, r.outcome(), r.has_actions()));
                 break;
             }
         }
@@ -749,9 +752,12 @@ impl ConnectionsPage {
             return o;
         }
         if f == self.tree.id {
-            let (o, a) = self.tree.on_key(key);
+            let (o, actions) = self.tree.on_key(key).into_parts();
             self.sync_selected();
-            if let Some(TreeAction::Activate(_)) = a {
+            if actions
+                .into_iter()
+                .any(|a| matches!(a, TreeAction::Activate(_)))
+            {
                 self.start_connect(cx);
                 return Outcome::Changed;
             }

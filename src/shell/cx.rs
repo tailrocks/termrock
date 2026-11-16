@@ -13,6 +13,8 @@ pub enum Request<R, W: ?Sized = (), G = ()> {
 
     StatusAs(String, StatusKind),
 
+    Notice(String, Tone),
+
     Sticky(String),
 
     Progress(String, super::JobKey),
@@ -38,7 +40,11 @@ impl<R, W: ?Sized, G> Request<R, W, G> {
     pub fn allowed_in_background(&self) -> bool {
         matches!(
             self,
-            Self::Status(..) | Self::StatusAs(..) | Self::Sticky(..) | Self::Progress(..)
+            Self::Status(..)
+                | Self::StatusAs(..)
+                | Self::Notice(..)
+                | Self::Sticky(..)
+                | Self::Progress(..)
         )
     }
 }
@@ -90,6 +96,10 @@ impl<'a, R, W: ?Sized, G> Cx<'a, R, W, G> {
 
     pub fn status_in(&mut self, s: impl Into<String>, tone: Tone) {
         self.requests.push(Request::Status(s.into(), tone));
+    }
+
+    pub fn notice(&mut self, s: impl Into<String>, tone: Tone) {
+        self.requests.push(Request::Notice(s.into(), tone));
     }
 
     pub fn status_as(&mut self, kind: StatusKind, s: impl Into<String>) {
