@@ -410,6 +410,7 @@ fn route_by_page_keyboard_and_pointer() {
         "Inputs & forms › Forms",
         "Inputs & forms › Checks & radios",
         "Inputs & forms › Toolbars",
+        "Inputs & forms › Fixed controls",
         "Tables › Basic table",
         "Tables › Editable",
         "Tables › Data grid",
