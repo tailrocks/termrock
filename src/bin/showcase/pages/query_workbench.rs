@@ -1310,30 +1310,28 @@ impl QueryWorkbenchPage {
             return Outcome::Ignored;
         };
         let (editor, results) = (editor_id(key), results_id(key));
-        if !ev.is(Phase::Move) {
-            let routed = if ev.wheel().is_some() {
-                self.workspace
-                    .view_mut(key)
-                    .ok()
-                    .and_then(|mut view| view.editor_wheel(ev))
-            } else if self
-                .workspace
+        let routed = if ev.wheel().is_some() {
+            self.workspace
                 .view_mut(key)
-                .is_ok_and(|view| view.editor_claims(ev))
-            {
-                self.workspace
-                    .update(key, |doc| doc.editor.route(ev).map(|r| r.outcome()))
-                    .ok()
-                    .and_then(|(outcome, _)| outcome)
-            } else {
-                None
-            };
-            if let Some(outcome) = routed {
-                if click && ev.bar.is_none() {
-                    cx.focus.focus(editor);
-                }
-                return outcome;
+                .ok()
+                .and_then(|mut view| view.editor_wheel(ev))
+        } else if self
+            .workspace
+            .view_mut(key)
+            .is_ok_and(|view| view.editor_claims(ev))
+        {
+            self.workspace
+                .update(key, |doc| doc.editor.route(ev).map(|r| r.outcome()))
+                .ok()
+                .and_then(|(outcome, _)| outcome)
+        } else {
+            None
+        };
+        if let Some(outcome) = routed {
+            if click && ev.bar.is_none() {
+                cx.focus.focus(editor);
             }
+            return outcome;
         }
         let Ok(mut view) = self.workspace.view_mut(key) else {
             return Outcome::Ignored;
