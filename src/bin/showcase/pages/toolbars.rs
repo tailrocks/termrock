@@ -53,6 +53,22 @@ fn query_items(running: bool) -> Vec<ToolItem> {
     ]
 }
 
+/// Flips Run, Run all and Stop in place. Only the items that change are
+/// edited, so every other item, the cursor and the toggles keep their state.
+fn set_running(bar: &mut Toolbar, running: bool) {
+    for i in 0..bar.items().len() {
+        let (off, why) = match bar.items()[i].label.as_str() {
+            "Run" | MUTATED => (running, "A query is running"),
+            "Stop" => (!running, "No query is running"),
+            _ => continue,
+        };
+        bar.update_item(i, |item| {
+            item.disabled = off;
+            item.reason = off.then(|| why.to_owned());
+        });
+    }
+}
+
 fn busy_if(item: ToolItem, off: bool, why: &str) -> ToolItem {
     if off { item.reason(why) } else { item }
 }
@@ -197,16 +213,8 @@ impl ToolbarsPage {
                 _ => {}
             }
 
-            let query = query_items(self.running);
-            let narrow = narrow_items(self.stress_mode(), self.running);
-            for (bar, mut items) in [(&mut self.query, query), (&mut self.narrow, narrow)] {
-                for (n, o) in items.iter_mut().zip(bar.items()) {
-                    if n.on.is_some() {
-                        n.on = o.on;
-                    }
-                }
-                bar.set_items(items);
-            }
+            set_running(&mut self.query, self.running);
+            set_running(&mut self.narrow, self.running);
         }
         cx.status(self.last.clone());
     }

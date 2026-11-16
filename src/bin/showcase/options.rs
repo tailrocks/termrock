@@ -683,6 +683,11 @@ pub static CHIPS: &[Opt] = &[
     ),
     Opt::new("chipsselects.mixed", "Sort shows mixed", OFF_ON),
     Opt::new(
+        "chipsselects.add_label",
+        "Filter add action",
+        &["default", "short", "none"],
+    ),
+    Opt::new(
         "chipsselects.mutate_open",
         "m edits a chip in a menu",
         OFF_ON,
