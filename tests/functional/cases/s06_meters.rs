@@ -171,13 +171,13 @@ fn side_has(screen: &TerminalSnapshot, label: &str) -> bool {
 }
 
 fn reveal_side(app: &App, label: &str) {
-    if side_has(&app.screen(), label) {
+    if side_has(&app.settle(), label) {
         return;
     }
     let point = Point { x: 6, y: 14 };
     for down in [false, true] {
         for _ in 0..16 {
-            if side_has(&app.screen(), label) {
+            if side_has(&app.settle(), label) {
                 return;
             }
             app.wheel(point, down, 2);

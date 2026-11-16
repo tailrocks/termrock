@@ -592,12 +592,9 @@ fn sections_narrow_then_wide() {
         shot(&app, case_id, precondition, &args);
     }
 
-    for _ in 0..4 {
-        if narrow_block(&text(&app.screen())).is_some() {
-            break;
-        }
-        app.wheel(body, true, 1);
-    }
+    app.wheel_until(body, true, 1, 4, "the narrow specimen", |screen| {
+        narrow_block(&text(screen)).is_some()
+    });
     app.move_to(Point { x: 2, y: 39 });
     let settled = app.settle();
     let block = narrow_block(&text(&settled))

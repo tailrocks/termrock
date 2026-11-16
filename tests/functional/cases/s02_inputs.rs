@@ -485,14 +485,14 @@ fn sections_narrow_then_wide() {
 }
 
 fn wheel_until(app: &App, down: bool, needles: &[&str]) {
-    for _ in 0..40 {
-        let screen = app.screen();
-        if needles.iter().all(|needle| text(&screen).contains(needle)) {
-            return;
-        }
-        app.wheel(Point { x: 60, y: 18 }, down, 4);
-    }
-    let screen = app.screen();
+    let screen = app.wheel_until(
+        Point { x: 60, y: 18 },
+        down,
+        4,
+        40,
+        &needles.join(" + "),
+        |screen| needles.iter().all(|needle| text(screen).contains(needle)),
+    );
     expect(&screen, needles, &[]);
 }
 

@@ -1,0 +1,77 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/land-347/debug/showcase",
+  "binary_sha256": "0e5afdad91dd8894e8e9d77142855cdc321b546012a9a251d1804e94f1d72e85",
+  "fixture_args": [
+    "--page",
+    "statushints",
+    "--opt",
+    "statushints.brand=accent"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "c3a17365eab298933cf4abaf975a88f448a7f30a5203416b77d6e23a171eef46",
+  "expect_baseline": "85d5b6db5f9765f67991da3f1ed6ed1952eaa56386050113e063e0125707462a",
+  "precondition": "Status & hints page, wheel steps of 3 notches fenced by settle before each read",
+  "session": null,
+  "expected_test_id": "pre_refactor/s01_statushints/opt_statushints_brand",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/statushints-wheel-347-20261116/pre_refactor_s01_statushints_opt_statushints_brand.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/statushints-wheel-347-20261116/pre_refactor_s01_statushints_opt_statushints_brand.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/statushints-wheel-347-20261116/superseded/pre_refactor/s01_statushints/opt_statushints_brand.tui.pb",
+  "test_id": "pre_refactor/s01_statushints/opt_statushints_brand",
+  "acceptance": {
+    "expected_baseline_sha256": "85d5b6db5f9765f67991da3f1ed6ed1952eaa56386050113e063e0125707462a",
+    "accepted_baseline_sha256": "c3a17365eab298933cf4abaf975a88f448a7f30a5203416b77d6e23a171eef46",
+    "candidate_sha256": "c3a17365eab298933cf4abaf975a88f448a7f30a5203416b77d6e23a171eef46",
+    "transaction_receipt": "docs/testing/acceptance-receipts/statushints-wheel-347-20261116/pre_refactor_s01_statushints_opt_statushints_brand.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "85d5b6db5f9765f67991da3f1ed6ed1952eaa56386050113e063e0125707462a"
+  },
+  "candidate": {
+    "sha256": "c3a17365eab298933cf4abaf975a88f448a7f30a5203416b77d6e23a171eef46",
+    "path": "tests/functional/baselines/pre_refactor/s01_statushints/opt_statushints_brand.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/statushints-wheel-347-20261116/superseded/pre_refactor/s01_statushints/opt_statushints_brand.tui.pb",
+    "superseded_baseline_sha256": "85d5b6db5f9765f67991da3f1ed6ed1952eaa56386050113e063e0125707462a"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s01_statushints/opt_statushints_brand.tui.pb",
+    "candidate_sha256": "c3a17365eab298933cf4abaf975a88f448a7f30a5203416b77d6e23a171eef46",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/land-347/debug/showcase",
+    "binary_sha256": "0e5afdad91dd8894e8e9d77142855cdc321b546012a9a251d1804e94f1d72e85",
+    "note": "s01_statushints wheel_to now settles after every wheel step (App::wheel_until), so the capture is taken at the first 3-notch step that shows the needle instead of wherever queued notches left the page (#347)"
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s01_statushints/opt_statushints_brand",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/land-347/target/functional/statushints-brand-69278-1794844057569775000-11/check-artifacts/pre_refactor/s01_statushints/opt_statushints_brand/c3a17365eab298933cf4abaf975a88f448a7f30a5203416b77d6e23a171eef46/sample.tui.pb"
+    },
+    "candidate_sha256": "c3a17365eab298933cf4abaf975a88f448a7f30a5203416b77d6e23a171eef46",
+    "baseline_sha256": "c3a17365eab298933cf4abaf975a88f448a7f30a5203416b77d6e23a171eef46",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/land-347/tests/functional/baselines/pre_refactor/s01_statushints/opt_statushints_brand.tui.pb"
+    },
+    "error_code": null
+  }
+}

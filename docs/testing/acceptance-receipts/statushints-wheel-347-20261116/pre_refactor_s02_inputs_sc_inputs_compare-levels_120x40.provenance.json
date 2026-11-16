@@ -1,0 +1,75 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/land-347/debug/showcase",
+  "binary_sha256": "0e5afdad91dd8894e8e9d77142855cdc321b546012a9a251d1804e94f1d72e85",
+  "fixture_args": [
+    "--page",
+    "inputs"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "4753794f736b4157cb28dba91279b766049a2b08f9d43e5edd6f7644b5838eab",
+  "expect_baseline": "9c6d4797db21c6d27f0961ffb6581856a99a955bd7f729714d249d7464163b3b",
+  "precondition": "wheel steps fenced by settle before each read",
+  "session": null,
+  "expected_test_id": "pre_refactor/s02_inputs/sc_inputs_compare-levels_120x40",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/statushints-wheel-347-20261116/pre_refactor_s02_inputs_sc_inputs_compare-levels_120x40.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/statushints-wheel-347-20261116/pre_refactor_s02_inputs_sc_inputs_compare-levels_120x40.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/statushints-wheel-347-20261116/superseded/pre_refactor/s02_inputs/sc_inputs_compare-levels_120x40.tui.pb",
+  "test_id": "pre_refactor/s02_inputs/sc_inputs_compare-levels_120x40",
+  "acceptance": {
+    "expected_baseline_sha256": "9c6d4797db21c6d27f0961ffb6581856a99a955bd7f729714d249d7464163b3b",
+    "accepted_baseline_sha256": "4753794f736b4157cb28dba91279b766049a2b08f9d43e5edd6f7644b5838eab",
+    "candidate_sha256": "4753794f736b4157cb28dba91279b766049a2b08f9d43e5edd6f7644b5838eab",
+    "transaction_receipt": "docs/testing/acceptance-receipts/statushints-wheel-347-20261116/pre_refactor_s02_inputs_sc_inputs_compare-levels_120x40.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "9c6d4797db21c6d27f0961ffb6581856a99a955bd7f729714d249d7464163b3b"
+  },
+  "candidate": {
+    "sha256": "4753794f736b4157cb28dba91279b766049a2b08f9d43e5edd6f7644b5838eab",
+    "path": "tests/functional/baselines/pre_refactor/s02_inputs/sc_inputs_compare-levels_120x40.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/statushints-wheel-347-20261116/superseded/pre_refactor/s02_inputs/sc_inputs_compare-levels_120x40.tui.pb",
+    "superseded_baseline_sha256": "9c6d4797db21c6d27f0961ffb6581856a99a955bd7f729714d249d7464163b3b"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s02_inputs/sc_inputs_compare-levels_120x40.tui.pb",
+    "candidate_sha256": "4753794f736b4157cb28dba91279b766049a2b08f9d43e5edd6f7644b5838eab",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/land-347/debug/showcase",
+    "binary_sha256": "0e5afdad91dd8894e8e9d77142855cdc321b546012a9a251d1804e94f1d72e85",
+    "note": "wheel loops in s02_buttons, s02_inputs now read only settled screens between wheel steps (App::wheel_until), so the scroll offset at capture no longer depends on queued notches (#347)"
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s02_inputs/sc_inputs_compare-levels_120x40",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/land-347/target/functional/s02-inputs-compare-32596-1794844433735810000-0/check-artifacts/pre_refactor/s02_inputs/sc_inputs_compare-levels_120x40/4753794f736b4157cb28dba91279b766049a2b08f9d43e5edd6f7644b5838eab/sample.tui.pb"
+    },
+    "candidate_sha256": "4753794f736b4157cb28dba91279b766049a2b08f9d43e5edd6f7644b5838eab",
+    "baseline_sha256": "4753794f736b4157cb28dba91279b766049a2b08f9d43e5edd6f7644b5838eab",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/land-347/tests/functional/baselines/pre_refactor/s02_inputs/sc_inputs_compare-levels_120x40.tui.pb"
+    },
+    "error_code": null
+  }
+}

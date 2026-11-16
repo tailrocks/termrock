@@ -181,13 +181,9 @@ fn reveal_folded_specimens(app: &crate::support::App) {
 
 fn reveal_revert(app: &crate::support::App) {
     let point = Point { x: 60, y: 22 };
-    for _ in 0..6 {
-        if text(&app.screen()).contains("Revert") {
-            return;
-        }
-        app.wheel(point, true, 2);
-    }
-    app.wait_text("Revert");
+    app.wheel_until(point, true, 2, 6, "Revert", |screen| {
+        text(screen).contains("Revert")
+    });
 }
 
 fn assert_defaults_except(screen: &TerminalSnapshot, changed: &str) {
