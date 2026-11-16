@@ -56,6 +56,11 @@ fn expect_visual(
     roles: &[(&str, &str)],
 ) {
     let outcome = app.check_visual(&baseline_root(), test_id);
+    // The cells are the accepted paint. A hidden cursor parks on another
+    // cell of an otherwise equal frame, as `App::visual` also allows.
+    if !capturing() && App::cursor_only(&outcome) {
+        return;
+    }
     if !capturing() {
         assert!(
             outcome.is_pass(),

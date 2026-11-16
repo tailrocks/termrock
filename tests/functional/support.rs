@@ -476,7 +476,19 @@ impl App {
         })
     }
 
+    /// Waits for 150 ms without output, after the app has handled and drawn
+    /// every input sent so far.
+    ///
+    /// Quiet alone is not proof the app acted: a loaded app can still be
+    /// reading a wheel step or a key when 150 ms pass, and the frame read then
+    /// is the one from before it. The fence queues behind every earlier input,
+    /// so the quiet that follows is the quiet after the input's frame. An app
+    /// that exited, or does not answer the fence (a reference build), gets
+    /// the quiet wait alone.
     pub fn settle(&self) -> TerminalSnapshot {
+        if self.fence && self.child_running() {
+            self.fence_while_running();
+        }
         self.session
             .wait_quiet(&WaitQuietOptions::new(TIMEOUT, Duration::from_millis(150)).unwrap())
             .expect("terminal must settle after the semantic assertion");
@@ -632,9 +644,18 @@ impl App {
     /// a candidate Showcase, TablePro, Holla or Jackin answers it (see
     /// [`fenced`]). A reference build or another program gets no wait.
     pub fn fence(&self) {
-        if !self.fence {
-            return;
+        if self.fence {
+            self.fence_until(false);
         }
+    }
+
+    /// [`App::fence`] for a read that is also fine with an app that quits on
+    /// the input before it: the wait ends when the child is gone.
+    fn fence_while_running(&self) {
+        self.fence_until(true);
+    }
+
+    fn fence_until(&self, exit_ends_wait: bool) {
         let before = self.bells();
         self.log("fence".to_string());
         self.session
@@ -642,6 +663,9 @@ impl App {
             .expect("fence through bracketed paste");
         let deadline = Instant::now() + TIMEOUT;
         while self.bells() == before {
+            if exit_ends_wait && !self.child_running() {
+                return;
+            }
             self.assert_running("fence");
             assert!(
                 Instant::now() < deadline,
