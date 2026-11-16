@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s05_dialogs/opt_dialogs_outer_margin",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s05_dialogs__opt_dialogs_outer_margin.tui.pb"
+  },
+  "candidate_sha256": "28b5ce967f0cd7bbdcf34801498a172cb7be39ca20ea8f8588a0d3ad23854ee4",
+  "baseline_sha256": "28b5ce967f0cd7bbdcf34801498a172cb7be39ca20ea8f8588a0d3ad23854ee4",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s05_dialogs/opt_dialogs_outer_margin.tui.pb"
+  },
+  "error_code": null
+}

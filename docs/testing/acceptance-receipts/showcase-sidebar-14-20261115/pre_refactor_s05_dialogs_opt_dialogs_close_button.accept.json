@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s05_dialogs/opt_dialogs_close_button",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s05_dialogs__opt_dialogs_close_button.tui.pb"
+  },
+  "candidate_sha256": "0448b63bb2da46f76468f26394bd91b9834779aab8172f240d64be115a34c3af",
+  "baseline_sha256": "0448b63bb2da46f76468f26394bd91b9834779aab8172f240d64be115a34c3af",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s05_dialogs/opt_dialogs_close_button.tui.pb"
+  },
+  "error_code": null
+}

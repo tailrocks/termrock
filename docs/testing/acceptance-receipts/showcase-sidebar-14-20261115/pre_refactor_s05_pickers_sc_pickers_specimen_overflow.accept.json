@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s05_pickers/sc_pickers_specimen_overflow",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s05_pickers__sc_pickers_specimen_overflow.tui.pb"
+  },
+  "candidate_sha256": "f7d9d4f00e1eac430b836f0c41dddea4b8f508bb30459a587d1cff44fbe46915",
+  "baseline_sha256": "f7d9d4f00e1eac430b836f0c41dddea4b8f508bb30459a587d1cff44fbe46915",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s05_pickers/sc_pickers_specimen_overflow.tui.pb"
+  },
+  "error_code": null
+}

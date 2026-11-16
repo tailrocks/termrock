@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s04_tabs/opt_tabs_close_reveal",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s04_tabs__opt_tabs_close_reveal.tui.pb"
+  },
+  "candidate_sha256": "b1d9c7c6876a061b2f761637c2813b142085cffce35d0bbaff0d0a6af51843af",
+  "baseline_sha256": "b1d9c7c6876a061b2f761637c2813b142085cffce35d0bbaff0d0a6af51843af",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s04_tabs/opt_tabs_close_reveal.tui.pb"
+  },
+  "error_code": null
+}

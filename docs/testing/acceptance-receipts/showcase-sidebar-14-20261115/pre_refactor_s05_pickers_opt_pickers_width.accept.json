@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s05_pickers/opt_pickers_width",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s05_pickers__opt_pickers_width.tui.pb"
+  },
+  "candidate_sha256": "c8c7af0da7755e2827022a7bae7fe6299f3f4b1a8d258c58fc3f62c7ddfe9e5d",
+  "baseline_sha256": "c8c7af0da7755e2827022a7bae7fe6299f3f4b1a8d258c58fc3f62c7ddfe9e5d",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s05_pickers/opt_pickers_width.tui.pb"
+  },
+  "error_code": null
+}
