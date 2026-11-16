@@ -1830,6 +1830,20 @@ fn text_viewport_content() {
     );
     assert!(v.scroll.h.offset > 0);
     v.scroll.h.offset = 0;
+    assert!(
+        v.scroll.h.visible_range().contains(&15),
+        "the start is in view"
+    );
+    assert!(
+        v.reveal_cols(15..25),
+        "a range whose end is off to the right is revealed"
+    );
+    assert!(
+        v.scroll.h.visible_range().contains(&24),
+        "the last column of the range is in view: {:?}",
+        v.scroll.h.visible_range()
+    );
+    v.scroll.h.offset = 0;
     v.reveal_mark(60, 4..9);
     assert!(v.scroll.v.visible_range().contains(&60));
     v.clear_marks();
@@ -2461,6 +2475,20 @@ fn terminal_key_encoding() {
     assert_eq!(eof, vec![0x04]);
     assert_eq!(policy.key(eof), None, "end-of-file is never forwarded");
     assert_eq!(policy.key(b"a".to_vec()), Some(b"a".to_vec()));
+    let quit = encode_key(&chord(KeyCode::Char('q'), KeyModifiers::CONTROL), &none)
+        .expect("Ctrl+Q encodes");
+    assert_eq!(quit, vec![0x11]);
+    assert_eq!(policy.key(quit), None, "Ctrl+Q is never forwarded either");
+    // The default policy refuses a paste past 64 KiB and takes one at the limit.
+    let limit = 64 * 1024;
+    assert_eq!(
+        policy.paste(&"a".repeat(limit), false),
+        Paste::Send(vec![b'a'; limit])
+    );
+    assert_eq!(
+        policy.paste(&"a".repeat(limit + 1), false),
+        Paste::TooLarge { bytes: limit + 1 }
+    );
     let small = ForwardPolicy::new(8);
     assert_eq!(small.paste_max_bytes, 8);
     assert_eq!(
