@@ -1,0 +1,75 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/land-14-fixtures/debug/showcase",
+  "binary_sha256": "935832e5b0804b8d19aed7fb59d099aaf3aaebc2ca88dbafc55be30c9325163a",
+  "fixture_args": [
+    "--page",
+    "scrolling"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "03d846d4fd37e8f65c799ce05c4763249e85dc342d4a6fb0a4c90c3b165b10cd",
+  "expect_baseline": "4d9dc9badb03857a65ca6c13729f6c3b79c78857105769d1b54e5b1b20498b45",
+  "precondition": "Re-accepted for #14: the Scrolling page gained the scrolling.sideways option, so its Options tab has one more control.",
+  "session": null,
+  "expected_test_id": "pre_refactor/s07_scrolling/sc_scrolling_options_120x40",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/showcase-fixtures-14-20261116/pre_refactor_s07_scrolling_sc_scrolling_options_120x40.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/showcase-fixtures-14-20261116/pre_refactor_s07_scrolling_sc_scrolling_options_120x40.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/showcase-fixtures-14-20261116/superseded/pre_refactor/s07_scrolling/sc_scrolling_options_120x40.tui.pb",
+  "test_id": "pre_refactor/s07_scrolling/sc_scrolling_options_120x40",
+  "acceptance": {
+    "expected_baseline_sha256": "4d9dc9badb03857a65ca6c13729f6c3b79c78857105769d1b54e5b1b20498b45",
+    "accepted_baseline_sha256": "03d846d4fd37e8f65c799ce05c4763249e85dc342d4a6fb0a4c90c3b165b10cd",
+    "candidate_sha256": "03d846d4fd37e8f65c799ce05c4763249e85dc342d4a6fb0a4c90c3b165b10cd",
+    "transaction_receipt": "docs/testing/acceptance-receipts/showcase-fixtures-14-20261116/pre_refactor_s07_scrolling_sc_scrolling_options_120x40.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "4d9dc9badb03857a65ca6c13729f6c3b79c78857105769d1b54e5b1b20498b45"
+  },
+  "candidate": {
+    "sha256": "03d846d4fd37e8f65c799ce05c4763249e85dc342d4a6fb0a4c90c3b165b10cd",
+    "path": "tests/functional/baselines/pre_refactor/s07_scrolling/sc_scrolling_options_120x40.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/showcase-fixtures-14-20261116/superseded/pre_refactor/s07_scrolling/sc_scrolling_options_120x40.tui.pb",
+    "superseded_baseline_sha256": "4d9dc9badb03857a65ca6c13729f6c3b79c78857105769d1b54e5b1b20498b45"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s07_scrolling/sc_scrolling_options_120x40.tui.pb",
+    "candidate_sha256": "03d846d4fd37e8f65c799ce05c4763249e85dc342d4a6fb0a4c90c3b165b10cd",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/land-14-fixtures/debug/showcase",
+    "binary_sha256": "935832e5b0804b8d19aed7fb59d099aaf3aaebc2ca88dbafc55be30c9325163a",
+    "note": "The Scrolling Options tab lists the new Horizontal-only view switch (#14); only that row is added."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s07_scrolling/sc_scrolling_options_120x40",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/land-14-fixtures/target/functional/s07-sections-17104-1794845039998427000-0/check-artifacts/pre_refactor/s07_scrolling/sc_scrolling_options_120x40/03d846d4fd37e8f65c799ce05c4763249e85dc342d4a6fb0a4c90c3b165b10cd/sample.tui.pb"
+    },
+    "candidate_sha256": "03d846d4fd37e8f65c799ce05c4763249e85dc342d4a6fb0a4c90c3b165b10cd",
+    "baseline_sha256": "03d846d4fd37e8f65c799ce05c4763249e85dc342d4a6fb0a4c90c3b165b10cd",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/land-14-fixtures/tests/functional/baselines/pre_refactor/s07_scrolling/sc_scrolling_options_120x40.tui.pb"
+    },
+    "error_code": null
+  }
+}

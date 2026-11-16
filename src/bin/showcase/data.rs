@@ -374,3 +374,36 @@ pub const GRAPHEME_SAMPLES: [(&str, &str); 6] = [
     ("flag", "🇯🇵"),
     ("skin tone", "👍🏽"),
 ];
+
+#[cfg(test)]
+mod grapheme_sample_tests {
+    use super::GRAPHEME_SAMPLES;
+    use junie_tui::ui::text::width;
+
+    fn measure(kind: &str) -> (usize, usize) {
+        let (_, sample) = GRAPHEME_SAMPLES
+            .iter()
+            .find(|(k, _)| *k == kind)
+            .unwrap_or_else(|| panic!("no {kind:?} sample"));
+        (sample.chars().count(), width(sample))
+    }
+
+    #[test]
+    fn samples_cover_combining_marks_wide_cjk_and_emoji_at_cluster_width() {
+        assert_eq!(measure("combining mark"), (5, 4), "e + U+0301 is one cell");
+        assert_eq!(
+            measure("wide + ASCII"),
+            (2, 3),
+            "the CJK glyph takes two cells"
+        );
+        assert_eq!(measure("right-to-left"), (4, 4), "four Hebrew letters");
+        assert_eq!(measure("ZWJ family"), (5, 2), "three emoji and two joiners");
+        assert_eq!(measure("flag"), (2, 2), "two regional indicators");
+        assert_eq!(measure("skin tone"), (2, 2), "an emoji and its modifier");
+        assert_eq!(
+            GRAPHEME_SAMPLES.len(),
+            6,
+            "a new sample needs its scalar count and width pinned here"
+        );
+    }
+}

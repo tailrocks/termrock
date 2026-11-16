@@ -1087,6 +1087,7 @@ fn option_international_values_paint_whole_clusters() {
         "the flag cluster is missing\n{}",
         text(&screen)
     );
+    shot(&app, "opt.meters.international");
 
     confirm_option(&app, |screen| {
         assert_toggle(screen, "International values", "on");

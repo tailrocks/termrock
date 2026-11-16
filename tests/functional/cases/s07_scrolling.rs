@@ -1676,3 +1676,82 @@ fn option_virtual_rows_10000_keys_and_wheel_move_a_bounded_window() {
     );
     app.finish();
 }
+
+/// The `col N` figure the Sideways panel paints on its top edge, once the
+/// Playground shows it.
+fn sideways_column(screen: &TerminalSnapshot) -> Option<u32> {
+    (0..screen.rows())
+        .map(|row| row_text(screen, row))
+        .find(|line| line.contains("Sideways") && line.contains("col "))?
+        .split_once("col ")?
+        .1
+        .split_whitespace()
+        .next()?
+        .parse()
+        .ok()
+}
+
+#[test]
+fn option_horizontal_only_view_home_resets_the_sideways_offset() {
+    let app = page("s07-sideways", "scrolling.sideways=on", 120, 40);
+    let start = app.wait_text("line 1 ");
+    see(
+        &start,
+        &["Sideways", "col 0"],
+        &["Divider or bar", "Nested bars"],
+    );
+    assert!(
+        !row_with(&start, "line 1 ").contains(" end"),
+        "the canvas is wider than the panel, so the end of the line is off screen"
+    );
+
+    click_tab(&app, "Options");
+    let options = app.wait_text("Horizontal-only view");
+    assert_toggle(&options, "Horizontal-only view", "on");
+    click_tab(&app, "Playground");
+    let back = app.wait_text("line 1 ");
+
+    app.click(find_all(&back, "line 1 ")[0]);
+    app.key("alt+pagedown");
+    let moved = app.wait_screen("Alt+PageDown scrolls the view sideways", |screen| {
+        sideways_column(screen).is_some_and(|column| column > 0)
+    });
+    let column = sideways_column(&moved).expect("the offset is painted");
+    assert!(
+        !text(&moved).contains("line 1 "),
+        "the start of each line scrolled out of view at column {column}\n{}",
+        text(&moved)
+    );
+    let mut further = moved;
+    for _ in 0..8 {
+        if text(&further).contains(" end") {
+            break;
+        }
+        let before = sideways_column(&further);
+        app.key("alt+pagedown");
+        further = app.wait_screen("another page scrolls further", |screen| {
+            sideways_column(screen) > before
+        });
+    }
+    assert!(
+        text(&further).contains(" end"),
+        "paging right reaches the end of the lines\n{}",
+        text(&further)
+    );
+    assert!(
+        sideways_column(&further) > Some(column),
+        "the offset kept growing while paging"
+    );
+    shot(&app, "opt.scrolling.sideways");
+
+    app.key("home");
+    let top = app.wait_screen("Home resets the sideways offset", |screen| {
+        sideways_column(screen) == Some(0)
+    });
+    see(&top, &["line 1 ", "col 0"], &[]);
+    assert!(
+        !row_with(&top, "line 1 ").contains(" end"),
+        "back at the start, the end is off screen again"
+    );
+    app.finish();
+}

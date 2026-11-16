@@ -1848,6 +1848,7 @@ fn option_completion_international_items_paint_whole_clusters() {
         "the popup should offer the six international items\n{}",
         text(&popup)
     );
+    shot(&app, "opt.codeeditor.completion_international");
 
     for (label, expected) in [
         (

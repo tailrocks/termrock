@@ -1676,6 +1676,7 @@ fn option_international_labels_paint_whole_clusters() {
             "the detail {detail:?} was overwritten or pushed off the {label:?} row: {line:?}"
         );
     }
+    shot(&app, "opt.pickers.international");
 
     app.type_text("a");
     let narrowed = app.wait_screen("a narrows the labels", |screen| {
