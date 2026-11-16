@@ -3,6 +3,7 @@ use ratatui::layout::{Rect, Size};
 
 use crate::app::PageId;
 use crate::options::page_options;
+use crate::pages::keyed_store::{CARD_H, CARD_W, Fault, KEYED, KeyedCard};
 use crate::pages::row_menu::{MENU_HINTS, OPEN_HINT, RowMenu, plain};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
@@ -158,6 +159,7 @@ pub struct ListsPage {
     single: ListBox,
     multi: ListBox,
     empty: ListBox,
+    card: KeyedCard,
 
     menu: RowMenu<(WidgetId, usize)>,
 
@@ -178,6 +180,7 @@ impl ListsPage {
             single: ListBox::new(SINGLE, languages(), SelectMode::Single),
             multi: ListBox::new(MULTI, files(), SelectMode::Multi),
             empty: ListBox::new(EMPTY, vec![], SelectMode::Single),
+            card: KeyedCard::new(),
             menu: RowMenu::default(),
             languages: languages(),
             files: files(),
@@ -329,6 +332,8 @@ impl ListsPage {
         }
         self.was_keyed = self.keyed();
         let empty = self.build(ListBox::new(EMPTY, vec![], SelectMode::Single));
+        self.card
+            .set_fault(Fault::from_value(self.opt("lists.fault")));
         self.empty = if self.opt("lists.empty") == "state" {
             empty.empty(
                 EmptyState::new("No results for “retry”")
@@ -337,6 +342,10 @@ impl ListsPage {
         } else {
             empty.empty_text("No results for “retry”")
         };
+    }
+
+    fn store_on(&self) -> bool {
+        self.opt("lists.store") == "on"
     }
 
     fn lists(&mut self) -> [&mut ListBox; 3] {
@@ -503,28 +512,33 @@ impl ListsPage {
             .unwrap_or(0)
             + text::width("Chosen: ") as u16;
         let h = |_: u16| LIST_H;
-        tiles(
-            width,
-            &[&[
-                Tile::new(
-                    card("Language", Self::rows_width(&self.single).max(chosen)),
-                    &h,
+        let keyed_h = |_: u16| CARD_H;
+        let mut row = vec![
+            Tile::new(
+                card("Language", Self::rows_width(&self.single).max(chosen)),
+                &h,
+            ),
+            Tile::new(
+                card(
+                    "Files to include",
+                    Self::rows_width(&self.multi).max(text::width(&self.multi_header()) as u16),
                 ),
-                Tile::new(
-                    card(
-                        "Files to include",
-                        Self::rows_width(&self.multi).max(text::width(&self.multi_header()) as u16),
-                    ),
-                    &h,
-                ),
-                Tile::new(card("Search results", EMPTY_W), &h),
-            ]],
-            (2, 1),
-        )
+                &h,
+            ),
+            Tile::new(card("Search results", EMPTY_W), &h),
+        ];
+        if self.store_on() {
+            row.push(Tile::new(card("Keyed store", CARD_W), &keyed_h));
+        }
+        tiles(width, &[&row], (2, 1))
     }
 
     fn readout_lines(&self, width: u16) -> Vec<String> {
-        self.readout()
+        let mut lines = self.readout();
+        if self.store_on() {
+            lines.extend(self.card.readout());
+        }
+        lines
             .iter()
             .flat_map(|l| text::wrap(l, width.max(1) as usize))
             .collect()
@@ -607,6 +621,10 @@ impl ListsPage {
         let bg = panel.bg(t);
         let inner = panel.render(cols[2], buf, t);
         self.empty.render(inner, buf, ctx, bg);
+
+        if self.store_on() {
+            self.card.render(tiled.at(3, area), buf, ctx);
+        }
 
         let lines = self.readout_lines(area.width);
         for (y, l) in (area.y + h + 1..area.bottom()).zip(lines) {
@@ -707,6 +725,9 @@ impl Page for ListsPage {
                     };
                     return self.note(response.expect("the demo rows are unique and keyed"));
                 }
+                if f == KEYED && self.store_on() {
+                    return self.card.on_key(key, cx);
+                }
                 let cfg = self.menu.config;
                 let Some(l) = self.list_mut(f) else {
                     return Outcome::Ignored;
@@ -755,6 +776,11 @@ impl Page for ListsPage {
                 self.note(response.expect("the demo rows are unique and keyed"))
             }
             PageEvent::Pointer(ev) => {
+                if self.store_on()
+                    && let Some(out) = self.card.on_pointer(ev, cx)
+                {
+                    return out;
+                }
                 for l in self.lists() {
                     if let Some(r) = l.route(ev) {
                         if ev.is(Phase::Click) && ev.index_of(Part::ROW).is_some() {
@@ -777,6 +803,9 @@ impl Page for ListsPage {
             return h;
         }
 
+        if focus == Some(KEYED) && self.store_on() {
+            return self.card.hints();
+        }
         let l = if focus == Some(self.multi.id) {
             &self.multi
         } else {

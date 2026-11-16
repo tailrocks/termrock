@@ -925,6 +925,14 @@ fn option_screen(name: &str, opt: &str) -> App {
     app
 }
 
+fn connections_screen(name: &str, opt: &str) -> App {
+    // The Options list is longer than a 40-row terminal shows, so the
+    // Connections source row needs the tall window the keyed tests use.
+    let app = page(name, Some(opt), 120, 72);
+    app.wait_text("Project");
+    app
+}
+
 fn confirm_control(app: &App, check: impl Fn(&TerminalSnapshot)) {
     click_tab(app, "Options");
     let screen = app.wait_text("Page options");
@@ -1551,4 +1559,67 @@ fn option_follow_selects_the_leaf_under_the_cursor() {
     see(&followed, &["cursor config.rs", "config.rs"], &[]);
     shot(&app, "opt.trees.follow");
     app.finish();
+}
+
+#[test]
+fn option_source_keyed_shows_the_connections_from_a_keyed_store() {
+    let app = connections_screen("s04-keyed-source", "trees.connections=keyed");
+    let screen = app.wait_text("7 nodes · keyed");
+    see(
+        &screen,
+        &[
+            "production",
+            "orders-db",
+            "billing-db",
+            "replica-eu",
+            "staging",
+            "archive",
+            "connections source: accepted: 7 nodes, every child reachable once",
+        ],
+        &["Source rejected", "lag 4.2 s lag"],
+    );
+    let billing = find_all(&screen, "billing-db")
+        .into_iter()
+        .find(|hit| hit.x > 24)
+        .expect("billing-db row");
+    app.click(billing);
+    app.settle();
+    app.key("enter");
+    let opened = app.wait_text("Opened billing-db");
+    see(
+        &opened,
+        &["last TreeAction: Activate(billing-db)"],
+        &["Source rejected"],
+    );
+    confirm_control(&app, |screen| {
+        assert_select(screen, "Connections source", "keyed", &["nodes", "cycle"]);
+    });
+    shot(&app, "opt.trees.connections_keyed");
+    app.finish();
+}
+
+#[test]
+fn option_source_rejects_a_dangling_child_and_a_cycle() {
+    for (value, message) in [
+        (
+            "missing node",
+            "rejected: MissingNode: a node lists a child the store does not hold",
+        ),
+        (
+            "cycle",
+            "rejected: Cycle: a node sits under its own descendant",
+        ),
+    ] {
+        let app = connections_screen("s04-keyed-fault", &format!("trees.connections={value}"));
+        let screen = app.wait_text("Source rejected");
+        see(
+            &screen,
+            &[message, "the tree keeps its state", "Project"],
+            &["billing-db", "replica-eu"],
+        );
+        if value == "cycle" {
+            shot(&app, "opt.trees.source_cycle");
+        }
+        app.finish();
+    }
 }

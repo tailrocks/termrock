@@ -1254,3 +1254,26 @@ fn option_reveal_inline() {
         );
     });
 }
+
+#[test]
+fn option_buffer_geometry_shows_ranges_widths_positions_and_revisions() {
+    let app = page("s08-buffer", Some("textutilities.buffer=geometry"), 120, 40);
+    let screen = app.wait_text("line_range");
+    see(
+        &screen,
+        &[
+            "TextBuffer · the model",
+            "position_at 21 → 1:5",
+            "line_range 16..26 FROM users",
+            "max_line_width 15 cells",
+            "revision edit moves it: true",
+        ],
+        &["cursor_pos", "selection_lines"],
+    );
+    confirm_options(&app, |screen| {
+        assert_one(screen, "Buffer facts", "geometry", &["model"]);
+    });
+    finish_option(&app, "opt.textutilities.buffer", |screen| {
+        see(screen, &["revision edit moves it: true"], &[]);
+    });
+}

@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s04_trees/opt_trees_connections_keyed",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "target/functional/s04-keyed-source-16082-1794839301180702000-0/check-artifacts/pre_refactor/s04_trees/opt_trees_connections_keyed/3f33b9c53192057210e668add93f6ee1fd4212fce44833aaca7fbac83e5ce89d/sample.tui.pb"
+  },
+  "candidate_sha256": "3f33b9c53192057210e668add93f6ee1fd4212fce44833aaca7fbac83e5ce89d",
+  "baseline_sha256": "3f33b9c53192057210e668add93f6ee1fd4212fce44833aaca7fbac83e5ce89d",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/land-301/tests/functional/baselines/pre_refactor/s04_trees/opt_trees_connections_keyed.tui.pb"
+  },
+  "error_code": null
+}
