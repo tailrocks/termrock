@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s02_checksradios/sc_checksradios_compare-levels_120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s02_checksradios__sc_checksradios_compare-levels_120x40.tui.pb"
+  },
+  "candidate_sha256": "cb4db5ad54d65217fa3e72e76a8f6a651c488fc4617626c86f7b4f33a45acf6a",
+  "baseline_sha256": "cb4db5ad54d65217fa3e72e76a8f6a651c488fc4617626c86f7b4f33a45acf6a",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s02_checksradios/sc_checksradios_compare-levels_120x40.tui.pb"
+  },
+  "error_code": null
+}

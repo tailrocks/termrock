@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "functional/showcase_fixedcontrols_focused_refused",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/functional__showcase_fixedcontrols_focused_refused.tui.pb"
+  },
+  "candidate_sha256": "88ea1a9784cc4d8d2b1e2f149e5da11c91f61c16eb142ebdd19016f76905b8d9",
+  "baseline_sha256": "88ea1a9784cc4d8d2b1e2f149e5da11c91f61c16eb142ebdd19016f76905b8d9",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/functional/showcase_fixedcontrols_focused_refused.tui.pb"
+  },
+  "error_code": null
+}

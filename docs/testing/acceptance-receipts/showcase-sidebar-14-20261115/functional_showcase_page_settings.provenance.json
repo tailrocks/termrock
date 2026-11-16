@@ -1,0 +1,77 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3-target/debug/showcase",
+  "binary_sha256": "c2ed189e03b11c22298c203b7561871ee950aa47282e70284cdba4686bf6f5d0",
+  "fixture_args": [
+    "--page",
+    "settings",
+    "--motion",
+    "paused"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "7e166b92800c1050f6d96a21aa73ec49632d71c894e058044efa90b6c31cd176",
+  "expect_baseline": "e28048744f704b30929031fae87d3084c7de03911bf910fc08232474bc0d7d86",
+  "precondition": "",
+  "session": null,
+  "expected_test_id": "functional/showcase_page_settings",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/functional_showcase_page_settings.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/functional_showcase_page_settings.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/superseded/functional/showcase_page_settings.tui.pb",
+  "test_id": "functional/showcase_page_settings",
+  "acceptance": {
+    "expected_baseline_sha256": "e28048744f704b30929031fae87d3084c7de03911bf910fc08232474bc0d7d86",
+    "accepted_baseline_sha256": "7e166b92800c1050f6d96a21aa73ec49632d71c894e058044efa90b6c31cd176",
+    "candidate_sha256": "7e166b92800c1050f6d96a21aa73ec49632d71c894e058044efa90b6c31cd176",
+    "transaction_receipt": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/functional_showcase_page_settings.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "e28048744f704b30929031fae87d3084c7de03911bf910fc08232474bc0d7d86"
+  },
+  "candidate": {
+    "sha256": "7e166b92800c1050f6d96a21aa73ec49632d71c894e058044efa90b6c31cd176",
+    "path": "tests/functional/baselines/functional/showcase_page_settings.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/superseded/functional/showcase_page_settings.tui.pb",
+    "superseded_baseline_sha256": "e28048744f704b30929031fae87d3084c7de03911bf910fc08232474bc0d7d86"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/functional/showcase_page_settings.tui.pb",
+    "candidate_sha256": "7e166b92800c1050f6d96a21aa73ec49632d71c894e058044efa90b6c31cd176",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3-target/debug/showcase",
+    "binary_sha256": "c2ed189e03b11c22298c203b7561871ee950aa47282e70284cdba4686bf6f5d0",
+    "note": "Candidate-mode refresh for #14: the five formerly hidden pages join the sidebar, so the Components count and the expanded groups change."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "functional/showcase_page_settings",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/tmp/final/functional__showcase_page_settings.tui.pb"
+    },
+    "candidate_sha256": "7e166b92800c1050f6d96a21aa73ec49632d71c894e058044efa90b6c31cd176",
+    "baseline_sha256": "7e166b92800c1050f6d96a21aa73ec49632d71c894e058044efa90b6c31cd176",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/functional/showcase_page_settings.tui.pb"
+    },
+    "error_code": null
+  }
+}

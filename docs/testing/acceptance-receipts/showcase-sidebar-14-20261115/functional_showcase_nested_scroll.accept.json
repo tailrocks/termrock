@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "functional/showcase_nested_scroll",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/functional__showcase_nested_scroll.tui.pb"
+  },
+  "candidate_sha256": "e23ff67ba4f7fb5e4f4f6596c73c613e8c954579939fbea42facc552f6ae9d44",
+  "baseline_sha256": "e23ff67ba4f7fb5e4f4f6596c73c613e8c954579939fbea42facc552f6ae9d44",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/functional/showcase_nested_scroll.tui.pb"
+  },
+  "error_code": null
+}

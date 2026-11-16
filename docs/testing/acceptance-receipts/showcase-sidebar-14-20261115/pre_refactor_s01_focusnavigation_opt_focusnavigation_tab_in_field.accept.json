@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s01_focusnavigation/opt_focusnavigation_tab_in_field",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/target/functional/s01-focusnavigation-tab-stays-93248-1794771406279284000-0/check-artifacts/pre_refactor/s01_focusnavigation/opt_focusnavigation_tab_in_field/b15f6934ff103cf6b0a1ec2f1f1d915007dc5b3c64988a8f6a6e5c38e33636ac/sample.tui.pb"
+  },
+  "candidate_sha256": "b15f6934ff103cf6b0a1ec2f1f1d915007dc5b3c64988a8f6a6e5c38e33636ac",
+  "baseline_sha256": "b15f6934ff103cf6b0a1ec2f1f1d915007dc5b3c64988a8f6a6e5c38e33636ac",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/tests/functional/baselines/pre_refactor/s01_focusnavigation/opt_focusnavigation_tab_in_field.tui.pb"
+  },
+  "error_code": null
+}

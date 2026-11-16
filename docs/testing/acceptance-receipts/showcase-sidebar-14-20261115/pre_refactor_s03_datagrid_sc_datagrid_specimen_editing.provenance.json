@@ -1,0 +1,75 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3-target/debug/showcase",
+  "binary_sha256": "c2ed189e03b11c22298c203b7561871ee950aa47282e70284cdba4686bf6f5d0",
+  "fixture_args": [
+    "--page",
+    "datagrid"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "042479c42bd81e0e3c3a1f5968b9dd8e33bf4c168200380ab0525ea00423948d",
+  "expect_baseline": "55fa1033795310fc5acb3158796b8942ceb3d7fa947f8ebd8279c90af82b152c",
+  "precondition": "",
+  "session": null,
+  "expected_test_id": "pre_refactor/s03_datagrid/sc_datagrid_specimen_editing",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/pre_refactor_s03_datagrid_sc_datagrid_specimen_editing.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/pre_refactor_s03_datagrid_sc_datagrid_specimen_editing.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/superseded/pre_refactor/s03_datagrid/sc_datagrid_specimen_editing.tui.pb",
+  "test_id": "pre_refactor/s03_datagrid/sc_datagrid_specimen_editing",
+  "acceptance": {
+    "expected_baseline_sha256": "55fa1033795310fc5acb3158796b8942ceb3d7fa947f8ebd8279c90af82b152c",
+    "accepted_baseline_sha256": "042479c42bd81e0e3c3a1f5968b9dd8e33bf4c168200380ab0525ea00423948d",
+    "candidate_sha256": "042479c42bd81e0e3c3a1f5968b9dd8e33bf4c168200380ab0525ea00423948d",
+    "transaction_receipt": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/pre_refactor_s03_datagrid_sc_datagrid_specimen_editing.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "55fa1033795310fc5acb3158796b8942ceb3d7fa947f8ebd8279c90af82b152c"
+  },
+  "candidate": {
+    "sha256": "042479c42bd81e0e3c3a1f5968b9dd8e33bf4c168200380ab0525ea00423948d",
+    "path": "tests/functional/baselines/pre_refactor/s03_datagrid/sc_datagrid_specimen_editing.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/superseded/pre_refactor/s03_datagrid/sc_datagrid_specimen_editing.tui.pb",
+    "superseded_baseline_sha256": "55fa1033795310fc5acb3158796b8942ceb3d7fa947f8ebd8279c90af82b152c"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s03_datagrid/sc_datagrid_specimen_editing.tui.pb",
+    "candidate_sha256": "042479c42bd81e0e3c3a1f5968b9dd8e33bf4c168200380ab0525ea00423948d",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3-target/debug/showcase",
+    "binary_sha256": "c2ed189e03b11c22298c203b7561871ee950aa47282e70284cdba4686bf6f5d0",
+    "note": "Candidate-mode refresh for #14: the five formerly hidden pages join the sidebar, so the Components count and the expanded groups change."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s03_datagrid/sc_datagrid_specimen_editing",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/tmp/final/pre_refactor__s03_datagrid__sc_datagrid_specimen_editing.tui.pb"
+    },
+    "candidate_sha256": "042479c42bd81e0e3c3a1f5968b9dd8e33bf4c168200380ab0525ea00423948d",
+    "baseline_sha256": "042479c42bd81e0e3c3a1f5968b9dd8e33bf4c168200380ab0525ea00423948d",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s03_datagrid/sc_datagrid_specimen_editing.tui.pb"
+    },
+    "error_code": null
+  }
+}

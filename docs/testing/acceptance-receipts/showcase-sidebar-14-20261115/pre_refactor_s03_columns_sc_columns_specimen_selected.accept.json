@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s03_columns/sc_columns_specimen_selected",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s03_columns__sc_columns_specimen_selected.tui.pb"
+  },
+  "candidate_sha256": "a15045240005bb50b1188be6f20115fcd20fd7537bd4aaa0a9a415e0c979dcc0",
+  "baseline_sha256": "a15045240005bb50b1188be6f20115fcd20fd7537bd4aaa0a9a415e0c979dcc0",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s03_columns/sc_columns_specimen_selected.tui.pb"
+  },
+  "error_code": null
+}

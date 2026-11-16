@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-double_click_slop-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__S01.shell__opt-shell-double_click_slop-boundary.tui.pb"
+  },
+  "candidate_sha256": "a2233b79bc5cef9418ff53fafbcf8971515e574b0e66b970e20841aed6a17eb6",
+  "baseline_sha256": "a2233b79bc5cef9418ff53fafbcf8971515e574b0e66b970e20841aed6a17eb6",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-double_click_slop-boundary.tui.pb"
+  },
+  "error_code": null
+}
