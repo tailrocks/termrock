@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s08_textutilities/opt_textutilities_duration",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s08_textutilities__opt_textutilities_duration.tui.pb"
+  },
+  "candidate_sha256": "e71744f5d9433e5926c240677d05be1c79c4d330d71a34033b61dadaca13754b",
+  "baseline_sha256": "e71744f5d9433e5926c240677d05be1c79c4d330d71a34033b61dadaca13754b",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s08_textutilities/opt_textutilities_duration.tui.pb"
+  },
+  "error_code": null
+}

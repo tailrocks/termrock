@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s07_panels/opt_panels_hscroll",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s07_panels__opt_panels_hscroll.tui.pb"
+  },
+  "candidate_sha256": "bb0590a494c93e9ce2d68fa1b535a94741d52a8b35db48234873ca1d92c52182",
+  "baseline_sha256": "bb0590a494c93e9ce2d68fa1b535a94741d52a8b35db48234873ca1d92c52182",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s07_panels/opt_panels_hscroll.tui.pb"
+  },
+  "error_code": null
+}

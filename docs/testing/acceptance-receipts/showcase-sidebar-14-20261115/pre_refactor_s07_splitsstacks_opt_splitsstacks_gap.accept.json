@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s07_splitsstacks/opt_splitsstacks_gap",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s07_splitsstacks__opt_splitsstacks_gap.tui.pb"
+  },
+  "candidate_sha256": "50b8ec191250e13955f9b420e436834e436177b3fe2ffdf31ef15c5db3afd434",
+  "baseline_sha256": "50b8ec191250e13955f9b420e436834e436177b3fe2ffdf31ef15c5db3afd434",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s07_splitsstacks/opt_splitsstacks_gap.tui.pb"
+  },
+  "error_code": null
+}
