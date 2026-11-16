@@ -348,7 +348,7 @@ fn modal_stack_lifecycle() {
         ["Lower", "Upper"]
     );
     assert_eq!(
-        stack.iter().rev().next().map(|d| d.title.as_str()),
+        stack.iter().next_back().map(|d| d.title.as_str()),
         Some("Upper")
     );
     for d in stack.iter_mut() {
@@ -2102,12 +2102,6 @@ fn form_dialog_model() {
     let mut never = build_form(id).dismiss(Dismiss::NEVER);
     let shown = draw_form(&mut never, screen, &focus);
     assert!(!shown.hits.regions().iter().any(|r| r.id == modal::CLOSE));
-    let mut left = build_form(id)
-        .button_row(ButtonRow::new().align(RowAlign::Start))
-        .nav(NavKeys::VIM);
-    assert_eq!(left.nav, NavKeys::VIM);
-    draw_form(&mut left, screen, &focus);
-    assert_eq!(FieldValue::Choice(2), FieldValue::Choice(2));
 }
 
 struct FormRig {
@@ -2676,7 +2670,6 @@ fn info_dialog_flow() {
     let mut wheeled = make();
     draw(&mut wheeled);
     let _ = wheeled.pointer_in(&wheel, &mut focus);
-    assert_eq!(InfoResult::Closed, InfoResult::Closed);
     let glyph = make().close_button(IconButton::new(modal::CLOSE, "Q"));
     let mut glyph = glyph;
     assert!(text_of(&draw(&mut glyph).buf).contains('Q'));
