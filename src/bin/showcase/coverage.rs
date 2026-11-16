@@ -136,6 +136,22 @@ pub enum ScenarioId {
     // lane:shell begin: this lane adds its ScenarioId variants between these two lines only
     // lane:shell end
     // lane:theme begin: this lane adds its ScenarioId variants between these two lines only
+    ThemeColorLevels,
+    ThemeCharsetGlyphs,
+    ThemeInteractiveStates,
+    ThemeInactiveSelection,
+    ThemeTonesAndStatus,
+    ThemeLegibility,
+    ThemeStyleTokens,
+    SpecimenStateGrid,
+    TextUtilityFunctions,
+    RowPainting,
+    ContentStates,
+    MeasureTiles,
+    FadeScrollEdges,
+    StatusSegments,
+    BrandLockup,
+    KeyReferenceLayout,
     // lane:theme end
     // lane:routing begin: this lane adds its ScenarioId variants between these two lines only
     // lane:routing end
