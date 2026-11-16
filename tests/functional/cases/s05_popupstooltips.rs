@@ -219,7 +219,7 @@ fn route_by_page_keyboard_and_pointer() {
 
     let app = open("s05-route-keys", 120, 40, &[]);
     app.wait_text(OVERVIEW);
-    for _ in 0..28 {
+    for _ in 0..29 {
         app.key("]");
     }
     let entered = app.wait_text(BLURB);
