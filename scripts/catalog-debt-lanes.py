@@ -370,10 +370,13 @@ def cmd_prune(args):
     print(f"removed {removed} stale lines")
 
 
+LANE_DEBT_FILES = {name: DEBT_DIR / f"{name}.txt" for name in LANES}
+
+
 def lane_debt_path(lane):
-    if lane not in LANES:
+    if lane not in LANE_DEBT_FILES:
         sys.exit(f"unknown lane {lane!r}, expected one of {', '.join(LANES)}")
-    return DEBT_DIR / f"{lane}.txt"
+    return LANE_DEBT_FILES[lane]
 
 
 def select(lane, prefixes, exact):
@@ -387,6 +390,10 @@ def select(lane, prefixes, exact):
     if missing:
         sys.exit(f"not in the {lane} debt file: {missing[:5]}")
     return picked
+
+
+# Fixed lane file paths, built from the lane constants only.
+LANE_PROOF_FILES = {name: SHOWCASE / "coverage" / f"lane_{name}.rs" for name in LANES}
 
 
 def known_lane(name):
@@ -419,7 +426,7 @@ def cmd_proofs(args):
         f"scenarios: &[{scenarios}], feature: None }},\n"
         for api in picked
     )
-    lane_file = SHOWCASE / "coverage" / f"lane_{lane}.rs"
+    lane_file = LANE_PROOF_FILES[lane]
     text = lane_file.read_text()
     anchor = "pub const PROOFS: &[CapabilityProof] = &[\n"
     if anchor not in text:
