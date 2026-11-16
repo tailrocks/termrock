@@ -25,6 +25,7 @@ use crate::options::{PageValues, page_options};
 use crate::pages::row_menu::{MENU_HINTS, RowMenu};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
+use junie_tui::core::edit::TextCmd;
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::id::{ItemKey, WidgetId};
 use junie_tui::core::intent::Phase;
@@ -635,6 +636,12 @@ impl FinderPage {
                     key,
                     name: PREVIEW_WHY,
                 } => self.open_why(key, cx),
+                // Undo and Redo with an empty history say so; Select all on an
+                // empty query stays quiet, as the query is already all there is.
+                SearchAction::QueryCommand {
+                    cmd: cmd @ (TextCmd::Undo | TextCmd::Redo),
+                    effective: false,
+                } => cx.status(format!("Nothing to {}", cmd.label().to_lowercase())),
                 _ => {}
             }
         }
