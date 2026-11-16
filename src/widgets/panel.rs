@@ -496,6 +496,11 @@ struct RowMap {
 struct WrappedCache {
     revision: u64,
     width: u16,
+    /// How many leading `lines` the rows cover. An append leaves the cache in
+    /// place and `ensure_wrapped` wraps only `lines[wrapped..]`; every other
+    /// mutation drops the cache, so a cache that exists is always a valid
+    /// prefix of the current projection at its width.
+    wrapped: usize,
     rows: Vec<String>,
     maps: Vec<RowMap>,
 }
@@ -840,6 +845,7 @@ impl ScrollPanel {
     /// adds rows after them and goes through `revision_bumped` alone.
     fn content_changed(&mut self) {
         self.revision_bumped();
+        self.wrapped_cache = None;
         self.select = TextSelect::default();
     }
 
@@ -849,9 +855,9 @@ impl ScrollPanel {
             None => {
                 self.content_revision = 0;
                 self.widest_cache = None;
+                self.wrapped_cache = None;
             }
         }
-        self.wrapped_cache = None;
     }
 
     fn widest_of(&self, lines: &[String]) -> usize {
@@ -883,34 +889,40 @@ impl ScrollPanel {
     }
 
     fn ensure_wrapped(&mut self, width: u16) {
-        if self
-            .wrapped_cache
-            .as_ref()
-            .is_some_and(|c| c.revision == self.content_revision && c.width == width)
-        {
-            return;
-        }
-        #[cfg(test)]
-        self.work.wrap_builds.set(self.work.wrap_builds.get() + 1);
-        let mut rows = Vec::new();
-        let mut maps = Vec::new();
-        for (source, l) in self.lines.iter().enumerate() {
+        let reusable = self.wrapped_cache.take().filter(|c| c.width == width);
+        let mut cache = match reusable {
+            Some(c) if c.revision == self.content_revision => {
+                self.wrapped_cache = Some(c);
+                return;
+            }
+            // Behind only by appended lines: keep the wrapped prefix.
+            Some(c) => c,
+            None => {
+                #[cfg(test)]
+                self.work.wrap_builds.set(self.work.wrap_builds.get() + 1);
+                WrappedCache {
+                    revision: self.content_revision,
+                    width,
+                    wrapped: 0,
+                    rows: Vec::new(),
+                    maps: Vec::new(),
+                }
+            }
+        };
+        for (source, l) in self.lines.iter().enumerate().skip(cache.wrapped) {
             crate::record_work!(SourceRowsRead, 1usize);
             for row in wrap_mapped(l, width as usize, WrapOpts::default()) {
-                rows.push(row.text);
-                maps.push(RowMap {
+                cache.rows.push(row.text);
+                cache.maps.push(RowMap {
                     source,
                     cells: row.cells,
                     end: row.end,
                 });
             }
         }
-        self.wrapped_cache = Some(WrappedCache {
-            revision: self.content_revision,
-            width,
-            rows,
-            maps,
-        });
+        cache.wrapped = self.lines.len();
+        cache.revision = self.content_revision;
+        self.wrapped_cache = Some(cache);
     }
 
     fn settle_follow(&mut self) {
