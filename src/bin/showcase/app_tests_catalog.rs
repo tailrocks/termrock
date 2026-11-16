@@ -2184,65 +2184,36 @@ fn work_counter_contract() {
         ENABLED, METRIC_COUNT, Metric, MetricsError, WorkDelta, WorkSnapshot,
     };
 
-    macro_rules! catalog {
-        ($($name:ident => $label:literal,)+) => {
-            const CATALOG: [(Metric, &str); METRIC_COUNT] = [$((Metric::$name, $label),)+];
-
-            /// Counts `amount` of every metric through `record_work!`, the way
-            /// a production work site does, and returns each metric's count.
-            #[cfg(feature = "work-metrics")]
-            fn record_each(amount: usize) -> WorkDelta {
-                junie_tui::metrics::measure(|| {
-                    $(junie_tui::record_work!($name, amount);)+
-                })
-                .1
+    /// `SegmentedLines` becomes `segmented_lines`: the name every metric must carry,
+    /// derived from the variant so the scenario does not repeat the catalog.
+    fn snake_case(variant: &str) -> String {
+        let mut out = String::new();
+        for (at, ch) in variant.chars().enumerate() {
+            if ch.is_ascii_uppercase() && at > 0 {
+                out.push('_');
             }
-        };
+            out.push(ch.to_ascii_lowercase());
+        }
+        out
     }
-    catalog! {
-        SegmentedLines => "segmented_lines",
-        ReflowedLines => "reflowed_lines",
-        IndexRebuilds => "index_rebuilds",
-        IndexExtends => "index_extends",
-        IndexShifts => "index_shifts",
-        PayloadBytesCloned => "payload_bytes_cloned",
-        AllocatedBufferCells => "allocated_buffer_cells",
-        BufferCellsFilled => "buffer_cells_filled",
-        BufferCellsCopied => "buffer_cells_copied",
-        VisibleRowsPainted => "visible_rows_painted",
-        IntrinsicWidthCalls => "intrinsic_width_calls",
-        TextBytesMeasured => "text_bytes_measured",
-        LabelsNormalized => "labels_normalized",
-        LabelBytesNormalized => "label_bytes_normalized",
-        ProjectionRebuilds => "projection_rebuilds",
-        RankRowsVisited => "rank_rows_visited",
-        SchedulingRecordsVisited => "scheduling_records_visited",
-        SchedulingPolls => "scheduling_polls",
-        AnnotationQueries => "annotation_queries",
-        IdentityComparisons => "identity_comparisons",
-        FitVisits => "fit_visits",
-        FitCompares => "fit_compares",
-        PrefixRollbackProbes => "prefix_rollback_probes",
-        NulBytesProbed => "nul_bytes_probed",
-        Utf8BytesValidated => "utf8_bytes_validated",
-        TextBytesSanitized => "text_bytes_sanitized",
-        LineCharsCounted => "line_chars_counted",
-        SourceRowsRead => "source_rows_read",
-        TerminalBytesFed => "terminal_bytes_fed",
-        DiffCellsVisited => "diff_cells_visited",
-        TerminalBytesWritten => "terminal_bytes_written",
-        RawEventsRead => "raw_events_read",
-        RawEventsFiltered => "raw_events_filtered",
-        InputDispatches => "input_dispatches",
+
+    /// Counts `amount` of every metric through the recorder behind
+    /// `record_work!`, and returns each metric's count.
+    #[cfg(feature = "work-metrics")]
+    fn record_each(amount: u64) -> WorkDelta {
+        junie_tui::metrics::measure(|| {
+            for metric in Metric::ALL {
+                junie_tui::metrics::record(metric, amount);
+            }
+        })
+        .1
     }
 
     assert_eq!(ENABLED, cfg!(feature = "work-metrics"));
-    assert_eq!(CATALOG.len(), METRIC_COUNT);
     assert_eq!(Metric::ALL.len(), METRIC_COUNT);
-    for (index, (metric, label)) in CATALOG.into_iter().enumerate() {
-        assert_eq!(Metric::ALL[index], metric, "ALL follows index order");
-        assert_eq!(metric as usize, index);
-        assert_eq!(metric.name(), label);
+    for (index, metric) in Metric::ALL.into_iter().enumerate() {
+        assert_eq!(metric as usize, index, "ALL follows index order");
+        assert_eq!(metric.name(), snake_case(&format!("{metric:?}")));
     }
 
     let thread = std::thread::current().id();
@@ -2306,12 +2277,16 @@ fn work_counter_contract() {
         assert_eq!(
             counted.nonzero().count(),
             METRIC_COUNT,
-            "record_work! accepts every metric variant"
+            "the recorder accepts every metric variant"
         );
         assert_eq!(
-            counted.check_exact(&CATALOG.map(|(metric, _)| (metric, 2))),
+            counted.check_exact(&Metric::ALL.map(|metric| (metric, 2))),
             Ok(())
         );
+        let (_, delta) = junie_tui::metrics::measure(|| {
+            junie_tui::record_work!(SegmentedLines, 3usize);
+        });
+        assert_eq!(delta.get(Metric::SegmentedLines), 3);
         assert_eq!(meters_work::probe(), Some(3));
     }
     #[cfg(not(feature = "work-metrics"))]
