@@ -1,0 +1,75 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3-target/debug/showcase",
+  "binary_sha256": "c2ed189e03b11c22298c203b7561871ee950aa47282e70284cdba4686bf6f5d0",
+  "fixture_args": [
+    "--page",
+    "diff"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "fc957617afe24cc2da64310ff672b74b1fbd549587d6823c206895b89a5ad54a",
+  "expect_baseline": "adde960fb868a4e23b8ae29994aa5803d2689dc4791bde33461b6054febc47f1",
+  "precondition": "",
+  "session": null,
+  "expected_test_id": "pre_refactor/s08_diff/sc_diff_diff_80x24",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/pre_refactor_s08_diff_sc_diff_diff_80x24.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/pre_refactor_s08_diff_sc_diff_diff_80x24.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/superseded/pre_refactor/s08_diff/sc_diff_diff_80x24.tui.pb",
+  "test_id": "pre_refactor/s08_diff/sc_diff_diff_80x24",
+  "acceptance": {
+    "expected_baseline_sha256": "adde960fb868a4e23b8ae29994aa5803d2689dc4791bde33461b6054febc47f1",
+    "accepted_baseline_sha256": "fc957617afe24cc2da64310ff672b74b1fbd549587d6823c206895b89a5ad54a",
+    "candidate_sha256": "fc957617afe24cc2da64310ff672b74b1fbd549587d6823c206895b89a5ad54a",
+    "transaction_receipt": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/pre_refactor_s08_diff_sc_diff_diff_80x24.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "adde960fb868a4e23b8ae29994aa5803d2689dc4791bde33461b6054febc47f1"
+  },
+  "candidate": {
+    "sha256": "fc957617afe24cc2da64310ff672b74b1fbd549587d6823c206895b89a5ad54a",
+    "path": "tests/functional/baselines/pre_refactor/s08_diff/sc_diff_diff_80x24.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/showcase-sidebar-14-20261115/superseded/pre_refactor/s08_diff/sc_diff_diff_80x24.tui.pb",
+    "superseded_baseline_sha256": "adde960fb868a4e23b8ae29994aa5803d2689dc4791bde33461b6054febc47f1"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s08_diff/sc_diff_diff_80x24.tui.pb",
+    "candidate_sha256": "fc957617afe24cc2da64310ff672b74b1fbd549587d6823c206895b89a5ad54a",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3-target/debug/showcase",
+    "binary_sha256": "c2ed189e03b11c22298c203b7561871ee950aa47282e70284cdba4686bf6f5d0",
+    "note": "Candidate-mode refresh for #14: the five formerly hidden pages join the sidebar, so the Components count and the expanded groups change."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s08_diff/sc_diff_diff_80x24",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/tmp/final/pre_refactor__s08_diff__sc_diff_diff_80x24.tui.pb"
+    },
+    "candidate_sha256": "fc957617afe24cc2da64310ff672b74b1fbd549587d6823c206895b89a5ad54a",
+    "baseline_sha256": "fc957617afe24cc2da64310ff672b74b1fbd549587d6823c206895b89a5ad54a",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s08_diff/sc_diff_diff_80x24.tui.pb"
+    },
+    "error_code": null
+  }
+}
