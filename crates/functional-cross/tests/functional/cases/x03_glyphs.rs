@@ -19,12 +19,11 @@
 //! `›` (`TreeView::selected_marker` in `src/bin/showcase/app.rs`), not
 //! `Glyphs::current`.
 
-use std::path::PathBuf;
-
 use tui_test::TerminalSnapshot;
-use tuiscotti_latest::check::CheckOutcome;
 
-use crate::support::{App, HOLLA, Launch, SHOWCASE, TABLEPRO, row_text, text, try_launch};
+use crate::support::{
+    check_stored, holla_bin, kill, open, require, row_containing, showcase_bin, tablepro_bin, text,
+};
 
 const TITLE: &str = "Text areas";
 const BLURB: &str = "Multi-line editing, Unicode cursor motion, horizontal and vertical scrolling";
@@ -76,23 +75,6 @@ fn canvas() -> tui_test::SnapshotColor {
 
 fn production() -> tui_test::SnapshotColor {
     rgb(0xff, 0x6b, 0x6b)
-}
-
-fn open(name: &str, bin: &str, args: &[&str]) -> App {
-    let mut launch = Launch::new(name, bin);
-    launch.clock = false;
-    launch.cols = 120;
-    launch.rows = 40;
-    launch.color = Some("truecolor".to_string());
-    launch.motion = Some("reduced".to_string());
-    launch.args = args.iter().copied().map(str::to_string).collect();
-    try_launch(launch).unwrap_or_else(|error| panic!("{error}"))
-}
-
-fn kill(app: &App) {
-    assert!(app.child_running(), "child exited before the assertion");
-    app.kill_child();
-    assert!(!app.child_running(), "child still running");
 }
 
 fn count(screen: &TerminalSnapshot, glyph: &str) -> usize {
@@ -160,21 +142,6 @@ fn assert_row(
     for x in left..=right {
         assert_ink(screen, x, y, glyph, fg, bg);
     }
-}
-
-fn row_containing(screen: &TerminalSnapshot, needle: &str) -> String {
-    (0..screen.rows())
-        .map(|row| row_text(screen, row))
-        .find(|row| row.contains(needle))
-        .unwrap_or_else(|| panic!("missing {needle}\n{}", text(screen)))
-}
-
-fn require(screen: &TerminalSnapshot, needle: &str) {
-    assert!(
-        text(screen).contains(needle),
-        "missing {needle}\n{}",
-        text(screen)
-    );
 }
 
 /// The fixture's wide text, emoji, and combining sequence sit past the
@@ -322,38 +289,10 @@ fn assert_seam(screen: &TerminalSnapshot, glyph: &str) {
     }
 }
 
-fn sample_bytes(screen: &TerminalSnapshot, test_id: &str) -> Vec<u8> {
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    sample.to_bytes().expect("serialize Tuiscotti sample")
-}
-
-fn check_stored(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let bytes = sample_bytes(screen, test_id);
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        panic!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        );
-    }
-}
-
 fn route() {
     let app = open(
         "x03-glyphs-route",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "textareas", "--glyphs", "unicode"],
     );
     let page = app.wait_text(BLURB);
@@ -378,7 +317,7 @@ fn route() {
 fn unicode_textareas() {
     let app = open(
         "x03-glyphs-unicode",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "textareas", "--glyphs", "unicode"],
     );
     let page = app.wait_screen("unicode text areas", |screen| {
@@ -395,7 +334,7 @@ fn unicode_textareas() {
 fn splits(glyphs: &str) {
     let app = open(
         &format!("x03-glyphs-splits-{glyphs}"),
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "splits", "--glyphs", glyphs],
     );
     let rest = if glyphs == "ascii" { GUTTER } else { RULE };
@@ -429,7 +368,11 @@ fn splits(glyphs: &str) {
 }
 
 fn tablepro() {
-    let app = open("x03-glyphs-tablepro", TABLEPRO, &["--glyphs", "ascii"]);
+    let app = open(
+        "x03-glyphs-tablepro",
+        tablepro_bin(),
+        &["--glyphs", "ascii"],
+    );
     let page = app.wait_screen("tablepro ascii", |screen| {
         text(screen).contains("Filter connections")
             && count(screen, HEAVY) == 0
@@ -454,7 +397,7 @@ fn tablepro() {
 fn holla() {
     let app = open(
         "x03-glyphs-holla",
-        HOLLA,
+        holla_bin(),
         &["--scenario", "activities-multi", "--glyphs", "ascii"],
     );
     let page = app.wait_screen("holla ascii", |screen| {
@@ -481,7 +424,7 @@ fn holla() {
 fn checkpoint() {
     let app = open(
         "x03-glyphs-checkpoint",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "textareas", "--glyphs", "ascii"],
     );
     let wide = app.wait_screen("ascii text areas 120x40", |screen| {

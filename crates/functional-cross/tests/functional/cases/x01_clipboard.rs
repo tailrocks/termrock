@@ -5,15 +5,14 @@
 //! report, captures 120×40, resizes to 80×24, captures that frame, then
 //! resizes back. `Launch::new` leaves the clock off, including for jackin.
 
-use std::path::PathBuf;
 use std::thread;
 use std::time::{Duration, Instant};
 
 use tui_test::TerminalSnapshot;
-use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{
-    App, HOLLA, Launch, Point, SHOWCASE, TABLEPRO, find_all, row_text, text, try_launch,
+    App, Point, check_stored, find_all, holla_bin, open, refuse, require, row_text, showcase_bin,
+    tablepro_bin, text,
 };
 
 const REPORT: &str = "Copied the report (13 lines)";
@@ -27,33 +26,6 @@ const TOO_LARGE: &str = "Not copied · 71 bytes exceed the terminal's 64 byte OS
 const QUERY: &str = "Copied query";
 const WIDE_ID: &str = "pre_refactor/x01_clipboard/x01_clipboard_copy_120x40";
 const NARROW_ID: &str = "pre_refactor/x01_clipboard/x01_clipboard_copy_narrow";
-
-fn open(name: &str, bin: &str, args: &[&str]) -> App {
-    let mut launch = Launch::new(name, bin);
-    launch.clock = false;
-    launch.cols = 120;
-    launch.rows = 40;
-    launch.color = Some("truecolor".to_string());
-    launch.motion = Some("reduced".to_string());
-    launch.args = args.iter().copied().map(str::to_string).collect();
-    try_launch(launch).unwrap_or_else(|error| panic!("{error}"))
-}
-
-fn require(screen: &TerminalSnapshot, needle: &str) {
-    assert!(
-        text(screen).contains(needle),
-        "missing {needle}\n{}",
-        text(screen)
-    );
-}
-
-fn refuse(screen: &TerminalSnapshot, needle: &str) {
-    assert!(
-        !text(screen).contains(needle),
-        "{needle} present\n{}",
-        text(screen)
-    );
-}
 
 fn click_one(app: &App, label: &str, keep: impl Fn(&TerminalSnapshot, Point) -> bool) {
     let screen = app.wait_text(label);
@@ -82,30 +54,6 @@ fn ctrl_c_exits(app: &App) {
     app.expect_exited(0);
 }
 
-fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store =
-        tuiscotti_latest::check::FrozenStore::new(&root, &artifacts).expect("open frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        panic!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        );
-    }
-}
-
 fn frame_with(app: &App, needle: &str, cols: u32, rows: u32) -> TerminalSnapshot {
     thread::sleep(Duration::from_millis(250));
     app.wait_screen(needle, |screen| {
@@ -116,7 +64,7 @@ fn frame_with(app: &App, needle: &str, cols: u32, rows: u32) -> TerminalSnapshot
 fn showcase_quit() {
     let app = open(
         "x01-clipboard-showcase-quit",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "readonlyreport"],
     );
     app.wait_text("Copy report");
@@ -127,7 +75,7 @@ fn showcase_quit() {
 fn showcase_grid_copy() {
     let app = open(
         "x01-clipboard-showcase-grid",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "datagrid"],
     );
     app.wait_text("1001");
@@ -148,13 +96,13 @@ fn showcase_grid_copy() {
 }
 
 fn tablepro_quit() {
-    let app = open("x01-clipboard-tablepro-quit", TABLEPRO, &[]);
+    let app = open("x01-clipboard-tablepro-quit", tablepro_bin(), &[]);
     app.wait_text("Filter connections");
     ctrl_c_exits(&app);
 }
 
 fn tablepro_copy() {
-    let app = open("x01-clipboard-tablepro-copy", TABLEPRO, &[]);
+    let app = open("x01-clipboard-tablepro-copy", tablepro_bin(), &[]);
     app.wait_text("Filter connections");
     click_one(&app, "Development", |_, hit| hit.x < 40);
     app.key("enter");
@@ -177,7 +125,7 @@ fn tablepro_copy() {
 fn holla_quit() {
     let app = open(
         "x01-clipboard-holla-quit",
-        HOLLA,
+        holla_bin(),
         &["--scenario", "parity-files"],
     );
     app.wait_text("Search actions");
@@ -198,7 +146,7 @@ fn finder_copy(app: &App) -> TerminalSnapshot {
 fn holla_supported() {
     let app = open(
         "x01-clipboard-holla-on",
-        HOLLA,
+        holla_bin(),
         &["--scenario", "parity-files"],
     );
     let copied = finder_copy(&app);
@@ -211,7 +159,7 @@ fn holla_supported() {
 fn holla_unsupported() {
     let app = open(
         "x01-clipboard-holla-off",
-        HOLLA,
+        holla_bin(),
         &["--scenario", "parity-platforms-linux"],
     );
     let copied = finder_copy(&app);
@@ -224,7 +172,7 @@ fn holla_unsupported() {
 fn holla_too_large() {
     let app = open(
         "x01-clipboard-holla-limit",
-        HOLLA,
+        holla_bin(),
         &["--scenario", "parity-files"],
     );
     app.wait_text("Search actions");
@@ -257,7 +205,7 @@ fn copy_report(app: &App) {
 fn checkpoints() {
     let app = open(
         "x01-clipboard-checkpoint",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "readonlyreport"],
     );
     copy_report(&app);
@@ -266,14 +214,14 @@ fn checkpoints() {
     require(&wide, REPORT);
     require(&wide, "Copy report");
     refuse(&wide, "Not copied");
-    check_frame(&app, &wide, WIDE_ID);
+    check_stored(&app, &wide, WIDE_ID);
 
     app.resize(80, 24);
     let narrow = frame_with(&app, REPORT, 80, 24);
     require(&narrow, REPORT);
     refuse(&narrow, "Not copied");
     assert_eq!((narrow.cols(), narrow.rows()), (80, 24));
-    check_frame(&app, &narrow, NARROW_ID);
+    check_stored(&app, &narrow, NARROW_ID);
 
     app.resize(120, 40);
     let restored = frame_with(&app, REPORT, 120, 40);
@@ -286,7 +234,7 @@ fn checkpoints() {
 fn x01_clipboard_route() {
     let app = open(
         "x01-clipboard-route",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "readonlyreport"],
     );
     copy_report(&app);

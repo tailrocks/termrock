@@ -10,14 +10,13 @@
 //! `force_color_output`, so the captured cells stay `SnapshotColor::Default`.
 //! The accent is not RGB. That is the reference paint.
 
-use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use tui_test::{SnapshotColor, TerminalSnapshot};
-use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{
-    App, HOLLA, Launch, SHOWCASE, TABLEPRO, find_all, row_text, text, try_launch,
+    App, Open, check_stored, find_all, holla_bin, refuse, require, rgb_cells, row_text,
+    showcase_bin, tablepro_bin, text,
 };
 
 const IDENTITY: &str = "Tokens and principles behind every component";
@@ -47,38 +46,15 @@ fn open(
     motion: Option<&str>,
     env: &[(&str, &str)],
 ) -> App {
-    let mut launch = Launch::new(name, bin);
-    launch.clock = false;
-    launch.cols = 120;
-    launch.rows = 40;
-    launch.args = args.iter().copied().map(str::to_string).collect();
-    launch.color = color.map(str::to_string);
-    launch.motion = motion.map(str::to_string);
-    launch.env = env
-        .iter()
-        .map(|(key, value)| ((*key).to_string(), (*value).to_string()))
-        .collect();
-    try_launch(launch).unwrap_or_else(|error| panic!("{error}"))
+    Open::new(name, bin, args)
+        .color(color)
+        .motion(motion)
+        .env(env)
+        .launch()
 }
 
 fn wait_for(app: &App, needle: &str) -> TerminalSnapshot {
     app.wait_screen(needle, |screen| text(screen).contains(needle))
-}
-
-fn require(screen: &TerminalSnapshot, needle: &str) {
-    assert!(
-        text(screen).contains(needle),
-        "missing {needle}\n{}",
-        text(screen)
-    );
-}
-
-fn refuse(screen: &TerminalSnapshot, needle: &str) {
-    assert!(
-        !text(screen).contains(needle),
-        "{needle} present\n{}",
-        text(screen)
-    );
 }
 
 fn glyph_fg(screen: &TerminalSnapshot, glyph: &str) -> SnapshotColor {
@@ -113,20 +89,6 @@ fn leading_fg(screen: &TerminalSnapshot, needle: &str) -> (String, SnapshotColor
     (cell.text().to_string(), cell.fg())
 }
 
-fn rgb_cells(screen: &TerminalSnapshot) -> usize {
-    let mut count = 0;
-    for row in 0..screen.rows() {
-        for cell in screen.row(row).expect("row") {
-            if matches!(cell.fg(), SnapshotColor::Rgb(_, _, _))
-                || matches!(cell.bg(), SnapshotColor::Rgb(_, _, _))
-            {
-                count += 1;
-            }
-        }
-    }
-    count
-}
-
 fn showcase_screen(
     name: &str,
     args: &[&str],
@@ -135,7 +97,7 @@ fn showcase_screen(
     env: &[(&str, &str)],
     needle: &str,
 ) -> TerminalSnapshot {
-    let app = open(name, SHOWCASE, args, color, motion, env);
+    let app = open(name, showcase_bin(), args, color, motion, env);
     let screen = wait_for(&app, needle);
     app.kill_child();
     screen
@@ -245,9 +207,15 @@ fn assert_plain_accent(name: &str, bin: &str, ready: &str, accent: SnapshotColor
 }
 
 fn assert_nocolor_each_app() {
-    assert_plain_accent("showcase", SHOWCASE, OVERVIEW, ACCENT, FOCUS);
-    assert_plain_accent("holla", HOLLA, HOLLA_READY, ACCENT, FOCUS);
-    assert_plain_accent("tablepro", TABLEPRO, "Filter connections", ACCENT, FOCUS);
+    assert_plain_accent("showcase", showcase_bin(), OVERVIEW, ACCENT, FOCUS);
+    assert_plain_accent("holla", holla_bin(), HOLLA_READY, ACCENT, FOCUS);
+    assert_plain_accent(
+        "tablepro",
+        tablepro_bin(),
+        "Filter connections",
+        ACCENT,
+        FOCUS,
+    );
 }
 
 fn assert_color_flag_with_nocolor() {
@@ -277,7 +245,7 @@ fn spinner_held(name: &str, motion: Option<&str>, value: Option<&str>) -> bool {
     let env = motion_env("SHOWCASE_NO_MOTION", value);
     let app = open(
         name,
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "progress"],
         Some("truecolor"),
         motion,
@@ -295,7 +263,7 @@ fn spinner_held(name: &str, motion: Option<&str>, value: Option<&str>) -> bool {
 
 fn holla_discovering(name: &str, motion: Option<&str>, value: Option<&str>) -> bool {
     let env = motion_env("HOLLA_NO_MOTION", value);
-    let app = open(name, HOLLA, &[], Some("truecolor"), motion, &env);
+    let app = open(name, holla_bin(), &[], Some("truecolor"), motion, &env);
     let screen = wait_for(&app, HOLLA_READY);
     let discovering = text(&screen).contains(DISCOVERING);
     app.kill_child();
@@ -311,7 +279,7 @@ fn spinner_near(screen: &TerminalSnapshot, label: &str) -> Option<String> {
 
 fn tablepro_spinners(name: &str, motion: Option<&str>, value: Option<&str>) -> Vec<String> {
     let env = motion_env("TABLEPRO_NO_MOTION", value);
-    let app = open(name, TABLEPRO, &[], Some("truecolor"), motion, &env);
+    let app = open(name, tablepro_bin(), &[], Some("truecolor"), motion, &env);
     let listed = app.wait_text("Filter connections");
     let hits: Vec<_> = find_all(&listed, "Development")
         .into_iter()
@@ -415,34 +383,10 @@ fn assert_motion() {
     }
 }
 
-fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        panic!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        );
-    }
-}
-
 fn assert_checkpoints() {
     let app = open(
         "x01-env-checkpoint",
-        SHOWCASE,
+        showcase_bin(),
         &[],
         Some("truecolor"),
         Some("reduced"),
@@ -455,7 +399,7 @@ fn assert_checkpoints() {
     assert_eq!(glyph_fg(&wide, FOCUS), ACCENT);
     assert_eq!(wide.cols(), 120);
     assert_eq!(wide.rows(), 40);
-    check_frame(&app, &wide, WIDE_ID);
+    check_stored(&app, &wide, WIDE_ID);
 
     app.resize(80, 24);
     let narrow = app.wait_screen(NARROW_ID, |screen| {
@@ -465,7 +409,7 @@ fn assert_checkpoints() {
     assert_eq!(glyph_fg(&narrow, FOCUS), ACCENT);
     assert_eq!(narrow.cols(), 80);
     assert_eq!(narrow.rows(), 24);
-    check_frame(&app, &narrow, NARROW_ID);
+    check_stored(&app, &narrow, NARROW_ID);
 
     app.resize(120, 40);
     let restored = app.wait_screen("restored", |screen| {
@@ -479,7 +423,7 @@ fn assert_checkpoints() {
 fn x01_env_route() {
     let app = open(
         "x01-env-route",
-        SHOWCASE,
+        showcase_bin(),
         &[],
         Some("truecolor"),
         Some("reduced"),

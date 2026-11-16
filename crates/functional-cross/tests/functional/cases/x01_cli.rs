@@ -9,13 +9,13 @@
 //! that has already exited uses `expect_exited` instead. `Launch::new` leaves
 //! the clock off.
 
-use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use tui_test::TerminalSnapshot;
-use tuiscotti_latest::check::CheckOutcome;
 
-use crate::support::{App, HOLLA, Launch, SHOWCASE, TABLEPRO, text, try_launch};
+use crate::support::{
+    App, Open, check_stored, holla_bin, refuse, require, showcase_bin, tablepro_bin, text,
+};
 
 const HELP_EXIT: i32 = 0;
 const ERROR_EXIT: i32 = 2;
@@ -37,30 +37,7 @@ const WIDE_ID: &str = "pre_refactor/x01_cli/x01_cli_cli_120x40";
 const NARROW_ID: &str = "pre_refactor/x01_cli/x01_cli_cli_narrow";
 
 fn open(name: &str, bin: &str, args: &[&str], cols: u16, rows: u16) -> App {
-    let mut launch = Launch::new(name, bin);
-    launch.args = args.iter().map(|arg| (*arg).to_string()).collect();
-    launch.cols = cols;
-    launch.rows = rows;
-    launch.color = Some("truecolor".to_string());
-    launch.motion = Some("reduced".to_string());
-    launch.clock = false;
-    try_launch(launch).unwrap_or_else(|error| panic!("{error}"))
-}
-
-fn require(screen: &TerminalSnapshot, needle: &str) {
-    assert!(
-        text(screen).contains(needle),
-        "missing {needle}\n{}",
-        text(screen)
-    );
-}
-
-fn refuse(screen: &TerminalSnapshot, needle: &str) {
-    assert!(
-        !text(screen).contains(needle),
-        "{needle} present\n{}",
-        text(screen)
-    );
+    Open::new(name, bin, args).size(cols, rows).launch()
 }
 
 fn wait_settled(
@@ -144,57 +121,33 @@ fn shot(app: &App, test_id: &str, cols: u32, rows: u32) {
     refuse(&screen, SHOWCASE_UI);
     assert!(!app.child_running(), "{test_id} left the UI running");
     app.expect_exited(HELP_EXIT);
-    check_frame(app, &screen, test_id);
-}
-
-fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        panic!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        );
-    }
+    check_stored(app, &screen, test_id);
 }
 
 #[test]
 fn x01_cli_route() {
-    help_of("x01-cli-route", SHOWCASE, SHOWCASE_ABOUT, SHOWCASE_UI);
+    help_of("x01-cli-route", showcase_bin(), SHOWCASE_ABOUT, SHOWCASE_UI);
 }
 
 #[test]
 fn x01_cli_cli() {
     help_of(
         "x01-cli-help-showcase",
-        SHOWCASE,
+        showcase_bin(),
         SHOWCASE_ABOUT,
         SHOWCASE_UI,
     );
     help_of(
         "x01-cli-help-tablepro",
-        TABLEPRO,
+        tablepro_bin(),
         TABLEPRO_ABOUT,
         TABLEPRO_UI,
     );
-    help_of("x01-cli-help-holla", HOLLA, HOLLA_ABOUT, HOLLA_UI);
+    help_of("x01-cli-help-holla", holla_bin(), HOLLA_ABOUT, HOLLA_UI);
 
     rejected(
         "x01-cli-page-short",
-        SHOWCASE,
+        showcase_bin(),
         &["-p", "not-a-page"],
         120,
         40,
@@ -203,7 +156,7 @@ fn x01_cli_cli() {
     );
     rejected(
         "x01-cli-page-long",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "not-a-page"],
         120,
         40,
@@ -212,7 +165,7 @@ fn x01_cli_cli() {
     );
     rejected(
         "x01-cli-holla-scenario",
-        HOLLA,
+        holla_bin(),
         &["--scenario", "not-a-scenario"],
         120,
         40,
@@ -221,7 +174,7 @@ fn x01_cli_cli() {
     );
     rejected(
         "x01-cli-tablepro-connect",
-        TABLEPRO,
+        tablepro_bin(),
         &["--connect", "not-a-connection"],
         120,
         40,
@@ -230,7 +183,7 @@ fn x01_cli_cli() {
     );
     rejected(
         "x01-cli-opt-missing-eq",
-        SHOWCASE,
+        showcase_bin(),
         &["--opt", "novalue"],
         120,
         120,
@@ -239,7 +192,7 @@ fn x01_cli_cli() {
     );
     rejected(
         "x01-cli-opt-unknown-key",
-        SHOWCASE,
+        showcase_bin(),
         &["--opt", "not-a-key=value"],
         120,
         120,
@@ -248,7 +201,7 @@ fn x01_cli_cli() {
     );
     rejected(
         "x01-cli-opt-bad-value",
-        SHOWCASE,
+        showcase_bin(),
         &["--opt", "shell.motion=sideways"],
         120,
         40,
@@ -258,7 +211,7 @@ fn x01_cli_cli() {
 
     let repeat = open(
         "x01-cli-opt-repeat",
-        SHOWCASE,
+        showcase_bin(),
         &[
             "--page",
             "chrome",
@@ -278,9 +231,9 @@ fn x01_cli_cli() {
     refuse(&chosen, EARLIER);
     repeat.finish();
 
-    let wide = open("x01-cli-help-wide", SHOWCASE, &["--help"], 120, 40);
+    let wide = open("x01-cli-help-wide", showcase_bin(), &["--help"], 120, 40);
     shot(&wide, WIDE_ID, 120, 40);
 
-    let narrow = open("x01-cli-help-narrow", SHOWCASE, &["--help"], 80, 24);
+    let narrow = open("x01-cli-help-narrow", showcase_bin(), &["--help"], 80, 24);
     shot(&narrow, NARROW_ID, 80, 24);
 }
