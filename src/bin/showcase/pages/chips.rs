@@ -186,6 +186,12 @@ impl ChipsPage {
             bar(&self.streams, ID.sub("streams")).digit_toggles(o.on("chipsselects.digit_toggles"));
         self.streams.set_add_label(None);
         self.streams.set_lead(Some("streams".into()));
+        self.filters
+            .set_add_label(match o.value("chipsselects.add_label") {
+                "short" => Some("+ New".into()),
+                "none" => None,
+                _ => Some("+ Add filter".into()),
+            });
 
         let select = |s: &Select| {
             let (min, max) = match o.value("chipsselects.popup_width") {

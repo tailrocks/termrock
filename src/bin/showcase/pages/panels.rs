@@ -37,8 +37,15 @@ pub struct PanelsPage {
     pub prose: ScrollPanel,
     pub log: ScrollPanel,
     pub nested: ListBox,
+    /// The source selection last announced for the prose and log panels.
+    announced: [Option<SourceSelection>; 2],
     sections: crate::pages::layout::Sections,
 }
+
+/// `(entry, byte)` endpoints in a panel's `lines()`.
+type SourceSelection = ((usize, usize), (usize, usize));
+
+const PANEL_NAMES: [&str; 2] = ["Prose", "Log"];
 
 fn prose_style(t: &Theme, _line: &str) -> ratatui::style::Style {
     t.secondary()
@@ -71,6 +78,7 @@ impl PanelsPage {
             prose: ScrollPanel::new(ID.sub("prose"), vec![]),
             log: ScrollPanel::new(ID.sub("log"), vec![]),
             nested,
+            announced: [None; 2],
             sections: crate::pages::layout::Sections::new(ID.sub("page")),
         };
         page.rebuild();
@@ -160,6 +168,7 @@ impl PanelsPage {
         prose.scroll.v.offset = self.prose.scroll.offset;
         self.prose = prose;
         self.log = log;
+        self.announced = [None; 2];
         self.template.grid = states_grid(self.heading());
     }
 
@@ -171,6 +180,25 @@ impl PanelsPage {
 
     fn panels(&mut self) -> [&mut ScrollPanel; 2] {
         [&mut self.prose, &mut self.log]
+    }
+
+    /// Says where a changed selection sits in the panel's source lines. The
+    /// source range does not move when the panel wraps or resizes, so the
+    /// line and byte stay the same while the window width changes.
+    fn announce_selection(&mut self, panel: usize, cx: &mut Cx) {
+        let now = self.panels()[panel].source_selection();
+        if now == self.announced[panel] {
+            return;
+        }
+        self.announced[panel] = now;
+        if let Some(((from_line, from_byte), (to_line, to_byte))) = now {
+            cx.status(format!(
+                "{} selection: line {} byte {from_byte} to line {} byte {to_byte} of the source",
+                PANEL_NAMES[panel],
+                from_line + 1,
+                to_line + 1,
+            ));
+        }
     }
 
     fn card<'a>(&self, title: Option<&'a str>) -> Panel<'a> {
@@ -425,9 +453,11 @@ impl Page for PanelsPage {
                 if f == self.nested.id {
                     return self.nested.on_key(key);
                 }
-                for p in self.panels() {
-                    if p.id == f {
-                        return p.on_key(key);
+                for i in 0..2 {
+                    if self.panels()[i].id == f {
+                        let o = self.panels()[i].on_key(key);
+                        self.announce_selection(i, cx);
+                        return o;
                     }
                 }
                 Outcome::Ignored
@@ -439,10 +469,13 @@ impl Page for PanelsPage {
                     }
                     return r.outcome();
                 }
-                for p in self.panels() {
+                for i in 0..2 {
+                    let p = &mut self.panels()[i];
+                    let id = p.id;
                     if let Some(r) = p.route(ev) {
                         let o = r.outcome();
-                        if o == Outcome::Ignored && ev.is(Phase::Click) && ev.id == p.id {
+                        self.announce_selection(i, cx);
+                        if o == Outcome::Ignored && ev.is(Phase::Click) && ev.id == id {
                             return Outcome::Changed;
                         }
                         return o;
