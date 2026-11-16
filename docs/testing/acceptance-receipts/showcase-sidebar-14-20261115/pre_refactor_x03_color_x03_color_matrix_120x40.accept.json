@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/x03_color/x03_color_matrix_120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__x03_color__x03_color_matrix_120x40.tui.pb"
+  },
+  "candidate_sha256": "c1bbf7d8711f23794ead6a3c961211d297fbcd6dc43902dd50ac7722d466af47",
+  "baseline_sha256": "c1bbf7d8711f23794ead6a3c961211d297fbcd6dc43902dd50ac7722d466af47",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/x03_color/x03_color_matrix_120x40.tui.pb"
+  },
+  "error_code": null
+}

@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s01_helpkeys/opt_helpkeys_max_percent",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/s01-helpkeys-percent-87572-1794792485213018000-3/check-artifacts/pre_refactor/s01_helpkeys/opt_helpkeys_max_percent/b266d2efea87d05a7f85e5bb4b9a0c442971da1649b3fa5e2677bb8c08a68079/sample.tui.pb"
+  },
+  "candidate_sha256": "b266d2efea87d05a7f85e5bb4b9a0c442971da1649b3fa5e2677bb8c08a68079",
+  "baseline_sha256": "b266d2efea87d05a7f85e5bb4b9a0c442971da1649b3fa5e2677bb8c08a68079",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/pre_refactor/s01_helpkeys/opt_helpkeys_max_percent.tui.pb"
+  },
+  "error_code": null
+}

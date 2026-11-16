@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s10_launchcockpit/sc_launchcockpit_compare-levels_80x24",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s10_launchcockpit__sc_launchcockpit_compare-levels_80x24.tui.pb"
+  },
+  "candidate_sha256": "60bfc3fd9266b04e7eeb3a43ad751df009a72a624ce6e0791a57000c8d2cc006",
+  "baseline_sha256": "60bfc3fd9266b04e7eeb3a43ad751df009a72a624ce6e0791a57000c8d2cc006",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s10_launchcockpit/sc_launchcockpit_compare-levels_80x24.tui.pb"
+  },
+  "error_code": null
+}

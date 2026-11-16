@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s02_checksradios/opt_checksradios_hit",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/s02-checksradios-hit-row-50849-1794791405194233000-0/check-artifacts/pre_refactor/s02_checksradios/opt_checksradios_hit/a68da6c7dff5cee6eee1e8c01e4be36a410d666e0a08bbf5ee475972a4ae557c/sample.tui.pb"
+  },
+  "candidate_sha256": "a68da6c7dff5cee6eee1e8c01e4be36a410d666e0a08bbf5ee475972a4ae557c",
+  "baseline_sha256": "a68da6c7dff5cee6eee1e8c01e4be36a410d666e0a08bbf5ee475972a4ae557c",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/pre_refactor/s02_checksradios/opt_checksradios_hit.tui.pb"
+  },
+  "error_code": null
+}
