@@ -57,8 +57,9 @@ fn expect_visual(
 ) {
     let outcome = app.check_visual(&baseline_root(), test_id);
     // The cells are the accepted paint. A hidden cursor parks on another
-    // cell of an otherwise equal frame, as `App::visual` also allows.
-    if !capturing() && App::cursor_only(&outcome) {
+    // cell of an otherwise equal frame, as `App::visual` also allows. A
+    // visible cursor is part of the picture, so it never gets this pass.
+    if !capturing() && App::cursor_only(&outcome) && !app.screen().cursor().visible() {
         return;
     }
     if !capturing() {
