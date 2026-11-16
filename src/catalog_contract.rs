@@ -9,6 +9,8 @@
 
 #[path = "../tests/support/api_inventory.rs"]
 mod api_inventory;
+#[path = "catalog_debt_facts.rs"]
+mod debt_facts;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
@@ -110,7 +112,7 @@ const EXPANSIONS: &[Expansion] = &[
     },
 ];
 
-/// The most APIs `coverage_debt.txt` may ever list. Lower it when the list
+/// The most APIs `coverage_debt/*.txt` may ever list in all. Lower it when the list
 /// shrinks; raising it means the gate was loosened and needs a reviewer's eye.
 const DEBT_CEILING: usize = 4150;
 
@@ -136,9 +138,16 @@ struct Sources {
     tree: SourceTree,
     catalog: String,
     coverage: String,
+    /// `src/bin/showcase/coverage/*.rs`: one proof/exception file per lane.
+    coverage_lanes: Vec<(String, String)>,
     cases: String,
+    /// `src/bin/showcase/app_tests_catalog/*.rs`: one scenario file per lane.
+    case_lanes: Vec<(String, String)>,
     app: String,
+    /// Every `coverage_debt/*.txt`, joined. Each lane owns one file.
     debt: String,
+    /// The debt file names, to check each belongs to a lane.
+    debt_files: Vec<String>,
     debt_baseline: String,
     showcase: Vec<(String, String)>,
     tests: BTreeMap<String, TestFn>,
@@ -155,19 +164,50 @@ impl Sources {
                 .unwrap_or_else(|e| panic!("read {path}: {e}"))
         };
         let showcase = SourceTree::from_dir(root(), "src/bin/showcase");
+        let dir_files = |dir: &str, ext: &str| -> Vec<(String, String)> {
+            let mut paths: Vec<PathBuf> = std::fs::read_dir(root().join(dir))
+                .map(|d| d.flatten().map(|e| e.path()).collect())
+                .unwrap_or_default();
+            paths.sort();
+            paths
+                .into_iter()
+                .filter(|p| p.extension().is_some_and(|e| e == ext))
+                .map(|p| {
+                    let name = p
+                        .file_name()
+                        .expect("file name")
+                        .to_string_lossy()
+                        .into_owned();
+                    let text = std::fs::read_to_string(&p)
+                        .unwrap_or_else(|e| panic!("read {}: {e}", p.display()));
+                    (name, text)
+                })
+                .collect()
+        };
+        let debt_files = dir_files("src/bin/showcase/coverage_debt", "txt");
         Self {
             tree: SourceTree::from_dir(root(), "src"),
             catalog: read("src/catalog.rs"),
             coverage: read("src/bin/showcase/coverage.rs"),
+            coverage_lanes: dir_files("src/bin/showcase/coverage", "rs"),
             cases: read("src/bin/showcase/app_tests_catalog.rs"),
+            case_lanes: dir_files("src/bin/showcase/app_tests_catalog", "rs"),
             app: read("src/bin/showcase/app.rs"),
-            debt: read("src/bin/showcase/coverage_debt.txt"),
+            debt: debt_files
+                .iter()
+                .map(|(_, text)| format!("{text}\n"))
+                .collect(),
+            debt_files: debt_files.into_iter().map(|(name, _)| name).collect(),
             debt_baseline: read("src/bin/showcase/coverage_debt_baseline.txt"),
             showcase: showcase
                 .files
                 .into_iter()
                 .filter(|(path, _)| {
-                    !path.ends_with("coverage.rs") && !path.ends_with("app_tests_catalog.rs")
+                    let path = path.display().to_string();
+                    !path.ends_with("coverage.rs")
+                        && !path.ends_with("app_tests_catalog.rs")
+                        && !path.contains("/coverage/")
+                        && !path.contains("/app_tests_catalog/")
                 })
                 .map(|(path, text)| (path.display().to_string(), text))
                 .collect(),
@@ -254,6 +294,73 @@ fn mention_needed(id: &str, inv: &Inventory) -> String {
     }
 }
 
+impl Sources {
+    /// The files that hold `CapabilityProof` and `CapabilityException` records.
+    fn coverage_sources(&self) -> impl Iterator<Item = &str> {
+        std::iter::once(self.coverage.as_str())
+            .chain(self.coverage_lanes.iter().map(|(_, text)| text.as_str()))
+    }
+
+    /// The files that hold `ScenarioCase` records and scenario functions.
+    fn case_sources(&self) -> impl Iterator<Item = &str> {
+        std::iter::once(self.cases.as_str())
+            .chain(self.case_lanes.iter().map(|(_, text)| text.as_str()))
+    }
+
+    fn records(&self, name: &str) -> Vec<Record> {
+        self.coverage_sources()
+            .flat_map(|text| api_inventory::records_from_source(text, name))
+            .collect()
+    }
+}
+
+/// A lane file that the Showcase never compiles would let records pass the
+/// source gate that no build ever sees. Check each is declared and chained,
+/// and that each debt file belongs to a lane.
+fn lane_wiring_errors(s: &Sources) -> Vec<String> {
+    let mut errors = Vec::new();
+    for (file, _) in &s.coverage_lanes {
+        let stem = file.trim_end_matches(".rs");
+        for needle in [
+            format!("#[path = \"coverage/{file}\"]\nmod {stem};"),
+            format!("{stem}::PROOFS"),
+            format!("{stem}::EXCEPTIONS"),
+        ] {
+            if !s.coverage.contains(&needle) {
+                errors.push(format!(
+                    "lane file coverage/{file} is not wired into coverage.rs (missing `{needle}`)"
+                ));
+            }
+        }
+    }
+    for (file, _) in &s.case_lanes {
+        let stem = file.trim_end_matches(".rs");
+        for needle in [
+            format!("#[path = \"app_tests_catalog/{file}\"]\nmod lane_{stem};"),
+            format!("lane_{stem}::CASES"),
+        ] {
+            if !s.cases.contains(&needle) {
+                errors.push(format!(
+                    "scenario file app_tests_catalog/{file} is not wired into app_tests_catalog.rs (missing `{needle}`)"
+                ));
+            }
+        }
+    }
+    for file in &s.debt_files {
+        let stem = file.trim_end_matches(".txt");
+        let has_lane = s
+            .coverage_lanes
+            .iter()
+            .any(|(name, _)| name == &format!("lane_{stem}.rs"));
+        if !has_lane {
+            errors.push(format!(
+                "debt file coverage_debt/{file} belongs to no lane (no coverage/lane_{stem}.rs)"
+            ));
+        }
+    }
+    errors
+}
+
 fn debt_ids(text: &str) -> Vec<String> {
     text.lines()
         .map(|l| l.split('#').next().unwrap_or("").trim())
@@ -298,7 +405,7 @@ fn owner_and_member<'a>(id: &'a str, inv: &Inventory) -> (Option<&'a str>, &'a s
 }
 
 fn validate(rows: &[(&'static str, Inventory)], s: &Sources) -> (Vec<String>, Report) {
-    let mut errors = Vec::new();
+    let mut errors = lane_wiring_errors(s);
     let mut report = Report::default();
     let mut exports: BTreeMap<&str, ApiKind> = BTreeMap::new();
     let mut presence: BTreeMap<&str, BTreeSet<&str>> = BTreeMap::new();
@@ -331,8 +438,11 @@ fn validate(rows: &[(&'static str, Inventory)], s: &Sources) -> (Vec<String>, Re
 
     let routes = enum_variants(&s.app, "PageId");
     let scenario_ids = enum_variants(&s.coverage, "ScenarioId");
-    let case_fns = zero_arg_fns(&s.cases);
-    let cases = api_inventory::records_from_source(&s.cases, "ScenarioCase");
+    let case_fns: BTreeSet<String> = s.case_sources().flat_map(zero_arg_fns).collect();
+    let cases: Vec<Record> = s
+        .case_sources()
+        .flat_map(|text| api_inventory::records_from_source(text, "ScenarioCase"))
+        .collect();
     let mut registered: BTreeSet<String> = BTreeSet::new();
     for case in &cases {
         let id = case
@@ -356,7 +466,7 @@ fn validate(rows: &[(&'static str, Inventory)], s: &Sources) -> (Vec<String>, Re
     report.scenarios = registered.len();
 
     let mut proofs: BTreeMap<String, &Record> = BTreeMap::new();
-    let proof_records = api_inventory::records_from_source(&s.coverage, "CapabilityProof");
+    let proof_records = s.records("CapabilityProof");
     for record in &proof_records {
         let Some(api) = record.get("api").and_then(Value::str) else {
             errors.push("CapabilityProof without a literal api".into());
@@ -408,7 +518,7 @@ fn validate(rows: &[(&'static str, Inventory)], s: &Sources) -> (Vec<String>, Re
 
     let kinds = enum_variants(&s.coverage, "ExceptionKind");
     let mut exceptions: BTreeMap<String, &Record> = BTreeMap::new();
-    let exception_records = api_inventory::records_from_source(&s.coverage, "CapabilityException");
+    let exception_records = s.records("CapabilityException");
     for record in &exception_records {
         let Some(api) = record.get("api").and_then(Value::str) else {
             errors.push("CapabilityException without a literal api".into());
@@ -595,7 +705,7 @@ fn catalog_reports_the_proof_layers_separately() {
         .unwrap_or(0);
     let all = &rows.last().expect("rows").1;
     eprintln!(
-        "[source coverage] {} exports ({:?}); {} inherit their owner; {} owe a disposition (shrink only, see coverage_debt.txt; {} of them are named on a page, which is not proof); {} exceptions",
+        "[source coverage] {} exports ({:?}); {} inherit their owner; {} owe a disposition (shrink only, see coverage_debt/<lane>.txt; {} of them are named on a page, which is not proof); {} exceptions",
         all.exports.len(),
         report.exports,
         report.inherited,
@@ -956,10 +1066,21 @@ fn catalog_name_match_is_not_a_disposition() {
     expect_error(&errors, "API has no disposition: clock::area");
 }
 
+/// Pad the debt list back up to `DEBT_CEILING` with stale filler ids, as it was
+/// before any lane landed a proof. Without it the growth tests only pass while
+/// the list is exactly full, and the first lane that lands would break them.
+fn fill_debt_to_ceiling(s: &mut Sources) {
+    let have = debt_ids(&s.debt).len();
+    for n in 0..DEBT_CEILING.saturating_sub(have) {
+        s.debt.push_str(&format!("\nfiller::ratchet_padding_{n}\n"));
+    }
+}
+
 #[test]
 fn catalog_debt_cannot_grow() {
     let mut s = Sources::load();
     with_probe(&mut s);
+    fill_debt_to_ceiling(&mut s);
     s.debt.push_str("\nclock::undeclared_probe\n");
     let errors = check(&s);
     expect_error(&errors, "debt list grew");
@@ -971,6 +1092,7 @@ fn catalog_debt_cannot_grow() {
 fn catalog_debt_baseline_is_frozen() {
     let mut s = Sources::load();
     with_probe(&mut s);
+    fill_debt_to_ceiling(&mut s);
     s.debt.push_str("\nclock::undeclared_probe\n");
     s.debt_baseline.push_str("\nclock::undeclared_probe\n");
     let errors = check(&s);
@@ -1319,4 +1441,131 @@ fn catalog_allowlist_records_are_unique_exact_ids_with_a_reason() {
             entry.reason
         );
     }
+}
+
+/// A lane file by name, for the mutation tests below.
+fn lane_file<'a>(s: &'a mut Sources, name: &str) -> &'a mut String {
+    &mut s
+        .coverage_lanes
+        .iter_mut()
+        .find(|(file, _)| file == name)
+        .unwrap_or_else(|| panic!("lane file {name}"))
+        .1
+}
+
+/// The first debt id and the debt file that lists it.
+fn first_debt(s: &Sources) -> String {
+    debt_ids(&s.debt)
+        .into_iter()
+        .find(|id| !id.is_empty())
+        .expect("a debt line")
+}
+
+fn lane_proof(api: &str) -> String {
+    format!(
+        "\nconst LANE_PROBE: CapabilityProof = CapabilityProof {{ api: \"{api}\", route: PageId::Overview, scenarios: &[ScenarioId::NarrowLayout], feature: None }};\n"
+    )
+}
+
+#[test]
+fn catalog_lane_files_exist_one_per_debt_file() {
+    let s = Sources::load();
+    assert!(!s.debt_files.is_empty(), "coverage_debt/ holds lane files");
+    assert!(s.coverage_lanes.len() >= s.debt_files.len());
+    assert!(lane_wiring_errors(&s).is_empty());
+}
+
+#[test]
+fn catalog_accepts_a_proof_recorded_in_a_lane_file() {
+    let mut s = Sources::load();
+    let api = first_debt(&s);
+    lane_file(&mut s, "lane_shell.rs").push_str(&lane_proof(&api));
+    // The proof is counted, so the debt line for it is now stale.
+    expect_error(
+        &check(&s),
+        &format!("debt entry is stale, the API now has a disposition (delete the line): {api}"),
+    );
+    // Removing the line from the lane's debt file closes the gate again.
+    let mut closed = s.clone();
+    let line = format!("{api}\n");
+    closed.debt = closed.debt.replacen(&line, "", 1);
+    if closed.debt == s.debt {
+        // The line carries a trailing note: drop the whole line.
+        closed.debt = s
+            .debt
+            .lines()
+            .filter(|l| l.split('#').next().unwrap_or("").trim() != api)
+            .map(|l| format!("{l}\n"))
+            .collect();
+    }
+    let errors = check(&closed);
+    assert!(errors.is_empty(), "{}", errors.join("\n"));
+}
+
+#[test]
+fn catalog_rejects_a_duplicate_proof_across_files() {
+    let mut s = Sources::load();
+    let api = api_inventory::proof_ids_from_source(&s.coverage)
+        .into_iter()
+        .next()
+        .expect("a proof in coverage.rs");
+    lane_file(&mut s, "lane_theme.rs").push_str(&lane_proof(&api));
+    expect_error(&check(&s), &format!("duplicate proof: {api}"));
+}
+
+#[test]
+fn catalog_rejects_a_lane_exception_with_a_missing_test() {
+    let mut s = Sources::load();
+    let api = first_debt(&s);
+    lane_file(&mut s, "lane_state.rs").push_str(&format!(
+        "\nconst LANE_PROBE: CapabilityException = CapabilityException {{ api: \"{api}\", kind: ExceptionKind::Nonvisual, reason: \"A lane exception that names no real test.\", regression_test: \"src/lib.rs::no_such_test\", tracking_issue: None }};\n"
+    ));
+    expect_error(&check(&s), "which is no #[test] fn at that");
+}
+
+#[test]
+fn catalog_rejects_a_lane_case_registered_twice() {
+    let mut s = Sources::load();
+    s.case_lanes
+        .iter_mut()
+        .find(|(file, _)| file == "layout.rs")
+        .expect("layout case file")
+        .1
+        .push_str("\nconst LANE_PROBE: ScenarioCase = ScenarioCase { id: ScenarioId::NarrowLayout, run: narrow_layout };\n");
+    expect_error(&check(&s), "scenario case registered twice: NarrowLayout");
+}
+
+#[test]
+fn catalog_rejects_an_unwired_lane_file() {
+    let mut s = Sources::load();
+    s.coverage_lanes
+        .push(("lane_probe.rs".into(), String::new()));
+    expect_error(
+        &check(&s),
+        "lane file coverage/lane_probe.rs is not wired into coverage.rs",
+    );
+    let mut s = Sources::load();
+    s.case_lanes.push(("probe.rs".into(), String::new()));
+    expect_error(
+        &check(&s),
+        "scenario file app_tests_catalog/probe.rs is not wired",
+    );
+}
+
+#[test]
+fn catalog_rejects_a_debt_file_with_no_lane() {
+    let mut s = Sources::load();
+    s.debt_files.push("probe.txt".into());
+    expect_error(
+        &check(&s),
+        "debt file coverage_debt/probe.txt belongs to no lane",
+    );
+}
+
+#[test]
+fn catalog_lane_debt_files_hold_disjoint_ids() {
+    let mut s = Sources::load();
+    let dup = first_debt(&s);
+    s.debt.push_str(&format!("\n{dup}\n"));
+    expect_error(&check(&s), &format!("duplicate debt entry: {dup}"));
 }
