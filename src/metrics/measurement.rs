@@ -6,7 +6,7 @@
 //! its machine, build and instrumentation mode. Nothing here gates on time:
 //! no wall-clock budget exists until repeatable baselines do.
 //!
-//! The count-only reports of [`report`](super::report) stay as they are. A
+//! The count-only reports of `report` stay as they are. A
 //! timing report is a different file (`*.timing.json`) because its run is a
 //! different build: elapsed time is measured with instrumentation off.
 
