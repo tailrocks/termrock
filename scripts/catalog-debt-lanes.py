@@ -9,13 +9,13 @@ Two steps, both rerunnable:
 
   1. Emit the facts (kind, shape, owner, definition file) for every debt id:
 
-       CATALOG_DEBT_FACTS=/tmp/facts.tsv cargo nextest run -p junie-tui --lib \
+       CATALOG_DEBT_FACTS=target/debt-facts.tsv cargo nextest run -p junie-tui --lib \
          --run-ignored only -E 'test(catalog_debt_facts)'
 
   2. Classify and split:
 
-       python3 -I scripts/catalog-debt-lanes.py report /tmp/facts.tsv
-       python3 -I scripts/catalog-debt-lanes.py write  /tmp/facts.tsv
+       python3 -I scripts/catalog-debt-lanes.py report target/debt-facts.tsv
+       python3 -I scripts/catalog-debt-lanes.py write  target/debt-facts.tsv
 
 `write` only redistributes ids that are already in the frozen baseline. It
 never adds an id and never drops one, so it cannot loosen the ratchet. `list` shows a lane's
@@ -41,6 +41,7 @@ import collections
 import csv
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 
@@ -341,8 +342,11 @@ def cmd_write(args):
 
 def cmd_prune(args):
     """Delete the debt lines the gate reports stale, using the gate's output."""
+    cargo = shutil.which("cargo")
+    if cargo is None:
+        sys.exit("cargo is not on PATH")
     cp = subprocess.run(
-        ["cargo", "nextest", "run", "-p", "junie-tui", "--lib", "--no-tests", "fail",
+        [cargo, "nextest", "run", "-p", "junie-tui", "--lib", "--no-tests", "fail",
          "-E", "test(catalog_repository_gate_is_closed)", "--no-capture"],
         cwd=ROOT, capture_output=True, text=True,
     )
