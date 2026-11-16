@@ -289,7 +289,7 @@ fn route_by_page_keyboard_and_pointer() {
 
     let app = open("s03-route-keys", 120, 40, &[]);
     app.wait_text(OVERVIEW);
-    for _ in 0..16 {
+    for _ in 0..17 {
         app.key("]");
     }
     // The destination blurb paints before the previous page's grid leaves.
