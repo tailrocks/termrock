@@ -5,7 +5,7 @@
 //! test thread only. Every number below was measured with
 //!
 //! ```text
-//! cargo nextest run -p junie-tui --features work-metrics --bin tablepro \
+//! cargo nextest run -p termrock-tablepro --features work-metrics --bin tablepro \
 //!     --no-tests fail -E 'test(/^work_metrics_tests::/)'
 //! ```
 

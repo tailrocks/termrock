@@ -5,7 +5,7 @@
 //! for the test thread only. Every number below was measured with
 //!
 //! ```text
-//! cargo nextest run -p junie-tui --features work-metrics --bin showcase \
+//! cargo nextest run -p termrock-showcase --features work-metrics --bin showcase \
 //!     --no-tests fail -E 'test(/^work_metrics_tests::/)'
 //! ```
 

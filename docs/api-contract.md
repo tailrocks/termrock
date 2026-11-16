@@ -1,8 +1,8 @@
 # API contract
 
 This is the supported surface of Termrock for a consumer. It states what a
-consumer may rely on and what it must not. Every rule below names the code or
-the fixture that holds it.
+consumer may rely on and what it must not. Rules that a test holds name
+the test; the others name the code.
 
 Termrock is not published to crates.io. Depend on it by path or by git:
 
@@ -47,7 +47,7 @@ The prelude holds `ItemKey`, `WidgetId`, `RowSource`, `KeyedRowSource`,
 | `cli` | `termrock::cli`, `clap` | Command-line argument types, including `Motion` as a `clap::ValueEnum`. |
 | `terminal` | `termrock::terminal`, `termpane` | The terminal emulator, viewport and session controller. |
 | `product` | `terminal` and the implementation's `product` | The shape of a shipped product: no demo code. |
-| `work-metrics` | The work counters behind `record_work!` | Off in release builds. See [performance contracts](performance-contracts.md). |
+| `work-metrics` | The work counters behind `record_work!` | Opt-in: off unless a build enables it, whatever the profile. See [performance contracts](performance-contracts.md). |
 
 The implementation package keeps its old defaults (`cli` and `terminal`) so
 that an existing `junie-tui` consumer does not change silently. The facade
@@ -172,12 +172,13 @@ and prints each normal feature tree.
 | [`tests/consumers/minimal`](../tests/consumers/minimal/src/lib.rs) | none | `consumer_minimal_renders_input_and_list`; the examples `consumer_minimal_validated_input_reports_and_clears_errors`, `consumer_minimal_typed_grid_actions_arrive_in_order`, `consumer_minimal_nested_scroll_views_bubble_what_they_cannot_scroll` and `consumer_minimal_bounded_external_messages_return_the_overflow`. The normal tree has neither `clap` nor `termpane`. |
 | [`tests/consumers/keyed-modal`](../tests/consumers/keyed-modal/src/lib.rs) | none | `consumer_keyed_modal_preserves_selection`: a keyed list borrowed from a provider, under a modal layer, keeps its selected key when the provider is reordered, and focus returns. It is the borrowed-keyed-list and the modal-focus example. |
 | [`tests/consumers/terminal`](../tests/consumers/terminal/src/lib.rs) | `terminal` | `consumer_terminal_constructs_public_viewport`. No `clap`. |
-| [`tests/consumers/jackin-host`](../tests/consumers/jackin-host/src/lib.rs) | none, on `jackin-console` | `consumer_jackin_host_resolves_the_host_api`. The host keeps its intentional terminal dependency and has no `clap` and no demo modules. |
+| [`tests/consumers/jackin-host`](../tests/consumers/jackin-host/src/lib.rs) | none, on `jackin-console` | `consumer_jackin_host_resolves_the_host_api`. The host keeps its intentional terminal dependency and resolves no `clap`; `tests/library_has_no_demo.rs` of `jackin-console` keeps demo names out of the host modules. |
 
 `tests/regressions/facade_contract.rs` runs in the ordinary test suite: it
 scans the four application packages for any manifest entry or Rust path that
 names `junie_tui` (`facade_apps_have_no_implementation_imports`) and checks the
 committed lockfile of each fixture, which holds exactly its normal graph
 (`consumer_minimal_excludes_clap_and_termpane`,
+`consumer_keyed_modal_excludes_clap_and_termpane`,
 `consumer_terminal_has_termpane_without_clap`,
 `consumer_jackin_host_excludes_demo`).

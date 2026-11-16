@@ -4,8 +4,8 @@
 //! keeps `clap`, `jackin_console::fixtures` and `jackin_console::sim` behind
 //! its `demo` feature, and a host must not get them by default. The
 //! intentional `terminal` dependency of the library stays. The regression
-//! `consumer_jackin_host_excludes_demo` in `tests/regressions` checks the
-//! normal dependency tree of this package.
+//! `consumer_jackin_host_excludes_demo` in `tests/regressions` checks this
+//! package's lockfile, and `scripts/check-consumers.sh` prints its normal tree.
 
 use jackin_console::launch::LaunchTarget;
 

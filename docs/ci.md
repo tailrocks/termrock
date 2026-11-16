@@ -19,11 +19,11 @@ change the config and run `velnor-actions generate`.
 - **Rust / junie-tui** and **Rust / jackin-console** — one job per
   default workspace member, built with `--all-features`. Each runs
   `cargo nextest run --profile ci --package <crate> --no-tests fail
-  --all-features`, which selects every test target of the package (the
-  library, the binaries, `functional` and every other `tests/*.rs`
-  target), plus clippy `-D warnings` on `--all-targets`, `cargo fmt
-  --check` and `cargo doc`. The `ci` profile in `.config/nextest.toml` must keep no `default-filter`,
-  or targets drop out of this job.
+  --all-features`, which selects every test target of the package except
+  `functional` (the `ci` profile's default filter is `not binary(functional)`:
+  the `functional` targets run in `suite-functional`), plus clippy `-D warnings`
+  on `--all-targets`, `cargo fmt --check` and `cargo doc`. Keep the filter
+  that way, or the PTY journeys run twice.
 - **Rust / junie-tui (product)** and **Rust / jackin-console
   (product)** — the same five tasks for the product shape. The second
   configuration in `.velnor/config.toml` selects the feature `product`,
@@ -31,8 +31,8 @@ change the config and run `velnor-actions generate`.
   (no demo data, no `clap`, no `jackin-preview`). `junie-tui` declares
   `product = ["terminal"]`, so its job builds the library shape that
   jackin consumes (`default-features = false, features = ["terminal"]`):
-  `termpane` in, `clap` out. The bins and the `functional` target require
-  `cli`, so they are skipped there.
+  `termpane` in, `clap` out. The root package has no binaries and no
+  `functional` target any more.
 - **Rust / termrock** and **Rust / termrock (product)** — the facade
   crate `crates/termrock`, which re-exports `junie-tui` under the supported
   import path and has empty default features. The product job builds it with

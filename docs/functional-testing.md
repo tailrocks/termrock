@@ -592,11 +592,12 @@ repository uses it.
 ## Suite composition
 
 Tests live one module per application — `showcase.rs`, `tablepro.rs`,
-`holla.rs` in `tests/functional`, and `jackin.rs` in
-`apps/jackin/tests/functional` (the `jackin-console` crate, because the test
-needs `CARGO_BIN_EXE_jackin`) — plus cross-cutting `lifecycle.rs` (resize and
-overlay ownership) and `visual.rs` (strict frozen check), all on the
-single shared harness in `tests/functional/support.rs`. The jackin test
+`holla.rs` and `jackin.rs` in the `tests/functional` directory of each app
+package (`apps/showcase`, `apps/tablepro`, `apps/holla`, `apps/jackin`; each
+package needs its own `CARGO_BIN_EXE_<bin>`) — plus the cross-cutting
+`lifecycle.rs` (resize and overlay ownership) and `visual.rs` (strict frozen
+check) in Showcase's target, all on the single shared harness in
+`tests/functional/support.rs`. The jackin test
 crate includes that file with `#[path]`; each crate keeps its approved
 baselines under its own `tests/functional/baselines`, and evidence goes to
 the workspace `target/functional` for both.

@@ -215,6 +215,23 @@ fn consumer_minimal_excludes_clap_and_termpane() {
 }
 
 #[test]
+fn consumer_keyed_modal_excludes_clap_and_termpane() {
+    let names = resolved_packages("keyed-modal");
+    assert!(
+        has(&names, "termrock") && has(&names, "junie-tui"),
+        "{names:?}"
+    );
+    assert!(
+        !has(&names, "clap"),
+        "clap leaked into the keyed-modal consumer"
+    );
+    assert!(
+        !has(&names, "termpane"),
+        "termpane leaked into the keyed-modal consumer"
+    );
+}
+
+#[test]
 fn consumer_terminal_has_termpane_without_clap() {
     let names = resolved_packages("terminal");
     assert!(

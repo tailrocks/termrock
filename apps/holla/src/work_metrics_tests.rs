@@ -5,7 +5,7 @@
 //! test thread only. Every number below was measured with
 //!
 //! ```text
-//! cargo nextest run -p junie-tui --features work-metrics --bin holla \
+//! cargo nextest run -p termrock-holla --features work-metrics --bin holla \
 //!     --no-tests fail -E 'test(/^work_metrics_tests::/)'
 //! ```
 
