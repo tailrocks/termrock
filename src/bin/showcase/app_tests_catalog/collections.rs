@@ -1148,8 +1148,8 @@ fn tree_structure() {
         assert!(rows[1].has_children && !rows[1].expanded);
         assert!(rows[4].note && !rows[4].has_children);
         assert!(
-            rows[5].has_children && rows[5].expanded,
-            "a lazy node counts as a branch"
+            rows[5].has_children && !rows[5].expanded,
+            "a lazy node counts as a branch, closed until it is loaded"
         );
         assert_eq!((rows[2].depth, rows[2].meta.as_deref()), (1, Some("4 KB")));
         assert_eq!(rows[2].glyph.as_deref(), Some("*"));
@@ -1349,14 +1349,14 @@ fn tree_input() {
     assert_eq!((o, a.len()), (Outcome::Consumed, 0), "a note is inert");
     let _ = tree.on_key(&key(KeyCode::Down));
     let (_, a) = acts(tree.on_key(&key(KeyCode::Enter)));
-    assert!(a.is_empty(), "closing a lazy node asks for nothing");
-    let (_, a) = acts(tree.on_key(&key(KeyCode::Enter)));
     assert_eq!(
         a,
         vec![TreeAction::Expand(vec![2])],
-        "a lazy node asks for its children"
+        "the first open of a lazy node asks for its children"
     );
     assert!(tree.node(&[2]).is_some_and(|n| n.busy));
+    let (_, a) = acts(tree.on_key(&key(KeyCode::Enter)));
+    assert!(a.is_empty(), "closing a lazy node asks for nothing");
 
     for (mode, collapses, actions) in [
         (BranchAction::Toggle, true, 0),
@@ -1431,7 +1431,6 @@ fn tree_input() {
     );
     assert_eq!(acts(plain.toggle_recursive(99)).0, Outcome::Consumed);
     assert_eq!(acts(plain.toggle_recursive(2)).0, Outcome::Consumed);
-    let _ = plain.toggle_recursive(5);
     let (_, a) = acts(plain.toggle_recursive(5));
     assert_eq!(
         a,
