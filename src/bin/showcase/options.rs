@@ -1863,6 +1863,11 @@ pub static CODE_EDITOR: &[Opt] = &[
         "Find query",
         &["off", "delay", "delay-3rd", "missing"],
     ),
+    Opt::new(
+        "codeeditor.completion_source",
+        "Completion source",
+        &["all", "paged"],
+    ),
 ];
 
 pub static DIFF: &[Opt] = &[
