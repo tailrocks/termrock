@@ -125,6 +125,12 @@ fn theme_color_levels() {
         Color::Indexed(_)
     ));
     assert_eq!(Theme::for_level(ColorLevel::Mono).canvas, Color::Black);
+    // Mono keeps four greys: white text, light grey secondary text, dark grey
+    // borders.
+    let grey = Theme::for_level(ColorLevel::Mono);
+    assert_eq!(grey.text_primary, Color::White);
+    assert_eq!(grey.text_secondary, Color::Gray);
+    assert_eq!(grey.border_subtle, Color::DarkGray);
 
     // Where colour cannot carry the state, a modifier does: a pressed button at
     // mono is reversed, at truecolor it differs by background only.
@@ -812,6 +818,25 @@ fn theme_tones_and_status() {
         }
     }
     assert_eq!(t.tone_on(Tone::Normal, t.canvas), t.text_primary);
+    // The palette itself keeps every text tone readable on the two planes
+    // text mostly sits on, before any rescue by `legible`.
+    for tone in [
+        Tone::Normal,
+        Tone::Secondary,
+        Tone::Muted,
+        Tone::Error,
+        Tone::Warning,
+        Tone::Success,
+        Tone::Info,
+        Tone::Active,
+    ] {
+        for bg in [t.canvas, t.surface] {
+            assert!(
+                contrast_ratio(t.tone(tone), bg).is_some_and(|r| r >= 4.5),
+                "{tone:?} reads on {bg:?}"
+            );
+        }
+    }
 
     // Status kinds: tone, glyph and style, with the spinner on a tick.
     assert_eq!(StatusKind::ALL.len(), 8);
@@ -1040,6 +1065,10 @@ fn theme_style_tokens() {
     assert_eq!(t.key_hint_action().fg, Some(t.text_muted));
     assert_eq!(t.border(true).fg, Some(t.border_strong));
     assert_eq!(t.border(false).fg, Some(t.border_subtle));
+    for plane in [t.canvas, t.surface] {
+        assert_ne!(t.border_subtle, plane, "a subtle border shows on {plane:?}");
+    }
+    assert_ne!(t.border_strong, t.border_subtle);
 
     // Spacing, insets and the hint bar defaults ride on the theme.
     assert_eq!(Spacing::default(), Spacing::DEFAULT);
@@ -1224,6 +1253,35 @@ fn specimen_state_grid() {
         buf[(12 + 2, hover_y)].bg,
         "a hovered primary button differs from a resting one"
     );
+
+    // A Narrow row clamps every cell to narrow_width; other rows keep the
+    // column width. TextInput supports both states and is two rows tall.
+    let mut clamp = StateGrid::new(WidgetId::of("scenario.specimen.clamp"))
+        .row(SpecimenState::Rest)
+        .row(SpecimenState::Narrow)
+        .column(
+            "Input",
+            TextInput::new(WidgetId::of("scenario.specimen.narrow"), "Name"),
+        )
+        .label_width(12)
+        .column_width(24)
+        .narrow_width(8);
+    let (cw, ch) = clamp.size();
+    let clamped = paint_with(
+        &t,
+        Interaction::default(),
+        Rect::new(0, 0, cw, ch),
+        |a, b, c| {
+            clamp.render(a, b, c, t.canvas);
+        },
+    );
+    let far = 12 + 16;
+    let field_at = |ys: std::ops::Range<u16>| {
+        let mut ys = ys;
+        ys.any(|y| clamped[(far, y)].bg == t.field)
+    };
+    assert!(field_at(1..3), "a rest field spans the column");
+    assert!(!field_at(3..5), "a narrow field stops at 8 cells");
 
     // A slice of rows, without the header.
     let mut part = StateGrid::new(WidgetId::of("scenario.specimen.part"))
@@ -1633,6 +1691,11 @@ fn measure_tiles() {
     assert_eq!(grown.rects, [Rect::new(0, 0, 9, 1), Rect::new(11, 0, 9, 1)]);
     assert_eq!(grown.size, Size::new(20, 1));
 
+    // An odd spare width goes to the last growing tile.
+    let (a, b) = (Tile::new(5, &one), Tile::new(5, &one));
+    let odd = measure::tiles(21, &[&[a, b]], (2, 1));
+    assert_eq!(odd.rects, [Rect::new(0, 0, 9, 1), Rect::new(11, 0, 10, 1)]);
+
     // A fixed tile keeps its width.
     let (fixed, grow) = (Tile::new(6, &one).fixed(), Tile::new(4, &one));
     assert!(!fixed.grow && grow.grow);
@@ -1859,6 +1922,22 @@ fn status_segments() {
     let text = text_of(&squeezed.buf);
     assert!(!text.contains("12:30"), "the weakest segment is dropped");
     assert!(text.contains("clickable"), "the strongest survives");
+
+    // On equal priority the rightmost right segment goes first.
+    let tie_left = [Segment::new("keep", Tone::Normal).priority(9)];
+    let tie_right = [
+        Segment::new("r1", Tone::Muted).priority(3),
+        Segment::new("r2", Tone::Muted).priority(3),
+    ];
+    let full = segments::width(&tie_left, &tie_right, &theme);
+    let tight = paint_hits(Rect::new(0, 0, full - 1, 1), |a, b, c| {
+        segments::render(a, b, c, &tie_left, &tie_right, theme.surface);
+    });
+    let text = text_of(&tight.buf);
+    assert!(
+        text.contains("keep") && text.contains("r1") && !text.contains("r2"),
+        "{text:?}"
+    );
 }
 
 /// The brand lockup, plain and as a click target.
