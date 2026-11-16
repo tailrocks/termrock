@@ -187,6 +187,47 @@ const INVENTORY: &[Suite] = &[
         ],
     },
     Suite {
+        family: "ScrollPanel source-row budgets",
+        binary_id: "junie-tui::regressions",
+        matcher: Some("/^work_budgets::/"),
+        file: "tests/regressions/work_budgets/scroll_panel.rs",
+        tests: &[
+            "work_budgets::scroll_panel::work_contract_scroll_panel_flat_measures_once_and_appends_incrementally",
+            "work_budgets::scroll_panel::work_contract_scroll_panel_wrapped_builds_once_per_content_change",
+        ],
+    },
+    Suite {
+        family: "terminal view and viewport budgets",
+        binary_id: "junie-tui::regressions",
+        matcher: Some("/^work_budgets::/"),
+        file: "tests/regressions/work_budgets/terminal.rs",
+        tests: &[
+            "work_budgets::terminal::work_contract_terminal_prepared_paint",
+            "work_budgets::terminal::work_contract_terminal_feed_and_copy_units",
+        ],
+    },
+    Suite {
+        family: "runtime input and output budgets",
+        binary_id: "junie-tui",
+        matcher: Some("/^runtime::raw_input_tests::work::/"),
+        file: "src/runtime/raw_input_tests/work.rs",
+        tests: &[
+            "runtime::raw_input_tests::work::work_contract_runtime_raw_filtered_events_yield",
+            "runtime::raw_input_tests::work::work_contract_runtime_startup_discard_is_not_input_work",
+            "runtime::raw_input_tests::work::work_contract_runtime_flood_services_input",
+            "runtime::raw_input_tests::work::work_contract_runtime_settle_counts_the_settled_pointer_move",
+            "runtime::raw_input_tests::work::work_contract_runtime_resume_resize_is_one_dispatch",
+            "runtime::raw_input_tests::work::work_contract_runtime_frame_diff_and_bytes_written",
+        ],
+    },
+    Suite {
+        family: "Jackin scripted transport",
+        binary_id: "jackin-console",
+        matcher: Some("/^sim::link::tests::work::/"),
+        file: "apps/jackin/src/sim/link/tests/work.rs",
+        tests: &["sim::link::tests::work::work_contract_jackin_scripted_output_budget"],
+    },
+    Suite {
         family: "Jackin projection epochs",
         binary_id: "jackin-console::world",
         matcher: Some("/^projection_work::/"),
