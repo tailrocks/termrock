@@ -689,6 +689,27 @@ fn fields_icon_button() {
         },
     );
 
+    // `danger_hover` recolours a hovered plate in both looks.
+    paint_ring(
+        Rect::new(0, 0, 10, 1),
+        Interaction {
+            hover: Some(id("icon.close")),
+            ..Interaction::default()
+        },
+        |_, _, ctx| {
+            for calm in [
+                IconButton::close(id("icon.close")),
+                IconButton::new(id("icon.close"), "x"),
+            ] {
+                assert_ne!(
+                    calm.style(ctx, host),
+                    calm.clone().danger_hover(true).style(ctx, host),
+                    "a hovered plate turns to its danger colour"
+                );
+            }
+        },
+    );
+
     // `render_in` draws inside a caller-owned plate.
     let mut registered = None;
     let in_plate = paint_ring(
@@ -1668,6 +1689,33 @@ fn fields_text_input_builders() {
     );
     assert!(!base("ti.v").context_menu(false).edit_menu.enabled);
     assert!(base("ti.v").context_menu(true).edit_menu.enabled);
+
+    // validate_when decides whether typing validates before a commit.
+    for (when, shows) in [(ValidateWhen::Live, true), (ValidateWhen::Commit, false)] {
+        let mut field = base("ti.vw")
+            .validate_when(when)
+            .validator(|t| t.contains('!').then(|| "no bang".to_owned()));
+        field.begin_edit();
+        field.on_key(&key(KeyCode::Char('!')));
+        assert_eq!(field.error().is_some(), shows, "{when:?}");
+    }
+
+    // field_keys picks the chord that selects all, once the field is painted.
+    for (keys, chord, selects) in [
+        (FieldKeys::Emacs, 'l', true),
+        (FieldKeys::Emacs, 'a', false),
+        (FieldKeys::Desktop, 'a', true),
+    ] {
+        let mut field = base("ti.keys").field_keys(keys).value("hello");
+        text_input_frame(&mut field, 40, false);
+        field.begin_edit();
+        field.on_key(&ctrl(chord));
+        assert_eq!(
+            field.field.buffer.selection().is_some(),
+            selects,
+            "{keys:?} ctrl+{chord}"
+        );
+    }
 }
 
 fn fields_text_input_editing() {
@@ -2094,6 +2142,48 @@ fn fields_text_area_builders() {
     };
     assert_eq!(label_regions(&mut base("ta.lh")), 1);
     assert_eq!(label_regions(&mut base("ta.lh").label_hit(false)), 0);
+
+    // The pointer policy decides whether a drag selects.
+    for (sel, selects) in [(PointerSelect::DEFAULT, true), (PointerSelect::OFF, false)] {
+        let mut area = base("ta.ptr").pointer_select(sel).value("hello world");
+        text_area_frame(&mut area, false);
+        area.on_press(Position::new(4, 1));
+        area.on_drag(Position::new(9, 1));
+        assert_eq!(area.field.buffer.selection().is_some(), selects, "{sel:?}");
+    }
+
+    // The context menu opens on a secondary click only when enabled.
+    for (enabled, opens) in [(true, true), (false, false)] {
+        let mut area = base("ta.menu").context_menu(enabled).value("copy me");
+        let frame = text_area_frame(&mut area, false);
+        let ev = PointerEvent::new(
+            &frame.hits,
+            Phase::Secondary,
+            area.id,
+            Position::new(4, 1),
+            1,
+            KeyModifiers::NONE,
+        );
+        let _ = area.pointer(&ev);
+        assert_eq!(area.edit_menu.is_open(), opens, "context_menu({enabled})");
+    }
+
+    // field_keys picks the chord that selects all, once the area is painted.
+    for (keys, chord, selects) in [
+        (FieldKeys::Emacs, 'l', true),
+        (FieldKeys::Emacs, 'a', false),
+        (FieldKeys::Desktop, 'a', true),
+    ] {
+        let mut area = base("ta.keys").field_keys(keys).value("hello");
+        text_area_frame(&mut area, false);
+        area.begin_edit();
+        area.on_key(&ctrl(chord));
+        assert_eq!(
+            area.field.buffer.selection().is_some(),
+            selects,
+            "{keys:?} ctrl+{chord}"
+        );
+    }
 }
 
 fn fields_text_area_editing() {
@@ -2649,6 +2739,7 @@ fn fields_code_editor_find() {
 }
 
 fn fields_code_editor_config() {
+    let theme = Theme::for_level(ColorLevel::TrueColor);
     // Content accessors.
     let mut editor = Editor::new(id("cc.one"), "");
     assert!(editor.is_empty());
@@ -2688,8 +2779,14 @@ fn fields_code_editor_config() {
     assert_eq!(running.running, Some(12..21));
     let text = text_of(&code_frame(&mut running, true).buf);
     assert!(text.contains("beta"));
+    let spinner = theme.glyphs.spinner_frame(0);
+    assert!(
+        text.contains(spinner),
+        "the running block shows the spinner in its gutter"
+    );
     running.set_running(None);
     assert_eq!(running.running, None);
+    assert!(!text_of(&code_frame(&mut running, true).buf).contains(spinner));
 
     // Builders land on the editor.
     assert_eq!(
@@ -2727,6 +2824,42 @@ fn fields_code_editor_config() {
             .context_menu(false)
             .edit_menu
             .enabled
+    );
+
+    // field_keys picks the chord that selects all, once the editor is painted.
+    for (keys, chord, selects) in [
+        (FieldKeys::Emacs, 'l', true),
+        (FieldKeys::Emacs, 'a', false),
+        (FieldKeys::Desktop, 'a', true),
+    ] {
+        let mut keyed = Editor::new(id("cc.keys"), "hello")
+            .edit_entry(EditEntry::Explicit)
+            .field_keys(keys);
+        code_frame(&mut keyed, true);
+        keyed.begin_edit();
+        keyed.on_key(&ctrl(chord));
+        assert_eq!(
+            keyed.field.buffer.selection().is_some(),
+            selects,
+            "{keys:?} ctrl+{chord}"
+        );
+    }
+
+    // The scrollbar gap narrows the text beside a vertical bar.
+    let tall: String = (0..40)
+        .map(|i| format!("row {i} {}\n", "x".repeat(100)))
+        .collect();
+    let mut snug = Editor::new(id("cc.gap"), &tall)
+        .edit_entry(EditEntry::Explicit)
+        .scrollbar_gap(0);
+    let mut roomy = Editor::new(id("cc.gap"), &tall)
+        .edit_entry(EditEntry::Explicit)
+        .scrollbar_gap(3);
+    code_frame(&mut snug, false);
+    code_frame(&mut roomy, false);
+    assert!(
+        roomy.hbar().viewport_len < snug.hbar().viewport_len,
+        "a wider gap leaves less room for text"
     );
 
     // The horizontal bar appears for a wide line and follows the policy.
