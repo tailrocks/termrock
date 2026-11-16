@@ -910,10 +910,25 @@ fn list_multi() {
     assert_eq!(clicks.checked_count(), 2, "the toggle modifier adds a row");
     clicks.on_click_at(4, 1, KeyModifiers::NONE, true);
     assert!(!clicks.is_checked(4), "a click on the box toggles it");
-    let mut alt = ListBox::new(id, list_items(), SelectMode::Multi).toggle_mods(KeyModifiers::ALT);
-    alt.on_click(0);
-    alt.on_click_at(1, 1, KeyModifiers::ALT, false);
-    assert_eq!((alt.is_checked(0), alt.is_checked(1)), (true, true));
+    // HYPER is in neither platform's default toggle set, so only a remapped
+    // list treats it as the toggle modifier.
+    let mut remapped =
+        ListBox::new(id, list_items(), SelectMode::Multi).toggle_mods(KeyModifiers::HYPER);
+    remapped.on_click(0);
+    remapped.on_click_at(1, 1, KeyModifiers::HYPER, false);
+    assert_eq!(
+        (remapped.is_checked(0), remapped.is_checked(1)),
+        (true, true),
+        "a remapped toggle modifier adds a row"
+    );
+    let mut stock = ListBox::new(id, list_items(), SelectMode::Multi);
+    stock.on_click(0);
+    stock.on_click_at(1, 1, KeyModifiers::HYPER, false);
+    assert_eq!(
+        (stock.is_checked(0), stock.is_checked(1)),
+        (false, true),
+        "the default modifiers do not toggle on it"
+    );
     let mut gated = ListBox::new(id, list_items(), SelectMode::Multi);
     assert_eq!(
         gated.on_click_at(3, 1, KeyModifiers::NONE, true),
