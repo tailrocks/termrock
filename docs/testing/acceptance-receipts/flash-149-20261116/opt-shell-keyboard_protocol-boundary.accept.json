@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-keyboard_protocol-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/target/functional/s01_keyboard_off-43314-1794770122906868000-0/check-artifacts/opt-shell-keyboard_protocol-boundary/a1db14617ba6b43439f279f76d3bc466bcfb3bd085f24db094070426efed838c/sample.tui.pb"
+  },
+  "candidate_sha256": "a1db14617ba6b43439f279f76d3bc466bcfb3bd085f24db094070426efed838c",
+  "baseline_sha256": "a1db14617ba6b43439f279f76d3bc466bcfb3bd085f24db094070426efed838c",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-keyboard_protocol-boundary.tui.pb"
+  },
+  "error_code": null
+}

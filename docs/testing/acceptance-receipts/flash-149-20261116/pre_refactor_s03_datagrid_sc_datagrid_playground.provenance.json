@@ -1,0 +1,72 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285-target/debug/showcase",
+  "binary_sha256": "b68c6538443f3289a4bac2e648faeef542c2d8fd43e38b5118388c5c749b5eac",
+  "fixture_args": [],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "8fb572f4158d187adaaf24b116900f69693e1c7bc03d473883947d39ac793124",
+  "expect_baseline": "2c2aa26e2dc99faa3d7fbaaef75b1723075047708d52c0fecadafd07f3883da2",
+  "precondition": "Deliberate visual change for #149, re-cut on #284: PointerRouter::tick now expires the press flash while motion is paused, so the frame that stayed painted with the pressed style on the clicked control (13 cells, row 4, cols 26-38) now settles on the resting or hover style. Cell diff over every cell: changed fields ['bg']; every changed cell is a pressed-to-settled flash cell; screen-level difference: hidden cursor position and capture metadata only. Fill transitions: #4a4a52>#27272a x13.",
+  "session": null,
+  "expected_test_id": "pre_refactor/s03_datagrid/sc_datagrid_playground",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/flash-149-20261116/pre_refactor_s03_datagrid_sc_datagrid_playground.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/flash-149-20261116/pre_refactor_s03_datagrid_sc_datagrid_playground.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/flash-149-20261116/superseded/pre_refactor/s03_datagrid/sc_datagrid_playground.tui.pb",
+  "test_id": "pre_refactor/s03_datagrid/sc_datagrid_playground",
+  "acceptance": {
+    "expected_baseline_sha256": "2c2aa26e2dc99faa3d7fbaaef75b1723075047708d52c0fecadafd07f3883da2",
+    "accepted_baseline_sha256": "8fb572f4158d187adaaf24b116900f69693e1c7bc03d473883947d39ac793124",
+    "candidate_sha256": "8fb572f4158d187adaaf24b116900f69693e1c7bc03d473883947d39ac793124",
+    "transaction_receipt": "docs/testing/acceptance-receipts/flash-149-20261116/pre_refactor_s03_datagrid_sc_datagrid_playground.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "2c2aa26e2dc99faa3d7fbaaef75b1723075047708d52c0fecadafd07f3883da2"
+  },
+  "candidate": {
+    "sha256": "8fb572f4158d187adaaf24b116900f69693e1c7bc03d473883947d39ac793124",
+    "path": "tests/functional/baselines/pre_refactor/s03_datagrid/sc_datagrid_playground.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/flash-149-20261116/superseded/pre_refactor/s03_datagrid/sc_datagrid_playground.tui.pb",
+    "superseded_baseline_sha256": "2c2aa26e2dc99faa3d7fbaaef75b1723075047708d52c0fecadafd07f3883da2"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s03_datagrid/sc_datagrid_playground.tui.pb",
+    "candidate_sha256": "8fb572f4158d187adaaf24b116900f69693e1c7bc03d473883947d39ac793124",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285-target/debug/showcase",
+    "binary_sha256": "b68c6538443f3289a4bac2e648faeef542c2d8fd43e38b5118388c5c749b5eac",
+    "note": "Live candidate capture of this branch (fix/149-flash-on-284). No Reference-mode capture exists: the pinned reference binaries keep the stale press flash this change removes."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s03_datagrid/sc_datagrid_playground",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/target/functional/s03-sections-61753-1794771204861003000-0/check-artifacts/pre_refactor/s03_datagrid/sc_datagrid_playground/8fb572f4158d187adaaf24b116900f69693e1c7bc03d473883947d39ac793124/sample.tui.pb"
+    },
+    "candidate_sha256": "8fb572f4158d187adaaf24b116900f69693e1c7bc03d473883947d39ac793124",
+    "baseline_sha256": "8fb572f4158d187adaaf24b116900f69693e1c7bc03d473883947d39ac793124",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/tests/functional/baselines/pre_refactor/s03_datagrid/sc_datagrid_playground.tui.pb"
+    },
+    "error_code": null
+  }
+}

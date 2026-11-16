@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-legacy_ctrl_punctuation-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/target/functional/s01_legacy_off-35661-1794769198163059000-0/check-artifacts/opt-shell-legacy_ctrl_punctuation-boundary/25eb6992bc45f11c8a8cde37d4e7dcff4b9156a02c6c01114328343366cf2c7c/sample.tui.pb"
+  },
+  "candidate_sha256": "25eb6992bc45f11c8a8cde37d4e7dcff4b9156a02c6c01114328343366cf2c7c",
+  "baseline_sha256": "25eb6992bc45f11c8a8cde37d4e7dcff4b9156a02c6c01114328343366cf2c7c",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-legacy_ctrl_punctuation-boundary.tui.pb"
+  },
+  "error_code": null
+}
