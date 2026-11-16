@@ -148,6 +148,21 @@ pub enum ScenarioId {
     // lane:fields begin: this lane adds its ScenarioId variants between these two lines only
     // lane:fields end
     // lane:dialogs begin: this lane adds its ScenarioId variants between these two lines only
+    DialogsLeaveGuardFlow,
+    DialogsModalStackLifecycle,
+    DialogsModalFrameChrome,
+    DialogsRenderCtxRegistration,
+    DialogsInteractionVisualState,
+    DialogsPromptEditing,
+    DialogsFactsAck,
+    DialogsActionModel,
+    DialogsPointerInput,
+    DialogsFormModel,
+    DialogsFormInput,
+    DialogsInfoFlow,
+    DialogsChoiceFlow,
+    DialogsLayerResults,
+    DialogsLayerSpecs,
     // lane:dialogs end
     // lane:menus begin: this lane adds its ScenarioId variants between these two lines only
     // lane:menus end
