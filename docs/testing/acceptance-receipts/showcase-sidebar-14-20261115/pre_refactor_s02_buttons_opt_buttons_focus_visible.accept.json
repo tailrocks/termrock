@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s02_buttons/opt_buttons_focus_visible",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s02_buttons__opt_buttons_focus_visible.tui.pb"
+  },
+  "candidate_sha256": "2a786be3c184afcfc67cafed192ede0f035f1cff6e1b48f22c304bc6ea0dfde8",
+  "baseline_sha256": "2a786be3c184afcfc67cafed192ede0f035f1cff6e1b48f22c304bc6ea0dfde8",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s02_buttons/opt_buttons_focus_visible.tui.pb"
+  },
+  "error_code": null
+}

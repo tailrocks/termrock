@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s01_chrome/sc_chrome_menu-switch_after",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s01_chrome__sc_chrome_menu-switch_after.tui.pb"
+  },
+  "candidate_sha256": "b5965a78056dea804e18c2e3d5268aa13c928c1d3dfd1bc698cd69789eb70a91",
+  "baseline_sha256": "b5965a78056dea804e18c2e3d5268aa13c928c1d3dfd1bc698cd69789eb70a91",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s01_chrome/sc_chrome_menu-switch_after.tui.pb"
+  },
+  "error_code": null
+}

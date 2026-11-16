@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s03_editable/sc_editable_specimen_narrow",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s03_editable__sc_editable_specimen_narrow.tui.pb"
+  },
+  "candidate_sha256": "a26749c31728b63c1dd39f45b2fd5019d081ed06f5ba9b405716a78ef908af1c",
+  "baseline_sha256": "a26749c31728b63c1dd39f45b2fd5019d081ed06f5ba9b405716a78ef908af1c",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s03_editable/sc_editable_specimen_narrow.tui.pb"
+  },
+  "error_code": null
+}

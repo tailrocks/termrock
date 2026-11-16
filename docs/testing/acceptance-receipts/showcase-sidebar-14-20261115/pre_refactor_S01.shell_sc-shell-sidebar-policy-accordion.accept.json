@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "sc-shell-sidebar-policy-accordion",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__S01.shell__sc-shell-sidebar-policy-accordion.tui.pb"
+  },
+  "candidate_sha256": "72a49f34a5989571bde13198e58490c69c745cb60d45f86d46260a998035d67b",
+  "baseline_sha256": "72a49f34a5989571bde13198e58490c69c745cb60d45f86d46260a998035d67b",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/S01.shell/sc-shell-sidebar-policy-accordion.tui.pb"
+  },
+  "error_code": null
+}

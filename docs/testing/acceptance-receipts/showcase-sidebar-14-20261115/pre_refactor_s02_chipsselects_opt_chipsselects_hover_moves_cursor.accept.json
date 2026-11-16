@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s02_chipsselects/opt_chipsselects_hover_moves_cursor",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/target/functional/s02-chips-hover-9204-1794771870536736000-1/check-artifacts/pre_refactor/s02_chipsselects/opt_chipsselects_hover_moves_cursor/a48f3b20388152acebb9dce25925738bee9091a695f18adee409f564133eb4a3/sample.tui.pb"
+  },
+  "candidate_sha256": "a48f3b20388152acebb9dce25925738bee9091a695f18adee409f564133eb4a3",
+  "baseline_sha256": "a48f3b20388152acebb9dce25925738bee9091a695f18adee409f564133eb4a3",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-182/tests/functional/baselines/pre_refactor/s02_chipsselects/opt_chipsselects_hover_moves_cursor.tui.pb"
+  },
+  "error_code": null
+}

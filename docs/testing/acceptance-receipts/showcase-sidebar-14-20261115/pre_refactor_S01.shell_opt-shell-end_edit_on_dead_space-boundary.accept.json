@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-end_edit_on_dead_space-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__S01.shell__opt-shell-end_edit_on_dead_space-boundary.tui.pb"
+  },
+  "candidate_sha256": "6e4ee43c99ccb368ca9311f3baf3f4b547469007e1c2cddb840dd771244c474c",
+  "baseline_sha256": "6e4ee43c99ccb368ca9311f3baf3f4b547469007e1c2cddb840dd771244c474c",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-end_edit_on_dead_space-boundary.tui.pb"
+  },
+  "error_code": null
+}

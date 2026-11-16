@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "functional/showcase_scrollbar_drag",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/functional__showcase_scrollbar_drag.tui.pb"
+  },
+  "candidate_sha256": "102eaf009de4df015fadf136908d8026382f38bcb5d8b4e7dee8a9d002b829b5",
+  "baseline_sha256": "102eaf009de4df015fadf136908d8026382f38bcb5d8b4e7dee8a9d002b829b5",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/functional/showcase_scrollbar_drag.tui.pb"
+  },
+  "error_code": null
+}

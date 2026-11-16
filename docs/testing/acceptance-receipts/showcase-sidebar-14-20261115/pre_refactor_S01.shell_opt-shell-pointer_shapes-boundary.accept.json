@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-pointer_shapes-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__S01.shell__opt-shell-pointer_shapes-boundary.tui.pb"
+  },
+  "candidate_sha256": "f23be35ad828eab52e0f8a9f3113d60709046a4d2c7c32b97a5af0b5dd1b0653",
+  "baseline_sha256": "f23be35ad828eab52e0f8a9f3113d60709046a4d2c7c32b97a5af0b5dd1b0653",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-pointer_shapes-boundary.tui.pb"
+  },
+  "error_code": null
+}

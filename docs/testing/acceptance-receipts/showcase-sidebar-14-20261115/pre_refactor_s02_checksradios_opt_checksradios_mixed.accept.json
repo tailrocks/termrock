@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s02_checksradios/opt_checksradios_mixed",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s02_checksradios__opt_checksradios_mixed.tui.pb"
+  },
+  "candidate_sha256": "27ada409d791abbc110609d360815383233ac60024cb0950a97fcc1bdb27b72e",
+  "baseline_sha256": "27ada409d791abbc110609d360815383233ac60024cb0950a97fcc1bdb27b72e",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s02_checksradios/opt_checksradios_mixed.tui.pb"
+  },
+  "error_code": null
+}

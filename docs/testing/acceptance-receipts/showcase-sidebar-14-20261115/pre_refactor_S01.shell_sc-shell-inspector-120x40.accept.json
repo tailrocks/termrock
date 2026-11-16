@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "sc-shell-inspector-120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__S01.shell__sc-shell-inspector-120x40.tui.pb"
+  },
+  "candidate_sha256": "e617f226534537278e09090e3bb0938c70efc8c0c4bdc88355f2c47a9c03629d",
+  "baseline_sha256": "e617f226534537278e09090e3bb0938c70efc8c0c4bdc88355f2c47a9c03629d",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/S01.shell/sc-shell-inspector-120x40.tui.pb"
+  },
+  "error_code": null
+}

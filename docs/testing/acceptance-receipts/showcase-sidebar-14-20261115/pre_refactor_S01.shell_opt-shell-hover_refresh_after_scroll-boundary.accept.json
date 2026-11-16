@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-hover_refresh_after_scroll-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__S01.shell__opt-shell-hover_refresh_after_scroll-boundary.tui.pb"
+  },
+  "candidate_sha256": "07401720587ce73f0c11061b1f52da9e65b11b902b0389e0a278fc7c9392ecb0",
+  "baseline_sha256": "07401720587ce73f0c11061b1f52da9e65b11b902b0389e0a278fc7c9392ecb0",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-hover_refresh_after_scroll-boundary.tui.pb"
+  },
+  "error_code": null
+}

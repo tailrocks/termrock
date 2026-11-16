@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-flash_ms-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__S01.shell__opt-shell-flash_ms-boundary.tui.pb"
+  },
+  "candidate_sha256": "b4a6ef7fcb8e078c0bdb7227899748170f3d95779f0883aab90f01ce2ac5848f",
+  "baseline_sha256": "b4a6ef7fcb8e078c0bdb7227899748170f3d95779f0883aab90f01ce2ac5848f",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-flash_ms-boundary.tui.pb"
+  },
+  "error_code": null
+}

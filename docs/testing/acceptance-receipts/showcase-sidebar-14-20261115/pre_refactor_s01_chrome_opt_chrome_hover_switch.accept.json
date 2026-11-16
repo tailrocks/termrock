@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s01_chrome/opt_chrome_hover_switch",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s01_chrome__opt_chrome_hover_switch.tui.pb"
+  },
+  "candidate_sha256": "b1692bdcb184a0bf98784a5ae32a1c1d6fb359bbae2c6d4e7b8aa66c684e8cc9",
+  "baseline_sha256": "b1692bdcb184a0bf98784a5ae32a1c1d6fb359bbae2c6d4e7b8aa66c684e8cc9",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s01_chrome/opt_chrome_hover_switch.tui.pb"
+  },
+  "error_code": null
+}

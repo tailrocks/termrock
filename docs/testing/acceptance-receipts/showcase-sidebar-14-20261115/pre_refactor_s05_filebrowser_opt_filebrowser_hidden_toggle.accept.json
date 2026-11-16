@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s05_filebrowser/opt_filebrowser_hidden_toggle",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__s05_filebrowser__opt_filebrowser_hidden_toggle.tui.pb"
+  },
+  "candidate_sha256": "d3aaa8fc02500ea3a9e10ee19b5f2b6167e4caa4ed435a0f99fc7ba574ba1a98",
+  "baseline_sha256": "d3aaa8fc02500ea3a9e10ee19b5f2b6167e4caa4ed435a0f99fc7ba574ba1a98",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/s05_filebrowser/opt_filebrowser_hidden_toggle.tui.pb"
+  },
+  "error_code": null
+}
