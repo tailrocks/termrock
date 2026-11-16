@@ -38,6 +38,8 @@ T	work_budgets::work_contract_textarea_prepared_frame
 T	work_budgets::work_report_is_count_only_json_with_every_metric
 S	Holla page scenarios	junie-tui::bin/holla	/^work_metrics_tests::/	src/bin/holla/work_metrics_tests.rs
 T	work_metrics_tests::work_contract_holla_idle_and_source_update
+T	work_metrics_tests::work_contract_holla_file_preview_prefix
+T	work_metrics_tests::work_contract_holla_background_updates_keep_projection
 S	Holla projection reuse (app)	junie-tui::bin/holla	/holla_projection_/	src/bin/holla/app/tests.rs
 T	app::tests::holla_projection_idle_ticks_do_no_source_work
 T	app::tests::holla_projection_idle_cleanup_page_ticks_do_no_source_work
@@ -56,6 +58,7 @@ S	Jackin roster and capsule scenarios	jackin-console::regressions	/^work_budgets
 T	work_budgets::work_contract_jackin_idle_and_roster_update
 T	work_budgets::work_contract_jackin_capsule_idle_frame
 T	work_budgets::work_contract_jackin_capsule_frame_after_typing
+T	work_budgets::work_contract_jackin_account_update
 S	ScrollPanel source-row budgets	junie-tui::regressions	/^work_budgets::/	tests/regressions/work_budgets/scroll_panel.rs
 T	work_budgets::scroll_panel::work_contract_scroll_panel_flat_measures_once_and_appends_incrementally
 T	work_budgets::scroll_panel::work_contract_scroll_panel_wrapped_builds_once_per_content_change
