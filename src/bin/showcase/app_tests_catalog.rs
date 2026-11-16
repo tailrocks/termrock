@@ -1027,7 +1027,7 @@ impl ListDetailSource for FinderCat {
         ListRowRef {
             mark: None,
             label: self.rows[visible].1,
-            detail: "",
+            detail: "via-list-detail",
             meta: "",
             meta_tone: junie_tui::theme::Tone::Muted,
             faint: false,
@@ -1550,9 +1550,9 @@ fn preview_lines(count: usize) -> Vec<Line> {
 }
 
 /// Paints the standard look and returns the screen with its hit regions.
-fn draw_source(
+fn draw_source<S: SearchDetailSource + ?Sized>(
     search: &mut SearchDetail,
-    cat: &FinderCat,
+    cat: &S,
     area: Rect,
     lines: &[Line],
     focus: &Focus,
@@ -1654,13 +1654,19 @@ fn search_detail_paint() {
         .summary_rows(3);
     let cat = finder_started(&mut search, FINDER_ROWS);
     let lines = preview_lines(30);
-    fn as_detail_source<S: SearchDetailSource + ?Sized>(_: &S) {}
-    as_detail_source(&cat);
     let mut focus = Focus::default();
     focus.focus(search.id());
     let (buf, hits) = draw_source(&mut search, &cat, wide, &lines, &focus);
     let shown = text_of(&buf);
     assert!(shown.contains("alpha") && shown.contains("gamma") && shown.contains("Preview"));
+    // `render_source` accepts only a `SearchDetailSource`. FinderCat gets that
+    // through the blanket impl from its `SearchSource` and `ListDetailSource`
+    // impls, and the rows come from the latter: the detail text exists nowhere
+    // else, so seeing it proves the controller drew a source it was handed.
+    assert!(
+        shown.contains("via-list-detail"),
+        "the standard rows read ListDetailSource::row: {shown}"
+    );
     let clicked = click_row(&mut search, &cat, &hits, &mut focus, 12, 2);
     assert!(clicked.contains(&SearchAction::SelectionChanged(num(12))));
     assert!(clicked.contains(&SearchAction::Activate(ItemKey::num(12))));
