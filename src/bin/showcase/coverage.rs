@@ -201,6 +201,28 @@ pub enum ScenarioId {
     DialogsLayerSpecs,
     // lane:dialogs end
     // lane:menus begin: this lane adds its ScenarioId variants between these two lines only
+    MenusPopupDismissPolicy,
+    MenusPopupPlacement,
+    MenusContextMenuKeys,
+    MenusContextMenuPointer,
+    MenusContextMenuLayout,
+    MenusSelectKeys,
+    MenusSelectPointer,
+    MenusSelectPopup,
+    MenusBarKeys,
+    MenusBarPointer,
+    MenusBarOverflow,
+    MenusRowMenu,
+    MenusContextRequests,
+    MenusContextCommands,
+    MenusEditMenuCaps,
+    MenusEditMenuHost,
+    MenusTooltips,
+    MenusKeyHintLabels,
+    MenusKeyHintRendering,
+    MenusHintBar,
+    MenusStatusBar,
+    MenusHelpOverlay,
     // lane:menus end
     // lane:pickers begin: this lane adds its ScenarioId variants between these two lines only
     // lane:pickers end
