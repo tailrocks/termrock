@@ -288,6 +288,24 @@ pub enum ScenarioId {
     MenusHelpOverlay,
     // lane:menus end
     // lane:pickers begin: this lane adds its ScenarioId variants between these two lines only
+    MeterToneLevels,
+    MeterStaleAndVisuals,
+    ProgressBarStatuses,
+    MeterListColumns,
+    CompletionLifecycle,
+    OptionListItems,
+    OptionListNavigation,
+    PickerSingleActions,
+    PickerMultiSelection,
+    PickerStatesAndChrome,
+    ColumnEditorModel,
+    ChoiceEditorKeys,
+    ChoiceEditorPointerAndRender,
+    EditorAffordance,
+    PropsSheetLayout,
+    PropsListInteraction,
+    OptionListSelectArrows,
+    OptionListQueryPointer,
     // lane:pickers end
     // lane:collections begin: this lane adds its ScenarioId variants between these two lines only
     // lane:collections end
