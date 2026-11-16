@@ -41,8 +41,6 @@ import collections
 import csv
 import pathlib
 import re
-import shutil
-import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -343,17 +341,15 @@ def cmd_write(args):
 
 
 def cmd_prune(args):
-    """Delete the debt lines the gate reports stale, using the gate's output."""
-    cargo = shutil.which("cargo")
-    if cargo is None:
-        sys.exit("cargo is not on PATH")
-    cp = subprocess.run(
-        [cargo, "nextest", "run", "-p", "junie-tui", "--lib", "--no-tests", "fail",
-         "-E", "test(catalog_repository_gate_is_closed)", "--no-capture"],
-        cwd=ROOT, capture_output=True, text=True,
-    )
+    """Delete the debt lines the gate reports stale, from the gate's output on stdin.
+
+        cargo nextest run -p junie-tui --lib --no-tests fail \\
+          -E 'test(catalog_repository_gate_is_closed)' --no-capture 2>&1 \\
+          | python3 -I scripts/catalog-debt-lanes.py prune
+    """
+    output = sys.stdin.read()
     stale = set(
-        re.findall(r"debt entry is stale[^:]*?(?:\(delete the line\))?: (\S+)", cp.stdout + cp.stderr)
+        re.findall(r"debt entry is stale[^:]*?(?:\(delete the line\))?: (\S+)", output)
     )
     if not stale:
         print("no stale debt lines")
