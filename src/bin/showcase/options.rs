@@ -1983,8 +1983,15 @@ pub static FIXED_DIALOGS: &[Opt] = &[Opt::new(
 )];
 
 pub static LIST_DETAIL: &[Opt] = &[
-    Opt::new("listdetail.data", "Jobs", &["five", "none"]),
+    Opt::new("listdetail.data", "Jobs", &["five", "none", "many"]),
     Opt::new("listdetail.actions", "Actions", &["shown", "hidden"]),
+    Opt::new("listdetail.order", "Job order", &["listed", "reversed"]),
+    Opt::new(
+        "listdetail.painter",
+        "Painter",
+        &["standard", "rows", "hosted"],
+    ),
+    Opt::new("listdetail.readout", "Layout readout", &["off", "on"]),
     Opt::new(
         "listdetail.width",
         "Allocated width",

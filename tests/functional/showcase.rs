@@ -2003,14 +2003,15 @@ fn showcase_terminal_viewport_pointer_policy_is_an_option() {
 }
 
 fn list_detail(name: &str, cols: u16, rows: u16) -> App {
-    let app = App::new(
-        name,
-        SHOWCASE,
-        &["--page", "listdetail", "--motion", "paused"],
-        cols,
-        rows,
-        "truecolor",
-    );
+    list_detail_with(name, cols, rows, &[])
+}
+
+fn list_detail_with(name: &str, cols: u16, rows: u16, opts: &[&str]) -> App {
+    let mut args = vec!["--page", "listdetail", "--motion", "paused"];
+    for opt in opts {
+        args.extend(["--opt", opt]);
+    }
+    let app = App::new(name, SHOWCASE, &args, cols, rows, "truecolor");
     app.wait_text("nightly-backup");
     app.settle();
     app
@@ -2093,6 +2094,215 @@ fn showcase_listdetail_narrow_terminal_shows_the_detail_as_a_drawer() {
     app.visual("functional/showcase_listdetail_drawer");
     app.key("escape");
     app.wait_text("report-mailer");
+    app.finish();
+}
+
+#[test]
+fn showcase_listdetail_readout_follows_the_selected_key_and_the_drawer() {
+    let app = list_detail_with(
+        "showcase-listdetail-readout",
+        140,
+        40,
+        &["listdetail.readout=on"],
+    );
+    let wide = app.wait_text("drawer closed");
+    assert!(text(&wide).contains("1 of 5 · keyed to this job"));
+    app.click(inside(find(&wide, "image-resize")));
+    app.wait_text("2 of 5 · keyed to this job");
+    app.key("end");
+    app.wait_text("5 of 5 · keyed to this job");
+    app.finish();
+
+    let app = list_detail_with(
+        "showcase-listdetail-readout-drawer",
+        90,
+        30,
+        &["listdetail.readout=on"],
+    );
+    app.key("tab");
+    app.key("tab");
+    app.key("enter");
+    let open = app.wait_text("drawer open");
+    assert!(
+        !text(&open).contains("drawer closed"),
+        "the drawer reports itself open"
+    );
+    app.key("escape");
+    app.wait_text("report-mailer");
+    app.finish();
+}
+
+/// Where `name` is listed in the master, not where the detail repeats it.
+fn listed(screen: &TerminalSnapshot, name: &str) -> Point {
+    find_all(screen, name)
+        .into_iter()
+        .find(|p| p.x < 60)
+        .unwrap_or_else(|| panic!("{name} is listed\n{}", text(screen)))
+}
+
+/// The number after `label` in the screen text.
+fn number_after(screen: &TerminalSnapshot, label: &str) -> usize {
+    let text = text(screen);
+    let rest = text
+        .split(label)
+        .nth(1)
+        .unwrap_or_else(|| panic!("{label:?} is on screen\n{text}"));
+    rest.trim_start()
+        .split(|c: char| !c.is_ascii_digit())
+        .next()
+        .and_then(|digits| digits.parse().ok())
+        .unwrap_or_else(|| panic!("a number follows {label:?}"))
+}
+
+#[test]
+fn showcase_listdetail_readout_pages_the_master_by_its_visible_rows() {
+    let app = list_detail_with(
+        "showcase-listdetail-paging",
+        140,
+        20,
+        &["listdetail.data=many", "listdetail.readout=on"],
+    );
+    let top = app.wait_text("first 1 ");
+    let page = number_after(&top, "page ");
+    assert!(
+        (1..24).contains(&page),
+        "the master shows {page} of 24 rows"
+    );
+    app.wheel(inside(listed(&top, "nightly-backup")), true, 3);
+    let wheeled = app.wait_screen("the wheel scrolls the master", |s| {
+        !text(s).contains("first 1 ")
+    });
+    assert!(number_after(&wheeled, "first ") > 1);
+    app.click(inside(listed(&wheeled, "dns-sync")));
+    app.key("end");
+    let last = app.wait_text("row 24 of 24");
+    let page = number_after(&last, "page ");
+    assert_eq!(
+        number_after(&last, "first "),
+        24 - page + 1,
+        "the last row ends the window"
+    );
+    app.key("pageup");
+    app.wait_text(&format!("row {} of 24", 24 - page));
+    app.finish();
+}
+
+#[test]
+fn showcase_listdetail_reversed_order_keeps_each_click_on_its_job() {
+    let app = list_detail_with(
+        "showcase-listdetail-reversed",
+        140,
+        40,
+        &["listdetail.order=reversed", "listdetail.readout=on"],
+    );
+    app.wait_text("drawer closed");
+    let screen = app.settle();
+    assert!(
+        listed(&screen, "search-index").y < listed(&screen, "nightly-backup").y,
+        "the reversed view lists the last job first"
+    );
+    assert!(text(&screen).contains("1 of 5 · keyed to this job"));
+    app.click(inside(listed(&screen, "nightly-backup")));
+    let moved = app.wait_text("archive.internal");
+    assert!(
+        text(&moved).contains("5 of 5 · keyed to this job"),
+        "the click reached the job that was drawn, at its reversed place"
+    );
+    app.finish();
+}
+
+#[test]
+fn showcase_listdetail_rows_painter_paints_rows_and_keeps_the_standard_detail() {
+    let app = list_detail_with(
+        "showcase-listdetail-rows",
+        140,
+        40,
+        &["listdetail.painter=rows"],
+    );
+    let screen = app.screen();
+    assert!(
+        text(&screen).contains("[ok]") && text(&screen).contains("[failing]"),
+        "the caller paints each row with its state in brackets"
+    );
+    app.click(inside(find(&screen, "image-resize")));
+    app.wait_text("CDN_KEY");
+    app.click_text("Run now");
+    let ran = app.wait_text("action run");
+    assert!(text(&ran).contains("image-resize"));
+    app.finish();
+}
+
+#[test]
+fn showcase_listdetail_hosted_painter_owns_every_pane_and_resets_the_detail() {
+    let app = list_detail_with(
+        "showcase-listdetail-hosted",
+        140,
+        20,
+        &["listdetail.painter=hosted"],
+    );
+    let screen = app.screen();
+    assert!(
+        text(&screen).contains("[ok]") && text(&screen).contains("About"),
+        "the host draws the rows and the detail card"
+    );
+    assert!(
+        !text(&screen).contains("archive.internal"),
+        "the last binding starts below the fold"
+    );
+    app.key("tab");
+    app.key("pagedown");
+    app.wait_text("archive.internal");
+    app.key("escape");
+    app.key("down");
+    let next = app.wait_text("CDN_KEY");
+    assert!(
+        text(&next).contains("Issue"),
+        "the host's selection moved to the next job"
+    );
+    app.key("up");
+    let back = app.wait_text("volume projects");
+    assert!(
+        !text(&back).contains("archive.internal"),
+        "a new selection starts the detail at its top"
+    );
+    app.finish();
+
+    let app = App::new(
+        "showcase-listdetail-hosted-empty",
+        SHOWCASE,
+        &[
+            "--page",
+            "listdetail",
+            "--motion",
+            "paused",
+            "--opt",
+            "listdetail.painter=hosted",
+            "--opt",
+            "listdetail.data=none",
+        ],
+        140,
+        20,
+        "truecolor",
+    );
+    app.wait_text("No jobs yet");
+    app.finish();
+
+    let app = list_detail_with(
+        "showcase-listdetail-hosted-drawer",
+        90,
+        30,
+        &["listdetail.painter=hosted"],
+    );
+    let summary = app.screen();
+    assert!(
+        text(&summary).contains("→ nightly-backup"),
+        "a master without room for the detail shows the host's summary"
+    );
+    app.key("tab");
+    app.key("enter");
+    app.wait_text("· drawer");
+    app.key("escape");
+    app.wait_absent("· drawer");
     app.finish();
 }
 
