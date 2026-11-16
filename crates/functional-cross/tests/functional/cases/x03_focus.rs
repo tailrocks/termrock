@@ -19,12 +19,11 @@
 //! painted. `--page focus` is `PageId::FocusNavigation` through `PAGE_ALIASES`
 //! and `parse_page`.
 
-use std::path::PathBuf;
-
 use tui_test::{SnapshotColor, TerminalSnapshot};
-use tuiscotti_latest::check::CheckOutcome;
 
-use crate::support::{App, HOLLA, Launch, Point, SHOWCASE, TABLEPRO, find_all, text, try_launch};
+use crate::support::{
+    App, Point, check_stored, find_all, holla_bin, open, require, showcase_bin, tablepro_bin, text,
+};
 
 const BAR: &str = "▎";
 const FOCUS_TITLE: &str = "Focus & navigation";
@@ -74,25 +73,6 @@ struct Bar {
     y: u16,
     fg: SnapshotColor,
     bg: SnapshotColor,
-}
-
-fn open(name: &str, bin: &str, args: &[&str]) -> App {
-    let mut launch = Launch::new(name, bin);
-    launch.clock = false;
-    launch.cols = 120;
-    launch.rows = 40;
-    launch.color = Some("truecolor".to_string());
-    launch.motion = Some("reduced".to_string());
-    launch.args = args.iter().copied().map(str::to_string).collect();
-    try_launch(launch).unwrap_or_else(|error| panic!("{error}"))
-}
-
-fn require(screen: &TerminalSnapshot, needle: &str) {
-    assert!(
-        text(screen).contains(needle),
-        "missing {needle}\n{}",
-        text(screen)
-    );
 }
 
 fn labeled(screen: &TerminalSnapshot, needle: &str, pred: impl Fn(&Point) -> bool) -> Point {
@@ -258,36 +238,8 @@ fn dialog(app: &App) -> (TerminalSnapshot, TerminalSnapshot) {
     (wide, narrow)
 }
 
-fn sample_bytes(screen: &TerminalSnapshot, test_id: &str) -> Vec<u8> {
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    sample.to_bytes().expect("serialize Tuiscotti sample")
-}
-
-fn check_stored(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let bytes = sample_bytes(screen, test_id);
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        panic!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        );
-    }
-}
-
 fn moved_focus() {
-    let app = open("x03-focus-move", SHOWCASE, &["--page", "focus"]);
+    let app = open("x03-focus-move", showcase_bin(), &["--page", "focus"]);
     let opened = app.wait_text(FOCUS_BLURB);
     require(&opened, FOCUS_TITLE);
     let before = one_bar(&opened);
@@ -310,7 +262,7 @@ fn moved_focus() {
 }
 
 fn owner_cursor() {
-    let app = open("x03-focus-picker", SHOWCASE, &["--page", "pickers"]);
+    let app = open("x03-focus-picker", showcase_bin(), &["--page", "pickers"]);
     app.wait_text("Open quickly");
     click_labeled(&app, "Open quickly", |hit| hit.y > 4 && hit.x >= 24);
     let screen = app.wait_screen("quick picker cursor", |screen| {
@@ -374,7 +326,7 @@ fn one_shell(
 }
 
 fn other_shells() {
-    let app = open("x03-focus-tablepro", TABLEPRO, &[]);
+    let app = open("x03-focus-tablepro", tablepro_bin(), &[]);
     let screen = app.wait_text("Filter connections");
     require(&screen, "Personal");
     let bar = one_bar(&screen);
@@ -388,7 +340,7 @@ fn other_shells() {
 
     one_shell(
         "x03-focus-holla",
-        HOLLA,
+        holla_bin(),
         &["--scenario", "activities-multi"],
         "Search actions",
         |hit, bar| hit.y == bar.y && hit.x > bar.x,
@@ -396,7 +348,7 @@ fn other_shells() {
 }
 
 fn route() {
-    let app = open("x03-focus-route", SHOWCASE, &["--page", "focus"]);
+    let app = open("x03-focus-route", showcase_bin(), &["--page", "focus"]);
     let page = app.wait_text(FOCUS_BLURB);
     assert_eq!((page.cols(), page.rows()), (120, 40));
     require(&page, FOCUS_TITLE);
@@ -406,7 +358,11 @@ fn route() {
 }
 
 fn checkpoint() {
-    let app = open("x03-focus-checkpoint", SHOWCASE, &["--page", "dialogs"]);
+    let app = open(
+        "x03-focus-checkpoint",
+        showcase_bin(),
+        &["--page", "dialogs"],
+    );
     let (wide, narrow) = dialog(&app);
     check_stored(&app, &wide, WIDE_ID);
     check_stored(&app, &narrow, NARROW_ID);

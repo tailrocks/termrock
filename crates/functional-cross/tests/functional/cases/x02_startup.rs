@@ -6,14 +6,15 @@
 //! captures that frame, then resizes back. `Launch::new` leaves the clock off,
 //! including for jackin.
 
-use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
 
 use tui_test::TerminalSnapshot;
-use tuiscotti_latest::check::CheckOutcome;
 
-use crate::support::{App, HOLLA, Launch, Point, SHOWCASE, TABLEPRO, row_text, text, try_launch};
+use crate::support::{
+    App, Open, Point, check_stored, holla_bin, refuse, require, row_text, showcase_bin,
+    tablepro_bin, text,
+};
 
 const LISTS: &str = "Navigation › Lists";
 const CHOSEN: &str = "Chosen: Rust";
@@ -36,33 +37,7 @@ const WIDE_ID: &str = "pre_refactor/x02_startup/x02_startup_start_120x40";
 const NARROW_ID: &str = "pre_refactor/x02_startup/x02_startup_start_narrow";
 
 fn open(name: &str, bin: &str, args: &[&str], env: &[(&str, &str)]) -> App {
-    let mut launch = Launch::new(name, bin);
-    launch.clock = false;
-    launch.cols = 120;
-    launch.rows = 40;
-    launch.color = Some("truecolor".to_string());
-    launch.motion = Some("reduced".to_string());
-    launch.args = args.iter().copied().map(str::to_string).collect();
-    for (key, value) in env {
-        launch.env.push(((*key).to_string(), (*value).to_string()));
-    }
-    try_launch(launch).unwrap_or_else(|error| panic!("{error}"))
-}
-
-fn require(screen: &TerminalSnapshot, needle: &str) {
-    assert!(
-        text(screen).contains(needle),
-        "missing {needle}\n{}",
-        text(screen)
-    );
-}
-
-fn refuse(screen: &TerminalSnapshot, needle: &str) {
-    assert!(
-        !text(screen).contains(needle),
-        "{needle} present\n{}",
-        text(screen)
-    );
+    Open::new(name, bin, args).env(env).launch()
 }
 
 fn gutter_line(screen: &TerminalSnapshot) -> String {
@@ -88,30 +63,6 @@ fn selected(screen: &TerminalSnapshot, label: &str) -> bool {
         };
         at > mark && at - mark <= 4
     })
-}
-
-fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store =
-        tuiscotti_latest::check::FrozenStore::new(&root, &artifacts).expect("open frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        panic!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        );
-    }
 }
 
 fn frame_with(app: &App, cols: u32, rows: u32) -> TerminalSnapshot {
@@ -155,7 +106,7 @@ fn first_down_moves_to_trees(app: &App) -> TerminalSnapshot {
 fn showcase_burst() {
     let app = open(
         "x02-startup-checkpoint",
-        SHOWCASE,
+        showcase_bin(),
         &["--page", "lists"],
         &[],
     );
@@ -222,7 +173,7 @@ fn showcase_burst() {
     refuse(&wide, CHOSEN);
     assert_eq!((wide.cols(), wide.rows()), (120, 40));
     assert!(app.child_running(), "wide frame stopped showcase");
-    check_frame(&app, &wide, WIDE_ID);
+    check_stored(&app, &wide, WIDE_ID);
 
     app.resize(80, 24);
     let narrow = frame_with(&app, 80, 24);
@@ -230,7 +181,7 @@ fn showcase_burst() {
     require(&narrow, BRANCHES);
     refuse(&narrow, CHOSEN);
     assert_eq!((narrow.cols(), narrow.rows()), (80, 24));
-    check_frame(&app, &narrow, NARROW_ID);
+    check_stored(&app, &narrow, NARROW_ID);
 
     app.resize(120, 40);
     let restored = frame_with(&app, 120, 40);
@@ -245,7 +196,7 @@ fn delay_still_moves(name: &str, delay: Option<&str>) {
         Some(value) => &[("JUNIE_TUI_FIRST_POLL_DELAY_MS", value)],
         None => &[],
     };
-    let app = open(name, SHOWCASE, &["--page", "lists"], env);
+    let app = open(name, showcase_bin(), &["--page", "lists"], env);
     lists_startup(&app);
     let moved = first_down_moves_to_trees(&app);
     require(&moved, TREES);
@@ -254,7 +205,7 @@ fn delay_still_moves(name: &str, delay: Option<&str>) {
 }
 
 fn tablepro_first_key() {
-    let app = open("x02-startup-tablepro", TABLEPRO, &[], &[]);
+    let app = open("x02-startup-tablepro", tablepro_bin(), &[], &[]);
     let start = app.wait_screen("tablepro startup", |screen| {
         text(screen).contains(FILTER)
             && text(screen).contains(LOCAL_HOST)
@@ -280,7 +231,7 @@ fn tablepro_first_key() {
 fn holla_first_key() {
     let app = open(
         "x02-startup-holla",
-        HOLLA,
+        holla_bin(),
         &["--scenario", "first-use"],
         &[],
     );
@@ -301,7 +252,12 @@ fn holla_first_key() {
 
 #[test]
 fn x02_startup_route() {
-    let app = open("x02-startup-route", SHOWCASE, &["--page", "lists"], &[]);
+    let app = open(
+        "x02-startup-route",
+        showcase_bin(),
+        &["--page", "lists"],
+        &[],
+    );
     let screen = lists_startup(&app);
     require(&screen, LISTS);
     require(&screen, CHOSEN);
