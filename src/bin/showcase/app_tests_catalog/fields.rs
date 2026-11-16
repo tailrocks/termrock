@@ -913,6 +913,18 @@ fn fields_edit_field_core() {
     assert!(!field.run(TextCmd::Paste).edited);
     assert!(!field.run_as(TextCmd::Paste, true).edited);
     assert_eq!(field.text(), "hello!?");
+    // The override rules paste as it rules every other command: a read-only
+    // field takes a paste the caller allows, and a writable one refuses a
+    // paste the caller forbids.
+    let clip = clipboard::text().expect("the cut above left text on the clipboard");
+    let mut locked = EditField::single("ab");
+    locked.read_only = true;
+    locked.buffer.move_doc_end(false);
+    assert!(locked.run_as(TextCmd::Paste, false).edited);
+    assert_eq!(locked.text(), format!("ab{clip}"));
+    locked.read_only = false;
+    assert!(!locked.run_as(TextCmd::Paste, true).edited);
+    assert_eq!(locked.text(), format!("ab{clip}"));
     field.read_only = false;
     assert_eq!(
         field.run_as(TextCmd::LineStart, true).outcome,
