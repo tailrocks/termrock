@@ -1677,8 +1677,13 @@ fn option_filter_add_action() {
         &["+ Add filter", "+ New", "last action: added"],
     );
     none.key("tab");
+    // Tab moves focus into the chip bar. Wait for that frame, so the plus key
+    // below is not sent before the tab was handled.
+    none.wait_screen("focus moved by tab", |screen| text(screen) != text(&bare));
     none.key("+");
-    let still = none.screen();
+    // A quiet terminal means the plus key was handled before the screen is
+    // asserted to show nothing added.
+    let still = none.settle();
     expect(
         &still,
         &[PENDING, NOTHING],
