@@ -1,0 +1,75 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/land-304/debug/showcase",
+  "binary_sha256": "07d694ff2d91dfa21f3cfad17d5a1e00e223afca78ec18573ad981022765d105",
+  "fixture_args": [
+    "--page",
+    "codeeditor"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "f6047f9e6a0be630798418b576455083aa331aa13ca36be81a289477a39a9bd4",
+  "expect_baseline": "c0084b6dc47dfd98897f8e484ab8aa5452ca105d8dc89c5b63bb7ad56c9327c5",
+  "precondition": "Code editor page at its default options (Options tab), or with the paged completion source and the popup open",
+  "session": null,
+  "expected_test_id": "pre_refactor/s08_codeeditor/sc_codeeditor_options_120x40",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/completion-source-304-rebase-20261116/pre_refactor_s08_codeeditor_sc_codeeditor_options_120x40.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/completion-source-304-rebase-20261116/pre_refactor_s08_codeeditor_sc_codeeditor_options_120x40.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/completion-source-304-rebase-20261116/superseded/pre_refactor/s08_codeeditor/sc_codeeditor_options_120x40.tui.pb",
+  "test_id": "pre_refactor/s08_codeeditor/sc_codeeditor_options_120x40",
+  "acceptance": {
+    "expected_baseline_sha256": "c0084b6dc47dfd98897f8e484ab8aa5452ca105d8dc89c5b63bb7ad56c9327c5",
+    "accepted_baseline_sha256": "f6047f9e6a0be630798418b576455083aa331aa13ca36be81a289477a39a9bd4",
+    "candidate_sha256": "f6047f9e6a0be630798418b576455083aa331aa13ca36be81a289477a39a9bd4",
+    "transaction_receipt": "docs/testing/acceptance-receipts/completion-source-304-rebase-20261116/pre_refactor_s08_codeeditor_sc_codeeditor_options_120x40.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "c0084b6dc47dfd98897f8e484ab8aa5452ca105d8dc89c5b63bb7ad56c9327c5"
+  },
+  "candidate": {
+    "sha256": "f6047f9e6a0be630798418b576455083aa331aa13ca36be81a289477a39a9bd4",
+    "path": "tests/functional/baselines/pre_refactor/s08_codeeditor/sc_codeeditor_options_120x40.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/completion-source-304-rebase-20261116/superseded/pre_refactor/s08_codeeditor/sc_codeeditor_options_120x40.tui.pb",
+    "superseded_baseline_sha256": "c0084b6dc47dfd98897f8e484ab8aa5452ca105d8dc89c5b63bb7ad56c9327c5"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s08_codeeditor/sc_codeeditor_options_120x40.tui.pb",
+    "candidate_sha256": "f6047f9e6a0be630798418b576455083aa331aa13ca36be81a289477a39a9bd4",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/land-304/debug/showcase",
+    "binary_sha256": "07d694ff2d91dfa21f3cfad17d5a1e00e223afca78ec18573ad981022765d105",
+    "note": "After the rebase onto main, the Code editor page carries the find, scan and provider rows from #297 as well as this issue's Completion source option, so the Options list and the State card moved; with the paged source the State card also grows by the two popup rows. Real cells changed."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s08_codeeditor/sc_codeeditor_options_120x40",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/land-304/target/functional/s08-sections-5262-1794826365369838000-0/check-artifacts/pre_refactor/s08_codeeditor/sc_codeeditor_options_120x40/f6047f9e6a0be630798418b576455083aa331aa13ca36be81a289477a39a9bd4/sample.tui.pb"
+    },
+    "candidate_sha256": "f6047f9e6a0be630798418b576455083aa331aa13ca36be81a289477a39a9bd4",
+    "baseline_sha256": "f6047f9e6a0be630798418b576455083aa331aa13ca36be81a289477a39a9bd4",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/land-304/tests/functional/baselines/pre_refactor/s08_codeeditor/sc_codeeditor_options_120x40.tui.pb"
+    },
+    "error_code": null
+  }
+}
