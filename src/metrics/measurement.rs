@@ -237,6 +237,23 @@ mod tests {
     }
 
     #[test]
+    fn measurement_report_is_written_whole_under_its_file_name() {
+        let report: MeasurementReport = report(vec![5, 4]);
+        let environment: Environment = report.environment.clone();
+        assert_eq!(environment.profile, "release");
+        assert_eq!((WARMUPS, SAMPLES), (20, 200));
+        let dir = std::env::temp_dir().join(format!("measurement-write-{}", std::process::id()));
+        let path = report.write_in(&dir).expect("write the report");
+        assert_eq!(
+            path.file_name()
+                .map(|name| name.to_string_lossy().into_owned()),
+            Some(report.file_name())
+        );
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), report.to_json());
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
     fn measurement_required_fields_are_all_present() {
         let json: Value = serde_json::from_str(&report(vec![3, 1, 2]).to_json()).unwrap();
         let object = json.as_object().expect("a report is an object");
