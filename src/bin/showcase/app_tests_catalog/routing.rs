@@ -1988,7 +1988,7 @@ fn pointer_scroll_gestures() {
     rig.now = 60;
     rig.tick();
     assert!(
-        rig.view.offset().1 >= second,
+        rig.view.offset().1 > second,
         "the repeat interval is ten ms"
     );
 
@@ -2071,6 +2071,30 @@ fn pointer_scroll_gestures() {
     assert!(
         scroll_input(&mut rig.view, &press).is_some(),
         "a press on the bar is a scroll gesture"
+    );
+    let drag_start = PointerEvent::new(
+        &rig.hits,
+        Phase::DragStart,
+        bar.id,
+        at(bar.track.x, bar.track.bottom() - 1),
+        1,
+        KeyModifiers::NONE,
+    );
+    assert!(
+        scroll_input(&mut rig.view, &drag_start).is_some(),
+        "the start of a drag on the bar is a scroll gesture"
+    );
+    let moved = PointerEvent::new(
+        &rig.hits,
+        Phase::Move,
+        bar.id,
+        at(bar.track.x, bar.track.bottom() - 1),
+        1,
+        KeyModifiers::NONE,
+    );
+    assert!(
+        scroll_input(&mut rig.view, &moved).is_none(),
+        "a move over the bar is not a scroll gesture"
     );
 }
 
