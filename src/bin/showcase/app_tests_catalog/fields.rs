@@ -2845,6 +2845,16 @@ fn fields_code_editor_config() {
         );
     }
 
+    // nav picks the keys that move the caret while the editor is idle.
+    for (nav, moves) in [(NavKeys::VIM, true), (NavKeys::DEFAULT, false)] {
+        let mut idle = Editor::new(id("cc.nav"), "one\ntwo")
+            .edit_entry(EditEntry::Explicit)
+            .nav(nav);
+        code_frame(&mut idle, true);
+        idle.on_key(&key(KeyCode::Char('j')));
+        assert_eq!(idle.cursor_offset() == 4, moves, "{nav:?}");
+    }
+
     // The scrollbar gap narrows the text beside a vertical bar.
     let tall: String = (0..40)
         .map(|i| format!("row {i} {}\n", "x".repeat(100)))
@@ -2886,6 +2896,13 @@ fn fields_code_editor_config() {
     let tracked =
         Editor::new(id("cc.h"), "x").track_click(junie_tui::core::scroll::TrackClick::default());
     assert!(tracked.scroll.track_click.is_some());
+    let jumping =
+        Editor::new(id("cc.h"), "x").track_click(junie_tui::core::scroll::TrackClick::Jump);
+    assert_eq!(
+        jumping.scroll.v_click(),
+        junie_tui::core::scroll::TrackClick::Jump,
+        "the editor's own track click wins over the app default"
+    );
 
     // A secondary click opens the context menu only when enabled.
     for (enabled, opens) in [(true, true), (false, false)] {
