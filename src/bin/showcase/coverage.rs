@@ -154,6 +154,17 @@ pub enum ScenarioId {
     KeyReferenceLayout,
     // lane:theme end
     // lane:routing begin: this lane adds its ScenarioId variants between these two lines only
+    InputDecoding,
+    KeyboardNegotiation,
+    RefusalReasons,
+    HitRegistryRouting,
+    KeymapResolution,
+    NavKeyProfiles,
+    HintBindings,
+    IntentVocabulary,
+    PointerClickRouting,
+    PointerScrollGestures,
+    PointerStatePolicies,
     // lane:routing end
     // lane:state begin: this lane adds its ScenarioId variants between these two lines only
     StateIdentity,
