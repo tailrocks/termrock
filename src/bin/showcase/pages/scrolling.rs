@@ -615,6 +615,13 @@ impl ScrollingPage {
         if inner.height < 3 || inner.width < 8 || rows == 0 {
             return;
         }
+        let footer = inner.height >= 5;
+        let body = Rect::new(
+            inner.x,
+            inner.y,
+            inner.width,
+            inner.height - u16::from(footer),
+        );
         let cursor = self.virtual_cursor.min(rows - 1);
         let target = Rect::new(0, u16::try_from(cursor).unwrap_or(u16::MAX), 1, 1);
         let screen = *buf.area();
@@ -624,7 +631,7 @@ impl ScrollingPage {
         let (view, source) = (&mut self.virtual_rows, &self.virtual_source);
         view.render_window(
             screen,
-            inner,
+            body,
             content,
             Some(target),
             buf,
@@ -664,6 +671,16 @@ impl ScrollingPage {
             },
         );
         self.virtual_painted = painted;
+        if footer {
+            let work = self.virtual_rows.last_work();
+            let line = format!("scratch {} cells", work.allocated);
+            buf.set_string(
+                inner.x,
+                inner.bottom() - 1,
+                truncate(&line, inner.width as usize),
+                t.faint().bg(bg),
+            );
+        }
         panel.draw_meta(area, buf, t, &format!("{painted} of {rows}"));
     }
 

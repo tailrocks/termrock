@@ -1893,9 +1893,10 @@ fn alt_arrows_resize_the_open_picker_through_set_max_rows() {
     );
     app.key("escape");
     let closed = app.wait_screen("picker closed", |screen| {
-        text(screen).contains("set_max_rows(7)")
+        let body = text(screen);
+        body.contains("Cancelled") && !body.contains("Reconnect")
     });
-    see(&closed, &["set_max_rows(7)"], &[]);
+    see(&closed, &["Cancelled"], &["set_max_rows(7)", "Reconnect"]);
 
     click_button(&app, "Run command");
     app.wait_text("Reconnect");

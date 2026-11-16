@@ -1,4 +1,5 @@
 use std::ops::Range;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
@@ -180,6 +181,33 @@ fn highlight(src: &str) -> Vec<(Range<usize>, SyntaxTone)> {
     out
 }
 
+/// Find presets: the needle `set_find_query` installs and the match
+/// `set_find_current` marks (0-based, clamped to the matches found).
+fn find_preset(value: &str) -> Option<(&'static str, usize)> {
+    match value {
+        "delay" => Some(("delay", 0)),
+        "delay-3rd" => Some(("delay", 2)),
+        "missing" => Some(("missing", 0)),
+        _ => None,
+    }
+}
+
+/// How often the demo editor's providers have run. The providers are pure,
+/// so these counters are the only place an invalidation shows: the cache
+/// reuses the last result until the text changes or F5 invalidates it.
+static TONE_RUNS: AtomicUsize = AtomicUsize::new(0);
+static BLOCK_RUNS: AtomicUsize = AtomicUsize::new(0);
+
+fn counted_highlight(src: &str) -> Vec<(Range<usize>, SyntaxTone)> {
+    TONE_RUNS.fetch_add(1, Ordering::Relaxed);
+    highlight(src)
+}
+
+fn counted_blocks(src: &str) -> Vec<Range<usize>> {
+    BLOCK_RUNS.fetch_add(1, Ordering::Relaxed);
+    blocks(src)
+}
+
 fn blocks(src: &str) -> Vec<Range<usize>> {
     let mut out = Vec::new();
     let mut start: Option<usize> = None;
@@ -295,10 +323,10 @@ impl EditorPage {
                 _ => TrackClick::Page,
             });
         if o.on("codeeditor.highlighter") {
-            e = e.highlighter(highlight);
+            e = e.highlighter(counted_highlight);
         }
         if o.on("codeeditor.segmenter") {
-            e = e.segmenter(blocks);
+            e = e.segmenter(counted_blocks);
         }
         match o.value("codeeditor.edit_entry") {
             "immediate" => e = e.edit_entry(EditEntry::Immediate),
@@ -320,6 +348,10 @@ impl EditorPage {
         e.indent = o.number("codeeditor.indent").unwrap_or(4) as usize;
         e.jump_to(cursor);
         e.set_diagnostics(self.editor.diagnostics().to_vec());
+        if let Some((query, current)) = find_preset(o.value("codeeditor.find_preset")) {
+            e.set_find_query(query);
+            e.set_find_current(current);
+        }
         self.editor = e;
 
         let wide = o.value("codeeditor.completion_width") == "wide";
@@ -424,6 +456,23 @@ impl EditorPage {
         self.editor.open_find();
     }
 
+    fn rescan(&mut self, cx: &mut Cx) {
+        let mut providers = Vec::new();
+        if self.editor.highlighter_fn().is_some() {
+            self.editor.invalidate_highlighter();
+            providers.push("tones");
+        }
+        if self.editor.segmenter_fn().is_some() {
+            self.editor.invalidate_segmenter();
+            providers.push("blocks");
+        }
+        if providers.is_empty() {
+            cx.status("Nothing to re-scan: syntax tones and blocks are both off");
+        } else {
+            cx.status(format!("Re-scanned {}", providers.join(" and ")));
+        }
+    }
+
     fn finish_run(&mut self, cx: &mut Cx) {
         if let Some(block) = self.editor.running.clone() {
             let text = self.editor.text()[block.clone()].to_owned();
@@ -458,6 +507,21 @@ impl EditorPage {
             .position(|b| b.start <= cur && cur <= b.end)
             .map(|i| format!("{} of {}", i + 1, all.len()))
             .unwrap_or_else(|| "between blocks".into());
+        let width = self
+            .editor
+            .field
+            .buffer
+            .line_width(pos.line)
+            .map_or_else(|| "—".to_owned(), |w| format!("{w} cells"));
+        let providers = match (
+            self.editor.highlighter_fn().is_some(),
+            self.editor.segmenter_fn().is_some(),
+        ) {
+            (true, true) => "tones · blocks",
+            (true, false) => "tones",
+            (false, true) => "blocks",
+            (false, false) => "none",
+        };
         let diags = self.editor.diagnostics().len();
         let find = match self.editor.find_state() {
             None => "closed".to_owned(),
@@ -488,6 +552,7 @@ impl EditorPage {
                 "Cursor",
                 format!("ln {} · col {}", pos.line + 1, pos.col + 1),
             ),
+            Prop::new("Line width", width),
             Prop::new("Block", block),
             Prop::new("Runs", self.runs.to_string()),
             Prop::new(
@@ -495,6 +560,16 @@ impl EditorPage {
                 self.last_ms
                     .map(|ms| format!("{ms} ms"))
                     .unwrap_or_else(|| "—".into()),
+            ),
+            Prop::new("Providers", providers),
+            // Same order as the Providers row above: tone runs, then block runs.
+            Prop::new(
+                "Scans",
+                format!(
+                    "{} · {}",
+                    TONE_RUNS.load(Ordering::Relaxed),
+                    BLOCK_RUNS.load(Ordering::Relaxed)
+                ),
             ),
             Prop::new("Diagnostics", diags.to_string()).tone(if diags > 0 {
                 Tone::Warning
@@ -570,11 +645,11 @@ impl EditorPage {
         let r = Rect::new(r.x, r.y + 2, r.width, r.height.saturating_sub(2));
         let panel = Panel::card(Some("State"));
         let bg = panel.bg(t);
-        let inner = panel.render(Rect::new(r.x, r.y, r.width, r.height.min(12)), buf, t);
+        let inner = panel.render(Rect::new(r.x, r.y, r.width, r.height.min(14)), buf, t);
         let props = self.state_props();
         props::render(inner, buf, t, &props, bg);
 
-        let y = r.y + 13;
+        let y = r.y + 15;
         if y + 4 < r.bottom() {
             let panel = Panel::card(Some("Diagnostics"));
             let bg = panel.bg(t);
@@ -651,7 +726,7 @@ const EDITOR_MIN: u16 = 40;
 
 const EDITOR_H: u16 = 26;
 
-const RIGHT_H: u16 = 2 + 12 + 1 + 9;
+const RIGHT_H: u16 = 2 + 14 + 1 + 9;
 
 impl Page for EditorPage {
     fn title(&self) -> &'static str {
@@ -754,6 +829,10 @@ impl Page for EditorPage {
                     self.run(cx);
                     return Outcome::Changed;
                 }
+                if key.code == KeyCode::F(5) {
+                    self.rescan(cx);
+                    return Outcome::Changed;
+                }
                 let (o, ev) = self.editor.on_key(key);
                 match ev {
                     Some(EditorAction::Changed) => {
@@ -853,6 +932,7 @@ impl Page for EditorPage {
             vec![
                 ("Ctrl+Space", "Complete"),
                 ("Ctrl+R", "Run block"),
+                ("F5", "Re-scan"),
                 if self.editor.tab_leaves {
                     ("Tab", "Next field")
                 } else {
@@ -878,6 +958,7 @@ impl Page for EditorPage {
                 h.insert(0, ("i", "Edit"));
                 h.push(("Ctrl+R", "Run block"));
             }
+            h.push(("F5", "Re-scan"));
             h
         }
     }

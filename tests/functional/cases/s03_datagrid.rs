@@ -1594,3 +1594,123 @@ fn issue48_strict_grid_rate_edits_exactly_and_commits_unchanged() {
     see(&kept, &["no pending changes"], &["1 pending", "1.0045"]);
     app.finish();
 }
+
+fn source_args<'a>(pairs: &[&'a str]) -> Vec<&'a str> {
+    let mut args = vec!["--page", "datagrid"];
+    for pair in pairs {
+        args.extend(["--opt", pair]);
+    }
+    args
+}
+
+#[test]
+fn issue298_keyed_source_names_rows_by_their_id_and_reads_the_draft() {
+    let args = source_args(&["datagrid.source=keyed", "datagrid.identity=on"]);
+    let app = open("s03-keyed", 120, 60, &args);
+    let play = app.wait_text("Row key");
+    see(
+        &play,
+        &[
+            "Num(1001) · row 1 · stored",
+            "source 1 · draft 0",
+            "0 cells · 0 inserted · 0 deleted",
+        ],
+        &["Num(1) ·"],
+    );
+    click_grid(&app);
+    app.key("down");
+    let second = app.wait_text("Num(1002) · row 2 · stored");
+    see(&second, &["Northwind"], &["Num(1001)"]);
+    app.key("-");
+    let marked = app.wait_text("marked for deletion");
+    see(
+        &marked,
+        &["Num(1002) · row 2", "0 cells · 0 inserted · 1 deleted"],
+        &["stored"],
+    );
+    app.key("u");
+    let undone = app.wait_text("Undid a delete mark");
+    see(
+        &undone,
+        &[
+            "Num(1002) · row 2 · stored",
+            "0 cells · 0 inserted · 0 deleted",
+        ],
+        &["marked for deletion"],
+    );
+    show_options(&app);
+    page_until(&app, "Row source");
+    assert_select(&app.screen(), "Row source", "keyed", &["local"]);
+    app.finish();
+}
+
+#[test]
+fn issue298_a_bad_key_list_refuses_the_batch_and_says_why() {
+    for (value, why) in [
+        ("duplicate key", "appears more than once"),
+        ("key count", "expected 40 row keys, got 39"),
+    ] {
+        let pair = format!("datagrid.source={value}");
+        let args = source_args(&[&pair]);
+        let app = open("s03-bad-keys", 120, 40, &args);
+        let play = app.wait_text("Rows rejected before display");
+        see(&play, &[why, "0 rows"], &["Northwind", "~4,812", "1 1001"]);
+        app.finish();
+    }
+}
+
+#[test]
+fn issue298_a_model_source_installs_the_wide_columns_with_the_rows() {
+    let plain = open("s03-model-off", 120, 80, &["--page", "datagrid"]);
+    plain.wait_text("Northwind");
+    let schema = plain.wait_text("Schema");
+    see(&schema, &[], &["double precision"]);
+    plain.finish();
+
+    for value in ["model", "model keyed"] {
+        let pair = format!("datagrid.source={value}");
+        let args = source_args(&[&pair]);
+        let app = open("s03-model", 120, 80, &args);
+        app.wait_text("Northwind");
+        let schema = app.wait_text("double precision");
+        see(
+            &schema,
+            &["Schema", "Northwind Traders"],
+            &["Rows rejected"],
+        );
+        app.finish();
+    }
+}
+
+#[test]
+fn issue298_host_calls_answer_in_the_card_and_clear_on_the_next_key() {
+    for (value, note, pending) in [
+        ("edit", "try_edit_text \"40\" · seats changed", "1 update"),
+        ("rejected", "Must be a number", "no pending changes"),
+        (
+            "unchanged",
+            "try_edit_text \"3\" · seats unchanged",
+            "no pending changes",
+        ),
+        (
+            "lock customer",
+            "update_column · customer is read-only · revision 2.0",
+            "no pending changes",
+        ),
+    ] {
+        let pair = format!("datagrid.host={value}");
+        let args = source_args(&[&pair]);
+        let app = open("s03-host", 120, 40, &args);
+        let play = app.wait_text(note);
+        see(&play, &[pending], &[]);
+        click_grid(&app);
+        app.key("down");
+        let moved = app.settle();
+        see(&moved, &["Northwind"], &[note]);
+        if value == "edit" {
+            app.key("u");
+            app.wait_text("Undid a cell edit");
+        }
+        app.finish();
+    }
+}

@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "sc-shell-shell-override-reduced",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-306/target/functional/s01-shell-override-28118-1794820339697913000-0/check-artifacts/sc-shell-shell-override-reduced/63178276c0d17a79b05f4d07c483df3949d00074851fce2a9e7db027cfbe9a00/sample.tui.pb"
+  },
+  "candidate_sha256": "63178276c0d17a79b05f4d07c483df3949d00074851fce2a9e7db027cfbe9a00",
+  "baseline_sha256": "63178276c0d17a79b05f4d07c483df3949d00074851fce2a9e7db027cfbe9a00",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-306/tests/functional/baselines/pre_refactor/S01.shell/sc-shell-shell-override-reduced.tui.pb"
+  },
+  "error_code": null
+}

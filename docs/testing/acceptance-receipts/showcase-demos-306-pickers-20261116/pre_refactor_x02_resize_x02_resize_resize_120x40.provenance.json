@@ -1,0 +1,75 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/306/debug/showcase",
+  "binary_sha256": "15669dbc5e5658b824815eb997f9f668dbaaccd7132b7376e1baa62f331a103a",
+  "fixture_args": [
+    "--page",
+    "pickers"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "908ba69daf4a51df2aaecc03c99cee8482b582118f7b51b0e8ce87fb1d9cc728",
+  "expect_baseline": "765a2a765e8ad41cd9ec757ae0875a45c9dd8140d0d6e143a22bd7c54cd54aaf",
+  "precondition": "Pickers page at its default options after the quick picker opens",
+  "session": null,
+  "expected_test_id": "pre_refactor/x02_resize/x02_resize_resize_120x40",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/showcase-demos-306-pickers-20261116/pre_refactor_x02_resize_x02_resize_resize_120x40.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/showcase-demos-306-pickers-20261116/pre_refactor_x02_resize_x02_resize_resize_120x40.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/showcase-demos-306-pickers-20261116/superseded/pre_refactor/x02_resize/x02_resize_resize_120x40.tui.pb",
+  "test_id": "pre_refactor/x02_resize/x02_resize_resize_120x40",
+  "acceptance": {
+    "expected_baseline_sha256": "765a2a765e8ad41cd9ec757ae0875a45c9dd8140d0d6e143a22bd7c54cd54aaf",
+    "accepted_baseline_sha256": "908ba69daf4a51df2aaecc03c99cee8482b582118f7b51b0e8ce87fb1d9cc728",
+    "candidate_sha256": "908ba69daf4a51df2aaecc03c99cee8482b582118f7b51b0e8ce87fb1d9cc728",
+    "transaction_receipt": "docs/testing/acceptance-receipts/showcase-demos-306-pickers-20261116/pre_refactor_x02_resize_x02_resize_resize_120x40.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "765a2a765e8ad41cd9ec757ae0875a45c9dd8140d0d6e143a22bd7c54cd54aaf"
+  },
+  "candidate": {
+    "sha256": "908ba69daf4a51df2aaecc03c99cee8482b582118f7b51b0e8ce87fb1d9cc728",
+    "path": "tests/functional/baselines/pre_refactor/x02_resize/x02_resize_resize_120x40.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/showcase-demos-306-pickers-20261116/superseded/pre_refactor/x02_resize/x02_resize_resize_120x40.tui.pb",
+    "superseded_baseline_sha256": "765a2a765e8ad41cd9ec757ae0875a45c9dd8140d0d6e143a22bd7c54cd54aaf"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/x02_resize/x02_resize_resize_120x40.tui.pb",
+    "candidate_sha256": "908ba69daf4a51df2aaecc03c99cee8482b582118f7b51b0e8ce87fb1d9cc728",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/306/debug/showcase",
+    "binary_sha256": "15669dbc5e5658b824815eb997f9f668dbaaccd7132b7376e1baa62f331a103a",
+    "note": "The Pickers page gained the Preselect multi rows option, a new row in its Options list, which moves the options scroll thumb and list in the captures behind the open picker. Accepted again with receipts."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/x02_resize/x02_resize_resize_120x40",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-306/target/functional/x02-resize-checkpoint-28116-1794820346945614000-5/check-artifacts/pre_refactor/x02_resize/x02_resize_resize_120x40/908ba69daf4a51df2aaecc03c99cee8482b582118f7b51b0e8ce87fb1d9cc728/sample.tui.pb"
+    },
+    "candidate_sha256": "908ba69daf4a51df2aaecc03c99cee8482b582118f7b51b0e8ce87fb1d9cc728",
+    "baseline_sha256": "908ba69daf4a51df2aaecc03c99cee8482b582118f7b51b0e8ce87fb1d9cc728",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-306/tests/functional/baselines/pre_refactor/x02_resize/x02_resize_resize_120x40.tui.pb"
+    },
+    "error_code": null
+  }
+}
