@@ -5,10 +5,10 @@
 //! `src/bin/jackin/screens/manager.rs` `prewarm`. The busy row's spinner
 //! changes every reduced-motion tick, so `App::visual` would wait until the
 //! screen goes quiet, which is after `Msg::Prewarmed`. The shot is the live
-//! frame that still paints the in-progress text. A nudge sleeps and would
-//! spend the 2400 ms window, so these shots do not nudge.
-
-use std::time::{Duration, Instant};
+//! frame that still paints the in-progress text. The session runs on the
+//! stepped test clock, so the 2400 ms job stays in progress until the case
+//! steps the clock: the busy window is not a wall-clock race. The clock moves
+//! one tick at a time until the frame the baseline pins is on screen.
 
 use tui_test::TerminalSnapshot;
 use tuiscotti_latest::check::CheckOutcome;
@@ -32,6 +32,7 @@ const WORKSPACES: &[&str] = &[
     "release-automation",
     "customer-portal",
 ];
+const STEP_LIMIT: usize = 40;
 const ABSENT: &[&str] = &["77aa", "88bb", "no instances"];
 
 fn visual_id(checkpoint: &str) -> String {
@@ -48,7 +49,7 @@ fn open(name: &str) -> App {
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());
     launch.motion = Some("reduced".to_string());
-    launch.clock = false;
+    launch.clock = true;
     try_launch(launch).unwrap_or_else(|error| panic!("{error}"))
 }
 
@@ -199,26 +200,42 @@ fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) -> Result<()
     }
 }
 
-/// The spinner never holds still for `App::visual`. Compare the screen that
-/// already paints the pinned glyph, before the 2400 ms job lands.
+/// Steps the test clock one tick at a time until `accept` holds. The fence
+/// makes each read the frame after the step, so nothing is read early and no
+/// wall time passes.
+fn step_until(
+    app: &App,
+    reason: &str,
+    accept: impl Fn(&TerminalSnapshot) -> bool,
+) -> TerminalSnapshot {
+    for _ in 0..STEP_LIMIT {
+        app.fence();
+        let screen = app.screen();
+        if accept(&screen) {
+            return screen;
+        }
+        app.advance_clock(1);
+    }
+    app.fence();
+    let screen = app.screen();
+    assert!(
+        accept(&screen),
+        "{reason} not seen in {STEP_LIMIT} ticks\n{}",
+        text(&screen)
+    );
+    screen
+}
+
+/// The spinner moves with the clock. Step to the screen that paints the
+/// pinned glyph, before the 2400 ms job lands, and compare that one.
 fn shot(
     app: &App,
     checkpoint: &str,
     accept: impl Fn(&TerminalSnapshot) -> bool,
 ) -> Result<(), String> {
     let test_id = visual_id(checkpoint);
-    let start = Instant::now();
-    loop {
-        let screen = app.screen();
-        if accept(&screen) {
-            return check_frame(app, &screen, &test_id);
-        }
-        if start.elapsed() > Duration::from_millis(1100) {
-            let visible = text(&screen);
-            return Err(format!("{test_id} frame not seen\n{visible}"));
-        }
-        std::thread::sleep(Duration::from_millis(15));
-    }
+    let screen = step_until(app, &test_id, accept);
+    check_frame(app, &screen, &test_id)
 }
 
 fn ids_unchanged(screen: &TerminalSnapshot, ids: &[String], jk: &[String]) {
@@ -252,7 +269,7 @@ fn j01_prewarm_route() {
         "{}",
         text(&busy)
     );
-    let done = app.wait_text(DONE);
+    let done = step_until(&app, "prewarm done", |screen| text(screen).contains(DONE));
     let visible = text(&done);
     assert!(workspace_focused(&done), "{visible}");
     assert!(!visible.contains(BUSY), "busy row stayed\n{visible}");
@@ -266,7 +283,7 @@ fn j01_prewarm_prewarm() {
     let app = open("j01-prewarm-prewarm");
     reach_manager(&app);
     select_payments(&app);
-    let armed = app.wait_text(AGO);
+    let armed = step_until(&app, "daemon age", |screen| text(screen).contains(AGO));
     assert!(
         text(&armed).contains(AGO) && workspace_focused(&armed),
         "{}",
@@ -315,7 +332,7 @@ fn j01_prewarm_prewarm() {
         text(&refused)
     );
 
-    let done = app.wait_text(DONE);
+    let done = step_until(&app, "prewarm done", |screen| text(screen).contains(DONE));
     let visible = text(&done);
     assert!(workspace_focused(&done), "{visible}");
     assert!(
@@ -342,8 +359,9 @@ fn j01_prewarm_prewarm() {
         text(&instance)
     );
     app.key("w");
-    std::thread::sleep(Duration::from_millis(250));
-    let ignored = app.screen();
+    // The fence returns once the app has handled `w` and drawn, so an
+    // ignored key is read as ignored, not as not yet read.
+    let ignored = app.settle();
     let visible = text(&ignored);
     assert!(
         !visible.contains(BUSY) && !visible.contains(PROGRESS) && !visible.contains(REFUSAL),

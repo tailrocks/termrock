@@ -13,8 +13,6 @@
 //! (`docker.stop_all`, `Launch::Activity`), not a custom action and not the
 //! Docker resource, which uses `Launch::Snapshot` and is exempt in `run_item`.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, Launch, text, try_launch};
@@ -137,19 +135,7 @@ fn press(app: &App, key: &str) {
 /// A same-size resize does not force a frame, and the cursor cell is part of
 /// the hash. Nudge the width and come back. Wait on the terminal size.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    app.wait_screen("nudged width", |screen| {
-        screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-    });
-    app.resize(cols, rows);
-    app.wait_screen("restored size", |screen| {
-        screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-    });
+    app.nudge_width(|_| true, None);
 }
 
 fn clear_query(app: &App) {

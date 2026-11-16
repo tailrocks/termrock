@@ -276,26 +276,7 @@ fn wait_until(
 /// A same-size resize does not force a frame, and the cursor column is part
 /// of the hash. Nudge the width and come back while Trust stays dirty.
 fn nudge(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    assert!(
-        stable_dirty(&screen),
-        "nudge left the frame\n{}",
-        text(&screen)
-    );
-    let wider = cols + 1;
-    app.resize(wider, rows);
-    app.wait_screen("nudged", |screen| {
-        screen.cols() == u32::from(wider)
-            && screen.rows() == u32::from(rows)
-            && stable_dirty(screen)
-    });
-    app.resize(cols, rows);
-    app.wait_screen("size restored", |screen| {
-        screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows) && stable_dirty(screen)
-    });
+    app.nudge_width(stable_dirty, Some("nudge left the frame"));
 }
 
 fn shoot(app: &App, checkpoint: &str) {

@@ -6,8 +6,6 @@
 //! before Ctrl+S. A same-size resize does not force a frame, and the cursor
 //! column is part of the hash, so each shot nudges the width and comes back.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, JACKIN, Launch, Point, button, row_text, text, try_launch};
@@ -187,26 +185,7 @@ fn preview_save(app: &App) -> Point {
 /// A same-size resize does not force a frame, and the cursor column is part
 /// of the hash. Nudge the width and come back while the Agents page stays dirty.
 fn nudge(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    assert!(
-        dirty_agents(&screen),
-        "nudge left the frame\n{}",
-        text(&screen)
-    );
-    let wider = cols + 1;
-    app.resize(wider, rows);
-    app.wait_screen("nudged", |screen| {
-        screen.cols() == u32::from(wider)
-            && screen.rows() == u32::from(rows)
-            && dirty_agents(screen)
-    });
-    app.resize(cols, rows);
-    app.wait_screen("size restored", |screen| {
-        screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows) && dirty_agents(screen)
-    });
+    app.nudge_width(dirty_agents, Some("nudge left the frame"));
 }
 
 fn shoot(app: &App, checkpoint: &str) {

@@ -3,8 +3,6 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/s04_tabs/` and each case id's dots become underscores.
 
-use std::time::Duration;
-
 use tui_test::{SnapshotColor, TerminalSnapshot};
 
 use crate::support::{App, Launch, Point, SHOWCASE, find, find_all, row_text, text, try_launch};
@@ -166,21 +164,10 @@ fn cell_fg(screen: &TerminalSnapshot, point: Point) -> SnapshotColor {
         .fg()
 }
 
-/// Paused motion keeps a click's pressed color until something else redraws.
+/// A same-size resize does not force a frame. Wait out the 140ms press flash,
+/// then resize away and back so the settled colour is drawn.
 fn clear_flash(app: &App, cols: u16, rows: u16) {
-    std::thread::sleep(Duration::from_millis(200));
-    app.resize(121, rows);
-    let hopped = format!("121×{rows}");
-    app.wait_text(&hopped);
-    app.resize(cols, rows);
-    if cols >= 100 {
-        app.wait_text(&format!("{cols}×{rows}"));
-    } else {
-        app.wait_screen("narrow size", |screen| {
-            let visible = text(screen);
-            !visible.contains(&hopped) && visible.contains(TITLE)
-        });
-    }
+    app.clear_flash_hop(cols, rows, TITLE);
 }
 
 fn shot(app: &App, case_id: &str, _precondition: &str, _args: &[&str]) {

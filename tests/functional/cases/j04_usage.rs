@@ -157,24 +157,7 @@ fn failed_go(screen: &TerminalSnapshot) -> bool {
 }
 
 fn nudge(app: &App, quiet_frame: impl Fn(&TerminalSnapshot) -> bool) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    assert!(
-        quiet_frame(&screen),
-        "nudge left the frame\n{}",
-        text(&screen)
-    );
-    let wider = cols + 1;
-    app.resize(wider, rows);
-    app.wait_screen("nudged", |screen| {
-        screen.cols() == u32::from(wider) && screen.rows() == u32::from(rows) && quiet_frame(screen)
-    });
-    app.resize(cols, rows);
-    app.wait_screen("size restored", |screen| {
-        screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows) && quiet_frame(screen)
-    });
+    app.nudge_width(quiet_frame, Some("nudge left the frame"));
 }
 
 fn shoot(app: &App, checkpoint: &str, quiet_frame: impl Fn(&TerminalSnapshot) -> bool) {

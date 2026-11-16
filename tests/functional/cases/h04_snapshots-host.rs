@@ -218,28 +218,10 @@ fn assert_ssh(screen: &TerminalSnapshot) {
 
 /// The waits follow the reported size and the system title, not the size chip.
 fn settle_system(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    assert!(
-        text(&screen).contains(SYSTEM_TITLE),
-        "shot left the system snapshot\n{}",
-        text(&screen)
+    app.nudge_width(
+        |screen| text(screen).contains(SYSTEM_TITLE),
+        Some("shot left the system snapshot"),
     );
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    app.wait_screen("nudge", |screen| {
-        screen.cols() == u32::from(nudged)
-            && screen.rows() == u32::from(rows)
-            && text(screen).contains(SYSTEM_TITLE)
-    });
-    app.resize(cols, rows);
-    app.wait_screen("restored", |screen| {
-        screen.cols() == u32::from(cols)
-            && screen.rows() == u32::from(rows)
-            && text(screen).contains(SYSTEM_TITLE)
-    });
 }
 
 fn shot(app: &App, checkpoint: &str) {

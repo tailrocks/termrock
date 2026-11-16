@@ -19,8 +19,6 @@
 //! does not exit. The test does not call `finish` while the dialog is open
 //! and does not call `kill_child`.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, HOLLA, Launch, Point, cell_bg, find_all, row_text, text, try_launch};
@@ -175,19 +173,7 @@ fn back_to_finder(app: &App) {
 /// of the hash. Nudge the width and come back. The narrow footer may omit a
 /// size chip, so this waits on the terminal size. The picker stays on api dev.
 fn nudge(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    app.wait_screen("nudged", |screen| {
-        screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows) && on_api(screen)
-    });
-    app.resize(cols, rows);
-    app.wait_screen("size restored", |screen| {
-        screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows) && on_api(screen)
-    });
+    app.nudge_width(on_api, None);
 }
 
 fn shot(app: &App, checkpoint: &str) {

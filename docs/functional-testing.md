@@ -195,17 +195,21 @@ interaction.
 
 `JUNIE_TUI_TEST_FENCE=1` is the opt-in that makes an app answer the shell fence (a BEL queued behind the frame of every earlier input) without freezing the status clock as `JUNIE_TUI_TEST_CLOCK` does; `App::resize` and `App::fence` wait on it for Showcase, TablePro, Holla and Jackin.
 
-Every read of the screen by the helper (`screen`, the `wait_*` predicates,
-`settle`, `stable_screen`) begins with a fence: the helper pastes
-`junie-tui:fence`, and under the same opt-in the shell answers it with a BEL
-after the frame of every input written before it. The helper returns when the
-terminal's bell count rises, so a snapshot shows every action sent so far as
-handled. The writes stay as asynchronous as before (a key and the next mouse
-move may share one frame, as in a real terminal). Without the fence a wait that
-one frame of a multi-input gesture already satisfies, or a `settle()` that
-reads 150 ms of quiet before the application has read its input, passes or
-fails by machine load. Write a wait for the state the action produces, not for
-a state the frame before it also has.
+`App::settle` begins with a fence: the helper pastes `junie-tui:fence`, and
+under the same opt-in the shell answers it with a BEL after the frame of every
+input written before it. The helper returns when the terminal's bell count
+rises, so the 150 ms of quiet that follows is the quiet after the frame of
+every action sent so far, such as a wheel step or a key. The writes stay as
+asynchronous as before (a key and the next mouse move may share one frame, as
+in a real terminal). Without the fence a `settle()` that reads 150 ms of quiet
+before the application has read its input passes or fails by machine load, and
+a loop that scrolls with `wheel` and reads `settle()` can read the page from
+before the step and send another one. An app that exited, or a reference build
+that does not answer the fence, gets the quiet wait alone. `App::fence` and
+`App::resize` use the same wait directly. `App::wheel_applied` waits for the
+page to change instead, for a step known to move it. The plain `screen` and
+`wait_*` reads do not fence: write a wait for the state the action produces,
+not for a state the frame before it also has.
 
 ## Write one journey around observable contracts
 
@@ -303,6 +307,17 @@ press. A selected tab remains selected after release; a pressed button
 should not retain its held appearance indefinitely. Some controls show a
 brief release flash. Before comparing the next hover/press sequence, wait
 for that specific target to return to its expected non-flash state.
+
+The press flash runs on the app's own clock. Call `App::flash_expired()`
+before a resize that forces the settled frame, and never sleep a guessed 200 ms:
+it fences first, so the click is known to be handled, then waits the flash
+length once (a session on the stepped test clock only fences, because wall
+time never expires its flash, and `App::settle_flash` steps that clock). Prefer
+the stepped clock (`Launch::clock`) when a case races a simulated job, as
+`j01_prewarm` does: `step_until` advances one tick behind the fence until the
+frame the case pins is on screen. The sleeps that remain in the cases wait out
+real time on purpose (an intro guard, a fixed number of fetch ticks, a
+negative check that a late result does not arrive).
 
 ### Send wheel input to the application component
 

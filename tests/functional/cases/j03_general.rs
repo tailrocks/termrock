@@ -6,8 +6,6 @@
 //! resize does not force a frame, and the cursor column is part of the hash,
 //! so each shot nudges the width and comes back.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, JACKIN, Launch, Point, find_all, row_text, text, try_launch};
@@ -162,28 +160,7 @@ fn button_on(app: &App, label: &str, row_has: &[&str]) -> Point {
 /// A same-size resize does not force a frame, and the cursor column is part
 /// of the hash. Nudge the width and come back while General stays dirty.
 fn nudge(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    assert!(
-        dirty_general(&screen),
-        "nudge left the frame\n{}",
-        text(&screen)
-    );
-    let wider = cols + 1;
-    app.resize(wider, rows);
-    app.wait_screen("nudged", |screen| {
-        screen.cols() == u32::from(wider)
-            && screen.rows() == u32::from(rows)
-            && dirty_general(screen)
-    });
-    app.resize(cols, rows);
-    app.wait_screen("size restored", |screen| {
-        screen.cols() == u32::from(cols)
-            && screen.rows() == u32::from(rows)
-            && dirty_general(screen)
-    });
+    app.nudge_width(dirty_general, Some("nudge left the frame"));
 }
 
 fn shoot(app: &App, checkpoint: &str) {

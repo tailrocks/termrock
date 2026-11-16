@@ -147,6 +147,8 @@ pub struct App {
     recent: RefCell<VecDeque<(usize, TerminalSnapshot)>>,
     clock: bool,
     fence: bool,
+    /// A button was pressed or released since the last [`App::flash_expired`].
+    clicked: Cell<bool>,
 }
 
 impl App {
@@ -476,7 +478,19 @@ impl App {
         })
     }
 
+    /// Waits for 150 ms without output, after the app has handled and drawn
+    /// every input sent so far.
+    ///
+    /// Quiet alone is not proof the app acted: a loaded app can still be
+    /// reading a wheel step or a key when 150 ms pass, and the frame read then
+    /// is the one from before it. The fence queues behind every earlier input,
+    /// so the quiet that follows is the quiet after the input's frame. An app
+    /// that exited, or does not answer the fence (a reference build), gets
+    /// the quiet wait alone.
     pub fn settle(&self) -> TerminalSnapshot {
+        if self.fence && self.child_running() {
+            self.fence_while_running();
+        }
         self.session
             .wait_quiet(&WaitQuietOptions::new(TIMEOUT, Duration::from_millis(150)).unwrap())
             .expect("terminal must settle after the semantic assertion");
@@ -564,6 +578,12 @@ impl App {
 
     fn mouse(&self, action: CheckedMouseAction) {
         self.log(format!("mouse {action:?}"));
+        if matches!(
+            action,
+            CheckedMouseAction::Press { .. } | CheckedMouseAction::Release { .. }
+        ) {
+            self.clicked.set(true);
+        }
         self.session
             .mouse_checked(action)
             .expect("application must negotiate SGR mouse input for this action");
@@ -632,9 +652,129 @@ impl App {
     /// a candidate Showcase, TablePro, Holla or Jackin answers it (see
     /// [`fenced`]). A reference build or another program gets no wait.
     pub fn fence(&self) {
+        if self.fence {
+            self.fence_until(false);
+        }
+    }
+
+    /// Returns once the 140 ms press flash of every click sent so far has
+    /// expired in the app's own time, so the next draw paints the settled
+    /// colour. A same-size resize is such a draw.
+    ///
+    /// The fence proves the app has handled the click, so its flash deadline
+    /// is at most [`PointerConfig::DEFAULT`]`.flash_ms` after now. Waiting that
+    /// long from the fence is exact where a fixed sleep from the click is a guess
+    /// a loaded app can lose. A session on the stepped test clock never needs
+    /// the wait: its flash expires only on [`App::settle_flash`], and the wall
+    /// time that passes changes nothing. A session that does not answer the
+    /// fence (a reference build) keeps a 200 ms sleep.
+    pub fn flash_expired(&self) {
+        let clicked = self.clicked.replace(false);
         if !self.fence {
+            std::thread::sleep(Duration::from_millis(200));
             return;
         }
+        self.fence();
+        if clicked && !self.clock {
+            std::thread::sleep(Duration::from_millis(PointerConfig::DEFAULT.flash_ms + 10));
+        }
+    }
+
+    /// Waits out the press flash, then widens the terminal by one column and
+    /// restores it. A same-size resize does not force a frame, and the frame
+    /// after a flash is the one a capture needs. `ready` must hold on the screen
+    /// at both sizes. With `left`, it must also hold before the nudge, and the
+    /// message says what the screen showed instead.
+    pub fn nudge_width(&self, ready: impl Fn(&TerminalSnapshot) -> bool, left: Option<&str>) {
+        self.nudge_sized(|screen, _, _| ready(screen), left);
+    }
+
+    /// [`App::nudge_width`] for a `ready` that also needs the size the screen is
+    /// expected to have, as columns then rows.
+    pub fn nudge_sized(
+        &self,
+        ready: impl Fn(&TerminalSnapshot, u16, u16) -> bool,
+        left: Option<&str>,
+    ) {
+        self.flash_expired();
+        let screen = self.screen();
+        let cols = u16::try_from(screen.cols()).expect("cols");
+        let rows = u16::try_from(screen.rows()).expect("rows");
+        if let Some(left) = left {
+            assert!(ready(&screen, cols, rows), "{left}\n{}", text(&screen));
+        }
+        let wider = cols + 1;
+        self.resize(wider, rows);
+        self.wait_screen("nudged", |screen| {
+            screen.cols() == u32::from(wider)
+                && screen.rows() == u32::from(rows)
+                && ready(screen, wider, rows)
+        });
+        self.resize(cols, rows);
+        self.wait_screen("size restored", |screen| {
+            screen.cols() == u32::from(cols)
+                && screen.rows() == u32::from(rows)
+                && ready(screen, cols, rows)
+        });
+    }
+
+    /// Waits out the press flash, hops to 121 columns and back to `cols` by
+    /// `rows`, and waits for the frame a capture needs. Below 100 columns the
+    /// hop label is gone and `title` is on screen. From 100 up the size chip
+    /// names the size.
+    pub fn clear_flash_hop(&self, cols: u16, rows: u16, title: &str) {
+        self.flash_expired();
+        self.resize(121, rows);
+        let hopped = format!("121×{rows}");
+        self.wait_text(&hopped);
+        self.resize(cols, rows);
+        self.wait_screen(&format!("settled {cols}x{rows}"), |screen| {
+            let visible = text(screen);
+            if cols >= 100 {
+                visible.contains(&format!("{cols}×{rows}"))
+            } else {
+                !visible.contains(&hopped) && visible.contains(title)
+            }
+        });
+    }
+
+    /// [`App::clear_flash_hop`] for pages whose hop is to 121x40 and shows
+    /// `interim` there. The settled frame holds `token`. Below 100 columns
+    /// neither `interim` nor `wide` is left. The pointer then parks on the last
+    /// row.
+    pub fn clear_flash_interim(&self, cols: u16, rows: u16, token: &str, labels: (&str, &str)) {
+        let (interim, wide) = labels;
+        self.flash_expired();
+        self.resize(121, 40);
+        self.wait_text(interim);
+        self.resize(cols, rows);
+        self.wait_screen(&format!("settled {cols}x{rows}"), |screen| {
+            let visible = text(screen);
+            if screen.cols() != u32::from(cols)
+                || screen.rows() != u32::from(rows)
+                || !visible.contains(token)
+            {
+                return false;
+            }
+            if cols < 100 {
+                !visible.contains(interim) && !visible.contains(wide)
+            } else {
+                visible.contains(&format!("{cols}×{rows}"))
+            }
+        });
+        self.move_to(Point {
+            x: 2,
+            y: rows.saturating_sub(1),
+        });
+    }
+
+    /// [`App::fence`] for a read that is also fine with an app that quits on
+    /// the input before it: the wait ends when the child is gone.
+    fn fence_while_running(&self) {
+        self.fence_until(true);
+    }
+
+    fn fence_until(&self, exit_ends_wait: bool) {
         let before = self.bells();
         self.log("fence".to_string());
         self.session
@@ -642,6 +782,9 @@ impl App {
             .expect("fence through bracketed paste");
         let deadline = Instant::now() + TIMEOUT;
         while self.bells() == before {
+            if exit_ends_wait && !self.child_running() {
+                return;
+            }
             self.assert_running("fence");
             assert!(
                 Instant::now() < deadline,
@@ -833,7 +976,7 @@ pub fn flash_settle(app: &App) {
     if app.clock {
         app.settle_flash();
     } else {
-        std::thread::sleep(Duration::from_millis(200));
+        app.flash_expired();
     }
     redraw_after_flash(app);
 }
@@ -943,6 +1086,7 @@ pub fn try_launch(launch: Launch) -> Result<App, LaunchError> {
                 recent: RefCell::new(VecDeque::new()),
                 clock: launch.clock,
                 fence: fenced(&launch),
+                clicked: Cell::new(false),
             };
             app.persist_actions();
             Ok(app)

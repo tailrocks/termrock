@@ -13,8 +13,6 @@
 //! wall ticks a loaded run reaches `1 s ago` before the frame is stored, so the
 //! git Push journey launches on the test clock and steps it to run the command.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, HOLLA, Launch, text, try_launch};
@@ -164,20 +162,7 @@ fn push_ready(screen: &TerminalSnapshot) -> bool {
 /// A same-size resize does not force a frame, and the cursor column is part
 /// of the hash. Nudge the width and come back while the command stays put.
 fn nudge(app: &App, quiet: impl Fn(&TerminalSnapshot) -> bool) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    assert!(quiet(&screen), "nudge left the frame\n{}", text(&screen));
-    let wider = cols + 1;
-    app.resize(wider, rows);
-    app.wait_screen("nudged", |screen| {
-        screen.cols() == u32::from(wider) && screen.rows() == u32::from(rows) && quiet(screen)
-    });
-    app.resize(cols, rows);
-    app.wait_screen("size restored", |screen| {
-        screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows) && quiet(screen)
-    });
+    app.nudge_width(quiet, Some("nudge left the frame"));
 }
 
 fn shot(app: &App, checkpoint: &str) {

@@ -161,19 +161,7 @@ fn choose(app: &App, label: &str) {
 /// Same-size resize does not force a new frame. Nudge the width and come back.
 /// The wait is the terminal size, not the status-bar size chip.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    app.wait_screen("nudge width", |screen| {
-        screen.cols() == u32::from(nudged) && screen.rows() == u32::from(rows)
-    });
-    app.resize(cols, rows);
-    app.wait_screen("nudge restored", |screen| {
-        screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows)
-    });
+    app.nudge_width(|_| true, None);
 }
 
 /// Compare the live screen. The caller owns every resize.

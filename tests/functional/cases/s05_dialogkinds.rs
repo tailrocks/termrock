@@ -4,7 +4,6 @@
 //! `pre_refactor/s05_dialogkinds/` and each case id's dots become underscores.
 
 use std::collections::BTreeSet;
-use std::time::Duration;
 
 use tui_test::TerminalSnapshot;
 
@@ -184,31 +183,10 @@ fn specimen_block(screen: &TerminalSnapshot, label: &str) -> Option<String> {
     ready.then_some(block)
 }
 
-/// Paused motion does not redraw when a 140ms press flash expires, so a shot
-/// of the click frame can keep the pressed colour. Resize away and back.
+/// A shot of the click frame can keep the 140ms pressed colour. Wait out the
+/// flash, then resize away and back so the settled colour is drawn.
 fn clear_flash(app: &crate::support::App, cols: u16, rows: u16, token: &str) {
-    std::thread::sleep(Duration::from_millis(200));
-    app.resize(121, 40);
-    app.wait_text(INTERIM);
-    app.resize(cols, rows);
-    app.wait_screen(&format!("settled {cols}x{rows}"), |screen| {
-        if screen.cols() != u32::from(cols)
-            || screen.rows() != u32::from(rows)
-            || !text(screen).contains(token)
-        {
-            return false;
-        }
-        let visible = text(screen);
-        if cols < 100 {
-            !visible.contains(INTERIM) && !visible.contains(WIDE)
-        } else {
-            visible.contains(&format!("{cols}×{rows}"))
-        }
-    });
-    app.move_to(Point {
-        x: 2,
-        y: rows.saturating_sub(1),
-    });
+    app.clear_flash_interim(cols, rows, token, (INTERIM, WIDE));
 }
 
 fn park(app: &crate::support::App, rows: u16) {

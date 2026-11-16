@@ -427,7 +427,14 @@ fn holla_guard() {
     // The test clock holds the cancel, so the activities are still stopping
     // when a second Ctrl+Q arrives. `quitting` is set, so it is ignored.
     app.key("ctrl+q");
-    let ignored = app.settle();
+    // The fence returns once holla has handled the key and drawn, so the wait
+    // below sees the frame after the ignored Ctrl+Q, not the one before it.
+    app.fence();
+    let ignored = app.wait_screen("quitting still shown", |screen| {
+        text(screen).contains("quitting when every process is gone")
+            && !text(screen).contains(QUIT_HOLLA)
+            && !text(screen).contains(STOP_QUIT)
+    });
     assert!(app.child_running(), "a second Ctrl+Q quit holla");
     see(
         &ignored,

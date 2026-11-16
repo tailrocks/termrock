@@ -120,28 +120,10 @@ fn clear_query(app: &App) {
 /// back. Below about 100 columns the header omits the size chip, so the wait
 /// follows `screen.cols()` and `screen.rows()` plus the page anchor.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    assert!(
-        text(&screen).contains(BREW),
-        "shot left Homebrew services\n{}",
-        text(&screen)
+    app.nudge_width(
+        |screen| text(screen).contains(BREW),
+        Some("shot left Homebrew services"),
     );
-    let nudged = cols + 1;
-    app.resize(nudged, rows);
-    app.wait_screen("nudge", |screen| {
-        screen.cols() == u32::from(nudged)
-            && screen.rows() == u32::from(rows)
-            && text(screen).contains(BREW)
-    });
-    app.resize(cols, rows);
-    app.wait_screen("restored", |screen| {
-        screen.cols() == u32::from(cols)
-            && screen.rows() == u32::from(rows)
-            && text(screen).contains(BREW)
-    });
 }
 
 fn shot(app: &App, checkpoint: &str) {
