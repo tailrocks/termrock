@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/x03_focus/x03_focus_focus_120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/tmp/final/pre_refactor__x03_focus__x03_focus_focus_120x40.tui.pb"
+  },
+  "candidate_sha256": "5dfbff2be365dc067a6742b1f6c34c5f22f33d76aa23b403c21c0e5645a3b64a",
+  "baseline_sha256": "5dfbff2be365dc067a6742b1f6c34c5f22f33d76aa23b403c21c0e5645a3b64a",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/tcb-lanes/lane3/tests/functional/baselines/pre_refactor/x03_focus/x03_focus_focus_120x40.tui.pb"
+  },
+  "error_code": null
+}

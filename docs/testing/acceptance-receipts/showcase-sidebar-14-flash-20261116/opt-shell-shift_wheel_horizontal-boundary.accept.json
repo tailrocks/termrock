@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-shift_wheel_horizontal-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/s01_shift_wheel_off-52309-1794790625595832000-0/check-artifacts/opt-shell-shift_wheel_horizontal-boundary/7651c3201ed5a6a4ad9c9b300d249c3d5ec7b31592d64afe720db200967c8c67/sample.tui.pb"
+  },
+  "candidate_sha256": "7651c3201ed5a6a4ad9c9b300d249c3d5ec7b31592d64afe720db200967c8c67",
+  "baseline_sha256": "7651c3201ed5a6a4ad9c9b300d249c3d5ec7b31592d64afe720db200967c8c67",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-shift_wheel_horizontal-boundary.tui.pb"
+  },
+  "error_code": null
+}

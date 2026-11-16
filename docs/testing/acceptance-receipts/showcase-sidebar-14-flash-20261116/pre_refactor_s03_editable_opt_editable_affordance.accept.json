@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s03_editable/opt_editable_affordance",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/s03-affordance-51376-1794791421787282000-0/check-artifacts/pre_refactor/s03_editable/opt_editable_affordance/f8952a13bda71192e51f81387ec3f79f88fd74f985e49dd3e951c8954078dc1c/sample.tui.pb"
+  },
+  "candidate_sha256": "f8952a13bda71192e51f81387ec3f79f88fd74f985e49dd3e951c8954078dc1c",
+  "baseline_sha256": "f8952a13bda71192e51f81387ec3f79f88fd74f985e49dd3e951c8954078dc1c",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/pre_refactor/s03_editable/opt_editable_affordance.tui.pb"
+  },
+  "error_code": null
+}

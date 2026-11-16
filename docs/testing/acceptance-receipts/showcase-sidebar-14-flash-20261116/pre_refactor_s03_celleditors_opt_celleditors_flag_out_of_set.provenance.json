@@ -1,0 +1,72 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/trial/debug/showcase",
+  "binary_sha256": "27474c66e12959cebc61160a7077a5b680e5d80a98217f5e354c610598730776",
+  "fixture_args": [],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "f20fffd4a833c28bbafd59345bd0e1241b39885306ae75990757d92563ef98b4",
+  "expect_baseline": "c1f5dc671db013112c485497b76880114e2e1b6df1311372adafa5245c7e97f2",
+  "precondition": "Deliberate combination of two approved visual changes. #285 (#149) already settled the press flash in this capture on main; #14 adds the five formerly hidden pages to the sidebar (Components 54 to 59, longer page lists). The sample differs from main's baseline in 1 cells, all in sidebar columns 23 to 23, rows 2 to 2; every cell is exactly the cell #14's own baseline holds, and every cell right of the sidebar is main's. Size, palette and default colours are identical.",
+  "session": null,
+  "expected_test_id": "pre_refactor/s03_celleditors/opt_celleditors_flag_out_of_set",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-flash-20261116/pre_refactor_s03_celleditors_opt_celleditors_flag_out_of_set.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-flash-20261116/pre_refactor_s03_celleditors_opt_celleditors_flag_out_of_set.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/showcase-sidebar-14-flash-20261116/superseded/pre_refactor/s03_celleditors/opt_celleditors_flag_out_of_set.tui.pb",
+  "test_id": "pre_refactor/s03_celleditors/opt_celleditors_flag_out_of_set",
+  "acceptance": {
+    "expected_baseline_sha256": "c1f5dc671db013112c485497b76880114e2e1b6df1311372adafa5245c7e97f2",
+    "accepted_baseline_sha256": "f20fffd4a833c28bbafd59345bd0e1241b39885306ae75990757d92563ef98b4",
+    "candidate_sha256": "f20fffd4a833c28bbafd59345bd0e1241b39885306ae75990757d92563ef98b4",
+    "transaction_receipt": "docs/testing/acceptance-receipts/showcase-sidebar-14-flash-20261116/pre_refactor_s03_celleditors_opt_celleditors_flag_out_of_set.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "c1f5dc671db013112c485497b76880114e2e1b6df1311372adafa5245c7e97f2"
+  },
+  "candidate": {
+    "sha256": "f20fffd4a833c28bbafd59345bd0e1241b39885306ae75990757d92563ef98b4",
+    "path": "tests/functional/baselines/pre_refactor/s03_celleditors/opt_celleditors_flag_out_of_set.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/showcase-sidebar-14-flash-20261116/superseded/pre_refactor/s03_celleditors/opt_celleditors_flag_out_of_set.tui.pb",
+    "superseded_baseline_sha256": "c1f5dc671db013112c485497b76880114e2e1b6df1311372adafa5245c7e97f2"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s03_celleditors/opt_celleditors_flag_out_of_set.tui.pb",
+    "candidate_sha256": "f20fffd4a833c28bbafd59345bd0e1241b39885306ae75990757d92563ef98b4",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/tcb-q-target/trial/debug/showcase",
+    "binary_sha256": "27474c66e12959cebc61160a7077a5b680e5d80a98217f5e354c610598730776",
+    "note": "Live candidate capture of the merged tree (#14 with #285 on main). No Reference-mode capture exists for the sidebar change."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s03_celleditors/opt_celleditors_flag_out_of_set",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/s03-celleditors-flag-52675-1794790631457631000-0/check-artifacts/pre_refactor/s03_celleditors/opt_celleditors_flag_out_of_set/f20fffd4a833c28bbafd59345bd0e1241b39885306ae75990757d92563ef98b4/sample.tui.pb"
+    },
+    "candidate_sha256": "f20fffd4a833c28bbafd59345bd0e1241b39885306ae75990757d92563ef98b4",
+    "baseline_sha256": "f20fffd4a833c28bbafd59345bd0e1241b39885306ae75990757d92563ef98b4",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/pre_refactor/s03_celleditors/opt_celleditors_flag_out_of_set.tui.pb"
+    },
+    "error_code": null
+  }
+}

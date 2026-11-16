@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s01_focusnavigation/sc_focusnavigation_options_120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/target/functional/s01-focusnavigation-sections-54397-1794792473152334000-0/check-artifacts/pre_refactor/s01_focusnavigation/sc_focusnavigation_options_120x40/77bc8de2c085504e8927ac7f25207cf7e7474cffb427bcee9f3060f51c51ccb9/sample.tui.pb"
+  },
+  "candidate_sha256": "77bc8de2c085504e8927ac7f25207cf7e7474cffb427bcee9f3060f51c51ccb9",
+  "baseline_sha256": "77bc8de2c085504e8927ac7f25207cf7e7474cffb427bcee9f3060f51c51ccb9",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/q-trial/tests/functional/baselines/pre_refactor/s01_focusnavigation/sc_focusnavigation_options_120x40.tui.pb"
+  },
+  "error_code": null
+}
