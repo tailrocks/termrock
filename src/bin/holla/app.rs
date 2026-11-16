@@ -391,10 +391,6 @@ impl App {
         if self.world.cleanup_job.is_some() {
             out = Outcome::Changed;
         }
-        let now = self.now_ms();
-        if self.shell.pointer.expire_flash(now) {
-            out = Outcome::Changed;
-        }
 
         out = out.or(PointerRouter::tick(self));
         if self.shell.status.expire(self.world.clock.now()) {

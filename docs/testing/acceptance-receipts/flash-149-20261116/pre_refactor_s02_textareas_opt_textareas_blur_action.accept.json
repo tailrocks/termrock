@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s02_textareas/opt_textareas_blur_action",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/target/functional/s02-textareas-blur-cancel-94134-1794769635409368000-1/check-artifacts/pre_refactor/s02_textareas/opt_textareas_blur_action/402ed9923a131bf84097e7533d4bb5faa074431edd3b1b7b3c3636c90af13a86/sample.tui.pb"
+  },
+  "candidate_sha256": "402ed9923a131bf84097e7533d4bb5faa074431edd3b1b7b3c3636c90af13a86",
+  "baseline_sha256": "402ed9923a131bf84097e7533d4bb5faa074431edd3b1b7b3c3636c90af13a86",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/tests/functional/baselines/pre_refactor/s02_textareas/opt_textareas_blur_action.tui.pb"
+  },
+  "error_code": null
+}

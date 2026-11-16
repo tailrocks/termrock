@@ -855,11 +855,15 @@ impl PointerRouter {
 
     pub fn tick<H: PointerHost + ?Sized>(host: &mut H) -> Outcome {
         let now = host.now_ms();
-        let due = host.pointer_parts().router.state.autoscroll_due(now);
-        let out = match due {
-            Some((_, pos)) => Self::route(host, Mouse::new(MouseKind::Drag, pos)),
-            None => Outcome::Ignored,
+        let mut out = if host.pointer_parts().router.state.expire_flash(now) {
+            Outcome::Changed
+        } else {
+            Outcome::Ignored
         };
+        let due = host.pointer_parts().router.state.autoscroll_due(now);
+        if let Some((_, pos)) = due {
+            out = out.or(Self::route(host, Mouse::new(MouseKind::Drag, pos)));
+        }
         let due = host.pointer_parts().router.state.track_repeat_due(now);
         match due {
             Some(pos) => out.or(Self::route(host, Mouse::new(MouseKind::Down, pos))),

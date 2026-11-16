@@ -35,6 +35,17 @@ target without the profile:
 cargo nextest run --locked --test functional --no-tests fail
 ```
 
+The cases that drive more than one app binary (`g02_harness` and the `x01_*`,
+`x02_*`, `x03_*` files, except `x01_input` and `x02_suspend`) live in the
+`functional` target of `crates/functional-cross`. That crate has no app
+binaries of its own, so it finds `showcase`, `tablepro` and `holla` by name
+next to its test executable in `target/<profile>/`, or at `TCB_BIN_<NAME>`. A
+nextest setup script (`app-bins` in `.config/nextest.toml`) runs
+`cargo build --locked --workspace --bins` before any selected
+`functional-cross` test, so `cargo nextest run -p functional-cross` works from
+a clean target directory. The script builds the dev profile, so
+`--cargo-profile release` would still launch the debug binaries.
+
 Filter one journey during development, without hiding missing tests:
 
 ```sh
