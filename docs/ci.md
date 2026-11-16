@@ -44,8 +44,21 @@ change the config and run `velnor-actions generate`.
   `suite-functional` (`--workspace`), not by these jobs: the `ci` profile
   filters out `binary(functional)`, so they run no tests
   (`allow_empty_test_suite`) and guard the crate's format, clippy and docs.
-- **Required** — the verdict job. Its `needs` are Plan, the eight Rust
-  jobs, `suite-functional` and jactionlint, as listed in the generated
+- **Rust / termrock-showcase**, **termrock-tablepro** and **termrock-holla**,
+  each with a **(product)** job — the five tasks for the three application
+  packages under `apps/`. They import `termrock` only. The binary unit tests
+  (the work-metrics scenarios, the Showcase catalog and coverage gates) run
+  here; each package's `functional` target runs in `suite-functional`.
+- **Rust / termrock-consumer-minimal**, **-keyed-modal**, **-terminal** and
+  **-jackin-host**, each with a **(product)** job — the four independent
+  consumer fixtures under `tests/consumers/`. Each is its own Cargo workspace
+  with a committed lockfile, so Velnor builds it from its own directory and its
+  declared features alone, apart from the repository workspace. These jobs are
+  the CI gate for the feature contract of [API contract](api-contract.md);
+  `bash scripts/check-consumers.sh` runs the same four locally. The `product`
+  jobs repeat the default job because the fixtures declare no `product` feature.
+- **Required** — the verdict job. Its `needs` are Plan, every Rust
+  job, `suite-functional` and jactionlint, as listed in the generated
   `ci.yml`.
 - **DCO** — every commit must carry `Signed-off-by`
   (`git commit -s`, committer Alexey Zhokhov

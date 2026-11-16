@@ -25,19 +25,29 @@ cargo nextest run --locked --workspace --profile functional --no-tests fail
 
 This is the command CI runs in `suite-functional`. The profile selects
 the `functional` target of the workspace crates and retains a JUnit
-report. The `functional` target of `jackin-console` needs the feature
-`demo`, which is off by default, so this command runs the root journeys
-only. Add `--all-features` to include the jackin journeys; CI runs them in
-`Rust / jackin-console` (see [CI](ci.md#the-demo-feature)). To run the
-target without the profile:
+report. Each app package has its own `functional` target
+(`apps/holla`, `apps/tablepro`, `apps/showcase`, `apps/jackin`), so the
+candidate binary is that package's own `CARGO_BIN_EXE_<bin>`. The target of
+`jackin-console` needs the feature `demo`, which is off by default, so this
+command runs the journeys of the other packages only. Add `--all-features` to
+include the jackin journeys; CI runs them in `Rust / jackin-console` (see
+[CI](ci.md#the-demo-feature)). To run one package's target without the
+profile:
 
 ```sh
-cargo nextest run --locked --test functional --no-tests fail
+cargo nextest run --locked -p termrock-holla --test functional --no-tests fail
 ```
 
+The target of an app package includes the shared harness
+`tests/functional/support.rs` by path. Baselines stay in the repository-level
+store `tests/functional/baselines/`; a package that keeps its own
+`tests/functional/baselines/` (`jackin-console`) reads that instead, and every
+`pre_refactor/` baseline reads the repository store.
+
 The cases that drive more than one app binary (`g02_harness` and the `x01_*`,
-`x02_*`, `x03_*` files, except `x01_input` and `x02_suspend`) live in the
-`functional` target of `crates/functional-cross`. That crate has no app
+`x02_*`, `x03_*` files, except `x01_input` and `x02_suspend`, which launch only
+Showcase and live in its target) live in the `functional` target of
+`crates/functional-cross`. That crate has no app
 binaries of its own, so it finds `showcase`, `tablepro` and `holla` by name
 next to its test executable in `target/<profile>/`, or at `TCB_BIN_<NAME>`. A
 nextest setup script (`app-bins` in `.config/nextest.toml`) runs
@@ -53,7 +63,7 @@ so `--cargo-profile release` would still launch the debug binaries.
 Filter one journey during development, without hiding missing tests:
 
 ```sh
-cargo nextest run --locked --test functional --no-tests fail \
+cargo nextest run --locked -p termrock-showcase --test functional --no-tests fail \
   -E 'test(showcase_button_hover_hold_release_cancel_and_disabled_truecolor)'
 ```
 
@@ -509,7 +519,7 @@ per-app `app_tests*` suites.
 | src/bin/jackin/app_tests* (formerly jackin_preview) (incl. reach_tests! suites) | 147 + generated | Superseded by Jackin functional journeys. The `reach_tests!` macro in `src/shell/reach.rs` is retained as library support code with no remaining invocations. |
 | tools/frozen* (frozen baseline CLI parity tooling) | 6 files + crate | Deleted: dead helpers for the retired frozen harness. |
 
-Kept and why: `src/catalog.rs` and `src/bin/showcase/coverage.rs`
+Kept and why: `src/catalog.rs` and `apps/showcase/src/coverage.rs`
 (production-compiled capability registry/declarations referenced by the
 library API), `src/shell/reach.rs` (catalog-registered reach support),
 the `visual-baseline` git tag/release (immutable historical oracle), and

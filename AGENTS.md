@@ -106,6 +106,15 @@ workspaces, Docker, OpenShell, Codex).
 - Apps are thin consumers. An app provides routes, pages and
   configuration. Input routing, focus, modals, hints, help, quit guards
   and similar shell behaviour belong to the library.
+- The four apps (`apps/showcase`, `apps/tablepro`, `apps/holla`,
+  `apps/jackin`) depend on the `termrock` facade (`crates/termrock`) and
+  import `termrock::`, never `junie_tui::`; `junie-tui` stays the
+  implementation package. `tests/regressions/facade_contract.rs` enforces it.
+  A new public module is added to the facade explicitly, and the facade keeps
+  empty default features. The independent consumer fixtures under
+  `tests/consumers/` each have their own `[workspace]` and `Cargo.lock`; keep
+  them compiling from their declared features alone (`docs/api-contract.md`,
+  `scripts/check-consumers.sh`).
 - Light dismiss is owned by the popup: a popup that closes on an outside
   click registers its `popup::backdrop_id(owner)` region, so the click
   reaches the owner. Apps and pages must not reimplement "click elsewhere
@@ -138,8 +147,8 @@ workspaces, Docker, OpenShell, Codex).
   all-features) must match `src/catalog.rs` exactly (`CAPABILITIES` plus
   `MEMBERS`; fields, trait items and trait impls inherit their owner) and
   every API needs exactly one disposition: a `CapabilityProof` or
-  `CapabilityException` line in `src/bin/showcase/coverage.rs` or a
-  `src/bin/showcase/coverage/lane_<lane>.rs` file. There is no debt list:
+  `CapabilityException` line in `apps/showcase/src/coverage.rs` or a
+  `apps/showcase/src/coverage/lane_<lane>.rs` file. There is no debt list:
   a new public API gets a catalog line plus a proof or an
   exception in the same change. A Showcase page that merely names an API is not
   a disposition. A `CapabilityException` has a `kind`: `Nonvisual` (a helper, a
@@ -154,7 +163,7 @@ workspaces, Docker, OpenShell, Codex).
   public field added to a type that has a proof inherits that proof's
   disposition (fields, trait items and trait impls inherit their owner), so
   extend the owning scenario to exercise the new field. Layer 2 is
-  behavior: a `CapabilityProof` names callable scenarios, and `src/bin/showcase/app_tests_catalog.rs` runs each scenario
+  behavior: a `CapabilityProof` names callable scenarios, and `apps/showcase/src/app_tests_catalog.rs` runs each scenario
   against real components (`catalog_scenarios_execute`). Layer 3 is the
   tuiscotti journeys in `tests/functional`. Name matching is never behavioral
   proof. Run `cargo nextest run -p junie-tui --all-features --no-tests fail -E
