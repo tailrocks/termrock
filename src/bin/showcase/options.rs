@@ -1608,6 +1608,11 @@ pub static ACTIVITY: &[Opt] = &[
         .default(1)
         .behaviour(),
     Opt::new("activity.feed", "Log feed", &["simulated", "channel"]),
+    Opt::new(
+        "activity.budget",
+        "Turn budget",
+        &["16 messages", "default"],
+    ),
 ];
 
 pub static WORKSPACES: &[Opt] = &[

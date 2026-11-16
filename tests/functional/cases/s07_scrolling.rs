@@ -1645,6 +1645,11 @@ fn option_virtual_rows_10000_keys_and_wheel_move_a_bounded_window() {
     let app = page("s07-virtual", "scrolling.window=10000", 120, 40);
     let playground = app.wait_text("of 10000");
     see(&playground, &["Virtual", "Row 00001"], &["Row 10000"]);
+    let scratch = row_with(&playground, "scratch ");
+    assert!(
+        scratch.contains(" cells"),
+        "the Virtual panel shows ScrollView::last_work: {scratch}"
+    );
 
     click_tab(&app, "Options");
     let options = app.wait_text("Page options");
