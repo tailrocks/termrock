@@ -6,7 +6,6 @@
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
-use tui_test::terminal::cell::Attrs;
 use tui_test::{SnapshotColor, TerminalSnapshot};
 use tuiscotti_latest::check::CheckOutcome;
 
@@ -136,14 +135,16 @@ fn label_shot(screen: &TerminalSnapshot) -> bool {
         .is_some_and(|cell| cell.bg() == SnapshotColor::Rgb(0x4a, 0x4a, 0x52))
 }
 
-/// Baselines for a focused textarea paint the gutter and the edited glyphs
-/// on `#3a3a40` bold. A quiet frame can keep those glyphs and drop the fill.
-fn focus_filled(
+/// A press paints the gutter and the edited glyphs on the `#3a3a40` bold
+/// flash fill. The shared tick drops that fill on its next run, within 400 ms
+/// while motion is paused, so the settled frame keeps the glyphs on the
+/// resting input fill.
+fn focus_settled(
     screen: &TerminalSnapshot,
     row_matches: impl Fn(&str) -> bool,
     glyphs: &[&str],
 ) -> bool {
-    let fill = SnapshotColor::Rgb(0x3a, 0x3a, 0x40);
+    let flash = SnapshotColor::Rgb(0x3a, 0x3a, 0x40);
     (0..screen.rows()).any(|row| {
         let line = row_text(screen, row);
         if !row_matches(&line) {
@@ -155,13 +156,13 @@ fn focus_filled(
         glyphs.iter().all(|glyph| {
             cells
                 .iter()
-                .any(|cell| cell.text() == *glyph && cell.has(Attrs::BOLD) && cell.bg() == fill)
+                .any(|cell| cell.text() == *glyph && cell.bg() != flash)
         })
     })
 }
 
 fn commit_q_focused(screen: &TerminalSnapshot) -> bool {
-    focus_filled(
+    focus_settled(
         screen,
         |line| line.contains('▎') && line.contains('Q') && !line.contains(FIX),
         &["▎", "Q"],
@@ -169,7 +170,7 @@ fn commit_q_focused(screen: &TerminalSnapshot) -> bool {
 }
 
 fn task_z_focused(screen: &TerminalSnapshot) -> bool {
-    focus_filled(
+    focus_settled(
         screen,
         |line| line.contains('▎') && line.contains("Z 1. Read"),
         &["▎", "Z"],
@@ -177,7 +178,7 @@ fn task_z_focused(screen: &TerminalSnapshot) -> bool {
 }
 
 fn notes_zz_focused(screen: &TerminalSnapshot) -> bool {
-    focus_filled(
+    focus_settled(
         screen,
         |line| line.contains('▎') && line.contains("ZZ") && !line.contains("QQ"),
         &["▎", "Z"],
@@ -714,9 +715,8 @@ fn esc_reverts_from_the_options_control() {
     session.app.type_text("QQ");
     let dirty = session.app.wait_text("ZZQQ");
     expect(&dirty, &["ZZQQ", EDITING], &[IDLE]);
-    // The reverted baseline keeps the press flash (`#3a3a40` bold). That
-    // flash is 140ms of wall time from the click, and a paused session does
-    // not paint it again. Click once more and Esc before it expires.
+    // Click once more and Esc. The press flash expires on the next tick, so
+    // the settled frame has the committed ZZ on the resting fill.
     click_body(&session, "Notes");
     session.app.key("escape");
     let reverted = session.app.wait_text(IDLE);
@@ -725,9 +725,7 @@ fn esc_reverts_from_the_options_control() {
         &["ZZ", IDLE, FIX, CRUMB],
         &["QQ", "ZZQQ", EDITING, PLACEHOLDER],
     );
-    session
-        .app
-        .wait_screen("notes focus fill", notes_zz_focused);
+    session.app.wait_screen("notes settled", notes_zz_focused);
     see(
         &session,
         "opt.textareas.esc_reverts",
@@ -783,10 +781,10 @@ fn edit_entry_explicit() {
         &["Z 1. Read src/api/billing.rs", EDITING, FIX, "ln 1/28"],
         &[IDLE, TOP, "fix stuffZ", "Q1."],
     );
-    // Repaint while the press flash is on. The label click does not move
-    // the cursor. A paused session keeps that frame until the next input.
+    // The label click does not move the cursor. The press flash drops on the
+    // next tick, so the settled frame keeps Z on the resting fill.
     click_body(&session, "Task description");
-    session.app.wait_screen("task focus fill", task_z_focused);
+    session.app.wait_screen("task settled", task_z_focused);
     see(
         &session,
         "opt.textareas.edit_entry",
@@ -848,9 +846,7 @@ fn field_keys_desktop() {
         &[EDITING, "ln 1/1", "Q"],
         &[FIX, "stuff", "Qfix stuff", "fix stuffQ", MOOD],
     );
-    session
-        .app
-        .wait_screen("commit focus fill", commit_q_focused);
+    session.app.wait_screen("commit settled", commit_q_focused);
     see(
         &session,
         "opt.textareas.field_keys",

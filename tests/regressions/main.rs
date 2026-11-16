@@ -34,6 +34,7 @@ mod pane_tree_pointer;
 mod performance_inventory;
 mod picker_row_limits;
 mod picker_rows;
+mod pointer_flash;
 mod popup_stale_anchor;
 mod response_batches;
 mod scroll_view_navigation;

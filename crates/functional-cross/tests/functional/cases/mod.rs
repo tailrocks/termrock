@@ -1,0 +1,12 @@
+mod g02_harness;
+mod x01_cli;
+mod x01_clipboard;
+mod x01_env;
+mod x02_exit;
+mod x02_resize;
+mod x02_startup;
+mod x03_chrome;
+mod x03_color;
+mod x03_focus;
+mod x03_glyphs;
+mod x03_motion;

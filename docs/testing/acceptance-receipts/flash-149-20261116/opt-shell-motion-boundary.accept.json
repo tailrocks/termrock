@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "opt-shell-motion-boundary",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/target/functional/s01-motion-paused-56861-1794769365659055000-0/check-artifacts/opt-shell-motion-boundary/e4af4af4aa32cb869df2f2aa9fa2b1a0a4b75dd765ac143e91a3b71627899c36/sample.tui.pb"
+  },
+  "candidate_sha256": "e4af4af4aa32cb869df2f2aa9fa2b1a0a4b75dd765ac143e91a3b71627899c36",
+  "baseline_sha256": "e4af4af4aa32cb869df2f2aa9fa2b1a0a4b75dd765ac143e91a3b71627899c36",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/recut-285/tests/functional/baselines/pre_refactor/S01.shell/opt-shell-motion-boundary.tui.pb"
+  },
+  "error_code": null
+}
