@@ -71,17 +71,9 @@ fn header(screen: &TerminalSnapshot) -> String {
 
 fn wheel_to(app: &App, anchor: &str, needle: &str) -> TerminalSnapshot {
     let point = find(&app.wait_text(anchor), anchor);
-    for _ in 0..16 {
-        let screen = app.screen();
-        if text(&screen).contains(needle) {
-            let settled = app.settle();
-            if text(&settled).contains(needle) {
-                return settled;
-            }
-        }
-        app.wheel(point, true, 3);
-    }
-    app.wait_text(needle)
+    app.wheel_until(point, true, 3, 16, needle, |screen| {
+        text(screen).contains(needle)
+    })
 }
 
 fn reveal_right(app: &App, needle: &str) -> TerminalSnapshot {
@@ -464,12 +456,14 @@ fn compare_levels_wide_then_narrow() {
     );
 
     let origin = find(&app.screen(), "no color");
-    for _ in 0..10 {
-        if text(&app.screen()).contains("● Compare levels") {
-            break;
-        }
-        app.wheel(origin, false, 3);
-    }
+    app.wheel_until(
+        origin,
+        false,
+        3,
+        10,
+        "the Compare levels button",
+        |screen| text(screen).contains("● Compare levels"),
+    );
     app.key(" ");
     let mut closed = app.settle();
     if text(&closed).contains("● Compare levels") {

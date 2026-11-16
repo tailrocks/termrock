@@ -233,13 +233,7 @@ fn reveal_grid(app: &App, label: &str) {
 
 fn wheel_until(app: &App, down: bool, pred: impl Fn(&str) -> bool) {
     let point = Point { x: 70, y: 20 };
-    for _ in 0..80 {
-        if pred(&text(&app.settle())) {
-            return;
-        }
-        app.wheel(point, down, 3);
-    }
-    panic!("scroll missed its row\n{}", text(&app.screen()));
+    app.wheel_until(point, down, 3, 80, "its row", |screen| pred(&text(screen)));
 }
 
 fn assert_size(app: &App, cols: u16, rows: u16) {

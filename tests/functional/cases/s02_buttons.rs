@@ -184,47 +184,20 @@ fn refresh_still_pressed(screen: &TerminalSnapshot) -> bool {
 }
 
 fn reveal(app: &crate::support::App, needle: &str) {
-    if text(&app.screen()).contains(needle) {
-        return;
-    }
     let point = Point { x: 60, y: 18 };
-    for _ in 0..8 {
-        if text(&app.screen()).contains(needle) {
-            return;
-        }
-        app.wheel(point, true, 1);
-    }
-    app.wait_text(needle);
+    app.wheel_until(point, true, 1, 8, needle, |screen| {
+        text(screen).contains(needle)
+    });
 }
 
 /// The icon-button title can sit on the last content row. The close plate
 /// is the next row, so keep scrolling until that row is in the viewport.
 fn icon_row(app: &crate::support::App) -> TerminalSnapshot {
-    let started = Instant::now();
     let point = Point { x: 60, y: 18 };
-    loop {
-        let spun = Instant::now();
-        loop {
-            let screen = app.screen();
-            let visible = text(&screen);
-            if visible.contains("Close ×") && visible.contains("Title · 5-cell plate") {
-                return screen;
-            }
-            assert!(
-                app.child_running(),
-                "showcase exited before the close plate\n{visible}"
-            );
-            assert!(
-                started.elapsed() < Duration::from_secs(15),
-                "timed out: close plate\n{visible}"
-            );
-            if spun.elapsed() >= Duration::from_millis(400) {
-                break;
-            }
-            std::thread::sleep(Duration::from_millis(25));
-        }
-        app.wheel(point, true, 1);
-    }
+    app.wheel_until(point, true, 1, 40, "the close plate", |screen| {
+        let visible = text(screen);
+        visible.contains("Close ×") && visible.contains("Title · 5-cell plate")
+    })
 }
 
 fn ink(screen: &TerminalSnapshot, point: Point) -> tui_test::SnapshotColor {
@@ -462,16 +435,10 @@ fn sections_narrow_then_wide() {
     app.resize(120, 40);
     app.wait_text(WIDE);
     let body = Point { x: 50, y: 16 };
-    for _ in 0..8 {
-        let visible = text(&app.screen());
-        if visible.contains(WIDE)
-            && visible.contains("○ Compare levels")
-            && visible.contains("rest")
-        {
-            break;
-        }
-        app.wheel(body, false, 2);
-    }
+    app.wheel_until(body, false, 2, 8, "the wide states grid", |screen| {
+        let visible = text(screen);
+        visible.contains(WIDE) && visible.contains("○ Compare levels") && visible.contains("rest")
+    });
     let wide_states = app.wait_text("Label wit…");
     see(
         &wide_states,

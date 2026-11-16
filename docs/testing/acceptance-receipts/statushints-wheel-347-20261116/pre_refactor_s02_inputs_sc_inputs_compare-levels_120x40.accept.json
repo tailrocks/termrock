@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s02_inputs/sc_inputs_compare-levels_120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/land-347/target/functional/s02-inputs-compare-32596-1794844433735810000-0/check-artifacts/pre_refactor/s02_inputs/sc_inputs_compare-levels_120x40/4753794f736b4157cb28dba91279b766049a2b08f9d43e5edd6f7644b5838eab/sample.tui.pb"
+  },
+  "candidate_sha256": "4753794f736b4157cb28dba91279b766049a2b08f9d43e5edd6f7644b5838eab",
+  "baseline_sha256": "4753794f736b4157cb28dba91279b766049a2b08f9d43e5edd6f7644b5838eab",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/land-347/tests/functional/baselines/pre_refactor/s02_inputs/sc_inputs_compare-levels_120x40.tui.pb"
+  },
+  "error_code": null
+}

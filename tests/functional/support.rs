@@ -621,6 +621,40 @@ impl App {
         self.wait_screen("wheel applied", |screen| text(screen) != before)
     }
 
+    /// Wheels in steps of `amount` notches until `reached(screen)` holds, and
+    /// returns the settled screen that satisfies it.
+    ///
+    /// Every step is read only after [`App::settle`], which fences behind every
+    /// notch sent so far. A loop that reads a live `screen` between steps can
+    /// see the needle while later notches are still queued, and those notches
+    /// move the page past the position the loop stopped at. Here the stop
+    /// position is a function of `amount` alone: the first multiple of `amount`
+    /// notches that satisfies `reached`, whatever the load on the machine.
+    pub fn wheel_until(
+        &self,
+        point: Point,
+        down: bool,
+        amount: usize,
+        max_steps: usize,
+        goal: &str,
+        reached: impl Fn(&TerminalSnapshot) -> bool,
+    ) -> TerminalSnapshot {
+        for _ in 0..max_steps {
+            let screen = self.settle();
+            if reached(&screen) {
+                return screen;
+            }
+            self.wheel(point, down, amount);
+        }
+        let screen = self.settle();
+        assert!(
+            reached(&screen),
+            "wheel never reached {goal} after {max_steps} x {amount} notches\n{}",
+            text(&screen)
+        );
+        screen
+    }
+
     /// Resizes the PTY and returns once the app has drawn at the new size.
     ///
     /// The emulator reports the new cols and rows at once but keeps the old
