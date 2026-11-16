@@ -160,7 +160,7 @@ read it against, because each of its reasons names a Fixed control.
 - The showcase Query workbench keeps one `CodeEditor` per document, selected by an authoritative key, not the tab strip. Record: [Query workbench document keys](audits/2026-11-15-query-workbench-document-keys.md).
 - `ScrollPanel` content is private. `set_lines`, `replace_line`, `extend_lines`, `clear` and `push` bump one checked content revision that keys the wrapped rows and the widest-line cache, so a same-width edit always repaints and an unchanged frame rescans nothing. Replacement and `clear` reset the selection. Appends keep it. Record: [ScrollPanel content revision](audits/2026-11-15-scrollpanel-content-revision.md).
 - Holla's Finder and Cleanup pages rebuild from explicit source stamps, never
-  from a per-tick full rebuild (`src/bin/holla/domain/projection.rs`). The
+  from a per-tick full rebuild (`apps/holla/src/domain/projection.rs`). The
   `World` owns three private epochs (catalog, cleanup, memory) and `Fs` owns
   `content_revision()`. A mutation endpoint that really changes catalog, cleanup
   or memory input moves its epoch once (`World::edit_catalog`, `edit_cleanup`,
@@ -207,7 +207,7 @@ read it against, because each of its reasons names a Fixed control.
 Holla decodes and encodes every persisted store (`sizes.json`,
 `trusted.json`, `frecency.json`, the ops log) and every discovery input
 (`package.json`, `mise tasks`, `brew services`) with `serde_json`, through
-the single codec in `src/bin/holla/domain/manifest.rs` (`parse_json`,
+the single codec in `apps/holla/src/domain/manifest.rs` (`parse_json`,
 `json_str`, `json_u64`, `json_i64`). No store has its own escaping or number
 parser. The policy:
 
@@ -246,7 +246,7 @@ parser. The policy:
 
 Holla's disk scan is simulated and advances on the World tick. A scan has
 one phase: `Running`, `Completed` or `Cancelled { revealed }` (`ScanPhase`
-in `src/bin/holla/sim/world.rs`). Each tick reveals at most 4096 entries.
+in `apps/holla/src/sim/world.rs`). Each tick reveals at most 4096 entries.
 Completion is the first tick whose reveal covers the last entry, not the
 raw `scan_started + scan_ticks` clock. A duration of 0 counts as one tick.
 
@@ -314,7 +314,7 @@ variant of these enums stays a breaking change and is recorded here.
 ## Known limits
 
 - Holla's projection caches are keyed to the mutation endpoints listed in
-  `src/bin/holla/domain/projection.rs`. A new `World` field the catalog reads
+  `apps/holla/src/domain/projection.rs`. A new `World` field the catalog reads
   needs an endpoint that moves an epoch; the differential check built into
   `FinderPage` and `CleanupPage` under `cfg(test)` (every settled paint or tick
   compares the cache with a page built from nothing) fails a test that misses
@@ -322,7 +322,7 @@ variant of these enums stays a breaking change and is recorded here.
   world with a fresh Homebrew cache rebuilds the catalog once a second for the
   first 300 simulated seconds and never again.
 
-- TablePro's SQL tokenizer (`src/bin/tablepro/sql.rs`) is total over any valid
+- TablePro's SQL tokenizer (`apps/tablepro/src/sql.rs`) is total over any valid
   UTF-8 string: every token range starts and ends on a char boundary, and the
   ranges cover the input exactly. Identifiers accept alphabetic or `_` scalars
   first and alphanumeric or `_` scalars after; any other scalar (emoji, combining
