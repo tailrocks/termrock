@@ -1572,10 +1572,8 @@ fn reset_frame_colors(buffer: &mut Buffer) {
 
 /// Discards every queued raw terminal event, however many arrive.
 ///
-/// This never gives up while the queue keeps refilling. [`shell::run`] does
+/// This never gives up while the queue keeps refilling. The shell's `run` does
 /// not call it; use [`drain_pending_input_bounded`] at startup instead.
-///
-/// [`shell::run`]: crate::shell::run
 pub fn drain_pending_input() -> std::io::Result<usize> {
     drain_pending_input_bounded(usize::MAX)
 }

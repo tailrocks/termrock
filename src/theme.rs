@@ -1,6 +1,51 @@
 use ratatui::style::{Color, Modifier, Style};
 
-use crate::ui::ctx::VisualState;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct VisualState {
+    pub focused: bool,
+    pub hovered: bool,
+    pub pressed: bool,
+    pub selected: bool,
+    pub disabled: bool,
+    pub fixed: bool,
+    pub error: bool,
+    pub editing: bool,
+    pub busy: bool,
+
+    pub backdrop: bool,
+
+    pub inactive_selection: Option<InactiveSelection>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub enum CardHeading {
+    Plain,
+
+    #[default]
+    Rule,
+
+    Band,
+
+    Emphasis,
+}
+
+impl CardHeading {
+    pub const ALL: [CardHeading; 4] = [
+        CardHeading::Plain,
+        CardHeading::Rule,
+        CardHeading::Band,
+        CardHeading::Emphasis,
+    ];
+
+    pub fn label(self) -> &'static str {
+        match self {
+            CardHeading::Plain => "plain",
+            CardHeading::Rule => "rule",
+            CardHeading::Band => "band",
+            CardHeading::Emphasis => "emphasis",
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum CursorStyle {
@@ -561,7 +606,7 @@ pub struct Theme {
 
     pub field_keys: Option<crate::core::edit::FieldKeys>,
 
-    pub card_heading: crate::widgets::panel::CardHeading,
+    pub card_heading: CardHeading,
 }
 
 impl Theme {
@@ -637,7 +682,7 @@ impl Theme {
             strings: Strings::DEFAULT,
             edit_entry: Self::DEFAULT_EDIT_ENTRY,
             field_keys: None,
-            card_heading: crate::widgets::panel::CardHeading::Rule,
+            card_heading: CardHeading::Rule,
         }
     }
 
@@ -962,7 +1007,7 @@ impl Theme {
         self
     }
 
-    pub const fn with_card_heading(mut self, style: crate::widgets::panel::CardHeading) -> Self {
+    pub const fn with_card_heading(mut self, style: CardHeading) -> Self {
         self.card_heading = style;
         self
     }
