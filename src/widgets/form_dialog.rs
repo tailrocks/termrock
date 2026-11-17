@@ -339,6 +339,18 @@ impl FormDialog {
         self.events.push(FormAction::Changed(name));
     }
 
+    /// Shows or hides a field. Hiding ends the field's transient interaction
+    /// at once; the field's value stays in [`FormValues`] and reveal restores
+    /// the value and configuration, never an old edit or popup session.
+    ///
+    /// Hiding a dirty [`TextInput`] mid-edit is a blur: its
+    /// [`BlurAction`](crate::core::focus::BlurAction) decides the outcome.
+    /// `Cancel` reverts to the committed text and reports nothing; `Commit`
+    /// and `Keep` retain the typed text and the form reports
+    /// [`FormAction::Changed`] once, because the form's values changed under
+    /// a consumer that has not been told. This differs from the first
+    /// contract of #87 (retain the text with no `Changed`); see
+    /// `docs/decisions.md`, 2026-11-18.
     pub fn set_visible(&mut self, name: &str, v: bool) {
         if let Some(f) = self.field_mut(name) {
             f.visible = v;
