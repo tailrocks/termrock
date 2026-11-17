@@ -944,7 +944,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T01.connections",
         "tablepro",
-        ["src/bin/tablepro/connections.rs", "src/bin/tablepro/app.rs", "src/bin/tablepro/model.rs"],
+        ["apps/tablepro/src/connections.rs", "apps/tablepro/src/app.rs", "apps/tablepro/src/model.rs"],
         "Tree selection, filtering, empty search, and connection status stay on the selected connection.",
         [
             ("select", "Select each fixture connection and filter until one and then zero remain.", "Details show the selected name and host. Empty search shows the empty state.", "Details keep the previous connection after the selection moves."),
@@ -954,7 +954,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T01.basic",
         "tablepro",
-        ["src/bin/tablepro/connections.rs", "src/bin/tablepro/model.rs"],
+        ["apps/tablepro/src/connections.rs", "apps/tablepro/src/model.rs"],
         "Basic fields reject blank names and invalid ports and preserve the original record when validation fails.",
         [
             ("fields", "Create a connection. Enter a blank name, a whitespace name, an invalid port, and the implemented valid boundaries. Save.", "The saved record shows the exact valid name, host, port, engine, environment, group, and safe mode.", "An invalid Save replaces the original connection."),
@@ -964,7 +964,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T01.advanced",
         "tablepro",
-        ["src/bin/tablepro/connections.rs"],
+        ["apps/tablepro/src/connections.rs"],
         "Advanced fields, including the masked password, round-trip through save and reopen.",
         [
             ("secrets", "Fill host, database, user, password, SSL, SSH, and startup. Paste a synthetic secret.", "The password cells are masked. Reopen shows the non-secret fields exactly and the password still masked.", "The secret appears in the terminal text or the saved evidence."),
@@ -973,7 +973,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T01.test",
         "tablepro",
-        ["src/bin/tablepro/connections.rs", "src/bin/tablepro/db.rs"],
+        ["apps/tablepro/src/connections.rs", "apps/tablepro/src/db.rs"],
         "Test, Save, Save & connect, and Cancel are separate results.",
         [
             ("actions", "Run Test, Save, Save & connect, and Cancel on distinct edits.", "Test does not save. Save reopens with the edit. Save & connect opens the workbench. Cancel keeps the previous record.", "Cancel writes the edit."),
@@ -982,7 +982,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T01.leave",
         "tablepro",
-        ["src/bin/tablepro/connections.rs", "src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/connections.rs", "apps/tablepro/src/app.rs"],
         "Every dirty leave path can Stay, Discard, or Save, and invalid Save from the dialog preserves the original.",
         [
             ("guards", "From a dirty form, try close, New, Edit another, and Quit. Choose Stay, Discard, and Save. Also attempt invalid Save from the dialog.", "Stay and a failed validation keep the draft and the original record. Discard restores the original. Save stores the draft.", "A leave path drops the draft without a choice."),
@@ -991,7 +991,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T02.explorer",
         "tablepro",
-        ["src/bin/tablepro/workbench.rs"],
+        ["apps/tablepro/src/workbench.rs"],
         "Schema expansion, filtering, preview reuse, and permanent open keep object identity.",
         [
             ("tree", "Expand a schema and open a table preview, then pin it.", "The preview title is the chosen object. Pinning does not replace another pinned tab.", "A filter result opens a different object than the selected row."),
@@ -1000,7 +1000,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T02.structure",
         "tablepro",
-        ["src/bin/tablepro/workbench.rs", "src/bin/tablepro/tabs.rs"],
+        ["apps/tablepro/src/workbench.rs", "apps/tablepro/src/tabs.rs"],
         "Each Structure tab shows that object's schema values or its empty state.",
         [
             ("tabs", "Open Columns, Indexes, Foreign keys, Constraints, Triggers, and DDL.", "Each tab's heading and cell values belong to the opened object.", "An empty tab shows another tab's rows."),
@@ -1009,7 +1009,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T02.data",
         "tablepro",
-        ["src/bin/tablepro/workbench.rs", "src/bin/tablepro/tabs.rs"],
+        ["apps/tablepro/src/workbench.rs", "apps/tablepro/src/tabs.rs"],
         "Editable tables, read-only views, and tables without a primary key follow their visible rules.",
         [
             ("kinds", "Open an editable table, a read-only view, and a table without a primary key.", "The read-only view rejects mutation with the current reason. The editable table accepts a valid edit.", "The view stores an edit."),
@@ -1018,7 +1018,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T02.editors",
         "tablepro",
-        ["src/bin/tablepro/workbench.rs"],
+        ["apps/tablepro/src/workbench.rs"],
         "Each implemented data-type editor accepts a valid value and rejects an invalid one, including NULL, insert, duplicate, and delete.",
         [
             ("types", "Edit one value in each implemented type family. Enter an invalid value and NULL where the cell allows it. Insert, duplicate, and delete a row.", "Pending counts match the operations. An invalid value does not become the stored cell.", "Delete removes a row that was not selected."),
@@ -1027,7 +1027,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T02.filters",
         "tablepro",
-        ["src/bin/tablepro/filter_editor.rs"],
+        ["apps/tablepro/src/filter_editor.rs"],
         "Every implemented filter operator and the zero, one, and two-value forms change the visible row set.",
         [
             ("filters", "Add, edit, remove, and reset chips. Exercise match-all, match-any, no rows, and filter-on-cell.", "The visible row identities match the filter. Reset restores the unfiltered identities. Selection stays on the same identity when it remains.", "No-rows shows the previous rows."),
@@ -1036,7 +1036,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T02.commit",
         "tablepro",
-        ["src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/app.rs"],
         "Cancel keeps pending changes. Confirm clears them and adds the expected History entry. The simulator's success-only commit is a recorded scope limit.",
         [
             ("commit", "Open the SQL preview, cancel commit, then confirm commit.", "Cancel leaves the pending counts. Confirm clears them and History contains the previewed statement.", "Confirm commits a different statement than the preview."),
@@ -1045,7 +1045,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T02.discard",
         "tablepro",
-        ["src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/app.rs"],
         "Discard restores the exact prior row values.",
         [
             ("discard", "Edit a cell, open discard review, cancel, then confirm.", "Cancel keeps the edit. Confirm restores the original cell.", "Discard changes a row that was not pending."),
@@ -1054,7 +1054,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T02.viewers",
         "tablepro",
-        ["src/bin/tablepro/workbench.rs", "src/bin/tablepro/context.rs"],
+        ["apps/tablepro/src/workbench.rs", "apps/tablepro/src/context.rs"],
         "Cell viewers, row menus, foreign-key follow, refresh, and additional-row fetch stay on the selected cell.",
         [
             ("viewer", "Open a cell viewer, select and copy its text, follow a foreign key, refresh, and fetch more rows.", "The viewer text is the cell text. Follow opens the referenced row.", "Copy captures a different cell."),
@@ -1063,7 +1063,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T03.query",
         "tablepro",
-        ["src/bin/tablepro/sql.rs", "src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/sql.rs", "apps/tablepro/src/app.rs"],
         "Safe mode, statement scope, and batch classification match the visible decision.",
         [
             ("classify", "Run SELECT, a scoped write, an unscoped write, a destructive statement, a mixed batch, EXPLAIN, and EXPLAIN ANALYZE under each implemented safe mode. Include comments, a quoted semicolon, empty SQL, and a syntax error.", "The safety decision is the highest applicable decision. Denied execution adds no result and no History entry.", "A denied statement produces a result grid."),
@@ -1072,7 +1072,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T03.completion",
         "tablepro",
-        ["src/bin/tablepro/tabs.rs"],
+        ["apps/tablepro/src/tabs.rs"],
         "Completion opens, selects, accepts, and dismisses without changing uncommitted SQL on dismiss.",
         [
             ("complete", "Open completion, move the selection, accept one item, then dismiss another.", "Accepted text is the selected item. Dismiss leaves the SQL unchanged.", "Dismiss inserts the highlighted item."),
@@ -1081,7 +1081,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T03.running",
         "tablepro",
-        ["src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/app.rs"],
         "A running query refuses a duplicate run and can be cancelled before it replaces the result.",
         [
             ("cancel", "Start a query, observe running feedback, refuse a second run, and cancel.", "The cancelled result stays cancelled. A later completion does not replace it.", "Duplicate run starts a second result."),
@@ -1090,7 +1090,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T03.confirm",
         "tablepro",
-        ["src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/app.rs"],
         "Ordinary and typed confirmation accept only the exact arming input, once.",
         [
             ("gates", "Cancel an ordinary confirmation and a typed confirmation. Enter a wrong, partial, and exact phrase.", "Wrong and partial text do not execute. Exact text executes once.", "Cancel leaves a new History entry."),
@@ -1099,7 +1099,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T03.rows",
         "tablepro",
-        ["src/bin/tablepro/tabs.rs"],
+        ["apps/tablepro/src/tabs.rs"],
         "Empty, normal, and large row results show their counts and refuse editing.",
         [
             ("rows", "Run a query with no rows, a query with known rows, and a large result. Try to edit the result. Select, sort, copy, pin, switch, and close it.", "The grid values are the fixture values. Sort changes row order. Editing is refused.", "Sort changes the status text without the row order."),
@@ -1108,7 +1108,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T03.affected",
         "tablepro",
-        ["src/bin/tablepro/tabs.rs", "src/bin/tablepro/sql.rs"],
+        ["apps/tablepro/src/tabs.rs", "apps/tablepro/src/sql.rs"],
         "A write shows the affected-row body rather than a row grid.",
         [
             ("affected", "Confirm one scoped write.", "The affected body shows the simulated count and History records that statement.", "The body shows rows from the previous SELECT."),
@@ -1117,7 +1117,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T03.error",
         "tablepro",
-        ["src/bin/tablepro/sql.rs", "src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/sql.rs", "apps/tablepro/src/app.rs"],
         "A syntax or execution error is visible, and correcting it removes that error.",
         [
             ("recover", "Run a statement that fails, then correct it and run it again.", "The error text is the failure. The recovered result is the corrected statement's result, and the old error is gone.", "Recovery still shows the old error."),
@@ -1126,7 +1126,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T03.plan",
         "tablepro",
-        ["src/bin/tablepro/tabs.rs"],
+        ["apps/tablepro/src/tabs.rs"],
         "Plan tree, raw plan, and analysis output are distinct bodies.",
         [
             ("plan", "Explain a statement, switch to the raw plan, and run EXPLAIN ANALYZE where the mode allows it.", "Each body contains that view's text.", "The raw view still shows only the tree."),
@@ -1135,7 +1135,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T03.cancelled",
         "tablepro",
-        ["src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/app.rs"],
         "A cancelled statement stays cancelled through the rest of the batch.",
         [
             ("boundary", "Cancel before completion and, where the UI allows it, between statements.", "The cancelled body remains the result. A later statement does not overwrite it.", "The batch continues into a success body after cancel."),
@@ -1144,7 +1144,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T04.history",
         "tablepro",
-        ["src/bin/tablepro/tabs.rs", "src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/tabs.rs", "apps/tablepro/src/app.rs"],
         "History search, scope, details, copy, open, and rerun use the selected entry's SQL.",
         [
             ("rerun", "Search, switch connection scope and all-scope, enable failed-only, open details, copy, and rerun the selected entry. Also search a missing phrase.", "The rerun result is that entry's statement. Empty search shows no rows.", "Rerun executes the previously active editor text instead of the selected entry."),
@@ -1153,7 +1153,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T04.quickly",
         "tablepro",
-        ["src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/app.rs"],
         "Open Quickly reaches tables, History, and query tabs, and cancel or no-match changes nothing.",
         [
             ("switcher", "Open Quickly for a table, a History entry, and a query tab. Then show no-match and cancel.", "The opened object is the chosen row. Cancel leaves the active tab unchanged.", "No-match activates the first row."),
@@ -1162,7 +1162,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T04.tabs",
         "tablepro",
-        ["src/bin/tablepro/workbench.rs", "src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/workbench.rs", "apps/tablepro/src/app.rs"],
         "Closing first, last, inactive, active, and only tabs keeps the remaining titles and SQL.",
         [
             ("close", "Close tabs by pointer, keyboard, and middle-click where supported.", "The remaining tab titles and SQL values are the ones that were not closed. Active fallback is the documented neighbour.", "A reused index shows a different tab's SQL."),
@@ -1171,7 +1171,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T04.preview",
         "tablepro",
-        ["src/bin/tablepro/workbench.rs"],
+        ["apps/tablepro/src/workbench.rs"],
         "Preview reuse does not replace a pinned or dirty tab.",
         [
             ("preview", "Preview an object, pin a tab, dirty another tab, and preview again.", "The pinned and dirty tabs keep their identities and SQL.", "Preview replaces the dirty tab."),
@@ -1180,7 +1180,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T04.close",
         "tablepro",
-        ["src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/app.rs"],
         "Dirty close offers Cancel, Discard, and Save, and a modal blocks a second close.",
         [
             ("dirty", "Close a dirty tab and choose Cancel, then Discard, then Save on separate tabs. While confirmation is open, try to close the neighbour.", "Cancel keeps the SQL. The modal refuses the neighbour close.", "Cancel closes the tab."),
@@ -1189,7 +1189,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T05.menus",
         "tablepro",
-        ["src/bin/tablepro/pages.rs", "src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/pages.rs", "apps/tablepro/src/app.rs"],
         "Each shell menu command is the command that was highlighted.",
         [
             ("menus", "Open every implemented shell menu and invoke an enabled command. Invoke a disabled command.", "The enabled command's result is visible. The disabled command does not change state.", "The disabled command runs."),
@@ -1198,7 +1198,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T05.help",
         "tablepro",
-        ["src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/app.rs"],
         "Help shows its own title and returns focus to the opener.",
         [
             ("help", "Open Help, scroll it, press a page key, and close it.", "The Help title is visible while it is open. Focus returns to the opener.", "A page key activates the workbench while Help is open."),
@@ -1207,7 +1207,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T05.context",
         "tablepro",
-        ["src/bin/tablepro/context.rs"],
+        ["apps/tablepro/src/context.rs"],
         "Context-menu actions apply to the selected cell or row.",
         [
             ("context", "Open a row context menu and a cell context menu and run one action in each.", "The action's object is the selected object.", "The action applies to the previously selected row."),
@@ -1216,7 +1216,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T05.viewers",
         "tablepro",
-        ["src/bin/tablepro/workbench.rs"],
+        ["apps/tablepro/src/workbench.rs"],
         "A viewer owns selection, copy, and close.",
         [
             ("viewer", "Open a viewer, select text, copy, and close.", "The copy payload is the viewer text. Close returns focus to the cell.", "Close leaves the viewer title visible."),
@@ -1225,7 +1225,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T05.maximize",
         "tablepro",
-        ["src/bin/tablepro/workbench.rs"],
+        ["apps/tablepro/src/workbench.rs"],
         "Hiding the explorer and maximizing a pane restore the same layout.",
         [
             ("layout", "Hide and show the explorer. Maximize and restore the supported panes. Drag the implemented seams.", "The restored layout shows the same tabs and SQL. Only the dragged seam changes style.", "Maximize closes a tab."),
@@ -1234,7 +1234,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T05.disconnect",
         "tablepro",
-        ["src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/app.rs"],
         "Clean disconnect works. Dirty disconnect can be cancelled and keeps drafts.",
         [
             ("disconnect", "Disconnect with a clean session, then with dirty SQL or pending table edits. Cancel, then confirm on a later attempt.", "Cancel keeps the connection, the SQL, and the pending values.", "Cancel returns to the connection list."),
@@ -1243,7 +1243,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "T05.quit",
         "tablepro",
-        ["src/bin/tablepro/app.rs"],
+        ["apps/tablepro/src/app.rs"],
         "Quit uses the same guard as disconnect and restores the terminal only after the confirmed exit.",
         [
             ("quit", "Quit clean, then quit dirty and cancel, then confirm.", "Cancel preserves drafts. The confirmed exit is code 0 without a signal.", "The harness kill is treated as the application exit."),
@@ -1688,7 +1688,7 @@ def consumer_leaves() -> list[dict]:
         [("export", "Enter an invalid path, cancel a valid path, and confirm a valid path.", "Invalid is rejected. Cancel writes no success report. Confirm reports that path.", "The test claims a host file was written.")])
 
     # Cross-application
-    add("X01.cli", "cross", ["src/cli.rs", "src/bin/showcase/main.rs", "src/bin/tablepro/main.rs", "src/bin/holla/main.rs", "src/bin/jackin/main.rs"],
+    add("X01.cli", "cross", ["src/cli.rs", "src/bin/showcase/main.rs", "apps/tablepro/src/main.rs", "src/bin/holla/main.rs", "src/bin/jackin/main.rs"],
         "Help and invalid CLI values return the current exit status and error text. Short commands do not use the Ctrl+Q helper.",
         [("cli", "Run --help and an unknown page, scenario, connection, option key, and option value for each binary. Repeat --opt and observe precedence.", "The exit status and the error name the bad argument. A valid option is accepted.", "An invalid option starts the full-screen UI and is treated as success.")])
     add("X01.env", "cross", ["src/cli.rs", "src/theme.rs", "src/motion.rs"],
@@ -1704,7 +1704,7 @@ def consumer_leaves() -> list[dict]:
         "The first input after startup and a bounded burst leave the process alive with the expected final screen.",
         [("start", "Send the first key after startup. Send a burst of keys, pointer motion, wheel, and resize.", "The final semantic result is the result of the last intended action. The process is alive.", "The process exits during the burst.")],
         deps=["G03", "G04", "G05"])
-    add("X02.resize", "cross", ["src/core/shape.rs", "src/shell/app.rs", "src/bin/tablepro/app.rs", "src/bin/holla/app.rs", "src/bin/jackin/app.rs"],
+    add("X02.resize", "cross", ["src/core/shape.rs", "src/shell/app.rs", "apps/tablepro/src/app.rs", "src/bin/holla/app.rs", "src/bin/jackin/app.rs"],
         "Narrow and too-small states are captured before the terminal grows. Open layers survive.",
         [("resize", "Shrink to 71x20, 72x19, and 72x20 and to each source breakpoint below, at, and above. Do this with a form, a picker, a destructive gate, and running output open. Then grow.", "The narrow checkpoint is the narrow size. After growth the same draft, selection, and focus remain.", "The narrow baseline is captured after the terminal returns to 120x40.")],
         deps=["G03", "G04", "G05", "T05.quit", "H03.guards", "J06.exit"])

@@ -2,12 +2,12 @@
 //! survives blur is what Run executes. They drive the real `App::handle_input`
 //! path with keys, pointer clicks and draws.
 
-use junie_tui::core::event::{Input, Key, Mouse, MouseKind};
-use junie_tui::theme::{ColorLevel, Theme};
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Position;
+use termrock::core::event::{Input, Key, Mouse, MouseKind};
+use termrock::theme::{ColorLevel, Theme};
 
 use crate::app::App;
 use crate::tabs::TOOLBAR_RUN;
@@ -22,7 +22,7 @@ fn key(code: KeyCode, mods: KeyModifiers) -> Input {
 
 fn draw(app: &mut App) {
     let mut terminal = Terminal::new(TestBackend::new(120, 40)).unwrap();
-    terminal.draw(|f| junie_tui::shell::render(app, f)).unwrap();
+    terminal.draw(|f| termrock::shell::render(app, f)).unwrap();
 }
 
 fn click(app: &mut App, at: Position) {

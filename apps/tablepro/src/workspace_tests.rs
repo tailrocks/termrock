@@ -3,9 +3,9 @@
 //! tab is one close-save, and a query run is one operation of its tab.
 
 use super::*;
-use junie_tui::core::event::Key;
-use junie_tui::widgets::grid::cell_validator;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use termrock::core::event::Key;
+use termrock::widgets::grid::cell_validator;
 
 const PRODUCT_NAME: usize = 2;
 const CUSTOMER_NAME: usize = 3;
@@ -31,7 +31,7 @@ fn open(app: &mut App, table: &str, preview: bool) -> ItemKey {
 fn with_grid<R>(
     app: &mut App,
     key: ItemKey,
-    f: impl FnOnce(&mut junie_tui::widgets::grid::DataGrid) -> R,
+    f: impl FnOnce(&mut termrock::widgets::grid::DataGrid) -> R,
 ) -> R {
     app.workbench
         .as_mut()

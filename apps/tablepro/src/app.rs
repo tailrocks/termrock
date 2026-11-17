@@ -4,38 +4,38 @@ use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
 
-use junie_tui::clock::{Clock, WallClock};
-use junie_tui::core::event::{Input, Key, Outcome};
-use junie_tui::core::focus::FocusChange;
+use termrock::clock::{Clock, WallClock};
+use termrock::core::event::{Input, Key, Outcome};
+use termrock::core::focus::FocusChange;
 
-use junie_tui::core::id::{ItemKey, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{
+use termrock::core::id::{ItemKey, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{
     MouseTarget, PointerEvent, PointerHost, PointerParts, PointerRouter,
 };
-use junie_tui::core::response::Response;
-use junie_tui::shell::{self, PageKey, Shell};
-use junie_tui::theme::{StatusKind, Strings, Theme, Tone};
-use junie_tui::ui::context::ContextConfig;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layer::{
+use termrock::core::response::Response;
+use termrock::shell::{self, PageKey, Shell};
+use termrock::theme::{StatusKind, Strings, Theme, Tone};
+use termrock::ui::context::ContextConfig;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layer::{
     DismissReason, Dismissed, LayerCx, LayerEntry, LayerPointer, LayerTag, ShellLayers, Taken,
 };
-use junie_tui::ui::layers::LayerResult;
-use junie_tui::ui::leave::{Leave, LeaveGuard, Resolved, Stakes};
+use termrock::ui::layers::LayerResult;
+use termrock::ui::leave::{Leave, LeaveGuard, Resolved, Stakes};
 
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::dialog::{Dialog, DialogBody, DialogResult};
-use junie_tui::widgets::grid::{
+use termrock::widgets::button::Button;
+use termrock::widgets::dialog::{Dialog, DialogBody, DialogResult};
+use termrock::widgets::grid::{
     CellValue, DataGrid, GridChangeSet, GridCommitError, GridCommitFailure, GridCommitToken,
 };
 
-use junie_tui::widgets::menu::MenuAction;
-use junie_tui::widgets::option_list::Item;
-use junie_tui::widgets::picker::{Picker, PickerAction};
-use junie_tui::widgets::props::Prop;
-use junie_tui::widgets::segments::{self, Segment};
-use junie_tui::widgets::too_small::TooSmall;
+use termrock::widgets::menu::MenuAction;
+use termrock::widgets::option_list::Item;
+use termrock::widgets::picker::{Picker, PickerAction};
+use termrock::widgets::props::Prop;
+use termrock::widgets::segments::{self, Segment};
+use termrock::widgets::too_small::TooSmall;
 
 use crate::connections::ConnectionsScreen;
 use crate::context::{self, CtxMenu};
@@ -47,8 +47,8 @@ use crate::sql::{self, Decision};
 use crate::store::{CommitContext, SessionStore, Source, StoreError, TableId};
 use crate::tabs::{Filter, FilterOp};
 use crate::workbench::{SAVING_NOTICE, WorkTab, Workbench};
-use junie_tui::shell::Page;
-use junie_tui::widgets::document_workspace::{
+use termrock::shell::Page;
+use termrock::widgets::document_workspace::{
     CloseDecision, CloseToken, OperationToken, WorkspaceError,
 };
 
@@ -239,7 +239,7 @@ type SavedRows = (u64, usize, usize, usize);
 fn acknowledge_save(
     tab: &mut WorkTab,
     token: GridCommitToken,
-    receipt: junie_tui::widgets::grid::GridCommitReceipt,
+    receipt: termrock::widgets::grid::GridCommitReceipt,
     (revision, live_rows, inserted, deleted): SavedRows,
 ) -> Result<(), GridCommitError> {
     let WorkTab::Table(t) = tab else {
@@ -257,9 +257,9 @@ type CommitRefusal = (String, Option<StatusKind>);
 
 const SAVE_TICKS: u32 = 5;
 
-pub type Request = junie_tui::shell::Request<ModalResult, (), Act>;
+pub type Request = termrock::shell::Request<ModalResult, (), Act>;
 
-pub type Cx<'a> = junie_tui::shell::Cx<'a, ModalResult, (), Act>;
+pub type Cx<'a> = termrock::shell::Cx<'a, ModalResult, (), Act>;
 
 pub trait OpenDialog {
     fn open_dialog(&mut self, d: Dialog);
@@ -274,7 +274,7 @@ impl OpenDialog for Cx<'_> {
 
 pub const CHROME: shell::Chrome = shell::Chrome::new().inset(1);
 
-pub use junie_tui::motion::Motion;
+pub use termrock::motion::Motion;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Route {
@@ -967,14 +967,14 @@ impl App {
                     let _ = w.modify_active(|tab| {
                         if let WorkTab::Query(q) = tab {
                             let target = if f == Some(q.editor.id) {
-                                junie_tui::ui::layout::Maximized::First
+                                termrock::ui::layout::Maximized::First
                             } else {
-                                junie_tui::ui::layout::Maximized::Second
+                                termrock::ui::layout::Maximized::Second
                             };
                             q.split.maximized = if maximized {
                                 target
                             } else {
-                                junie_tui::ui::layout::Maximized::None
+                                termrock::ui::layout::Maximized::None
                             };
                         }
                     });
@@ -1928,7 +1928,7 @@ impl App {
 
     fn open_layer(
         &mut self,
-        layer: Box<dyn junie_tui::ui::layer::Layer<ModalResult>>,
+        layer: Box<dyn termrock::ui::layer::Layer<ModalResult>>,
         tag: LayerTag,
     ) {
         self.layers.open(layer, tag, (), &mut self.shell.focus);
@@ -1942,7 +1942,7 @@ impl App {
     }
 
     fn open_help(&mut self) {
-        use junie_tui::widgets::help::{HelpOverlay, HelpSection};
+        use termrock::widgets::help::{HelpOverlay, HelpSection};
         let shell = self
             .keys
             .help_section("Shell and workbench", |c| Some(c.label()));
@@ -2301,7 +2301,7 @@ impl App {
                 .into_actions()
                 .into_iter()
                 .find_map(|action| match action {
-                    junie_tui::widgets::document_workspace::WorkspaceAction::CloseRequested(t) => {
+                    termrock::widgets::document_workspace::WorkspaceAction::CloseRequested(t) => {
                         Some(t)
                     }
                     _ => None,
@@ -2367,7 +2367,7 @@ impl App {
                 {
                     let dismiss = top.layer.spec().dismiss;
                     let now = self.now_ms();
-                    junie_tui::ui::modal::refuse_outside_click(
+                    termrock::ui::modal::refuse_outside_click(
                         &mut self.shell.pointer,
                         dismiss,
                         now,
@@ -2654,7 +2654,7 @@ impl App {
     }
 
     fn layer_pointer(&mut self, ev: &PointerEvent) -> Outcome {
-        if ev.is(Phase::Click) && ev.id == junie_tui::ui::modal::CLOSE {
+        if ev.is(Phase::Click) && ev.id == termrock::ui::modal::CLOSE {
             return self.dismiss_layer(DismissReason::CloseButton);
         }
         match self
@@ -2676,7 +2676,7 @@ impl App {
         if let Some(r) = self.workbench.as_mut().and_then(|w| w.rail.route(ev)) {
             let mut out = Outcome::Consumed;
             for a in r.into_actions() {
-                out = self.set_explorer(a == junie_tui::widgets::rail::RailAction::Expand);
+                out = self.set_explorer(a == termrock::widgets::rail::RailAction::Expand);
             }
             return Some(out);
         }
@@ -2888,7 +2888,7 @@ impl App {
                     }
                     left.push(
                         Segment::new(
-                            junie_tui::ui::text::truncate_middle(&c.name, 18),
+                            termrock::ui::text::truncate_middle(&c.name, 18),
                             Tone::Normal,
                         )
                         .bold()
@@ -2934,7 +2934,7 @@ impl App {
                             Segment::new(
                                 format!(
                                     "{} running",
-                                    junie_tui::widgets::progress::spinner_frame(
+                                    termrock::widgets::progress::spinner_frame(
                                         ctx.interaction.tick
                                     ),
                                 ),
@@ -3023,7 +3023,7 @@ impl shell::App for App {
         App::tick_interval(self)
     }
     fn advance_clock(&mut self, ms: u64) -> Option<Outcome> {
-        Some(junie_tui::clock::step_wall(
+        Some(termrock::clock::step_wall(
             self,
             |a| &mut a.clock,
             ms,
@@ -3243,31 +3243,31 @@ impl TpCmd {
     }
 }
 
-pub const RUN_ALL: [junie_tui::core::keymap::KeyBinding; 2] = [
-    junie_tui::core::keymap::KeyBinding::alt('r'),
-    junie_tui::core::keymap::KeyBinding::new(
+pub const RUN_ALL: [termrock::core::keymap::KeyBinding; 2] = [
+    termrock::core::keymap::KeyBinding::alt('r'),
+    termrock::core::keymap::KeyBinding::new(
         KeyCode::F(5),
         ratatui::crossterm::event::KeyModifiers::SHIFT,
     ),
 ];
 
-pub const EXPLAIN_ANALYZE: [junie_tui::core::keymap::KeyBinding; 2] = [
-    junie_tui::core::keymap::KeyBinding::alt('x'),
-    junie_tui::core::keymap::KeyBinding::new(
+pub const EXPLAIN_ANALYZE: [termrock::core::keymap::KeyBinding; 2] = [
+    termrock::core::keymap::KeyBinding::alt('x'),
+    termrock::core::keymap::KeyBinding::new(
         KeyCode::F(7),
         ratatui::crossterm::event::KeyModifiers::SHIFT,
     ),
 ];
 
-pub fn key_label(keys: &[junie_tui::core::keymap::KeyBinding]) -> &'static str {
+pub fn key_label(keys: &[termrock::core::keymap::KeyBinding]) -> &'static str {
     let map: Vec<_> = keys.iter().map(|&b| (b, ())).collect();
-    junie_tui::core::keymap::hint_key(&map, ()).unwrap_or("")
+    termrock::core::keymap::hint_key(&map, ()).unwrap_or("")
 }
 
 pub fn shell_keys() -> shell::ShellKeys<TpCmd> {
-    use junie_tui::core::keymap::KeyBinding;
     use ratatui::crossterm::event::KeyModifiers;
     use shell::ShellAction::{self, App as Cmd};
+    use termrock::core::keymap::KeyBinding;
     let mut keys = shell::ShellKeys::new();
     let before = [
         (KeyBinding::key(KeyCode::Esc), TpCmd::CancelQuery),
@@ -3428,7 +3428,7 @@ mod tests {
     /// gateway, as the app's own handlers do.
     fn with_grid<R>(
         app: &mut App,
-        f: impl FnOnce(&mut junie_tui::widgets::grid::DataGrid) -> R,
+        f: impl FnOnce(&mut termrock::widgets::grid::DataGrid) -> R,
     ) -> R {
         let w = app.workbench.as_mut().expect("connected");
         let key = w.active_key().expect("a tab is active");
@@ -3801,11 +3801,11 @@ mod tests {
         assert!(sql.contains("'edited name'"), "{sql}");
     }
 
-    use junie_tui::core::event::{Mouse, MouseKind};
-    use junie_tui::core::id::ItemKey;
-    use junie_tui::core::selection::SelectGesture;
     use ratatui::Terminal;
     use ratatui::backend::TestBackend;
+    use termrock::core::event::{Mouse, MouseKind};
+    use termrock::core::id::ItemKey;
+    use termrock::core::selection::SelectGesture;
 
     const CURSOR_MARK: (usize, usize) = (1, 2);
 

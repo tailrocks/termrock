@@ -2,19 +2,19 @@ use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::focus::{Focus, FocusChange, FocusRing, forward_blur};
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::ui::ctx::{RenderCtx, fill};
-use junie_tui::ui::layer::{DismissReason, Layer, LayerCx, LayerOut, LayerSpec};
-use junie_tui::ui::popup::Dismiss;
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::field_common::{PointerField, route_click, route_drag, route_press};
-use junie_tui::widgets::input::{InputAction, TextInput};
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::select::{Select, SelectAction};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::focus::{Focus, FocusChange, FocusRing, forward_blur};
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::ui::ctx::{RenderCtx, fill};
+use termrock::ui::layer::{DismissReason, Layer, LayerCx, LayerOut, LayerSpec};
+use termrock::ui::popup::Dismiss;
+use termrock::widgets::button::Button;
+use termrock::widgets::field_common::{PointerField, route_click, route_drag, route_press};
+use termrock::widgets::input::{InputAction, TextInput};
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::select::{Select, SelectAction};
 
 use crate::app::ModalResult;
 use crate::db::ColType;
@@ -266,12 +266,12 @@ impl FilterEditor {
         ctx.modal_backdrop(buf, screen);
         let w = 64u16.min(screen.width.saturating_sub(4));
         let h = 15u16.min(screen.height.saturating_sub(2));
-        let area = junie_tui::ui::popup::place(
+        let area = termrock::ui::popup::place(
             screen,
             Rect::ZERO,
             w,
             h,
-            junie_tui::ui::popup::Placement::Center,
+            termrock::ui::popup::Placement::Center,
         );
         self.area = area;
         let bg = t.surface_elevated;
@@ -295,7 +295,7 @@ impl FilterEditor {
             t.title().bg(bg),
         );
         let mut y = inner.y + 2;
-        let (l, r) = junie_tui::ui::layout::Split::new(50, 16, 16).horizontal(
+        let (l, r) = termrock::ui::layout::Split::new(50, 16, 16).horizontal(
             Rect::new(
                 inner.x.saturating_sub(1),
                 y,
@@ -310,7 +310,7 @@ impl FilterEditor {
         let op = self.chosen_op();
         if op.needs_value() {
             if op == FilterOp::Between {
-                let (l, r) = junie_tui::ui::layout::Split::new(50, 12, 12).horizontal(
+                let (l, r) = termrock::ui::layout::Split::new(50, 12, 12).horizontal(
                     Rect::new(
                         inner.x.saturating_sub(1),
                         y,
@@ -354,15 +354,15 @@ impl FilterEditor {
         buf.set_string(
             inner.x,
             y,
-            junie_tui::ui::reveal::cut(
+            termrock::ui::reveal::cut(
                 Rect::new(inner.x, y, inner.width, 1),
                 &format!("WHERE {preview}"),
             ),
             t.secondary().bg(bg),
         );
         let ay = inner.bottom().saturating_sub(1);
-        junie_tui::widgets::action_row::ActionRow::new()
-            .align(junie_tui::widgets::button::RowAlign::End)
+        termrock::widgets::action_row::ActionRow::new()
+            .align(termrock::widgets::button::RowAlign::End)
             .gap(1)
             .render(
                 Rect::new(inner.x, ay, inner.width, 1),
@@ -588,7 +588,7 @@ mod issue10_tests {
             store: &store,
         };
         let mut tab = TableTab::new(
-            junie_tui::core::id::ItemKey::num(0),
+            termrock::core::id::ItemKey::num(0),
             WidgetId::of("issue10-view"),
             src,
             table,

@@ -10,14 +10,14 @@ default-run = "tablepro"
 
 [[bin]]
 name = "tablepro"
-path = "../../src/bin/tablepro/main.rs"
+path = "src/main.rs"
 
 [features]
 default = []
-work-metrics = ["junie-tui/work-metrics"]
+work-metrics = ["termrock/work-metrics"]
 
 [dependencies]
-junie-tui = { path = "../..", default-features = false, features = ["cli"] }
+termrock = { path = "../../crates/termrock", default-features = false, features = ["cli"] }
 clap = { workspace = true }
 ratatui = { workspace = true }
 regex = "1.13"
