@@ -54,7 +54,7 @@ required-features = ["cli", "terminal"]
 
 [dependencies]
 clap = { workspace = true, optional = true }
-termpane = { git = "https://github.com/tailrocks/termpane", rev = "46cc0977d8ee95d5284f75080d507ca2d116c007", optional = true, default-features = false }
+termpane = { git = "https://github.com/tailrocks/termpane", rev = "d05d114bdce504d184b00836376a350851806f61", optional = true, default-features = false }
 ratatui = { workspace = true }
 unicode-width = "0.2.3"
 unicode-segmentation = "1"

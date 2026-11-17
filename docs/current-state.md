@@ -337,8 +337,8 @@ variant of these enums stays a breaking change and is recorded here.
   on, so a program that enters and leaves the alternate screen inside one
   feed adds nothing. `ESC[2J` discards the visible rows
   (`EraseDisplayPolicy::Discard`), so it changes neither value.
-- `termpane` is a git dependency pinned to commit `46cc0977` (termpane
-  `main` after PR #41, which follows xterm for DECSTR and `?1049`, and PR #40, the reuse of OSC 8 links, and PR #39: `EraseDisplayPolicy`, the cap on characters per
+- `termpane` is a git dependency pinned to commit `d05d114` (termpane
+  `main` after PR #45, whose changes since PR #41 are CI, tooling and lint configuration only; PR #41, which follows xterm for DECSTR and `?1049`, and PR #40, the reuse of OSC 8 links, and PR #39: `EraseDisplayPolicy`, the cap on characters per
   cell, the clamp of the `CSI L`, `M`, `S` and `T` counts and the shared
   OSC 8 hyperlink). It becomes `=0.1.1` or later once published on
   crates.io; see
