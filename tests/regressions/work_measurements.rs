@@ -23,6 +23,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::time::Instant;
 
+use junie_tui::core::event::Key;
 use junie_tui::core::focus::FocusRing;
 use junie_tui::core::hit::HitRegistry;
 use junie_tui::core::id::WidgetId;
@@ -31,11 +32,14 @@ use junie_tui::metrics::measurement::{Environment, MeasurementReport, SAMPLES, W
 use junie_tui::theme::{ColorLevel, Theme};
 use junie_tui::ui::ctx::{Interaction, RenderCtx};
 use junie_tui::ui::scroll_view::ScrollView;
+use junie_tui::widgets::code::CodeEditor;
 use junie_tui::widgets::list::{ListBox, ListItem, SelectMode};
+use junie_tui::widgets::textarea::TextArea;
 use junie_tui::widgets::tree::{TreeNode, TreeView};
 use junie_tui::widgets::viewport::{Line, Span, TextViewport};
 use junie_tui::widgets::viewport_ops::ViewportOps;
 use ratatui::buffer::Buffer;
+use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Rect, Size};
 
 const VIEWPORT: Rect = Rect::new(0, 0, 100, 30);
@@ -300,6 +304,216 @@ fn scroll_view_render(rows: u16, warmups: usize, samples: usize) -> Outcome {
     }
 }
 
+/// A paint with the widget focused, as an editor is while it is being typed in.
+fn paint_focused<T>(paint: impl FnOnce(&mut Buffer, &mut RenderCtx) -> T) -> (Buffer, T) {
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let mut buf = Buffer::empty(VIEWPORT);
+    let mut hits = HitRegistry::default();
+    let mut ring = FocusRing::default();
+    let interaction = Interaction {
+        focus: Some(ID),
+        ..Interaction::default()
+    };
+    let out = {
+        let mut ctx = RenderCtx::new(&theme, interaction, &mut hits, &mut ring);
+        paint(&mut buf, &mut ctx)
+    };
+    (buf, out)
+}
+
+fn key(code: KeyCode) -> Key {
+    Key {
+        code,
+        mods: KeyModifiers::NONE,
+    }
+}
+
+fn screen_has(buf: &Buffer, text: &str) -> bool {
+    (0..buf.area.height).any(|y| row_text(buf, y).contains(text))
+}
+
+fn code_line(i: usize) -> String {
+    format!("let value_{i:06} = {i};")
+}
+
+fn code_text(n: usize) -> String {
+    (0..n).map(code_line).collect::<Vec<_>>().join("\n")
+}
+
+fn highlight_first_keyword(_: &str) -> Vec<(std::ops::Range<usize>, junie_tui::theme::SyntaxTone)> {
+    vec![(0..3, junie_tui::theme::SyntaxTone::Keyword)]
+}
+
+fn one_block(text: &str) -> Vec<std::ops::Range<usize>> {
+    std::iter::once(0..text.len()).collect()
+}
+
+/// One keystroke in a `CodeEditor`, then the frame it causes. Rounds alternate
+/// typing `x` at the start of the first line and Backspace, so every round
+/// changes the text between two genuinely distinct values and the highlighter
+/// and block segmenter re-run on a new text revision each time. The oracle
+/// checks the text and the first painted line behind the timer.
+fn editor_edit_then_frame(n: usize, warmups: usize, samples: usize) -> Outcome {
+    let base_len = code_text(n).len();
+    let ((mut editor, ()), setup_ns) = timed_setup(|| {
+        let mut editor = CodeEditor::new(ID, &code_text(n))
+            .highlighter(highlight_first_keyword)
+            .segmenter(one_block);
+        paint_focused(|buf, ctx| editor.render(VIEWPORT, buf, ctx, ctx.theme.canvas));
+        (editor, ())
+    });
+    let sample_ns = sample(
+        &mut editor,
+        warmups,
+        samples,
+        |_, _| {},
+        |editor, round| {
+            let code = if round % 2 == 0 {
+                KeyCode::Char('x')
+            } else {
+                KeyCode::Backspace
+            };
+            editor.on_key(&key(code));
+            paint_focused(|buf, ctx| editor.render(VIEWPORT, buf, ctx, ctx.theme.canvas)).0
+        },
+        |editor, round, buf| {
+            let typed = round % 2 == 0;
+            assert_eq!(
+                editor.text().len(),
+                base_len + usize::from(typed),
+                "round {round}: the keystroke changed the text"
+            );
+            let first = format!("{}{}", if typed { "x" } else { "" }, code_line(0));
+            assert!(
+                editor.text().starts_with(&first) && screen_has(buf, &first),
+                "round {round}: the frame shows {first:?}"
+            );
+        },
+    );
+    Outcome {
+        scenario: "code_editor",
+        operation: "keystroke_then_frame",
+        record_count: n,
+        sample_ns,
+        setup_ns,
+        oracle: "after every round the text is one byte longer on a typed round and back to its original length on a Backspace round, and the frame shows the first line with or without the typed x",
+    }
+}
+
+fn notes_line(i: usize) -> String {
+    format!("line {i:06} of the seeded notes")
+}
+
+/// One keystroke in a `TextArea`, then the frame it causes: `x` appended at the
+/// end of the last line, then Backspace, alternating. The first focused frame
+/// is part of the setup, so the area already follows its cursor to the end and
+/// has taken its edit-entry snapshot. The oracle reads the painted last line.
+fn textarea_edit_then_frame(n: usize, warmups: usize, samples: usize) -> Outcome {
+    let text = (0..n).map(notes_line).collect::<Vec<_>>().join("\n");
+    let last = notes_line(n - 1);
+    let ((mut area, ()), setup_ns) = timed_setup(|| {
+        let mut area = TextArea::new(ID, "Notes", 10).value(&text);
+        let (buf, ()) = paint_focused(|buf, ctx| area.render(VIEWPORT, buf, ctx, ctx.theme.canvas));
+        assert!(screen_has(&buf, &last), "the warm frame follows the cursor");
+        (area, ())
+    });
+    let sample_ns = sample(
+        &mut area,
+        warmups,
+        samples,
+        |_, _| {},
+        |area, round| {
+            let code = if round % 2 == 0 {
+                KeyCode::Char('x')
+            } else {
+                KeyCode::Backspace
+            };
+            area.on_key(&key(code));
+            paint_focused(|buf, ctx| area.render(VIEWPORT, buf, ctx, ctx.theme.canvas)).0
+        },
+        |_, round, buf| {
+            let typed = round % 2 == 0;
+            let shown = (0..buf.area.height)
+                .map(|y| row_text(buf, y))
+                .find(|row| row.contains(&last))
+                .unwrap_or_default();
+            let after = shown
+                .split_once(&last)
+                .map(|(_, rest)| rest.trim_start().chars().next());
+            assert!(
+                after.is_some(),
+                "round {round}: the last line {last:?} is on screen, got {shown:?}"
+            );
+            assert_eq!(
+                after.flatten() == Some('x'),
+                typed,
+                "round {round}: the typed x follows the last line exactly on a typed round, got {shown:?}"
+            );
+        },
+    );
+    Outcome {
+        scenario: "text_area",
+        operation: "keystroke_then_frame",
+        record_count: n,
+        sample_ns,
+        setup_ns,
+        oracle: "after every round the painted last line ends with the typed x on a typed round and without it on a Backspace round",
+    }
+}
+
+/// `ScrollView::render_window` (#20): the viewport-sized path. Rounds scroll
+/// the window between two offsets so each frame shows different rows, and the
+/// oracle checks the first painted row behind the timer.
+fn scroll_view_render_window(rows: u16, warmups: usize, samples: usize) -> Outcome {
+    const OFFSETS: [usize; 2] = [0, 500];
+    let (mut sv, setup_ns) = timed_setup(|| ScrollView::new(ID));
+    let content = Size::new(20, rows);
+    let sample_ns = sample(
+        &mut sv,
+        warmups,
+        samples,
+        |sv, round| {
+            assert!(
+                sv.scroll_to(0, OFFSETS[round % 2]) || round == 0,
+                "round {round}: the window moves between the two offsets"
+            );
+        },
+        |sv, _| {
+            paint(|buf, ctx| {
+                sv.render_window(
+                    VIEWPORT,
+                    VIEWPORT,
+                    content,
+                    None,
+                    buf,
+                    ctx,
+                    |window, buf, _| {
+                        for index in window.content_rows() {
+                            let at = window.project_content_rect(Rect::new(0, index as u16, 20, 1));
+                            buf.set_string(
+                                at.x,
+                                at.y,
+                                format!("row {index:05}"),
+                                ratatui::style::Style::new(),
+                            );
+                        }
+                    },
+                );
+            })
+            .0
+        },
+        |_, round, buf| assert_row(buf, 0, &format!("row {:05}", OFFSETS[round % 2])),
+    );
+    Outcome {
+        scenario: "scroll_view",
+        operation: "render_window_scroll",
+        record_count: usize::from(rows),
+        sample_ns,
+        setup_ns,
+        oracle: "every frame's first row shows the first row of the offset that round scrolled to, alternating row 0 and row 500",
+    }
+}
+
 fn command(program: &str, args: &[&str]) -> Option<String> {
     let out = Command::new(program).args(args).output().ok()?;
     out.status
@@ -419,6 +633,27 @@ fn measurement_tree_filter_change() {
 
 #[test]
 #[ignore = "release measurement: run scripts/measure-performance.sh"]
+fn measurement_editor_keystroke_then_frame() {
+    measure_scenario(&SIZES, editor_edit_then_frame);
+}
+
+#[test]
+#[ignore = "release measurement: run scripts/measure-performance.sh"]
+fn measurement_textarea_keystroke_then_frame() {
+    measure_scenario(&SIZES, textarea_edit_then_frame);
+}
+
+#[test]
+#[ignore = "release measurement: run scripts/measure-performance.sh"]
+fn measurement_scroll_view_render_window() {
+    let sizes = SCROLL_ROWS.map(usize::from);
+    measure_scenario(&sizes, |rows, w, s| {
+        scroll_view_render_window(u16::try_from(rows).expect("rows fit the u16 extent"), w, s)
+    });
+}
+
+#[test]
+#[ignore = "release measurement: run scripts/measure-performance.sh"]
 fn measurement_scroll_view_render() {
     let sizes = SCROLL_ROWS.map(usize::from);
     measure_scenario(&sizes, |rows, w, s| {
@@ -440,4 +675,9 @@ fn measurement_edit_samples_are_real_changes() {
     assert_eq!(viewport_prepared_draw(100, 1, 3).sample_ns.len(), 3);
     assert_eq!(list_settled_frame(100, 1, 3).sample_ns.len(), 3);
     assert_eq!(scroll_view_render(200, 1, 3).sample_ns.len(), 3);
+    // The keystroke scenarios and the window scroll change state every round
+    // too, warm-ups included; their oracles fail a round that did not.
+    assert_eq!(editor_edit_then_frame(100, 2, 5).sample_ns.len(), 5);
+    assert_eq!(textarea_edit_then_frame(100, 2, 5).sample_ns.len(), 5);
+    assert_eq!(scroll_view_render_window(1_000, 2, 5).sample_ns.len(), 5);
 }

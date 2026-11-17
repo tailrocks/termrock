@@ -49,6 +49,17 @@ required = true
 dispatch_inputs = { tier = ["functional"] }
 artifacts = [{ name = "functional-terminal-evidence", paths = ["target/functional", "target/nextest/functional"], when = "always", retention_days = 14 }]
 
+[[stacks.rust.suites]]
+id = "performance"
+profile = "performance"
+run_ignored = "default"
+partitions = 4
+build = "inline"
+timeout_minutes = 15
+test_threads = 4
+triggers = ["pull_request", "push", "workflow_dispatch"]
+required = true
+
 [[stacks.rust.configurations]]
 name = "default"
 features = ["default"]
