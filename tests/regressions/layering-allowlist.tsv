@@ -18,16 +18,6 @@ production	src/ui/layer.rs	widgets::form_dialog
 production	src/ui/layer.rs	widgets::help
 production	src/ui/layer.rs	widgets::info_dialog
 production	src/ui/layer.rs	widgets::select
-production	src/ui/specimen.rs	ui::modal
-production	src/ui/specimen.rs	widgets::button
-production	src/ui/specimen.rs	widgets::choice_dialog
-production	src/ui/specimen.rs	widgets::dialog
-production	src/ui/specimen.rs	widgets::input
-production	src/ui/specimen.rs	widgets::menu
-production	src/ui/specimen.rs	widgets::picker
-production	src/ui/specimen.rs	widgets::tabs
-production	src/widgets/viewport_specimen.rs	widgets::diff
-production	src/widgets/viewport_specimen.rs	widgets::steps
 test	src/ui/layer.rs	ui::layers
 test	src/widgets/code/tests.rs	test_alloc
 test	src/widgets/picker.rs	ui::layers

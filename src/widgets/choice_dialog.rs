@@ -6,6 +6,7 @@ use crate::core::intent::DismissReason;
 use crate::core::keymap::{Nav, NavKeys};
 use crate::theme::{ButtonKind, Strings, Tone};
 use crate::ui::ctx::RenderCtx;
+use crate::ui::specimen::{Specimen, SpecimenState};
 use crate::ui::text::truncate;
 use crate::widgets::button::{Button, row_layout_right, row_lines};
 use crate::widgets::choice::RadioGroup;
@@ -13,6 +14,7 @@ use crate::widgets::keyhint::Hint;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
+use ratatui::style::Color;
 use ratatui::style::Style;
 
 #[derive(Clone)]
@@ -421,5 +423,59 @@ impl ChoiceDialog {
             return self.on_click(ev.id, focus).into();
         }
         Response::ignored()
+    }
+}
+
+impl Specimen for ChoiceDialog {
+    fn specimen_id(&self) -> WidgetId {
+        self.radio.id
+    }
+
+    fn supports(&self, state: SpecimenState) -> bool {
+        use SpecimenState::*;
+        match state {
+            Rest | Hover | Pressed | Focused | FocusedHover | Selected | Disabled => {
+                !self.buttons.is_empty()
+            }
+            Busy | Error | Editing | Empty | Loading | Overflow | Narrow => false,
+        }
+    }
+
+    fn specimen_height(&self, _state: SpecimenState) -> u16 {
+        self.height() + 2
+    }
+
+    fn specimen(
+        &self,
+        state: SpecimenState,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: Color,
+    ) {
+        let _ = bg;
+        let mut d = self.clone();
+        let primary = (0..d.buttons.len())
+            .rev()
+            .find(|&i| i != d.cancel_index)
+            .unwrap_or(0);
+        let v = state.visual();
+        if v.disabled {
+            d.buttons[primary].disabled = true;
+        }
+        if v.selected {
+            let last = d.radio.options.len().saturating_sub(1);
+            d.radio.selected = last;
+            d.radio.cursor = last;
+        }
+        let button = d.buttons.get(primary).map(|b| b.id);
+        ctx.interaction.hover = if v.hovered { button } else { None };
+        ctx.interaction.pressed = if v.pressed { button } else { None };
+        ctx.interaction.focus = match (v.focused, v.hovered) {
+            (true, false) => Some(d.radio.id),
+            (true, true) => button,
+            _ => None,
+        };
+        d.render(area, buf, ctx);
     }
 }

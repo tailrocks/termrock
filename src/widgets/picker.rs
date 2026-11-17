@@ -21,10 +21,12 @@ use crate::ui::edit_menu::{
     point_field,
 };
 use crate::ui::popup::{Placement, place_with};
+use crate::ui::specimen::{Specimen, SpecimenState};
 use crate::ui::text::{TextClip, paint_graphemes, truncate, wider_than, width};
 use crate::widgets::edit::EditField;
 use crate::widgets::keyhint::Hint;
 use crate::widgets::option_list::{Item, OptionList};
+use ratatui::style::Color;
 
 pub const DEFAULT_GLYPH: &str = "·";
 
@@ -1519,6 +1521,86 @@ fn picker_content_rows(count: usize, max_rows: u16, ready: bool) -> usize {
     let max = usize::from(max_rows.max(1));
     let min = if ready { 1 } else { 2.min(max) };
     count.clamp(min, max)
+}
+
+impl Specimen for Picker {
+    fn specimen_id(&self) -> WidgetId {
+        self.id
+    }
+
+    fn supports(&self, state: SpecimenState) -> bool {
+        use SpecimenState::*;
+        match state {
+            Rest | Empty | Loading | Error => true,
+            Hover | Pressed | Disabled => self.visible_len() > 1,
+            Overflow => self.visible_len() > 3,
+            Focused | FocusedHover | Selected | Busy | Editing | Narrow => false,
+        }
+    }
+
+    fn specimen_height(&self, state: SpecimenState) -> u16 {
+        picker_sample(self, state).height() + 2
+    }
+
+    fn specimen(
+        &self,
+        state: SpecimenState,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: Color,
+    ) {
+        let _ = bg;
+        let mut p = picker_sample(self, state);
+        let w = p.list().width.1.min(area.width);
+        p.set_width(w);
+        let v = state.visual();
+        let row = p.row_id(1.min(p.visible_len().saturating_sub(1)));
+        ctx.interaction.focus = None;
+        ctx.interaction.hover = v.hovered.then_some(row);
+        ctx.interaction.pressed = v.pressed.then_some(row);
+        p.draw(area, buf, ctx);
+    }
+}
+
+fn picker_sample(p: &Picker, state: SpecimenState) -> Picker {
+    let mut p = p.clone();
+    p.set_placement(crate::ui::popup::Placement::Center);
+    p.anchor = Rect::ZERO;
+    p.backdrop = crate::ui::ctx::Backdrop::FULL;
+    match state {
+        SpecimenState::Disabled => {
+            let mut items: Vec<_> = p
+                .visible_items()
+                .map(|v| v.item.clone().matched(v.matched.to_vec()))
+                .collect();
+            if let Some(item) = items.get_mut(1) {
+                item.disabled = true;
+            }
+            p.set_items(items)
+                .unwrap_or_else(|error| p.report_item_error(error));
+        }
+        SpecimenState::Empty => {
+            p.set_items(vec![])
+                .unwrap_or_else(|error| p.report_item_error(error));
+        }
+        SpecimenState::Loading => {
+            p.set_items(vec![])
+                .unwrap_or_else(|error| p.report_item_error(error));
+            p.status = PickerStatus::Loading("Fetching branches…".into());
+        }
+        SpecimenState::Error => {
+            p.set_items(vec![])
+                .unwrap_or_else(|error| p.report_item_error(error));
+            p.status = PickerStatus::Error {
+                message: "Could not reach origin".into(),
+                detail: Some("r retries".into()),
+            };
+        }
+        SpecimenState::Overflow => p.set_max_rows(3),
+        _ => {}
+    }
+    p
 }
 
 #[cfg(test)]
