@@ -198,6 +198,17 @@ workspaces, Docker, OpenShell, Codex).
   moves many captures, `scripts/accept-changed-baselines.py` re-accepts each
   changed one through `scripts/accept-baseline.py` with `--expect-baseline` set
   to the digest in the tree (main's, after a rebase); `--dry` lists candidates.
+  The inventory walks every crate of `docs/layering.toml` that exists
+  (`crates/termrock-*`, #443) and spells each id the way the facade exports it,
+  so a definition keeps its id when it moves into a crate behind a `pub use`;
+  when it has several public spellings the one that already has a catalog line
+  wins. `tests/regressions/api-ids.sha256` holds the digest of the sorted ids of
+  each matrix row (`catalog_api_ids_match_the_committed_digest`). A PR that moves
+  code must not change it; a PR that adds or removes API on purpose reruns that
+  test with `UPDATE_API_IDS=1` and commits the file. After a file with a
+  `regression_test` moves, `python3 scripts/rewrite-regression-paths.py --dry`
+  lists the stale paths in the coverage tables and without `--dry` rewrites them
+  from `git diff -M`.
 
 ### Visual states
 

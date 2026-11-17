@@ -310,3 +310,35 @@ Where the implementation differs from the plan in #440, and why:
   not list it and its dependencies would go unchecked. Added at review.
 
 Revisit when #452 removes `[files]`: from then on only stage B remains.
+
+## 2026-11-18: The #14 inventory walks several crates and pins its ids (#443)
+
+Context: the gate must keep one catalog line and one disposition per public API
+while the module graph is spread over `crates/termrock-*`, and the id set must
+not change when code moves.
+
+Decision:
+
+- Ids stay facade spellings. The walker takes a list of crates (the facade
+  first, from `docs/layering.toml`), keeps the facade's modules under their plain
+  paths and puts every other crate under `@<crate name>`. A module or item of
+  another crate is exported only through a `pub use` the facade makes of it, and
+  carries that spelling.
+- When a definition has several public spellings, one that already has a catalog
+  line wins (PR A, `preferred`). Without it a move changes the id: the
+  definition's own path used to win whenever it was public. The old rule still
+  applies when the catalog has none of the spellings.
+- A `#[macro_export]` macro is a definition at the root of its own crate, so a
+  macro that another crate re-exports gets an id; it used to be listed
+  unconditionally. Before the split the output is identical.
+- The facade is the root package while `src/lib.rs` exists, because `termrock`
+  only re-exports `junie-tui` today; #452 switches it to `crates/termrock`.
+- Deviation from #443: the golden check compares against a committed digest
+  (`tests/regressions/api-ids.sha256`), not `git show origin/main:...`, so it needs
+  no fetched `origin` in CI. The cost is that a PR that adds public API updates
+  one file (`UPDATE_API_IDS=1`). The digest was computed from the walker before
+  this change, and the refactored walker reproduces it.
+- Feature gates are still evaluated once for the matrix row, not per crate;
+  #444 maps the row's features onto each crate's features.
+- `.sonarcloud.properties` excludes `crates/termrock-catalog/src/catalog.rs`
+  from copy-paste detection now, ahead of the catalog's move in #449.
