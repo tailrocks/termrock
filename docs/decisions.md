@@ -212,6 +212,11 @@ carry the counters, which #56 forbids ("default-off") and which the
   each required test, not ignored and selected by the profile.
 - `performance_suite_is_a_required_generated_ci_job` pins the declaration, the
   generated job and the `Required` dependency, so the suite cannot drop out.
+- `performance_contracts_run_in_required_all_features_ci_jobs` pins, from the
+  generated task manifest, that each package owning a required test runs
+  `nextest run --profile ci --package P --all-features` in a job `Required`
+  waits for, and the nested list is repeated with `--profile ci`, so every
+  required contract is selected where the counters are on.
 
 `allow_empty_test_suite` stays on: it is a stack-wide setting that other
 legitimately empty shards need, and it only lets a shard with no test pass.

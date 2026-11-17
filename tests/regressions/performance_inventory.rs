@@ -19,8 +19,14 @@
 //! not `#[ignore]`d and matched by the profile filter. That catches what the
 //! text checks cannot: a `mod` line removed from a binary, an `#[ignore]`, a
 //! `#[cfg]` that drops the test, a filter that no longer selects it. It runs
-//! only under `--profile performance` (the build is then the one the run just
-//! made, so the list is a cache hit) and does nothing under other profiles.
+//! only under `--profile performance` and does nothing under other profiles.
+//! The same list, taken with `--profile ci`, must also select every required
+//! test: that is the profile of the `Rust / <crate>` jobs, which build with
+//! `--all-features` and so are where the counted contracts execute (the
+//! generator gives the `performance` suite no feature field).
+//! `performance_contracts_run_in_required_all_features_ci_jobs` pins, in the
+//! generated task manifest and workflow, that each owning package has such a
+//! job and that `Required` waits for it.
 //!
 //! The inventory is a floor. Adding a test to an existing suite needs no edit
 //! here as long as the operand still selects it; adding a new suite means
@@ -42,6 +48,8 @@ use syn::visit::Visit;
 const NEXTEST_CONFIG: &str = ".config/nextest.toml";
 const PROFILE: &str = "performance";
 const MEASURE_PROFILE: &str = "performance-measure";
+const CI_PROFILE: &str = "ci";
+const TASK_MANIFEST: &str = ".github/velnor/task-execution-manifest-v1.json";
 const VELNOR_CONFIG: &str = ".velnor/config.toml";
 const CI_WORKFLOW: &str = ".github/workflows/ci.yml";
 const MEASUREMENT_FILE: &str = "tests/regressions/work_measurements.rs";
@@ -276,7 +284,7 @@ fn check_profile(filter: &str) -> Vec<String> {
 /// Every required test that the `cargo nextest list --message-format json`
 /// output `json` does not show as a listed, not-ignored test that the
 /// profile's filter selects, one line each.
-fn check_list(json: &str) -> Vec<String> {
+fn check_list(json: &str, profile: &str) -> Vec<String> {
     let list: serde_json::Value = match serde_json::from_str(json) {
         Ok(list) => list,
         Err(why) => return vec![format!("cannot parse the nextest list output: {why}")],
@@ -310,7 +318,7 @@ fn check_list(json: &str) -> Vec<String> {
                 .and_then(|s| s.as_str());
             if status != Some("matches") {
                 problems.push(format!(
-                    "`{}`: [profile.{PROFILE}] does not select `{test}` (filter-match status {status:?})",
+                    "`{}`: [profile.{profile}] does not select `{test}` (filter-match status {status:?})",
                     suite.family
                 ));
             }
@@ -321,11 +329,11 @@ fn check_list(json: &str) -> Vec<String> {
 
 /// The list command the gate runs. `NEXTEST_*` variables of the enclosing run
 /// are removed so that nothing of that run steers the nested list.
-fn nextest_list_json() -> Result<String, String> {
+fn nextest_list_json(profile: &str) -> Result<String, String> {
     let mut command = Command::new("cargo");
     command
         .current_dir(root())
-        .args(["nextest", "list", "--profile", PROFILE])
+        .args(["nextest", "list", "--profile", profile])
         .args(["--workspace", "--all-features", "--message-format", "json"]);
     for (name, _) in std::env::vars_os() {
         if name.to_string_lossy().starts_with("NEXTEST") {
@@ -465,6 +473,73 @@ fn check_suite(config: &str, workflow: &str) -> Vec<String> {
     problems
 }
 
+/// The cargo packages that own the required tests: the part of each binary id
+/// before `::`.
+fn required_packages() -> Vec<&'static str> {
+    let mut packages: Vec<&str> = inventory()
+        .iter()
+        .filter_map(|suite| suite.binary_id.split("::").next())
+        .collect();
+    packages.sort_unstable();
+    packages.dedup();
+    packages
+}
+
+/// What must hold for the `work_contract_*` tests to execute with the counters
+/// compiled in, in a required job. The `performance` suite cannot do it (the
+/// generator gives a suite no feature field), so each package that owns a
+/// required test needs a generated `nextest run --profile ci --package P
+/// --all-features` task (`manifest`, the generated task manifest), and the
+/// `rust-P` job that runs it must exist and be waited for by `Required`
+/// (`workflow`, the generated `ci.yml`). The nested list of
+/// `performance_nextest_list_runs_every_required_test` then shows that the
+/// `ci` profile selects every required test.
+fn check_ci_jobs(manifest: &str, workflow: &str) -> Vec<String> {
+    let json: String = manifest
+        .lines()
+        .filter(|line| !line.starts_with('#'))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let parsed: serde_json::Value = match serde_json::from_str(&json) {
+        Ok(parsed) => parsed,
+        Err(why) => return vec![format!("cannot parse {TASK_MANIFEST}: {why}")],
+    };
+    let Some(tasks) = parsed.get("tasks").and_then(|t| t.as_object()) else {
+        return vec![format!("{TASK_MANIFEST} has no `tasks` object")];
+    };
+    let argvs: Vec<Vec<&str>> = tasks
+        .values()
+        .filter_map(|task| task.get("argv")?.as_array())
+        .map(|argv| argv.iter().filter_map(|a| a.as_str()).collect())
+        .collect();
+    let follows =
+        |argv: &[&str], flag: &str, value: &str| argv.windows(2).any(|w| w == [flag, value]);
+    let mut problems = Vec::new();
+    for package in required_packages() {
+        let runs = argvs.iter().any(|argv| {
+            argv.windows(2).any(|w| w == ["nextest", "run"])
+                && follows(argv, "--profile", CI_PROFILE)
+                && follows(argv, "--package", package)
+                && argv.contains(&"--all-features")
+        });
+        if !runs {
+            problems.push(format!(
+                "no generated task runs `nextest run --profile {CI_PROFILE} --package {package} --all-features`: the required tests of `{package}` would run without the work counters"
+            ));
+        }
+        let job = format!("rust-{package}");
+        if !workflow.contains(&format!("\n  {job}:")) {
+            problems.push(format!("{CI_WORKFLOW} has no `{job}` job"));
+        }
+        if !workflow.contains(&format!("\n      - {job}\n")) {
+            problems.push(format!(
+                "the generated `Required` job does not wait for `{job}`"
+            ));
+        }
+    }
+    problems
+}
+
 fn read(path: &str) -> String {
     fs::read_to_string(root().join(path)).unwrap_or_else(|e| panic!("cannot read {path}: {e}"))
 }
@@ -496,8 +571,13 @@ fn performance_nextest_list_runs_every_required_test() {
         eprintln!("not run under `--profile {PROFILE}`: the nextest list check is skipped");
         return;
     }
-    let json = nextest_list_json().unwrap_or_else(|why| panic!("{why}"));
-    fail(check_list(&json));
+    let json = nextest_list_json(PROFILE).unwrap_or_else(|why| panic!("{why}"));
+    fail(check_list(&json, PROFILE));
+    // The `Rust / <crate>` jobs, which build with `--all-features` and so run
+    // the contracts with the counters on, select tests by the `ci` profile.
+    // Every required test must be one of them (second list: a cache hit).
+    let json = nextest_list_json(CI_PROFILE).unwrap_or_else(|why| panic!("{why}"));
+    fail(check_list(&json, CI_PROFILE));
 }
 
 /// The `performance` profile is only a contract if CI runs it. The nested
@@ -507,6 +587,14 @@ fn performance_nextest_list_runs_every_required_test() {
 #[test]
 fn performance_suite_is_a_required_generated_ci_job() {
     fail(check_suite(&read(VELNOR_CONFIG), &read(CI_WORKFLOW)));
+}
+
+/// The contracts need `work-metrics`, which the `performance` suite cannot
+/// enable, so they execute in the required per-package `ci` jobs instead. This
+/// pins that route in the generated files.
+#[test]
+fn performance_contracts_run_in_required_all_features_ci_jobs() {
+    fail(check_ci_jobs(&read(TASK_MANIFEST), &read(CI_WORKFLOW)));
 }
 
 #[test]
@@ -589,7 +677,7 @@ mod gate_logic {
     }
 
     fn list_problems(list: &serde_json::Value) -> Vec<String> {
-        check_list(&list.to_string())
+        check_list(&list.to_string(), PROFILE)
     }
 
     const SUITE_CONFIG: &str = "[[stacks.rust.suites]]\nid = \"functional\"\nrequired = true\n\n[[stacks.rust.suites]]\nid = \"performance\"\nprofile = \"performance\"\npartitions = 4\nbuild = \"inline\"\ntriggers = [\"pull_request\", \"push\", \"workflow_dispatch\"]\nrequired = true\n\n[[stacks.rust.configurations]]\nname = \"default\"\n";
@@ -632,6 +720,62 @@ mod gate_logic {
         assert_eq!(problems.len(), 2, "{problems:?}");
         let unrequired = SUITE_WORKFLOW.replace("      - suite-performance\n", "");
         let problems = check_suite(SUITE_CONFIG, &unrequired);
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(problems[0].contains("Required"));
+    }
+
+    fn ci_manifest(skip: Option<&str>) -> String {
+        let tasks: serde_json::Map<String, serde_json::Value> = required_packages()
+            .into_iter()
+            .filter(|package| Some(*package) != skip)
+            .map(|package| {
+                (
+                    format!("stack/rust/{package}/nextest/default"),
+                    serde_json::json!({ "argv": [
+                        "mbx", "nextest", "run", "--profile", "ci", "--package", package,
+                        "--no-tests", "warn", "--all-features"
+                    ] }),
+                )
+            })
+            .collect();
+        format!("# Generated\n{}", serde_json::json!({ "tasks": tasks }))
+    }
+
+    fn ci_workflow() -> String {
+        let mut text = String::from("jobs:\n  required:\n    needs:\n");
+        for package in required_packages() {
+            text.push_str(&format!("      - rust-{package}\n"));
+        }
+        text.push_str("      - jactionlint\n");
+        for package in required_packages() {
+            text.push_str(&format!("  rust-{package}:\n    name: x\n"));
+        }
+        text
+    }
+
+    #[test]
+    fn all_features_ci_jobs_for_every_package_pass() {
+        assert_eq!(
+            check_ci_jobs(&ci_manifest(None), &ci_workflow()),
+            Vec::<String>::new()
+        );
+    }
+
+    #[test]
+    fn a_package_without_an_all_features_ci_task_fails() {
+        let problems = check_ci_jobs(&ci_manifest(Some("termrock-holla")), &ci_workflow());
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(problems[0].contains("termrock-holla"));
+        let no_features = ci_manifest(None).replace("\"--all-features\"", "\"--locked\"");
+        assert!(check_ci_jobs(&no_features, &ci_workflow()).len() >= required_packages().len());
+        let other_profile = ci_manifest(None).replace("\"ci\"", "\"functional\"");
+        assert!(check_ci_jobs(&other_profile, &ci_workflow()).len() >= required_packages().len());
+    }
+
+    #[test]
+    fn a_ci_job_that_is_not_required_fails() {
+        let workflow = ci_workflow().replace("      - rust-junie-tui\n", "");
+        let problems = check_ci_jobs(&ci_manifest(None), &workflow);
         assert_eq!(problems.len(), 1, "{problems:?}");
         assert!(problems[0].contains("Required"));
     }
@@ -687,8 +831,8 @@ mod gate_logic {
 
     #[test]
     fn unreadable_list_output_fails() {
-        assert!(!check_list("not json").is_empty());
-        assert!(!check_list("{}").is_empty());
+        assert!(!check_list("not json", PROFILE).is_empty());
+        assert!(!check_list("{}", PROFILE).is_empty());
     }
 
     #[test]

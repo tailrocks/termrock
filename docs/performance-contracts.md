@@ -399,6 +399,13 @@ It still has teeth, in two ways:
   inventory proof, and a nonzero aggregate count cannot stand in for it.
 - The `Rust / <crate>` jobs build with `--all-features`, so they execute the
   contracts themselves (`ci` profile, which excludes only `binary(functional)`).
+  Two checks pin that route. `performance_contracts_run_in_required_all_features_ci_jobs`
+  reads the generated task manifest and `ci.yml` and fails unless every package
+  that owns a required test has a generated
+  `nextest run --profile ci --package P --all-features` task and a `rust-P` job
+  that `Required` waits for. The nested list of the inventory test is taken a
+  second time with `--profile ci` and must also select every required test, so a
+  test that the suite lists but the jobs would not run fails as well.
 
 `--no-tests warn` comes from `allow_empty_test_suite`, a stack-wide setting that
 legitimately empty shards elsewhere depend on, so it is not turned off for this
