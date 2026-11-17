@@ -166,8 +166,10 @@ workspaces, Docker, OpenShell, Codex).
   behavior: a `CapabilityProof` names callable scenarios, and `apps/showcase/src/app_tests_catalog.rs` runs each scenario
   against real components (`catalog_scenarios_execute`). Layer 3 is the
   tuiscotti journeys in `tests/functional`. Name matching is never behavioral
-  proof. Run `cargo nextest run -p junie-tui --all-features --no-tests fail -E
-  'test(catalog_)'`; the Rust crate CI job already runs it. The proofs
+  proof. Run `cargo nextest run -p junie-tui -p termrock-showcase
+  --all-features --no-tests fail -E 'test(catalog_)'` (the source gate is in
+  `junie-tui`, the scenarios in `termrock-showcase`); the Rust crate CI jobs
+  already run it. The proofs
   are split into lanes so parallel work never edits one file: a lane owns
   `apps/showcase/src/coverage/lane_<lane>.rs` (its proofs and exceptions),
   `apps/showcase/src/app_tests_catalog/<lane>.rs` (its cases and scenario
