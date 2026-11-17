@@ -27,10 +27,10 @@ use jackin_console::panes::{PaneBody, PaneRequest, PaneSpawn};
 use jackin_console::screens::Go;
 use jackin_console::sim::{SimBackend, provider};
 use jackin_console::world::{Absorbed, Msg, Snapshot, World, job};
-use junie_tui::core::event::{Input, Outcome};
-use junie_tui::motion::Motion;
-use junie_tui::runtime::Application;
-use junie_tui::theme::{ColorLevel, Theme};
+use termrock::core::event::{Input, Outcome};
+use termrock::motion::Motion;
+use termrock::runtime::Application;
+use termrock::theme::{ColorLevel, Theme};
 
 /// The simulator, except that the four requests this file is about get no
 /// answer until the test delivers one, the way a slow provider, a slow disk
@@ -1497,10 +1497,7 @@ fn refresh_stale_reply_has_no_ui_or_revision_effect() {
         app.world.accounts.revision,
         personal(&app.world).clone(),
     );
-    assert_eq!(
-        app.deliver(&stale),
-        junie_tui::core::event::Outcome::Ignored
-    );
+    assert_eq!(app.deliver(&stale), termrock::core::event::Outcome::Ignored);
     let after = (
         screen(&mut app),
         status(&app),

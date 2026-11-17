@@ -4,9 +4,9 @@ mod common;
 
 use common::*;
 use jackin_console::fixtures::{Scenario, world_for};
-use junie_tui::core::event::{Input, Mouse, MouseKind};
-use junie_tui::runtime::Application;
 use ratatui::layout::Position;
+use termrock::core::event::{Input, Mouse, MouseKind};
+use termrock::runtime::Application;
 
 const TRACK: char = '┆';
 

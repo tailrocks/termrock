@@ -62,8 +62,8 @@ fn thumb_start(app: &mut jackin_console::app::App, size: (u16, u16)) -> u16 {
 }
 
 fn wheel_down(app: &mut jackin_console::app::App, size: (u16, u16), x: u16, y: u16) {
-    use junie_tui::core::event::{Input, Mouse, MouseKind};
-    use junie_tui::runtime::Application;
+    use termrock::core::event::{Input, Mouse, MouseKind};
+    use termrock::runtime::Application;
     for _ in 0..3 {
         Application::handle(
             app,

@@ -10,15 +10,8 @@ use std::path::{Path, PathBuf};
 
 use syn::visit::Visit;
 
-/// The applications that import the facade only. Each pull request that moves an
-/// application onto the facade adds it here; the last one lists all four.
-const MIGRATED_APPS: &[&str] = &["tablepro", "holla", "showcase"];
+const APPS: [&str; 4] = ["holla", "jackin", "showcase", "tablepro"];
 const IMPLEMENTATION: &str = "junie_tui";
-
-/// Sources that still sit outside their package directory while the app move
-/// lands in steps (docs/api-contract.md). Each entry is deleted by the pull
-/// request that moves that source into `apps/<app>/src`.
-const UNMOVED_SOURCES: [(&str, &str); 0] = [];
 
 fn root() -> &'static Path {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -116,7 +109,7 @@ fn manifest_mentions_implementation(manifest: &str) -> Vec<String> {
 #[test]
 fn facade_apps_have_no_implementation_imports() {
     let mut violations = Vec::new();
-    for &app in MIGRATED_APPS {
+    for app in APPS {
         let dir = root().join("apps").join(app);
         let manifest = std::fs::read_to_string(dir.join("Cargo.toml"))
             .unwrap_or_else(|e| panic!("apps/{app}/Cargo.toml: {e}"));
@@ -125,9 +118,6 @@ fn facade_apps_have_no_implementation_imports() {
         }
         let mut files = Vec::new();
         rust_files(&dir, &mut files);
-        for (_, unmoved) in UNMOVED_SOURCES.iter().filter(|(name, _)| *name == app) {
-            rust_files(&root().join(unmoved), &mut files);
-        }
         assert!(!files.is_empty(), "apps/{app} has no Rust files");
         for file in files {
             let source = std::fs::read_to_string(&file).expect("read source");

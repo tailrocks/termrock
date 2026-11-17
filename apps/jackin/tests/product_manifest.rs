@@ -95,9 +95,9 @@ fn violations(package: &Value) -> Vec<String> {
         }
     }
     let demo = feature(package, "demo");
-    if demo != Some(vec!["dep:clap".into(), "junie-tui/cli".into()]) {
+    if demo != Some(vec!["dep:clap".into(), "termrock/cli".into()]) {
         out.push(format!(
-            "`demo` must be exactly [dep:clap, junie-tui/cli], found {demo:?}"
+            "`demo` must be exactly [dep:clap, termrock/cli], found {demo:?}"
         ));
     }
     let product = feature(package, "product");
@@ -151,7 +151,7 @@ fn only_the_demo_may_enable_clap() {
     };
     let clean = package(serde_json::json!({
         "default": [],
-        "demo": ["dep:clap", "junie-tui/cli"],
+        "demo": ["dep:clap", "termrock/cli"],
         "product": [],
     }));
     let found = violations(&clean);
@@ -168,7 +168,7 @@ fn only_the_demo_may_enable_clap() {
     ] {
         let mut features = serde_json::json!({
             "default": [],
-            "demo": ["dep:clap", "junie-tui/cli"],
+            "demo": ["dep:clap", "termrock/cli"],
             "product": [],
         });
         features[feature] = serde_json::json!([entry]);

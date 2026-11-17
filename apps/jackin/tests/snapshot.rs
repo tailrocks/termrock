@@ -12,12 +12,12 @@ use jackin_console::domain::instance::{
 use jackin_console::fixtures::{Scenario, app_with_world, world_for};
 use jackin_console::screens::Go;
 use jackin_console::world::{Absorbed, Msg, SaveSuccess, SaveWarning, Snapshot, World};
-use junie_tui::core::event::Outcome;
-use junie_tui::motion::Motion;
-use junie_tui::runtime::Application;
-use junie_tui::theme::{ColorLevel, Theme};
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
+use termrock::core::event::Outcome;
+use termrock::motion::Motion;
+use termrock::runtime::Application;
+use termrock::theme::{ColorLevel, Theme};
 
 fn cell_symbols(app: &mut App, width: u16, height: u16) -> Vec<String> {
     let mut terminal = Terminal::new(TestBackend::new(width, height)).expect("test terminal");
@@ -423,11 +423,11 @@ fn unavailable_context_is_bounded_and_safe_without_changing_its_locator() {
     assert_eq!(source.reason, reason_text);
     assert_eq!(first_id.row_key(), source.id.row_key());
     let display = source.display();
-    assert!(junie_tui::ui::text::width(&display.sandbox_name) <= 64);
-    assert!(junie_tui::ui::text::width(&display.gateway) <= 40);
-    assert!(junie_tui::ui::text::width(&display.workspace_name) <= 48);
-    assert!(junie_tui::ui::text::width(&display.role) <= 40);
-    assert!(junie_tui::ui::text::width(&display.reason) <= 112);
+    assert!(termrock::ui::text::width(&display.sandbox_name) <= 64);
+    assert!(termrock::ui::text::width(&display.gateway) <= 40);
+    assert!(termrock::ui::text::width(&display.workspace_name) <= 48);
+    assert!(termrock::ui::text::width(&display.role) <= 40);
+    assert!(termrock::ui::text::width(&display.reason) <= 112);
 
     press(&mut app, "i");
     let inspected = screen(&mut app);
@@ -464,7 +464,7 @@ fn unavailable_context_is_bounded_and_safe_without_changing_its_locator() {
     press(&mut app, "esc");
     press(&mut app, "t");
     for _ in 0..40 {
-        Application::handle(&mut app, junie_tui::core::event::Input::Tick);
+        Application::handle(&mut app, termrock::core::event::Input::Tick);
     }
     assert!(matches!(
         app.world.entry(&first_id),

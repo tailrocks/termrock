@@ -1,5 +1,5 @@
 use clap::Parser;
-use junie_tui::cli::CommonArgs;
+use termrock::cli::CommonArgs;
 
 use jackin_console::fixtures::{Scenario, app_for};
 
@@ -38,7 +38,7 @@ fn parse_scenario(value: &str) -> Result<Scenario, String> {
 
 fn cli_after_help() -> String {
     let scenarios = scenario_names();
-    let motion = junie_tui::cli::motion_help(NO_MOTION_ENV);
+    let motion = termrock::cli::motion_help(NO_MOTION_ENV);
     format!(
         "Scenarios: {scenarios}\n\
          {motion}\n\
@@ -49,8 +49,8 @@ fn cli_after_help() -> String {
 }
 
 fn main() -> std::io::Result<()> {
-    let cli: Cli = junie_tui::cli::parse(cli_after_help());
+    let cli: Cli = termrock::cli::parse(cli_after_help());
     let motion = cli.common.motion(NO_MOTION_ENV);
     let mut app = app_for(cli.scenario, motion, cli.common.frame, cli.common.theme());
-    junie_tui::shell::run(&mut app)
+    termrock::shell::run(&mut app)
 }
