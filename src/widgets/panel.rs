@@ -12,8 +12,8 @@ use crate::core::id::WidgetId;
 use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
 use crate::core::response::Response;
 use crate::core::scroll::{HScroll, ScrollPane, Scrollable};
-use crate::theme::Theme;
 pub use crate::theme::CardHeading;
+use crate::theme::Theme;
 use crate::ui::ctx::{RenderCtx, fill};
 use crate::ui::edit_menu::{
     EditCaps, EditMenu, EditMenuHost, edit_menu_key, edit_menu_pointer, edit_menu_route,

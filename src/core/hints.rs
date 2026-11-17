@@ -1,9 +1,191 @@
 use std::borrow::Cow;
 
-use crate::core::event::ClientPlatform;
+use ratatui::crossterm::event::KeyModifiers;
+
+use crate::core::event::{ClientPlatform, Key};
 use crate::core::id::WidgetId;
+use crate::core::keyboard::label_deliverable;
 use crate::core::keymap::{Actions, KeyBinding, KeyboardCapabilities, NavKeys};
-use crate::widgets::keyhint::{Hint, HintPriority};
+
+/// Keys a hint bar always keeps, implemented by the theme's hint bar style.
+///
+/// `Hint::is_pinned` reads the list through this trait so that `core` does not
+/// name `theme`. The trait is public only so it can appear in that bound; it is
+/// not reachable by path.
+mod pinned {
+    pub trait PinnedKeys {
+        fn pinned_keys(&self) -> &[&str];
+    }
+}
+pub(crate) use pinned::PinnedKeys;
+
+pub const UP_DOWN: &str = "↑↓";
+pub const LEFT_RIGHT: &str = "←→";
+pub const ARROWS: &str = "↑↓←→";
+pub const DELETE: &str = "Delete";
+
+pub fn range(from: u32, to: u32) -> String {
+    format!("{from}–{to}")
+}
+
+pub fn normalize_key(key: &str) -> Cow<'_, str> {
+    const ARROW: [char; 4] = ['↑', '↓', '←', '→'];
+    if key == "Del" {
+        return Cow::Borrowed(DELETE);
+    }
+    let chars: Vec<char> = key.chars().collect();
+    let mut out = String::with_capacity(key.len());
+    let mut changed = false;
+    for (i, &c) in chars.iter().enumerate() {
+        let prev = i.checked_sub(1).map(|j| chars[j]);
+        let next = chars.get(i + 1).copied();
+        if c == ' '
+            && prev.is_some_and(|p| ARROW.contains(&p))
+            && next.is_some_and(|n| ARROW.contains(&n))
+        {
+            changed = true;
+            continue;
+        }
+        if c == '-'
+            && prev.is_some_and(|p| p.is_ascii_digit())
+            && next.is_some_and(|n| n.is_ascii_digit())
+        {
+            out.push('–');
+            changed = true;
+            continue;
+        }
+        out.push(c);
+    }
+    if changed {
+        Cow::Owned(out)
+    } else {
+        Cow::Borrowed(key)
+    }
+}
+
+pub fn modifier_click(mods: KeyModifiers, platform: ClientPlatform) -> Option<&'static str> {
+    const MAC: [(KeyModifiers, &str); 3] = [
+        (KeyModifiers::ALT, "Option+click"),
+        (KeyModifiers::SUPER, "Cmd+click"),
+        (KeyModifiers::CONTROL, "Ctrl+click"),
+    ];
+    const OTHER: [(KeyModifiers, &str); 3] = [
+        (KeyModifiers::CONTROL, "Ctrl+click"),
+        (KeyModifiers::ALT, "Alt+click"),
+        (KeyModifiers::SUPER, "Super+click"),
+    ];
+    let order = if platform.is_macos() { &MAC } else { &OTHER };
+    order
+        .iter()
+        .find(|(m, _)| mods.contains(*m))
+        .map(|&(_, label)| label)
+}
+
+pub const fn toggle_hint(
+    key: &'static str,
+    on: bool,
+    when_on: &'static str,
+    when_off: &'static str,
+) -> Hint {
+    hint(key, if on { when_on } else { when_off })
+}
+
+pub const EDIT_FIELD: [Hint; 3] = [
+    hint("Enter", "Apply"),
+    hint("Esc", "Cancel"),
+    hint("Tab", "Next field"),
+];
+
+pub const CONTEXT_MENU: Hint = hint("Shift+F10", "Menu");
+
+pub const EDIT_TEXT: [Hint; 2] = [hint("Tab", "Next field"), hint("Esc", "Done")];
+
+pub const EDIT_CODE: [Hint; 3] = [
+    hint("Tab", "Indent"),
+    hint("F6", "Leave"),
+    hint("Esc", "Done"),
+];
+
+pub const EDIT_CELL: [Hint; 3] = [
+    hint("Enter", "Apply"),
+    hint("Esc", "Cancel"),
+    hint("Tab", "Next cell"),
+];
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Hint {
+    pub key: Cow<'static, str>,
+    pub action: Cow<'static, str>,
+
+    pub priority: HintPriority,
+
+    pub click_key: Option<Key>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum HintPriority {
+    #[default]
+    Auto,
+
+    Normal,
+
+    Pinned,
+}
+
+impl Hint {
+    pub fn new(key: impl Into<Cow<'static, str>>, action: impl Into<Cow<'static, str>>) -> Self {
+        Self {
+            key: key.into(),
+            action: action.into(),
+            priority: HintPriority::Auto,
+            click_key: None,
+        }
+    }
+
+    pub fn click_key(mut self, key: Key) -> Self {
+        self.click_key = Some(key);
+        self
+    }
+
+    pub fn priority(mut self, priority: HintPriority) -> Self {
+        self.priority = priority;
+        self
+    }
+
+    pub fn pinned(self) -> Self {
+        self.priority(HintPriority::Pinned)
+    }
+
+    pub fn is_pinned(&self, style: &impl PinnedKeys) -> bool {
+        match self.priority {
+            HintPriority::Pinned => true,
+            HintPriority::Normal => false,
+            HintPriority::Auto => style.pinned_keys().contains(&self.key.as_ref()),
+        }
+    }
+}
+
+pub fn deliverable_line(line: &str) -> std::borrow::Cow<'_, str> {
+    let keep = |part: &&str| label_deliverable(part.split(' ').next().unwrap_or_default());
+    if line.split(" · ").all(|p| keep(&p)) {
+        return std::borrow::Cow::Borrowed(line);
+    }
+    std::borrow::Cow::Owned(
+        line.split(" · ")
+            .filter(keep)
+            .collect::<Vec<_>>()
+            .join(" · "),
+    )
+}
+
+pub const fn hint(key: &'static str, action: &'static str) -> Hint {
+    Hint {
+        key: Cow::Borrowed(key),
+        action: Cow::Borrowed(action),
+        priority: HintPriority::Auto,
+        click_key: None,
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct HintCx {
