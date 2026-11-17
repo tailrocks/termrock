@@ -53,8 +53,8 @@ Limits that are not hidden:
 | --- | --- | --- |
 | `SegmentedLines`, `ReflowedLines`, `IndexRebuilds`, `IndexExtends`, `IndexShifts` | lines or passes | `TextViewport` layout, next to its own `WorkCounters` |
 | `PayloadBytesCloned` | bytes | `TextViewport` deep clone on an unprepared `ViewportOps::draw`; `Picker` item copies; `Select` and `Completion` overlay copies and a whole-`Select` clone (its option label bytes); `CodeEditor` per-frame text copy; every undo snapshot and edit-entry snapshot of `CodeEditor` and `TextArea` |
-| `AllocatedBufferCells` | cells | every scratch `Buffer`, through `ui::ctx::scratch_buffer` |
-| `BufferCellsFilled`, `BufferCellsCopied` | cells | `ScrollView` canvas fill and `copy_cells` |
+| `AllocatedBufferCells` | cells | every scratch `Buffer`, through `ui::ctx::scratch_buffer`, and the viewport buffer of `ScrollView::render_window` |
+| `BufferCellsFilled`, `BufferCellsCopied` | cells | `ScrollView` canvas fill (legacy path) or viewport fill (`render_window`), and `copy_cells` |
 | `VisibleRowsPainted` | rows | `ListBox`, `ListDetail` master rows, `DataTable`, `DataGrid`, `TreeView`, `OptionList` (the rows of `Picker`, `Select` and `Completion`), `CodeEditor` and `TextArea` paint loops, summed over a frame |
 | `IntrinsicWidthCalls`, `TextBytesMeasured` | calls, bytes | `ui::text::width` |
 | `FitVisits`, `FitCompares` | visits, comparisons | Responsive fitters (`ChipBar`, `Breadcrumb`, `segments`, `StatusBar`, `HintBar`, `Toolbar`): loop visits and removal-order sort comparisons |
@@ -101,7 +101,7 @@ apps:
 | `work_contract_runtime_raw_filtered_events_yield`, `work_contract_runtime_flood_services_input`, `work_contract_runtime_frame_diff_and_bytes_written` | `src/runtime/raw_input_tests/work.rs` (lib unit tests: they drive the private `scan_next`, `service_turn`, `drain_ready_inputs` and `paint`) |
 | `work_contract_jackin_scripted_output_budget` | `apps/jackin/src/sim/link/tests/work.rs` (lib unit test over the real `SimLink` and `TerminalPane`) |
 | `work_contract_holla_idle_and_source_update`, `work_contract_holla_background_updates_keep_projection`, `work_contract_holla_file_preview_prefix` | `apps/holla/src/work_metrics_tests.rs` |
-| `work_contract_tablepro_idle_and_cell_edit` | `apps/tablepro/src/work_metrics_tests.rs` |
+| `work_contract_tablepro_idle_and_cell_edit`, `work_contract_tablepro_background_tab_edit` | `apps/tablepro/src/work_metrics_tests.rs` |
 | `work_contract_showcase_idle_and_switch` | `apps/showcase/src/work_metrics_tests.rs` |
 | `work_contract_jackin_idle_and_roster_update`, `work_contract_jackin_account_update`, `work_contract_jackin_capsule_idle_frame` | `apps/jackin/tests/regressions/work_budgets.rs` |
 
@@ -132,7 +132,8 @@ list, table, grid and tree widget in the frame.
 | viewport | prepared draw | 1k / 10k / 100k | none counted |
 | viewport | append one line, then `set_area` | 1k / 10k / 100k | segmented 1, reflowed 1, index extends 1, width bytes 13, independent of n |
 | viewport adapter | draw after a push, without `set_area` | 1k / 10k / 100k | payload bytes cloned = whole history (33,013 / 330,013 / 3,300,013) |
-| `ScrollView` | render overflowing content | 1,000 / 10,000 / 60,000 rows of width 100 | allocated = filled = 100 x rows; copied 5,842 for every size |
+| `ScrollView` | legacy `render` of overflowing content | 1,000 / 10,000 / 60,000 rows of width 100 | allocated = filled = 100 x rows; copied 5,842 for every size |
+| `ScrollView` | `render_window`, first paint, then one scroll step and repaint | 1,000 / 10,000 / 60,000 rows of width 20 | allocated = filled = copied = the viewport's cells for every size; only the rows in view are read |
 | `ListBox` | settled frame | 1k / 10k / 100k | rows painted 30 |
 | `DataTable` | settled frame | 1k / 10k / 100k | rows painted 29, width calls 62, width bytes 108 |
 | `TreeView` | settled frame | 1k / 10k / 100k | rows painted 30, width calls 30, width bytes 200 |
@@ -190,6 +191,7 @@ list, table, grid and tree widget in the frame.
 | TablePro grid | one Down key | 312 | same as the settled tick |
 | TablePro grid | one keyed draft edit | 312 | rows painted 39, width calls 268 |
 | TablePro grid | unrelated history entry, then tick | 312 | rows painted 39, width calls 268 |
+| TablePro grid, a second table tab open in the background | one keyed draft edit in the active tab | 312 | rows painted 39 (the single-tab count), width calls 274: the second tab label adds 6 calls; the background tab has no draft and paints no rows |
 | Showcase Query workbench | settled tick | 2 documents | rows painted 54, width calls 222 |
 | Showcase Query workbench | click the second tab (two frames) | 2 | rows painted 91, width calls 382 |
 | Showcase Finder | settled tick | 12 actions | allocated 0, rows painted 24, width calls 422 |
@@ -204,8 +206,13 @@ list, table, grid and tree widget in the frame.
 
 - Prepared `TextViewport` draws, and `ListBox`, `DataTable` and `TreeView`
   frames, do work that does not depend on the number of records.
-- `ScrollView::render` allocates and fills a canvas as large as its content
-  (#20). Only the copy back to the screen is bounded by the window.
+- `ScrollView::render_window` (#20) allocates, fills and copies the viewport
+  only, and reads only the rows in view, at every content height
+  (`work_contract_scroll_view_visible_allocation`). The legacy
+  `ScrollView::render` and `begin`/`end` path still allocates and fills a canvas
+  as large as its content; it is kept as a separately measured compatibility
+  path (`work_contract_scroll_view_content_sized_canvas`), and only its copy back
+  to the screen is bounded by the window.
 - Drawing a `TextViewport` through a shared reference after a change, without
   preparing it first, clones the whole history.
 - Keyed collections (#41) are measured by `widgets::keyed_cost_tests` and
@@ -287,24 +294,22 @@ list, table, grid and tree widget in the frame.
 `CodeEditor` bracket matching, `Picker`
 `retain` scans and the `CodeEditor` find state are not counted.
 
-Also unmet, and absent from every scenario above:
+Also unmet:
 
-- No editor or app-page measurement scenario exists. The release measurements
-  time `TextViewport`, `ListBox`, `TreeView` and `ScrollView` only. There is no
-  `CodeEditor` or `TextArea` timing, and none for a Holla, TablePro, Showcase
-  or Jackin page.
-- The timing oracle runs after each operation only. #56 asks for a check
-  before and after every operation, so the first round has no pre-check and a
-  state that was already wrong before round 0 would go unnoticed.
-- No `performance` suite exists in `.velnor/config.toml`, so the profile
-  does not run as its own CI job. The same tests run in the `Rust / <crate>`
-  jobs through the `ci` profile. Adding the suite changes the generated
-  workflows and needs the owner's decision.
-
-- No test shows that a background tab or page projection that is irrelevant to
-  a change does not rebuild. The idle and unrelated-change scenarios measure
-  the focused page only.
-- Jackin has no account-update scenario.
+- No app-page timing scenario exists. The release measurements time library
+  widgets only (`TextViewport`, `ListBox`, `TreeView`, `ScrollView`,
+  `CodeEditor`, `TextArea`). The apps are measured by their counts, not by
+  time, and the report script prints those counts per app beside the timings.
+  Why no app timing exists is in [decisions](decisions.md), 2026-11-18.
+- The timing oracle runs after each operation, and the fixtures that can assert
+  their state before round 0 do so in setup (`ListBox`, `TextArea`); the
+  others have no pre-check on round 0, so a state that was already wrong before
+  the first round would go unnoticed there.
+- The `performance` CI suite builds with the default features, because the
+  generator gives a suite no feature field, so the counters are compiled out of
+  its build. It runs the inventory gate, whose nested `nextest list` uses
+  `--all-features`, and the `Rust / <crate>` jobs execute the contracts. See
+  "The performance profile and its inventory gate".
 - Holla's batch summary loop and `tick_plan` are not counted. A Holla
   scheduling count covers the activity and plan traversal only, so a zero or a
   steady count there says nothing about batches or the work inside a plan.
@@ -368,6 +373,38 @@ other `-p` or feature flags still works but rebuilds for the nested list.
 The gate cannot vouch for itself: an `#[ignore]` on the gate's own tests
 removes the check, and only `--no-tests fail` and review notice that.
 
+### The `performance` CI suite
+
+`.velnor/config.toml` declares the suite `performance`: profile `performance`,
+four hash partitions, build `inline`, triggers pull request, push and manual
+dispatch, `required = true`. `velnor-actions generate` turns it into the job
+`Suite (performance)` (`suite-performance` in the generated `ci.yml`), which the
+`Required` verdict waits for. The job runs
+`mbx nextest run --workspace --no-tests warn --partition hash:N/4 --profile performance`.
+`performance_suite_is_a_required_generated_ci_job` fails when the declaration,
+the generated job or the `Required` dependency goes missing, or when the suite
+stops being required.
+
+What the suite does and does not run is a limit of the generator, which gives a
+suite no feature field (see [decisions](decisions.md), 2026-11-18). The suite
+builds `--workspace` with the default features, so `work-metrics` is off in that
+build and the `work_contract_*` tests, which need it, are compiled out of it.
+It still has teeth, in two ways:
+
+- `performance_nextest_list_runs_every_required_test` runs in one of the four
+  partitions, with `NEXTEST_PROFILE=performance` set by nextest. It runs the
+  nested `cargo nextest list --profile performance --workspace --all-features`
+  and fails unless every family and every app contributes each of its required
+  tests, listed, not `#[ignore]`d and selected by the profile. That is the real
+  inventory proof, and a nonzero aggregate count cannot stand in for it.
+- The `Rust / <crate>` jobs build with `--all-features`, so they execute the
+  contracts themselves (`ci` profile, which excludes only `binary(functional)`).
+
+`--no-tests warn` comes from `allow_empty_test_suite`, a stack-wide setting that
+legitimately empty shards elsewhere depend on, so it is not turned off for this
+suite. A shard that holds no test passes; the inventory gate, not the shard, is
+what makes the suite nonempty.
+
 The profile filter is read as text, not evaluated, so it must stay a plain
 union of `binary_id(=ID) & test(MATCHER)` terms. The gate refuses `not` and set
 difference, and any matcher richer than `/^prefix/`, `/substring/` or `=exact`,
@@ -423,7 +460,11 @@ scripts/measure-performance.sh
 ```
 
 The measured operations, each on the real library path at 1,000 / 10,000 /
-100,000 records (1,000 / 10,000 / 60,000 rows for `ScrollView`):
+100,000 records (1,000 / 10,000 / 60,000 rows for `ScrollView`). The editor and
+text area scenarios alternate two states so no round is an equal write; a
+keystroke inside an undo run is the steady state, so the one whole-text undo
+snapshot of a run's first keystroke falls in a warm-up and is not in the
+samples (the counts in "Budgets" show it):
 
 | Scenario | Operation timed | Oracle, outside the interval |
 | --- | --- | --- |
@@ -432,6 +473,9 @@ The measured operations, each on the real library path at 1,000 / 10,000 /
 | `list_box` | one settled `ListBox` frame | the frame equals the warm frame |
 | `tree_view` | `set_filter`, alternating `node 5` and `node 55` | the visible rows equal the matching labels and differ from the previous round |
 | `scroll_view` | `render` of overflowing content (the content-sized canvas of #20) | row 0 shows the first content row |
+| `scroll_view` | `render_window`, alternating two scroll offsets (rows 0 and 500) | row 0 shows the first row of that round's offset |
+| `code_editor` | one keystroke, then the focused frame: `x` at the start of the first line, then Backspace, alternating | the text is one byte longer on a typed round and back to its length on a Backspace round, and the frame shows the first line |
+| `text_area` | one keystroke, then the focused frame: `x` at the end of the last line, then Backspace, alternating | the painted last line is followed by the typed `x` exactly on a typed round |
 
 Rules the procedure follows:
 
@@ -454,6 +498,23 @@ Rules the procedure follows:
 Results are not committed. The report files and the summary stay in
 `<target dir>/performance`.
 
+## The per-family report
+
+`scripts/performance-report.sh` produces the per-family and per-app report
+#56 asks for. It runs the `performance` profile with `--all-features` in four
+hash partitions, as CI does, so every contract writes its count report, then
+prints one table grouped by family (`TextViewport`, `ScrollView`, `ScrollPanel`,
+`ListBox`, `TreeView`, `CodeEditor`, `TextArea`, and so on) and by app
+(Showcase, TablePro, Holla, Jackin). Each line is a scenario, an operation, the
+fixture's real record count and the nonzero counters of that operation. A second
+section lists the timing reports of the last `scripts/measure-performance.sh`
+run (median, p95, samples and `instrumentation_enabled`) for the library
+families. Counts and timings stay in separate sections: a count comes from a
+build with the counters on, a time from one with them off, and the two are never
+combined into one number. `scripts/performance-report.sh --no-run` summarizes
+the reports already on disk. Every figure comes from a counter or a clock
+reading, none is estimated, and a family with no timing scenario shows none.
+
 ## Commands
 
 ```sh
@@ -469,6 +530,7 @@ cargo nextest run -p jackin-console --features demo,work-metrics --lib --no-test
     -E 'test(/work_contract_/)'
 cargo nextest run --profile performance --workspace --all-features --no-tests fail
 scripts/measure-performance.sh
+scripts/performance-report.sh
 ```
 
 CI builds the Rust jobs with `--all-features`, so these tests already run in

@@ -475,6 +475,8 @@ impl ScrollView {
         let mut scratch = Buffer::filled(viewport, blank);
         self.work.allocated = scratch.content().len();
         self.work.filled = scratch.content().len();
+        crate::record_work!(AllocatedBufferCells, self.work.allocated);
+        crate::record_work!(BufferCellsFilled, self.work.filled);
         if overflows {
             ctx.scrollable(self.id, viewport);
         }

@@ -36,6 +36,7 @@ T	work_budgets::work_contract_viewport_first_use_and_prepared_draw
 T	work_budgets::work_contract_viewport_one_append_is_incremental
 T	work_budgets::work_contract_viewport_adapter_unprepared_draw
 T	work_budgets::work_contract_scroll_view_content_sized_canvas
+T	work_budgets::work_contract_scroll_view_visible_allocation
 T	work_budgets::work_contract_settled_frame_paints_only_visible_rows
 T	work_budgets::work_contract_tree_filtered_rebuild
 T	work_budgets::work_contract_picker_linear_projection
@@ -56,6 +57,7 @@ S	Holla projection reuse (Finder)	termrock-holla::bin/holla	/holla_projection_/	
 T	screens::finder::tests::holla_projection_group_change_reranks_without_source_work
 S	TablePro page scenarios	termrock-tablepro::bin/tablepro	/^work_metrics_tests::/	apps/tablepro/src/work_metrics_tests.rs
 T	work_metrics_tests::work_contract_tablepro_idle_and_cell_edit
+T	work_metrics_tests::work_contract_tablepro_background_tab_edit
 S	Showcase page scenarios and stress fits	termrock-showcase::bin/showcase	/^work_metrics_tests::/	apps/showcase/src/work_metrics_tests.rs
 T	work_metrics_tests::work_contract_showcase_idle_and_switch
 T	work_metrics_tests::work_contract_stress_toolbars_items

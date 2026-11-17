@@ -42,6 +42,8 @@ use syn::visit::Visit;
 const NEXTEST_CONFIG: &str = ".config/nextest.toml";
 const PROFILE: &str = "performance";
 const MEASURE_PROFILE: &str = "performance-measure";
+const VELNOR_CONFIG: &str = ".velnor/config.toml";
+const CI_WORKFLOW: &str = ".github/workflows/ci.yml";
 const MEASUREMENT_FILE: &str = "tests/regressions/work_measurements.rs";
 
 /// One required suite.
@@ -114,6 +116,9 @@ const MEASUREMENTS: &[&str] = &[
     "measurement_list_settled_frame",
     "measurement_tree_filter_change",
     "measurement_scroll_view_render",
+    "measurement_scroll_view_render_window",
+    "measurement_editor_keystroke_then_frame",
+    "measurement_textarea_keystroke_then_frame",
 ];
 
 fn root() -> &'static Path {
@@ -385,6 +390,81 @@ fn missing_tests(suite: &Suite, source: &str) -> Vec<String> {
         .collect()
 }
 
+/// The lines of the `[[stacks.rust.suites]]` entry whose `id` is `id`, without
+/// spaces, up to the next table header.
+fn suite_entry(config: &str, id: &str) -> Option<Vec<String>> {
+    let want = format!("id=\"{id}\"");
+    let mut entries: Vec<Vec<String>> = Vec::new();
+    let mut inside = false;
+    for line in config.lines() {
+        let line = line.trim();
+        if line.starts_with('[') {
+            inside = line == "[[stacks.rust.suites]]";
+            if inside {
+                entries.push(Vec::new());
+            }
+        } else if inside
+            && !line.is_empty()
+            && !line.starts_with('#')
+            && let Some(entry) = entries.last_mut()
+        {
+            entry.push(line.split_whitespace().collect());
+        }
+    }
+    entries.into_iter().find(|entry| entry.contains(&want))
+}
+
+/// What must hold for `performance` to be a required CI suite: it is declared
+/// in `.velnor/config.toml` with the profile, four partitions, the three
+/// triggers and `required = true`, and the generated workflow has its job and
+/// makes the `Required` verdict wait for it. A suite that is declared but not
+/// generated, or generated but not required, fails here.
+fn check_suite(config: &str, workflow: &str) -> Vec<String> {
+    let mut problems = Vec::new();
+    match suite_entry(config, PROFILE) {
+        None => problems.push(format!(
+            "{VELNOR_CONFIG} declares no `[[stacks.rust.suites]]` with id = \"{PROFILE}\""
+        )),
+        Some(entry) => {
+            for (line, why) in [
+                (
+                    "profile=\"performance\"",
+                    "run the `performance` nextest profile",
+                ),
+                ("required=true", "be a required check"),
+                ("partitions=4", "run four partitions"),
+            ] {
+                if !entry.iter().any(|l| l == line) {
+                    problems.push(format!("the `{PROFILE}` suite must {why} (`{line}`)"));
+                }
+            }
+            let triggers = entry.iter().find(|l| l.starts_with("triggers=")).cloned();
+            for trigger in ["pull_request", "push", "workflow_dispatch"] {
+                if !triggers.as_deref().is_some_and(|t| t.contains(trigger)) {
+                    problems.push(format!(
+                        "the `{PROFILE}` suite lacks the `{trigger}` trigger"
+                    ));
+                }
+            }
+        }
+    }
+    let job = format!("suite-{PROFILE}");
+    if !workflow.contains(&format!("\n  {job}:")) {
+        problems.push(format!(
+            "{CI_WORKFLOW} has no `{job}` job: regenerate with `velnor-actions generate`"
+        ));
+    }
+    if !workflow.contains(&format!("\n      - {job}\n")) {
+        problems.push(format!(
+            "the generated `Required` job does not wait for `{job}`"
+        ));
+    }
+    if !workflow.contains("--profile performance") {
+        problems.push(format!("{CI_WORKFLOW} never runs `--profile performance`"));
+    }
+    problems
+}
+
 fn read(path: &str) -> String {
     fs::read_to_string(root().join(path)).unwrap_or_else(|e| panic!("cannot read {path}: {e}"))
 }
@@ -418,6 +498,15 @@ fn performance_nextest_list_runs_every_required_test() {
     }
     let json = nextest_list_json().unwrap_or_else(|why| panic!("{why}"));
     fail(check_list(&json));
+}
+
+/// The `performance` profile is only a contract if CI runs it. The nested
+/// `nextest list` of `performance_nextest_list_runs_every_required_test`
+/// executes under the generated `suite-performance` job, so dropping that job
+/// would silently drop the real inventory proof.
+#[test]
+fn performance_suite_is_a_required_generated_ci_job() {
+    fail(check_suite(&read(VELNOR_CONFIG), &read(CI_WORKFLOW)));
 }
 
 #[test]
@@ -503,6 +592,50 @@ mod gate_logic {
         check_list(&list.to_string())
     }
 
+    const SUITE_CONFIG: &str = "[[stacks.rust.suites]]\nid = \"functional\"\nrequired = true\n\n[[stacks.rust.suites]]\nid = \"performance\"\nprofile = \"performance\"\npartitions = 4\nbuild = \"inline\"\ntriggers = [\"pull_request\", \"push\", \"workflow_dispatch\"]\nrequired = true\n\n[[stacks.rust.configurations]]\nname = \"default\"\n";
+    const SUITE_WORKFLOW: &str = "jobs:\n  required:\n    needs:\n      - suite-functional\n      - suite-performance\n      - jactionlint\n  suite-performance:\n    run: mbx nextest run --profile performance\n";
+
+    #[test]
+    fn a_declared_generated_required_suite_passes() {
+        assert_eq!(
+            check_suite(SUITE_CONFIG, SUITE_WORKFLOW),
+            Vec::<String>::new()
+        );
+    }
+
+    #[test]
+    fn a_missing_suite_fails() {
+        let config = SUITE_CONFIG.replace("id = \"performance\"", "id = \"other\"");
+        assert!(check_suite(&config, SUITE_WORKFLOW)[0].contains("declares no"));
+    }
+
+    #[test]
+    fn a_suite_that_is_not_required_fails() {
+        let config = SUITE_CONFIG.replace("partitions = 4\nbuild = \"inline\"\ntriggers = [\"pull_request\", \"push\", \"workflow_dispatch\"]\nrequired = true", "partitions = 4\nbuild = \"inline\"\ntriggers = [\"pull_request\", \"push\", \"workflow_dispatch\"]\nrequired = false");
+        let problems = check_suite(&config, SUITE_WORKFLOW);
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(problems[0].contains("required"));
+    }
+
+    #[test]
+    fn a_suite_without_a_pull_request_trigger_fails() {
+        let config = SUITE_CONFIG.replace("\"pull_request\", ", "");
+        let problems = check_suite(&config, SUITE_WORKFLOW);
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(problems[0].contains("pull_request"));
+    }
+
+    #[test]
+    fn a_suite_the_workflow_does_not_generate_or_require_fails() {
+        let workflow = SUITE_WORKFLOW.replace("suite-performance", "suite-gone");
+        let problems = check_suite(SUITE_CONFIG, &workflow);
+        assert_eq!(problems.len(), 2, "{problems:?}");
+        let unrequired = SUITE_WORKFLOW.replace("      - suite-performance\n", "");
+        let problems = check_suite(SUITE_CONFIG, &unrequired);
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(problems[0].contains("Required"));
+    }
+
     #[test]
     fn a_complete_list_passes() {
         assert_eq!(list_problems(&full_list()), Vec::<String>::new());
@@ -515,8 +648,9 @@ mod gate_logic {
         let mut list = full_list();
         list["rust-suites"]["termrock-tablepro::bin/tablepro"]["testcases"] = serde_json::json!({});
         let problems = list_problems(&list);
-        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert_eq!(problems.len(), 2, "{problems:?}");
         assert!(problems[0].contains("work_contract_tablepro_idle_and_cell_edit"));
+        assert!(problems[1].contains("work_contract_tablepro_background_tab_edit"));
     }
 
     #[test]

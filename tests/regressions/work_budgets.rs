@@ -257,14 +257,14 @@ fn work_contract_viewport_adapter_unprepared_draw() {
     }
 }
 
+/// The legacy `begin`/`end` path, kept for compatibility, still allocates and
+/// fills a canvas as large as the content. These are its measured counts with
+/// the vertical extent below `u16::MAX`. The bound that holds for hosts that can
+/// supply rows on demand is `work_contract_scroll_view_visible_allocation`.
+/// Copies back to the screen are already window-bound: they do not grow with the
+/// content.
 #[test]
 fn work_contract_scroll_view_content_sized_canvas() {
-    // Known gap, issue #20: ScrollView::render still allocates and fills a
-    // canvas as large as the content. These are the measured counts of today's
-    // behaviour with the vertical extent below u16::MAX; #20 must lower the
-    // allocation and fill ceilings to the visible window, and this test then
-    // gets the lower numbers. Copies back to the screen are already
-    // window-bound: they do not grow with the content.
     let mut copied_at_smallest = None;
     for rows in [1_000u16, 10_000, 60_000] {
         let mut sv = ScrollView::new(ID);
@@ -304,6 +304,119 @@ fn work_contract_scroll_view_content_sized_canvas() {
             rows as usize,
             delta,
             "the first screen row shows the first content row",
+        );
+    }
+}
+
+/// `ScrollView::render_window` (#20): the scratch canvas, its fill and the copy
+/// back to the screen cover the viewport, never the content. Vertical extents
+/// stay below `u16::MAX` because the canvas geometry is `Size`.
+#[test]
+fn work_contract_scroll_view_visible_allocation() {
+    const ROW_WIDTH: u16 = 20;
+    let mut first_render = None;
+    let mut first_scroll = None;
+    for rows in [1_000u16, 10_000, 60_000] {
+        let mut sv = ScrollView::new(ID);
+        let content = Size::new(ROW_WIDTH, rows);
+        let mut visited = Vec::new();
+        let render = |sv: &mut ScrollView, visited: &mut Vec<usize>| {
+            frame(|buf, ctx| {
+                sv.render_window(
+                    VIEWPORT,
+                    VIEWPORT,
+                    content,
+                    None,
+                    buf,
+                    ctx,
+                    |window, buf, _| {
+                        for index in window.content_rows() {
+                            visited.push(index);
+                            let at = window.project_content_rect(Rect::new(
+                                0,
+                                index as u16,
+                                ROW_WIDTH,
+                                1,
+                            ));
+                            buf.set_string(
+                                at.x,
+                                at.y,
+                                format!("row {index:05}"),
+                                ratatui::style::Style::new(),
+                            );
+                        }
+                    },
+                );
+            })
+            .0
+        };
+
+        // First paint of an overflowing model.
+        let (buf, delta) = measure(|| render(&mut sv, &mut visited));
+        let viewport = sv.last_layout().viewport;
+        let cells = u64::from(viewport.width) * u64::from(viewport.height);
+        // Measured: one viewport-sized scratch buffer, filled once and copied
+        // back once, whatever the content height. Nothing is content-sized.
+        assert_eq!(
+            delta.get(Metric::AllocatedBufferCells),
+            cells,
+            "rows={rows}"
+        );
+        assert_eq!(delta.get(Metric::BufferCellsFilled), cells, "rows={rows}");
+        assert_eq!(delta.get(Metric::BufferCellsCopied), cells, "rows={rows}");
+        assert!(
+            cells < 100 * u64::from(rows) / 10,
+            "the viewport is far smaller than the canvas it replaces"
+        );
+        assert_eq!(
+            visited,
+            (0..usize::from(viewport.height)).collect::<Vec<_>>()
+        );
+        assert!(row_text(&buf, 0).starts_with("row 00000"));
+        assert_eq!(
+            *first_render.get_or_insert(delta),
+            delta,
+            "first-paint work does not depend on content height, rows={rows}"
+        );
+        publish(
+            "scroll_view",
+            "render_window_first_paint",
+            rows as usize,
+            delta,
+            "the first screen row shows the first content row",
+        );
+
+        // One scroll step, then the repaint.
+        visited.clear();
+        assert!(
+            sv.scroll_to(0, 500),
+            "the model overflows far enough to scroll"
+        );
+        let (buf, delta) = measure(|| render(&mut sv, &mut visited));
+        assert_eq!(
+            delta.get(Metric::AllocatedBufferCells),
+            cells,
+            "rows={rows}"
+        );
+        assert_eq!(delta.get(Metric::BufferCellsFilled), cells, "rows={rows}");
+        assert_eq!(delta.get(Metric::BufferCellsCopied), cells, "rows={rows}");
+        assert_eq!(
+            visited,
+            (500..500 + usize::from(viewport.height)).collect::<Vec<_>>(),
+            "only the rows now in view are read, rows={rows}"
+        );
+        assert!(row_text(&buf, 0).starts_with("row 00500"));
+        assert_eq!(
+            *first_scroll.get_or_insert(delta),
+            delta,
+            "scroll work does not depend on content height, rows={rows}"
+        );
+        publish(
+            "scroll_view",
+            "render_window_after_scroll",
+            rows as usize,
+            delta,
+            "after scrolling to row 500 the first screen row shows row 500",
         );
     }
 }

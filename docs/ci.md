@@ -16,6 +16,15 @@ change the config and run `velnor-actions generate`.
   it covers the product-shape journeys only; see the
   [demo feature](#the-demo-feature) below. See
   [functional testing](functional-testing.md) for the CI contract.
+- **Suite (performance)** — a required check (`required = true`), four hash
+  partitions: `cargo nextest run --workspace --profile performance` (the
+  profile's default filter selects the deterministic cost contracts of #56).
+  The suite builds the default features, so `work-metrics` is off and the
+  counter-gated contracts compile away in it; the contracts run in the
+  `Rust / <crate>` jobs, and this suite runs the inventory gate that proves,
+  from `cargo nextest list --all-features`, that every family and app still
+  contributes its required tests. See
+  [performance contracts](performance-contracts.md#the-performance-ci-suite).
 - **Rust / junie-tui** and **Rust / jackin-console** — one job per
   default workspace member, built with `--all-features`. Each runs
   `cargo nextest run --profile ci --package <crate> --no-tests fail
@@ -61,7 +70,7 @@ change the config and run `velnor-actions generate`.
   `bash scripts/check-consumers.sh` runs the same four locally. The `product`
   jobs repeat the default job because the fixtures declare no `product` feature.
 - **Required** — the verdict job. Its `needs` are Plan, every Rust
-  job, `suite-functional` and jactionlint, as listed in the generated
+  job, `suite-functional`, `suite-performance` and jactionlint, as listed in the generated
   `ci.yml`.
 - **DCO** — every commit must carry `Signed-off-by`
   (`git commit -s`, committer Alexey Zhokhov
@@ -100,8 +109,9 @@ product-shape PTY journeys only. A demo journey that fails leaves no
 terminal-evidence artifact. Run the same commands locally with the
 flags above.
 
-The reason is a limit of the generator. `velnor-actions` 0.1.72 gives a
-suite no feature field, so `suite-functional` cannot take
+The reason is a limit of the generator. `velnor-actions` 0.1.72 (still true of
+0.1.78) gives a suite no feature field, so `suite-functional` and
+`suite-performance` cannot take
 `--all-features`. The demo journeys (the `functional` target of
 `jackin-console`, which has `required-features = ["demo"]`) therefore
 run in `Rust / jackin-console`. The `ci` profile has no default filter,

@@ -179,3 +179,60 @@ Review found that its reserved-word list was incomplete (a column named
 column). It now lists every PostgreSQL reserved word and quotes through
 `model::quote_ident`, so TablePro has one place that doubles an embedded
 quote. Pinned by `issue181_every_postgres_reserved_word_is_quoted_in_filter_sql`.
+
+## 2026-11-18: The performance CI suite and app-page timing (#56)
+
+Context: the #56 audit found no `performance` suite in `.velnor/config.toml`
+and no timing scenario for an app page or for `CodeEditor` and `TextArea`.
+The suite is now declared (id `performance`, profile `performance`, four
+partitions, `required = true`, pull request, push and manual triggers), and
+`CodeEditor`, `TextArea` and `ScrollView::render_window` have timing
+scenarios. Two parts of #56 differ from its text, on purpose.
+
+Decision 1, the suite builds without `work-metrics`. #56 asks that the
+configuration selected for the suite enables `work-metrics`. A suite in
+`velnor-actions` (0.1.78 pinned, checked again against 0.1.80) has no feature
+or `all_features` field: its commands are fixed as
+`mbx nextest run --workspace ... --profile performance`, so the counters are
+compiled out of the suite build and the `#![cfg(feature = "work-metrics")]`
+contracts do not run there. Enabling the feature for the whole workspace some
+other way (a default feature, or a workspace member that turns it on for
+everyone) would make every default build, the functional PTY journeys included,
+carry the counters, which #56 forbids ("default-off") and which the
+`s06_meters` journey and the timing tests tell apart by build. What ships instead:
+
+- the contracts execute in the `Rust / <crate>` jobs, which build with
+  `--all-features` and whose `ci` profile selects every test but the
+  `functional` binary;
+- the suite runs `performance_nextest_list_runs_every_required_test`, which
+  nextest sets `NEXTEST_PROFILE=performance` for and which runs
+  `cargo nextest list --profile performance --workspace --all-features`. The
+  inventory therefore no longer depends on someone running the profile by hand.
+  A nonzero aggregate count is not enough: every family and every app must list
+  each required test, not ignored and selected by the profile.
+- `performance_suite_is_a_required_generated_ci_job` pins the declaration, the
+  generated job and the `Required` dependency, so the suite cannot drop out.
+
+`allow_empty_test_suite` stays on: it is a stack-wide setting that other
+legitimately empty shards need, and it only lets a shard with no test pass.
+Revisit when `velnor-actions` can give a suite a feature selection: then the
+suite should run the contracts themselves, and the list check can stay as the
+inventory gate.
+
+Decision 2, no app-page timing scenario. #56 step 9 asks for one actual report
+per family and per app. Library families have count reports and, for
+`TextViewport`, `ListBox`, `TreeView`, `ScrollView`, `CodeEditor` and
+`TextArea`, timing reports. The four apps have count reports only. Timing an
+app page needs a driver that runs the page's real input and render path without
+the counters, and none exists: `termrock::metrics::harness::Harness`, the driver
+every app scenario uses, is compiled only with `work-metrics`, and a timing run
+refuses a build that has it (`instrumentation_enabled` must be `false`, and a
+timing taken beside counters would not be comparable). The apps' models and
+pages are private to their binaries, so a driver cannot live in the library
+tests, and writing one per app would duplicate input and render driving four
+times, which the component rules forbid. The right owner is one shared
+off-screen driver in the library, which is a public API addition that needs its
+catalog line and showcase disposition, and its own change. Until then
+`scripts/performance-report.sh` prints each app's counts, and the timing
+section carries the library families only. This is a stated gap, not a result:
+no app time is claimed anywhere.
