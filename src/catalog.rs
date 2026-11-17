@@ -4791,6 +4791,8 @@ pub static CAPABILITIES: &[Capability] = &[
     Capability::function("runtime::ExternalReceiver::drain"),
     Capability::function("runtime::external_channel"),
     Capability::function("runtime::bounded_external_channel"),
+    Capability::ty("runtime::ExternalTurn"),
+    Capability::function("runtime::pump_external"),
     Capability::function("runtime::Application::external"),
     Capability::function("runtime::Application::take_render_invalidated"),
     Capability::ty("terminal::TerminalState"),

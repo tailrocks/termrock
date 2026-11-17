@@ -155,10 +155,13 @@ a producer that finds the queue full or closed gets its message back in
 terminal events and hands the application at most `ExternalPolicy::max_messages`
 external messages, within `max_duration`, before it checks resize and tick
 again, so a flood of either cannot starve input. The bound cannot interrupt one
-handler that blocks. Example:
-[`bounded_messages`](../crates/termrock/examples/bounded_messages.rs) sends
-through a bounded channel, spells out one turn's budget over the public
-receiver (the runtime's own loop is private) and retries what a full queue
+handler that blocks. The turn is the public `runtime::pump_external(app, policy,
+elapsed)`, which the event loop calls and returns an `ExternalTurn` whose
+`exhausted` flag says the budget, not an empty queue, ended it. `elapsed` is
+the time since the turn began, so a test supplies a fake clock. Example:
+[`bounded_messages`](../crates/termrock/examples/bounded_messages.rs) runs
+`pump_external` itself over a bounded channel, shows the count budget and the
+time budget (on a fake clock, with no sleep) and retries what a full queue
 returned.
 `TerminalSession` enters raw mode and restores the
 terminal on drop and on panic.

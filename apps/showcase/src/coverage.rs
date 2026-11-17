@@ -145,6 +145,7 @@ pub enum ScenarioId {
     ShellMotionPolicy,
     RuntimeInputPump,
     RuntimeExternalChannel,
+    RuntimeExternalTurn,
     // lane:shell end
     // lane:theme begin: this lane adds its ScenarioId variants between these two lines only
     ThemeColorLevels,

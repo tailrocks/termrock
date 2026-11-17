@@ -27,8 +27,9 @@ use termrock::core::refusal::Reason;
 use termrock::core::response::Response;
 use termrock::motion::Motion;
 use termrock::runtime::{
-    Application, Coalesce, DRAIN_BUDGET, ExternalReceiver, ExternalSender, FocusClickGuard,
-    InputPump, SizeWatch, drain_ready_inputs, external_channel,
+    Application, Coalesce, DRAIN_BUDGET, ExternalPolicy, ExternalReceiver, ExternalSender,
+    ExternalTurn, FocusClickGuard, InputPump, SizeWatch, bounded_external_channel,
+    drain_ready_inputs, external_channel, pump_external,
 };
 use termrock::shell::clipboard::{self, Clipboard, Copied, NativeClipboard};
 use termrock::shell::reach::{self, Case, Harness, Reveal, SIZES, Words};
@@ -72,6 +73,7 @@ pub const CASES: &[ScenarioCase] = &[
     ScenarioCase { id: ScenarioId::ShellMotionPolicy, run: shell_motion_policy },
     ScenarioCase { id: ScenarioId::RuntimeInputPump, run: runtime_input_pump },
     ScenarioCase { id: ScenarioId::RuntimeExternalChannel, run: runtime_external_channel },
+    ScenarioCase { id: ScenarioId::RuntimeExternalTurn, run: runtime_external_turn },
 ];
 
 fn plain(code: KeyCode) -> Key {
@@ -2118,6 +2120,88 @@ fn runtime_external_channel() {
     assert!(rx.try_recv().is_none(), "the queue is empty");
     drop(rx);
     assert!(!tx.send(1_u8), "a send to a dropped receiver is refused");
+}
+
+/// An application that owns a receiver and records the numbers it is handed,
+/// charging `cost` to a shared fake clock for each one.
+struct ExternalFeed {
+    receiver: ExternalReceiver,
+    seen: Vec<u32>,
+    clock: std::rc::Rc<std::cell::Cell<Duration>>,
+    cost: Duration,
+}
+
+impl Application for ExternalFeed {
+    fn handle(&mut self, input: termrock::core::event::Input) -> termrock::core::event::Outcome {
+        use termrock::core::event::{Input, Outcome};
+        let Input::External(message) = input else {
+            return Outcome::Ignored;
+        };
+        self.seen.extend(message.downcast_ref::<u32>());
+        self.clock.set(self.clock.get() + self.cost);
+        Outcome::Changed
+    }
+    fn render(&mut self, _frame: &mut ratatui::Frame) {}
+    fn should_quit(&self) -> bool {
+        false
+    }
+    fn tick_interval(&self) -> Duration {
+        Duration::from_millis(100)
+    }
+    fn external(&self) -> Option<&ExternalReceiver> {
+        Some(&self.receiver)
+    }
+}
+
+/// The per-turn budget the runtime applies to an application's receiver: the
+/// count bound, the time bound on an injected clock, and the `exhausted` flag
+/// that makes the runtime schedule the next turn at once.
+fn runtime_external_turn() {
+    fn feed(messages: u32, cost: Duration, policy: ExternalPolicy) -> ExternalFeed {
+        let (tx, rx) =
+            bounded_external_channel(std::num::NonZeroUsize::new(8).expect("nonzero"), policy);
+        for n in 1..=messages {
+            assert!(tx.send(n));
+        }
+        ExternalFeed {
+            receiver: rx,
+            seen: Vec::new(),
+            clock: std::rc::Rc::default(),
+            cost,
+        }
+    }
+    fn turn(app: &mut ExternalFeed) -> ExternalTurn {
+        app.clock.set(Duration::ZERO);
+        let clock = std::rc::Rc::clone(&app.clock);
+        let policy = app.receiver.policy();
+        pump_external(app, policy, move || clock.get())
+    }
+
+    let by_count = ExternalPolicy {
+        max_messages: 2,
+        max_duration: Duration::from_secs(1),
+    };
+    let mut app = feed(5, Duration::ZERO, by_count);
+    let first = turn(&mut app);
+    assert_eq!(app.seen, [1, 2], "the count bound ends the turn");
+    assert!(first.changed && first.exhausted, "more may be queued");
+    turn(&mut app);
+    let last = turn(&mut app);
+    assert_eq!(app.seen, [1, 2, 3, 4, 5], "FIFO, nothing lost");
+    assert!(!last.exhausted, "a queue that runs dry is not pending");
+
+    let by_time = ExternalPolicy {
+        max_messages: 100,
+        max_duration: Duration::from_secs(1),
+    };
+    let mut app = feed(5, Duration::from_millis(400), by_time);
+    let timed = turn(&mut app);
+    assert_eq!(
+        app.seen,
+        [1, 2, 3],
+        "the clock reaches the budget at 1200ms"
+    );
+    assert!(timed.exhausted);
 }
 
 /// A host in a terminal of its own, so a reach case can build, resize and
