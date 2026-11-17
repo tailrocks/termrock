@@ -5,6 +5,7 @@ use ratatui::style::{Color, Modifier};
 
 use crate::core::event::{Key, Outcome};
 
+use crate::core::hints::{Binding, Bindings, HasHints, HintCx, actions_bindings};
 use crate::core::hit::Axis;
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::core::keymap::{Actions, KeyBinding, KeyMap, NavKeys, lookup, unassigned_chord};
@@ -13,6 +14,7 @@ use crate::theme::Kind;
 use crate::ui::ctx::RenderCtx;
 use crate::ui::tooltip::Tip;
 use crate::widgets::icon_button::IconButton;
+use crate::widgets::keyhint::{Hint, hint};
 use crate::widgets::menu::{ContextMenu, MenuAction, MenuItem};
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -1103,5 +1105,19 @@ impl crate::core::pointer::MouseTarget for Tabs {
             },
             _ => Response::ignored(),
         }
+    }
+}
+
+impl HasHints for Tabs {
+    fn hints(&self, _: &HintCx) -> Vec<Hint> {
+        vec![hint("←→", "Switch tab")]
+    }
+}
+
+impl Bindings for Tabs {
+    fn bindings(&self) -> Vec<Binding> {
+        let mut v = vec![Binding::group("←→", "Switch tab")];
+        v.extend(actions_bindings(&self.keymap));
+        v
     }
 }

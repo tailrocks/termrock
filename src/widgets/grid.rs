@@ -8,10 +8,10 @@ use ratatui::style::{Color, Modifier, Style};
 use crate::core::data::{DataError, ShapeError};
 use crate::core::event::{Key, Outcome};
 use crate::core::focus::BlurAction;
-use crate::core::hit::Axis;
-use crate::core::hit::PartMap;
+use crate::core::hints::{Binding, Bindings, HasHints, HintCx, actions_bindings};
+use crate::core::hit::{Axis, PartMap};
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
+use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, hint_key, lookup};
 use crate::core::list::{Cursor, KeyStep, Moved, Navigable, RowFn, RowSource};
 use crate::core::response::Response;
 use crate::core::scroll::{HScroll, ScrollPane, Scrollable};
@@ -23,11 +23,13 @@ use crate::ui::row::{MarkKind, RowLook, RowUi};
 use crate::ui::text::{fit, fit_right, truncate, truncate_middle, wider_than, width, width_capped};
 use crate::widgets::button::{Button, row_layout_right};
 use crate::widgets::edit::{EditExit, EditField, FieldError, Validator, parsers};
+use crate::widgets::keyhint::{EDIT_CELL, Hint, hint};
 use crate::widgets::option_editor::{
     Affordance, ChoiceEditor, ChoiceResult, ColumnEditor, EditorConfig,
 };
 use crate::widgets::scrollbar;
 use crate::widgets::table::{HeaderAction, HeaderLabels, SortDir, header_menu};
+use crate::widgets::widget_hints::EDIT;
 
 #[path = "grid_changes.rs"]
 mod changes;
@@ -684,6 +686,33 @@ impl crate::ui::measure::Measure for DataGrid {
 }
 
 const FETCH_MORE_KEY: ItemKey = ItemKey::text("datagrid.fetch-more");
+
+impl HasHints for DataGrid {
+    fn hints(&self, _: &HintCx) -> Vec<Hint> {
+        if self.is_editing() {
+            return EDIT_CELL.to_vec();
+        }
+        let mut v = vec![hint("↑↓←→", "Cell")];
+        if self.cell_editable() {
+            v.push(EDIT);
+        }
+        if let Some(k) = hint_key(&self.keymap, GridCmd::Copy) {
+            v.push(Hint::new(k, "Copy"));
+        }
+        v
+    }
+}
+
+impl Bindings for DataGrid {
+    fn bindings(&self) -> Vec<Binding> {
+        let mut v = vec![Binding::group("↑↓←→", "Cell")];
+        if self.editable {
+            v.push(Binding::group("Enter F2", "Edit"));
+        }
+        v.extend(actions_bindings(&self.keymap));
+        v
+    }
+}
 
 #[cfg(test)]
 thread_local! {

@@ -2,12 +2,14 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 
 use crate::core::event::{Key, Outcome};
+use crate::core::hints::{HasHints, HintCx};
 use crate::core::id::WidgetId;
 use crate::core::refusal::{Control, Reason};
 use crate::theme::{ButtonKind, Kind};
 use crate::ui::ctx::RenderCtx;
 use crate::ui::measure::terminal_extent;
 use crate::ui::text::{paint_clipped, width};
+use crate::widgets::keyhint::Hint;
 use ratatui::crossterm::event::KeyCode;
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -685,5 +687,14 @@ impl crate::core::pointer::MouseTarget for Button {
         } else {
             Response::consumed()
         }
+    }
+}
+
+impl HasHints for Button {
+    fn hints(&self, _: &HintCx) -> Vec<Hint> {
+        if self.disabled {
+            return vec![];
+        }
+        vec![self.hint()]
     }
 }

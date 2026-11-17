@@ -8,12 +8,13 @@ use ratatui::style::{Color, Modifier};
 use crate::core::data::{DataError, ShapeError, validate_rectangular};
 use crate::core::event::{ClientPlatform, Key, Outcome};
 use crate::core::focus::BlurAction;
-use crate::core::hit::Axis;
-use crate::core::hit::PartMap;
+use crate::core::hit::{Axis, PartMap};
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::core::keyed::{KeyedSourceError, KeyedState, KeyedVec};
-use crate::core::keymap::unassigned_chord;
-use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup, select_all_bindings};
+use crate::core::keymap::{
+    Actions, KeyBinding, KeyMap, Nav, NavKeys, hint_key, lookup, select_all_bindings,
+    unassigned_chord,
+};
 use crate::core::list::{Cursor, KeyStep, KeyedRowSource, Moved, Navigable, RowSource};
 use crate::core::response::Response;
 use crate::core::scroll::{HScroll, ScrollPane, Scrollable};
@@ -22,10 +23,10 @@ use crate::ui::column_solver::ColumnSizing;
 use crate::ui::ctx::{RenderCtx, fill};
 use crate::ui::row::{MarkKind, RowLook, RowUi};
 use crate::widgets::edit::{EditExit, EditField, Validator};
+use crate::widgets::menu::MenuItem;
 use crate::widgets::option_editor::{
     Affordance, ChoiceEditor, ChoiceResult, ColumnEditor, EditorConfig,
 };
-use crate::widgets::menu::MenuItem;
 use crate::widgets::scrollbar;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -2776,6 +2777,10 @@ impl DataTable {
     }
 }
 
+use crate::core::hints::{
+    Binding, Bindings, HasHints, HintCx, actions_bindings, nav_bindings, nav_hints,
+};
+use crate::widgets::keyhint::Hint;
 use ratatui::style::Style;
 
 fn parse_num(s: &str) -> Option<ordered::F64> {
@@ -3166,6 +3171,28 @@ impl<R: TableRows + ?Sized> RowSource for View<'_, R> {
         self.rows
             .cell(self.table.order[d], col)
             .map_or("", |cell| cell.text)
+    }
+}
+
+impl HasHints for DataTable {
+    fn hints(&self, _: &HintCx) -> Vec<Hint> {
+        if self.is_editing() {
+            return crate::widgets::keyhint::EDIT_FIELD.to_vec();
+        }
+        let mut v = nav_hints(&self.nav, self.type_ahead, false);
+        if let Some(k) = hint_key(&self.keymap, TableCmd::SortByColumn) {
+            v.push(Hint::new(k, "Sort"));
+        }
+        v
+    }
+}
+
+impl Bindings for DataTable {
+    fn bindings(&self) -> Vec<Binding> {
+        let mut v = nav_bindings(&self.nav, self.type_ahead);
+        v.push(Binding::group("Enter", "Activate"));
+        v.extend(actions_bindings(&self.keymap));
+        v
     }
 }
 

@@ -33,16 +33,6 @@ production	src/ui/specimen.rs	widgets::picker
 production	src/ui/specimen.rs	widgets::tabs
 production	src/widgets/viewport_specimen.rs	widgets::diff
 production	src/widgets/viewport_specimen.rs	widgets::steps
-production	src/widgets/widget_hints.rs	widgets::code
-production	src/widgets/widget_hints.rs	widgets::completion
-production	src/widgets/widget_hints.rs	widgets::grid
-production	src/widgets/widget_hints.rs	widgets::input
-production	src/widgets/widget_hints.rs	widgets::list
-production	src/widgets/widget_hints.rs	widgets::select
-production	src/widgets/widget_hints.rs	widgets::table
-production	src/widgets/widget_hints.rs	widgets::tabs
-production	src/widgets/widget_hints.rs	widgets::textarea
-production	src/widgets/widget_hints.rs	widgets::tree
 test	src/ui/layer.rs	ui::layers
 test	src/widgets/code/tests.rs	test_alloc
 test	src/widgets/picker.rs	ui::layers
