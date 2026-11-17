@@ -1,0 +1,11 @@
+[package]
+name = "termrock-consumer-minimal"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+termrock = { path = "../../../crates/termrock", default-features = false }
+ratatui = "0.30"

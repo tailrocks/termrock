@@ -459,8 +459,8 @@ Results are not committed. The report files and the summary stay in
 ```sh
 cargo nextest run -p junie-tui --features work-metrics --test regressions \
     --no-tests fail -E 'test(/^work_budgets::/)'
-cargo nextest run -p junie-tui --features work-metrics --bin holla --bin tablepro --bin showcase \
-    --no-tests fail -E 'test(/^work_metrics_tests::/)'
+cargo nextest run -p termrock-holla -p termrock-tablepro -p termrock-showcase \
+    --features work-metrics --bins --no-tests fail -E 'test(/^work_metrics_tests::/)'
 cargo nextest run -p jackin-console --features demo,work-metrics --test regressions \
     --no-tests fail -E 'test(/^work_budgets::/)'
 cargo nextest run -p junie-tui --features work-metrics --lib --no-tests fail \
@@ -471,7 +471,8 @@ cargo nextest run --profile performance --workspace --all-features --no-tests fa
 scripts/measure-performance.sh
 ```
 
-CI builds both Rust jobs with `--all-features`, so these tests already run in
-the existing `Rust / junie-tui` and `Rust / jackin-console` jobs. The product
+CI builds the Rust jobs with `--all-features`, so these tests already run in
+the `Rust / junie-tui`, `Rust / jackin-console` and `Rust / termrock-holla`,
+`-tablepro` and `-showcase` jobs. The product
 shape builds without `work-metrics`, where the tests compile away and
 `metrics_disabled_does_not_evaluate_arguments` runs instead.

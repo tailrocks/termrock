@@ -19,11 +19,11 @@ change the config and run `velnor-actions generate`.
 - **Rust / junie-tui** and **Rust / jackin-console** — one job per
   default workspace member, built with `--all-features`. Each runs
   `cargo nextest run --profile ci --package <crate> --no-tests fail
-  --all-features`, which selects every test target of the package (the
-  library, the binaries, `functional` and every other `tests/*.rs`
-  target), plus clippy `-D warnings` on `--all-targets`, `cargo fmt
-  --check` and `cargo doc`. The `ci` profile in `.config/nextest.toml` must keep no `default-filter`,
-  or targets drop out of this job.
+  --all-features`, which selects every test target of the package except
+  `functional` (the `ci` profile's default filter is `not binary(functional)`:
+  the `functional` targets run in `suite-functional`), plus clippy `-D warnings`
+  on `--all-targets`, `cargo fmt --check` and `cargo doc`. Keep the filter
+  that way, or the PTY journeys run twice.
 - **Rust / junie-tui (product)** and **Rust / jackin-console
   (product)** — the same five tasks for the product shape. The second
   configuration in `.velnor/config.toml` selects the feature `product`,
@@ -31,8 +31,8 @@ change the config and run `velnor-actions generate`.
   (no demo data, no `clap`, no `jackin-preview`). `junie-tui` declares
   `product = ["terminal"]`, so its job builds the library shape that
   jackin consumes (`default-features = false, features = ["terminal"]`):
-  `termpane` in, `clap` out. The bins and the `functional` target require
-  `cli`, so they are skipped there.
+  `termpane` in, `clap` out. The root package has no binaries, and its
+  `functional` target requires `cli`, so it is skipped there.
 - **Rust / termrock** and **Rust / termrock (product)** — the facade
   crate `crates/termrock`, which re-exports `junie-tui` under the supported
   import path and has empty default features. The product job builds it with
@@ -44,8 +44,24 @@ change the config and run `velnor-actions generate`.
   `suite-functional` (`--workspace`), not by these jobs: the `ci` profile
   filters out `binary(functional)`, so they run no tests
   (`allow_empty_test_suite`) and guard the crate's format, clippy and docs.
-- **Required** — the verdict job. Its `needs` are Plan, the eight Rust
-  jobs, `suite-functional` and jactionlint, as listed in the generated
+- **Rust / termrock-showcase**, **termrock-tablepro** and **termrock-holla**,
+  each with a **(product)** job — the five tasks for the three application
+  packages under `apps/`. They import `termrock` only. The binary unit tests
+  (the work-metrics scenarios, the Showcase catalog and coverage gates) run
+  here. The journeys that launch them are the root package's `functional`
+  target, run by `suite-functional`; it takes each binary from
+  `TERMROCK_TEST_<NAME>`, which the nextest setup script `app-bins` exports
+  (see [functional testing](functional-testing.md)).
+- **Rust / termrock-consumer-minimal**, **-keyed-modal**, **-terminal** and
+  **-jackin-host**, each with a **(product)** job — the four independent
+  consumer fixtures under `tests/consumers/`. Each is its own Cargo workspace
+  with a committed lockfile, so Velnor builds it from its own directory and its
+  declared features alone, apart from the repository workspace. These jobs are
+  the CI gate for the feature contract of [API contract](api-contract.md);
+  `bash scripts/check-consumers.sh` runs the same four locally. The `product`
+  jobs repeat the default job because the fixtures declare no `product` feature.
+- **Required** — the verdict job. Its `needs` are Plan, every Rust
+  job, `suite-functional` and jactionlint, as listed in the generated
   `ci.yml`.
 - **DCO** — every commit must carry `Signed-off-by`
   (`git commit -s`, committer Alexey Zhokhov

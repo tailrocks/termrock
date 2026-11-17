@@ -27,13 +27,36 @@ This is the command CI runs in `suite-functional`. The profile selects
 the `functional` target of the workspace crates and retains a JUnit
 report. The `functional` target of `jackin-console` needs the feature
 `demo`, which is off by default, so this command runs the root journeys
-only. Add `--all-features` to include the jackin journeys; CI runs them in
+only (the root target reads its candidate binaries from
+`TERMROCK_TEST_<NAME>`, which the `app-bins` setup script exports). Add `--all-features` to include the jackin journeys; CI runs them in
 `Rust / jackin-console` (see [CI](ci.md#the-demo-feature)). To run the
 target without the profile:
 
 ```sh
-cargo nextest run --locked --test functional --no-tests fail
+python3 scripts/run_functional.py --no-tests-fail
 ```
+
+The root journeys launch Showcase, TablePro and Holla, which are packages of
+their own, so the root `functional` target is given no `CARGO_BIN_EXE_<name>`.
+`tests/functional/bins.rs` reads `TERMROCK_TEST_SHOWCASE`, `TERMROCK_TEST_TABLEPRO`
+and `TERMROCK_TEST_HOLLA` at run time instead. A missing, relative or wrongly
+named path fails the test before a session opens, and nothing falls back to a
+`target/debug` file or an archived reference binary. `scripts/run_functional.py`
+runs `cargo build --workspace --all-features --bins --message-format=json`
+(240 seconds), keeps the executable of each `compiler-artifact` for the exact
+binary names `showcase`, `tablepro`, `holla` and `jackin-preview`, canonicalizes
+the paths, refuses a failed or timed-out build, a missing or duplicated binary
+and a path that does not exist, and only then starts `cargo nextest run
+--workspace --all-features --profile functional` with the variables set.
+`--partition K/N` and `--test-name TEXT` keep one invocation inside the command
+budget; `--cargo-profile dev|release` selects the Cargo profile of the build and
+of the run. The launcher rebuilds each value (integers, a fixed alphabet, a
+profile table) instead of forwarding raw arguments, so an argument cannot inject
+an option into Cargo or nextest.
+`python3 -m unittest tests/test_run_functional.py` covers the launcher,
+including `functional_launcher_refuses_failed_build_with_old_artifact`.
+In CI the nextest setup script `app-bins` exports the same variables for the
+root `functional` target (it never overrides a value already exported).
 
 The cases that drive more than one app binary (`g02_harness` and the `x01_*`,
 `x02_*`, `x03_*` files, except `x01_input` and `x02_suspend`) live in the
@@ -43,18 +66,19 @@ next to its test executable in `target/<profile>/`, or at `TCB_BIN_<NAME>`. A
 nextest setup script (`app-bins` in `.config/nextest.toml`) runs
 `scripts/build-app-bins.sh` before any selected `functional-cross` test, so
 `cargo nextest run -p functional-cross` works from a clean target directory.
-The script builds the three binaries with default features into
+The script builds the three app packages (`termrock-showcase`, `termrock-tablepro`, `termrock-holla`) with default features into
 `<target>/app-bins` and exports `TCB_BIN_<NAME>` for them. It uses its own
 target directory so that it never replaces `target/<profile>/showcase`, which
-the `functional` target of the root package launches and which a run with
-`--all-features` builds with `work-metrics`. The script builds the dev profile,
-so `--cargo-profile release` would still launch the debug binaries.
+the developer's own `--all-features` build produced. The script builds the dev
+profile, so `--cargo-profile release` would still launch the debug binaries.
+It exports `TERMROCK_TEST_<NAME>` as well, for the root `functional` target,
+unless the caller already did.
 
 Filter one journey during development, without hiding missing tests:
 
 ```sh
-cargo nextest run --locked --test functional --no-tests fail \
-  -E 'test(showcase_button_hover_hold_release_cancel_and_disabled_truecolor)'
+python3 scripts/run_functional.py --no-tests-fail \
+  --test-name showcase_button_hover_hold_release_cancel_and_disabled_truecolor
 ```
 
 These tests are ordinary, non-ignored integration tests. They also run in the
@@ -166,8 +190,9 @@ The path under test is:
 5. Production rendering and emitted terminal control sequences.
 6. The resulting visible cells and clean process shutdown.
 
-Use `env!("CARGO_BIN_EXE_...")`, exposed as `SHOWCASE`, `TABLEPRO`, `HOLLA`,
-and `JACKIN` by the helper. Avoid a shell command string. `App::new` passes
+Launch the candidates through `bins::showcase()`, `bins::tablepro()` and
+`bins::holla()` (run-time `TERMROCK_TEST_<NAME>` lookup) and, for Jackin,
+`env!("CARGO_BIN_EXE_jackin-preview")`. Avoid a shell command string. `App::new` passes
 arguments as native process arguments and clears inherited environment. It
 sets a fixed locale, timezone, terminal type, client platform, and color mode;
 isolates HOME and XDG directories; and disables Holla's optional history.

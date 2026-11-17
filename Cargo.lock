@@ -957,9 +957,9 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "jackin-console",
- "junie-tui",
  "ratatui",
  "serde_json",
+ "termrock",
  "tuiscotti",
  "tuiscotti-tui-test",
  "unicode-segmentation",
@@ -993,7 +993,6 @@ dependencies = [
  "clap",
  "libc",
  "ratatui",
- "regex",
  "serde_json",
  "sha2 0.10.9",
  "syn 3.0.9",
@@ -2151,6 +2150,43 @@ name = "termrock"
 version = "0.1.0"
 dependencies = [
  "junie-tui",
+]
+
+[[package]]
+name = "termrock-holla"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "ratatui",
+ "serde_json",
+ "sha2 0.10.9",
+ "termrock",
+ "unicode-segmentation",
+]
+
+[[package]]
+name = "termrock-showcase"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "libc",
+ "ratatui",
+ "serde_json",
+ "sha2 0.10.9",
+ "syn 3.0.9",
+ "termrock",
+]
+
+[[package]]
+name = "termrock-tablepro"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "ratatui",
+ "regex",
+ "serde_json",
+ "sha2 0.10.9",
+ "termrock",
 ]
 
 [[package]]
