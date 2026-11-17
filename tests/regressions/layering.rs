@@ -1078,6 +1078,36 @@ fn check_metadata(metadata: &serde_json::Value, layering: &Layering) -> (usize, 
     (checked, problems)
 }
 
+/// A `crates/termrock-*` or `apps/*` directory that `cargo metadata` does not
+/// list is outside the workspace, so stage B could not see its dependencies.
+/// `directories` are workspace-relative, like `crates/termrock-core`.
+fn unlisted_directories(metadata: &serde_json::Value, directories: &[String]) -> Vec<String> {
+    let workspace = metadata["workspace_root"].as_str().unwrap_or_default();
+    let listed: BTreeSet<String> = metadata["packages"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|package| package["manifest_path"].as_str())
+        .map(|manifest| {
+            manifest
+                .strip_prefix(workspace)
+                .unwrap_or(manifest)
+                .trim_start_matches('/')
+                .trim_end_matches("/Cargo.toml")
+                .to_string()
+        })
+        .collect();
+    directories
+        .iter()
+        .filter(|dir| !listed.contains(*dir))
+        .map(|dir| {
+            format!(
+                "{dir} has a Cargo.toml but is not a workspace package, so stage B cannot check it; add it to `members` in the root Cargo.toml"
+            )
+        })
+        .collect()
+}
+
 fn cycles(graph: &BTreeMap<String, BTreeSet<String>>) -> Vec<String> {
     fn visit(
         node: &str,
@@ -1107,6 +1137,27 @@ fn cycles(graph: &BTreeMap<String, BTreeSet<String>>) -> Vec<String> {
         visit(node, graph, &mut Vec::new(), &mut done, &mut out);
     }
     out
+}
+
+/// The `crates/termrock-*` and `apps/*` directories that hold a `Cargo.toml`.
+fn package_directories() -> Vec<String> {
+    let mut found = Vec::new();
+    for (parent, prefix) in [("crates", Some("termrock-")), ("apps", None)] {
+        let Ok(entries) = std::fs::read_dir(root().join(parent)) else {
+            continue;
+        };
+        for entry in entries.filter_map(Result::ok) {
+            let name = entry.file_name().to_string_lossy().to_string();
+            if prefix.is_some_and(|p| !name.starts_with(p)) {
+                continue;
+            }
+            if entry.path().join("Cargo.toml").is_file() {
+                found.push(format!("{parent}/{name}"));
+            }
+        }
+    }
+    found.sort();
+    found
 }
 
 /// Stage B stays off until a `crates/termrock-*` directory other than the
@@ -1145,7 +1196,8 @@ fn crate_level(layering: &Layering) -> Result<StageB, Vec<String>> {
     );
     let metadata: serde_json::Value =
         serde_json::from_slice(&output.stdout).expect("cargo metadata prints JSON");
-    let (packages, problems) = check_metadata(&metadata, layering);
+    let (packages, mut problems) = check_metadata(&metadata, layering);
+    problems.extend(unlisted_directories(&metadata, &package_directories()));
     if problems.is_empty() {
         Ok(StageB::Checked { packages })
     } else {
@@ -1666,6 +1718,35 @@ fn layering_crate_level_checks_applications_and_unlisted_crates() {
     assert!(joined.contains("termrock-showcase: an application depends on `termrock` only"));
     assert!(joined.contains("termrock-holla: an application must depend on `termrock`"));
     assert!(joined.contains("termrock-surprise: not in docs/layering.toml"));
+}
+
+#[test]
+fn layering_crate_level_rejects_a_directory_outside_the_workspace() {
+    let meta = metadata(&[
+        ("termrock-core", "crates/termrock-core/Cargo.toml", &[]),
+        (
+            "termrock-showcase",
+            "apps/showcase/Cargo.toml",
+            &["termrock"],
+        ),
+    ]);
+    let dirs = |names: &[&str]| names.iter().map(|n| n.to_string()).collect::<Vec<_>>();
+    assert!(
+        unlisted_directories(&meta, &dirs(&["crates/termrock-core", "apps/showcase"])).is_empty()
+    );
+    let problems = unlisted_directories(
+        &meta,
+        &dirs(&["crates/termrock-core", "crates/termrock-ghost"]),
+    );
+    assert_eq!(problems.len(), 1, "{problems:?}");
+    assert!(
+        problems[0].contains("crates/termrock-ghost"),
+        "{problems:?}"
+    );
+    assert!(
+        problems[0].contains("not a workspace package"),
+        "{problems:?}"
+    );
 }
 
 #[test]

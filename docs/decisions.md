@@ -305,4 +305,8 @@ Where the implementation differs from the plan in #440, and why:
   `crate::record_work!` counts as a dependency on the module that defines it
   (`metrics`).
 
+- Stage B also fails a `crates/termrock-*` or `apps/*` directory that holds a
+  `Cargo.toml` but is not a workspace package, because `cargo metadata` would
+  not list it and its dependencies would go unchecked. Added at review.
+
 Revisit when #452 removes `[files]`: from then on only stage B remains.
