@@ -179,6 +179,15 @@ pub enum ScenarioId {
     TerminalKeyEncoding,
     // lane:scroll end
     // lane:gridtable begin: this lane adds its ScenarioId variants between these two lines only
+    DiffModelAndView,
+    InspectChangesModes,
+    GridValuesAndDraft,
+    GridKeysAndCommands,
+    GridPointerAndLabels,
+    GridEditSessions,
+    TableModelAndSelection,
+    TableKeysAndEdits,
+    TablePointerAndChrome,
     // lane:gridtable end
     // lane:fields begin: this lane adds its ScenarioId variants between these two lines only
     FieldsButtonControls,
