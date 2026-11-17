@@ -27,9 +27,9 @@ use jackin_console::launch::{LaunchFeed, LaunchTarget};
 use jackin_console::panes::{PaneBody, PaneRequest, PaneSpawn};
 use jackin_console::sim::{self, SimBackend};
 use jackin_console::world::{DaemonHealth, Health, Msg, SaveFailure, TrustKind, TrustRow, World};
-use junie_tui::motion::Motion;
-use junie_tui::runtime::Application;
-use junie_tui::theme::{ColorLevel, StatusKind, Theme};
+use termrock::motion::Motion;
+use termrock::runtime::Application;
+use termrock::theme::{ColorLevel, StatusKind, Theme};
 
 fn squash(text: &str) -> String {
     text.split_whitespace().collect::<Vec<_>>().join(" ")
@@ -53,7 +53,7 @@ fn timed(scenario: Scenario, world: World) -> App {
 
 fn settle(app: &mut App) -> String {
     for _ in 0..40 {
-        Application::handle(app, junie_tui::core::event::Input::Tick);
+        Application::handle(app, termrock::core::event::Input::Tick);
     }
     screen(app)
 }

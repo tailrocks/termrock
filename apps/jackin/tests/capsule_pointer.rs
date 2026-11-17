@@ -8,8 +8,8 @@ mod product_support;
 use capsule_support::*;
 use jackin_console::domain::instance::{InstanceEntry, SandboxPhase, UnavailableInstance};
 use jackin_console::world::SaveWarning;
-use junie_tui::core::event::MouseKind;
 use ratatui::crossterm::event::KeyModifiers;
+use termrock::core::event::MouseKind;
 
 fn history() -> Vec<u8> {
     (1..=100)

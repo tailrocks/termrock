@@ -4,13 +4,13 @@ use jackin_console::app::App;
 use jackin_console::backend::Effect;
 use jackin_console::fixtures::{Scenario, app_for, app_with_world};
 use jackin_console::world::{Msg, Snapshot, Work, World};
-use junie_tui::core::event::{Input, Key, Mouse, MouseKind};
-use junie_tui::motion::Motion;
-use junie_tui::runtime::Application;
-use junie_tui::theme::{ColorLevel, Theme};
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use termrock::core::event::{Input, Key, Mouse, MouseKind};
+use termrock::motion::Motion;
+use termrock::runtime::Application;
+use termrock::theme::{ColorLevel, Theme};
 
 pub fn app_with(scenario: Scenario, world: World) -> App {
     app_with_world(
@@ -213,7 +213,7 @@ pub fn roster_reply(app: &mut App, snapshot: Snapshot) -> Msg {
     }
 }
 
-pub fn deliver_roster(app: &mut App, snapshot: Snapshot) -> junie_tui::core::event::Outcome {
+pub fn deliver_roster(app: &mut App, snapshot: Snapshot) -> termrock::core::event::Outcome {
     let reply = roster_reply(app, snapshot);
     app.deliver(&reply)
 }
