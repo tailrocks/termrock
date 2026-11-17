@@ -750,9 +750,9 @@ dependencies = [
 name = "functional-cross"
 version = "0.1.0"
 dependencies = [
- "junie-tui",
  "serde_json",
  "sha2 0.10.9",
+ "termrock",
  "tuiscotti",
  "tuiscotti-tui-test",
 ]
@@ -957,9 +957,9 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "jackin-console",
- "junie-tui",
  "ratatui",
  "serde_json",
+ "termrock",
  "tuiscotti",
  "tuiscotti-tui-test",
  "unicode-segmentation",
@@ -993,13 +993,9 @@ dependencies = [
  "clap",
  "libc",
  "ratatui",
- "regex",
  "serde_json",
- "sha2 0.10.9",
  "syn 3.0.9",
  "termpane",
- "tuiscotti",
- "tuiscotti-tui-test",
  "unicode-segmentation",
  "unicode-width",
 ]
@@ -2151,6 +2147,49 @@ name = "termrock"
 version = "0.1.0"
 dependencies = [
  "junie-tui",
+]
+
+[[package]]
+name = "termrock-holla"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "ratatui",
+ "serde_json",
+ "sha2 0.10.9",
+ "termrock",
+ "tuiscotti",
+ "tuiscotti-tui-test",
+ "unicode-segmentation",
+]
+
+[[package]]
+name = "termrock-showcase"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "libc",
+ "ratatui",
+ "serde_json",
+ "sha2 0.10.9",
+ "syn 3.0.9",
+ "termrock",
+ "tuiscotti",
+ "tuiscotti-tui-test",
+]
+
+[[package]]
+name = "termrock-tablepro"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "ratatui",
+ "regex",
+ "serde_json",
+ "sha2 0.10.9",
+ "termrock",
+ "tuiscotti",
+ "tuiscotti-tui-test",
 ]
 
 [[package]]

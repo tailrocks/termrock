@@ -1,0 +1,34 @@
+[package]
+name = "termrock-holla"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+description = "Holla, a task launcher built from the termrock components"
+license = "MIT"
+publish = false
+default-run = "holla"
+
+[[bin]]
+name = "holla"
+path = "src/main.rs"
+
+[[test]]
+name = "functional"
+path = "tests/functional/main.rs"
+
+[features]
+default = []
+work-metrics = ["termrock/work-metrics"]
+
+[dependencies]
+termrock = { path = "../../crates/termrock", default-features = false, features = ["cli"] }
+clap = { workspace = true }
+ratatui = { workspace = true }
+serde_json = { workspace = true }
+unicode-segmentation = "1"
+
+[dev-dependencies]
+tui-test = { workspace = true }
+tuiscotti-latest = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
