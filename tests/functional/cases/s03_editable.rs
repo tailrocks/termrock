@@ -546,6 +546,7 @@ fn sections_narrow_then_wide() {
     let body = Point { x: 60, y: 20 };
     app.wheel(body, true, 3);
     app.move_to(Point { x: 2, y: 39 });
+    app.settle();
     let paged = app.wait_text("No rows");
     let paged_lines = lines_of(&paged);
     let disabled = block_from(&paged_lines, "disabled", 4);

@@ -927,6 +927,7 @@ fn scroll_wheel_keys_and_thumb() {
         "Row 008",
     );
     app.wheel(listed, false, 3);
+    app.settle();
     let restored = app.wait_text("Row 001");
     see(
         &restored,

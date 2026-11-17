@@ -620,6 +620,7 @@ fn compare_levels_then_restore() {
         .unwrap_or_else(|| panic!("compare button missing\n{}", text(&on)));
     // 13 ticks of 3 rows each land the 16-color and no-color labels in view.
     app.wheel(anchor, true, 13);
+    app.settle();
     let bands = app.wait_text("no color");
     assert_size(&bands, 120, 40);
     expect(

@@ -6,9 +6,6 @@
 //! captures that frame, then resizes back. `Launch::new` leaves the clock off,
 //! including for jackin.
 
-use std::thread;
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{
@@ -66,7 +63,6 @@ fn selected(screen: &TerminalSnapshot, label: &str) -> bool {
 }
 
 fn frame_with(app: &App, cols: u32, rows: u32) -> TerminalSnapshot {
-    thread::sleep(Duration::from_millis(250));
     app.wait_screen(&format!("{cols}x{rows}"), |screen| {
         screen.cols() == cols
             && screen.rows() == rows

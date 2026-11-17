@@ -253,6 +253,9 @@ fn spinner_held(name: &str, motion: Option<&str>, value: Option<&str>) -> bool {
     );
     let appeared = wait_for(&app, RUNNER);
     require(&appeared, RUNNER);
+    // A negative proof: the spinner must stay on its first glyph while time
+    // passes. Waiting for a state cannot show that nothing moves, so the
+    // wall-clock hold is the assertion, not a guess at readiness.
     std::thread::sleep(Duration::from_millis(500));
     let screen = app.screen();
     require(&screen, RUNNER);

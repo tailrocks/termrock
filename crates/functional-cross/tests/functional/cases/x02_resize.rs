@@ -7,9 +7,6 @@
 //! 80×24, then captures the restored 120×40 frame. `Launch::new` leaves the
 //! clock off, including for jackin.
 
-use std::thread;
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 use tuiscotti_latest::check::CheckOutcome;
 
@@ -70,7 +67,6 @@ fn at_size(
     pred: impl Fn(&TerminalSnapshot) -> bool,
 ) -> TerminalSnapshot {
     app.resize(cols, rows);
-    thread::sleep(Duration::from_millis(250));
     app.wait_screen(&format!("{cols}x{rows}"), |screen| {
         screen.cols() == u32::from(cols) && screen.rows() == u32::from(rows) && pred(screen)
     })

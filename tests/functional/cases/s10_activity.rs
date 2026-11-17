@@ -269,6 +269,7 @@ fn scroll_log(app: &App, up: bool) {
     for _ in 0..12 {
         app.wheel(LOG, !up, 3);
     }
+    app.settle();
 }
 
 fn assert_size(app: &App, cols: u16, rows: u16) {

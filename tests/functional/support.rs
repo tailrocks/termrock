@@ -485,7 +485,7 @@ impl App {
     /// that exited, or does not answer the fence (a reference build), gets
     /// the quiet wait alone.
     pub fn settle(&self) -> TerminalSnapshot {
-        if self.fence && self.child_running() {
+        if self.fence && !legacy_waits() && self.child_running() {
             self.fence_while_running();
         }
         self.session
@@ -701,7 +701,7 @@ impl App {
     /// fence (a reference build) keeps a 200 ms sleep.
     pub fn flash_expired(&self) {
         let clicked = self.clicked.replace(false);
-        if !self.fence {
+        if !self.fence || legacy_waits() {
             std::thread::sleep(Duration::from_millis(200));
             return;
         }
@@ -1668,6 +1668,9 @@ fn effective_launch_env(launch: &Launch, home: &Path) -> BTreeMap<String, String
     if fenced(launch) {
         environment.insert(TestRequest::FENCE_ENV.to_string(), "1".to_string());
     }
+    if let Some(lag) = draw_lag_ms() {
+        environment.insert(DRAW_LAG_ENV.to_string(), lag.to_string());
+    }
     if !launch.history {
         environment.insert("HOLLA_NO_HISTORY".to_string(), "1".to_string());
     }
@@ -1678,6 +1681,26 @@ fn effective_launch_env(launch: &Launch, home: &Path) -> BTreeMap<String, String
         environment.insert(key.clone(), value.clone());
     }
     environment
+}
+
+/// The app's draw-lag knob (`src/runtime.rs`). The harness forwards the value
+/// it is run with, so `JUNIE_TUI_DRAW_LAG_MS=300 python3 scripts/run_functional.py`
+/// holds every frame of every candidate back by 300 ms. Only whole
+/// milliseconds pass, so no other text reaches an application environment.
+const DRAW_LAG_ENV: &str = "JUNIE_TUI_DRAW_LAG_MS";
+
+/// Run with `TERMROCK_TEST_LEGACY_WAITS=1`, [`App::settle`] and
+/// [`App::flash_expired`] wait the way they did before the fence: a quiet
+/// interval and a fixed 200 ms sleep. It exists to prove, under
+/// [`DRAW_LAG_ENV`], that a case fails on the old wait and passes on the new.
+const LEGACY_WAITS_ENV: &str = "TERMROCK_TEST_LEGACY_WAITS";
+
+fn draw_lag_ms() -> Option<u64> {
+    std::env::var(DRAW_LAG_ENV).ok()?.parse().ok()
+}
+
+fn legacy_waits() -> bool {
+    std::env::var_os(LEGACY_WAITS_ENV).is_some_and(|value| value == "1")
 }
 
 fn env_path(path: &Path) -> String {

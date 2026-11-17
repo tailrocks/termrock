@@ -1,6 +1,5 @@
 //! Shell options, Inspector sections, and sidebar expansion.
 use std::path::PathBuf;
-use std::time::{Duration, Instant};
 
 use tuiscotti_latest::check::{CheckOutcome, MismatchReason};
 
@@ -1027,19 +1026,6 @@ fn s01_sidebar_current() {
     app.finish();
 }
 
-fn seen_within(app: &App, needle: &str, wait: Duration) -> bool {
-    let deadline = Instant::now() + wait;
-    loop {
-        if text(&app.screen()).contains(needle) {
-            return true;
-        }
-        if Instant::now() >= deadline {
-            return false;
-        }
-        std::thread::sleep(Duration::from_millis(25));
-    }
-}
-
 #[test]
 fn s01_shell_override() {
     // At 120x40 the Shell block starts below the inspector viewport.
@@ -1054,11 +1040,11 @@ fn s01_shell_override() {
     {
         app.wheel(layers, true, 8);
     }
-    if !seen_within(&app, "shell.motion", Duration::from_millis(800)) {
+    if !text(&app.settle()).contains("shell.motion") {
         app.key("tab");
         for _ in 0..4 {
             app.key("pagedown");
-            if seen_within(&app, "shell.motion", Duration::from_millis(400)) {
+            if text(&app.settle()).contains("shell.motion") {
                 break;
             }
         }
