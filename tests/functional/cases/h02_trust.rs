@@ -8,7 +8,8 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, HOLLA, Launch, flash_settle, row_text, text, try_launch};
+use crate::bins::holla;
+use crate::support::{App, Launch, flash_settle, row_text, text, try_launch};
 
 /// sha256 of the `monorepo-child` `.holla.toml` body `seed_custom` writes.
 const DIGEST: &str = "4abea82557e55d9a5a325425792e1569110e81b25e7c6f1930f539e33978b1c5";
@@ -32,7 +33,7 @@ fn visual_id(checkpoint: &str) -> String {
 }
 
 fn open(name: &str) -> App {
-    let mut launch = Launch::new(name, HOLLA);
+    let mut launch = Launch::new(name, holla());
     launch.args = ["--scenario", "monorepo-child"]
         .into_iter()
         .map(str::to_string)

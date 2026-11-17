@@ -4,8 +4,9 @@ use std::time::{Duration, Instant};
 
 use tuiscotti_latest::check::{CheckOutcome, MismatchReason};
 
+use crate::bins::showcase;
 use crate::support::{
-    App, Launch, Point, SHOWCASE, SessionMode, cell_bg, file_sha256, find, find_all, find_in,
+    App, Launch, Point, SessionMode, cell_bg, file_sha256, find, find_all, find_in,
     reference_binary, reference_digest, row_text, text, try_launch,
 };
 /// Tuiscotti test ids are `[a-z0-9_-]` segments, so `S01.shell` cannot be one.
@@ -31,7 +32,7 @@ fn launch(name: &str, args: &[&str], cols: u16, rows: u16) -> App {
         launch.mode = SessionMode::Reference;
         launch
     } else {
-        Launch::new(name, SHOWCASE)
+        Launch::new(name, showcase())
     };
     launch.args = args.iter().map(|arg| (*arg).to_string()).collect();
     launch.cols = cols;

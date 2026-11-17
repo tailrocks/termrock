@@ -3,7 +3,8 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/s01_quitleave/` and each case id's dots become underscores.
 
-use crate::support::{App, Launch, SHOWCASE, find_all, row_text, text, try_launch};
+use crate::bins::showcase;
+use crate::support::{App, Launch, find_all, row_text, text, try_launch};
 
 const BLURB: &str = "QuitKeys, the leave guard";
 const CAP_PLAY: &str = "the live widget";
@@ -31,7 +32,7 @@ fn fixture(args: &[&str]) -> Vec<String> {
 }
 
 fn open(name: &str, cols: u16, rows: u16, args: &[&str]) -> App {
-    let mut launch = Launch::new(name, SHOWCASE);
+    let mut launch = Launch::new(name, showcase());
     launch.args = args.iter().copied().map(str::to_string).collect();
     launch.cols = cols;
     launch.rows = rows;

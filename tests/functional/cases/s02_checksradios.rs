@@ -7,7 +7,8 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, Point, SHOWCASE, find, find_all, row_text, text, try_launch};
+use crate::bins::showcase;
+use crate::support::{App, Launch, Point, find, find_all, row_text, text, try_launch};
 
 const TITLE: &str = "Checks & radios";
 const BLURB: &str = "Checkboxes (mixed, disabled, click target), radio groups and toggles";
@@ -38,7 +39,7 @@ const OMITTED: &[&str] = &[
 ];
 
 fn launch(name: &str, args: &[&str], cols: u16, rows: u16) -> App {
-    let mut spec = Launch::new(name, SHOWCASE);
+    let mut spec = Launch::new(name, showcase());
     spec.args = args.iter().map(|arg| (*arg).to_string()).collect();
     spec.cols = cols;
     spec.rows = rows;
