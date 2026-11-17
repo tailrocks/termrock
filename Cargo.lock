@@ -2157,10 +2157,10 @@ name = "termrock-holla"
 version = "0.1.0"
 dependencies = [
  "clap",
- "junie-tui",
  "ratatui",
  "serde_json",
  "sha2 0.10.9",
+ "termrock",
  "unicode-segmentation",
 ]
 

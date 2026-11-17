@@ -1,33 +1,33 @@
 use crate::screens::Holla;
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::hit::Axis;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::core::scroll::ScrollState;
-use junie_tui::core::selection::ClickPolicy;
-use junie_tui::shell::Page as ShellPage;
-use junie_tui::theme::Tone;
-use junie_tui::ui::context::ContextAnchor;
-use junie_tui::ui::ctx::{RenderCtx, fill, legible_on_fill};
-use junie_tui::ui::text::{fit, width, wrap};
-use junie_tui::widgets::action_row::ActionRow;
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::button::RowAlign;
-use junie_tui::widgets::dialog::Dialog;
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::menu::MenuItem;
-use junie_tui::widgets::page_header::{Heading, PageHeader};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::progress::{ProgressStatus, render_bar, spinner_frame};
-use junie_tui::widgets::props::{self, Prop};
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::statusbar::StatusItem;
-use junie_tui::widgets::viewport::{Span, TextViewport};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::hit::Axis;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::core::scroll::ScrollState;
+use termrock::core::selection::ClickPolicy;
+use termrock::shell::Page as ShellPage;
+use termrock::theme::Tone;
+use termrock::ui::context::ContextAnchor;
+use termrock::ui::ctx::{RenderCtx, fill, legible_on_fill};
+use termrock::ui::text::{fit, width, wrap};
+use termrock::widgets::action_row::ActionRow;
+use termrock::widgets::button::Button;
+use termrock::widgets::button::RowAlign;
+use termrock::widgets::dialog::Dialog;
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::menu::MenuItem;
+use termrock::widgets::page_header::{Heading, PageHeader};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::progress::{ProgressStatus, render_bar, spinner_frame};
+use termrock::widgets::props::{self, Prop};
+use termrock::widgets::scrollbar;
+use termrock::widgets::statusbar::StatusItem;
+use termrock::widgets::viewport::{Span, TextViewport};
 
 use crate::domain::plan::{Plan, PlanPhase, StepState};
 use crate::screens::{
@@ -35,8 +35,8 @@ use crate::screens::{
     ticks_label,
 };
 use crate::sim::world::{STOPPING_REFUSAL, World};
-use junie_tui::ui::layer::LayerTag;
-use junie_tui::ui::text::{plural, truncate_sep};
+use termrock::ui::layer::LayerTag;
+use termrock::ui::text::{plural, truncate_sep};
 
 pub const OUTLINE: WidgetId = WidgetId::of("plan.outline");
 pub const DETAIL: WidgetId = WidgetId::of("plan.detail");
@@ -532,7 +532,7 @@ impl PlanReviewPage {
             buf.set_string(
                 inner.x + label_w,
                 y,
-                junie_tui::ui::reveal::cut(Rect::new(inner.x + label_w, y, (vw) as u16, 1), v),
+                termrock::ui::reveal::cut(Rect::new(inner.x + label_w, y, (vw) as u16, 1), v),
                 Style::new().fg(t.tone(*tone)).bg(bg),
             );
         }
@@ -848,7 +848,7 @@ impl ShellPage<Holla> for PlanReviewPage {
             .right(&summary)
             .subtitle(&p.intent, Tone::Muted)
             .render(area, buf, t);
-        let split = area.width >= junie_tui::ui::master_detail::SPLIT_MIN;
+        let split = area.width >= termrock::ui::master_detail::SPLIT_MIN;
         let buttons_y = area.bottom().saturating_sub(1);
         let cons = consequences(&p);
         let cons_h = cons.len().min(2) as u16;
@@ -974,7 +974,7 @@ impl ShellPage<Holla> for PlanReviewPage {
             buf.set_string(
                 area.x + 3,
                 cy + i as u16,
-                junie_tui::ui::reveal::cut(
+                termrock::ui::reveal::cut(
                     Rect::new(area.x + 3, cy + i as u16, area.width.saturating_sub(4), 1),
                     c,
                 ),
@@ -1018,7 +1018,7 @@ impl ShellPage<Holla> for PlanReviewPage {
             hint("c", "Review & run…"),
             hint("p", "Details"),
             hint("Esc", "Discard plan"),
-            junie_tui::widgets::keyhint::CONTEXT_MENU,
+            termrock::widgets::keyhint::CONTEXT_MENU,
         ]
     }
 
@@ -1292,7 +1292,7 @@ impl ShellPage<Holla> for PlanTab {
                 _ => {}
             }
             let (o, ev) = self.view.on_key(key);
-            if let Some(junie_tui::widgets::viewport::ViewportAction::Copy(text)) = ev {
+            if let Some(termrock::widgets::viewport::ViewportAction::Copy(text)) = ev {
                 cx.copy(text);
             }
             if o.consumed() {
@@ -1583,7 +1583,7 @@ impl ShellPage<Holla> for PlanTab {
 
         let follow_w: Vec<u16> = self.follow_ups.iter().map(|b| b.width()).collect();
         let follow_lines = if has_follow {
-            junie_tui::widgets::button::row_lines(area.width.saturating_sub(7), &follow_w, 2)
+            termrock::widgets::button::row_lines(area.width.saturating_sub(7), &follow_w, 2)
         } else {
             0
         };
@@ -1598,7 +1598,7 @@ impl ShellPage<Holla> for PlanTab {
             area.width,
             area.height.saturating_sub(3 + summary_h),
         );
-        let split = area.width >= junie_tui::ui::master_detail::SPLIT_MIN && !self.maximized;
+        let split = area.width >= termrock::ui::master_detail::SPLIT_MIN && !self.maximized;
         let rail_area = if split {
             Rect::new(body.x, body.y, (body.width * 56 / 100).max(40), body.height)
         } else {
@@ -1680,7 +1680,7 @@ impl ShellPage<Holla> for PlanTab {
         if summary_h > 0 {
             let y = area.bottom().saturating_sub(2 + follow_lines - 1);
             let line = outcome_line(ok, failed, excluded, skipped, never);
-            junie_tui::widgets::viewport::render_spans(
+            termrock::widgets::viewport::render_spans(
                 buf,
                 area.x + 1,
                 y,
@@ -1692,7 +1692,7 @@ impl ShellPage<Holla> for PlanTab {
             if has_follow {
                 let y = area.bottom().saturating_sub(follow_lines);
                 buf.set_string(area.x + 1, y, "Next", t.faint());
-                let rects = junie_tui::widgets::button::row_layout(
+                let rects = termrock::widgets::button::row_layout(
                     Rect::new(area.x + 7, y, area.width.saturating_sub(7), follow_lines),
                     &follow_w,
                     2,
@@ -1827,12 +1827,12 @@ mod tests {
     use super::*;
     use crate::domain::fixtures::world_for;
     use crate::scenario::{Motion, Scenario};
-    use junie_tui::core::focus::{Focus, FocusRing};
-    use junie_tui::core::hit::HitRegistry;
-    use junie_tui::theme::Theme;
-    use junie_tui::ui::ctx::Interaction;
     use ratatui::buffer::Buffer;
     use ratatui::layout::Rect;
+    use termrock::core::focus::{Focus, FocusRing};
+    use termrock::core::hit::HitRegistry;
+    use termrock::theme::Theme;
+    use termrock::ui::ctx::Interaction;
 
     const ID: &str = "docker-cleanup";
 

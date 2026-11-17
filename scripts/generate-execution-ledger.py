@@ -1254,7 +1254,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H01.finder",
         "holla",
-        ["src/bin/holla/screens/finder.rs", "src/bin/holla/domain/ranking.rs", "src/bin/holla/app.rs"],
+        ["apps/holla/src/screens/finder.rs", "apps/holla/src/domain/ranking.rs", "apps/holla/src/app.rs"],
         "Discovery stages and query edits keep the selected identity and do not run a previous result on an empty list.",
         [
             ("discovery", "Show pending, ready, failed, and unavailable discovery. Type, paste, backspace, and clear the query.", "The selected identity stays while order changes. Empty results have no runnable row.", "Enter on an empty result runs the previous result."),
@@ -1264,7 +1264,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H01.scope",
         "holla",
-        ["src/bin/holla/screens/finder.rs", "src/bin/holla/domain/usage.rs"],
+        ["apps/holla/src/screens/finder.rs", "apps/holla/src/domain/usage.rs"],
         "Here, project, and host scope, groups, pin, hide, and ranking reset change the visible set only.",
         [
             ("scope", "Switch Here, project, and host. Pin, hide, restore, and reset ranking.", "The action row's command, directory, and host match the selected item after reranking.", "Hide removes a different item."),
@@ -1274,7 +1274,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H01.alternatives",
         "holla",
-        ["src/bin/holla/screens/finder.rs"],
+        ["apps/holla/src/screens/finder.rs"],
         "Alternatives lists alternatives for the selected item.",
         [
             ("alternatives", "Open Alternatives for the selected row.", "Every alternative names that row's action.", "Alternatives shows another row's action."),
@@ -1283,7 +1283,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H01.why",
         "holla",
-        ["src/bin/holla/screens/finder.rs", "src/bin/holla/domain/ranking.rs"],
+        ["apps/holla/src/screens/finder.rs", "apps/holla/src/domain/ranking.rs"],
         "Why explains the selected item.",
         [
             ("why", "Open Why for the selected row and close it.", "The explanation names the selected item. Focus returns to that row.", "Why names a different item."),
@@ -1292,7 +1292,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H01.memory",
         "holla",
-        ["src/bin/holla/domain/usage.rs", "src/bin/holla/app.rs"],
+        ["apps/holla/src/domain/usage.rs", "apps/holla/src/app.rs"],
         "Enabled and disabled history, learned queries, malformed memory, and save failure stay inside the simulated contract.",
         [
             ("memory", "Run a search with history enabled and disabled. Load malformed memory and a save failure when the fixture provides them.", "Save failure keeps the current search text.", "A memory failure clears the query."),
@@ -1302,7 +1302,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H02.trust",
         "holla",
-        ["src/bin/holla/screens/review.rs", "src/bin/holla/domain/digest.rs"],
+        ["apps/holla/src/screens/review.rs", "apps/holla/src/domain/digest.rs"],
         "Trust cancel and confirm apply to the reviewed path, directory, and digest.",
         [
             ("trust", "Cancel trust, then confirm trust for the same action.", "Cancel starts no activity. Confirm records trust for that path and digest.", "Confirm trusts a different directory."),
@@ -1312,7 +1312,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H02.args",
         "holla",
-        ["src/bin/holla/screens/review.rs", "src/bin/holla/domain/scripts.rs"],
+        ["apps/holla/src/screens/review.rs", "apps/holla/src/domain/scripts.rs"],
         "Required, choice, and secret arguments reject invalid input and do not reveal the secret.",
         [
             ("args", "Fill each implemented argument type, enter invalid input, correct it, and cancel after an edit.", "The displayed command and directory match the form. The secret is masked.", "Cancel starts the activity."),
@@ -1322,7 +1322,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H02.config",
         "holla",
-        ["src/bin/holla/domain/custom.rs", "src/bin/holla/screens/review.rs"],
+        ["apps/holla/src/domain/custom.rs", "apps/holla/src/screens/review.rs"],
         "Malformed, duplicate, and unavailable custom actions do not start an activity.",
         [
             ("config", "Load a malformed action, a duplicate action, and an unavailable action.", "The error names that action. No activity starts.", "The unavailable action starts."),
@@ -1332,7 +1332,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H02.reload",
         "holla",
-        ["src/bin/holla/domain/custom.rs", "src/bin/holla/app.rs"],
+        ["apps/holla/src/domain/custom.rs", "apps/holla/src/app.rs"],
         "Changed configuration, revocation, and reload failure return to the same action.",
         [
             ("reload", "Change trust, revoke it, and reload. Use the fixture's reload failure.", "Failure leaves the current action selected and starts nothing.", "Reload runs the action."),
@@ -1341,7 +1341,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H02.validation",
         "holla",
-        ["src/bin/holla/screens/review.rs"],
+        ["apps/holla/src/screens/review.rs"],
         "Literal shell syntax stays input text, and the action after an error is the same action.",
         [
             ("literal", "Enter literal shell metacharacters where the argument field allows them, then return after an error.", "The field shows the literal text. The owning action is unchanged.", "The metacharacters are executed as a different command."),
@@ -1350,7 +1350,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H03.output",
         "holla",
-        ["src/bin/holla/screens/activity.rs", "src/bin/holla/domain/activity.rs", "src/bin/holla/sim/world.rs"],
+        ["apps/holla/src/screens/activity.rs", "apps/holla/src/domain/activity.rs", "apps/holla/src/sim/world.rs"],
         "Queued, running, completed, failed, and stopped activities keep their own output.",
         [
             ("states", "Reach each implemented activity state, including spawn failure, nonzero exit, and restart. Filter, find, select, copy, and follow output.", "The visible status and exit status belong to that activity. Another activity's output does not change.", "Restart rewrites the failed run's identity."),
@@ -1360,7 +1360,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H03.input",
         "holla",
-        ["src/bin/holla/screens/activity.rs", "src/bin/holla/domain/exec.rs"],
+        ["apps/holla/src/screens/activity.rs", "apps/holla/src/domain/exec.rs"],
         "Public and secret prompts accept input only when the process can, and Ctrl+C goes to the task while it owns input.",
         [
             ("prompts", "Answer a public prompt and a secret prompt. Try input when it is refused. Press Ctrl+C and then Escape.", "The secret is masked. Escape returns keys to the shell. Refused input does not appear as a delivered line.", "The secret is echoed."),
@@ -1370,7 +1370,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H03.picker",
         "holla",
-        ["src/bin/holla/screens/activity.rs"],
+        ["apps/holla/src/screens/activity.rs"],
         "The activity picker acts on the selected activity.",
         [
             ("picker", "Open the picker and choose one activity.", "The opened output is that activity's output.", "The picker opens the first activity regardless of the highlight."),
@@ -1379,7 +1379,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H03.attach",
         "holla",
-        ["src/bin/holla/screens/activity.rs", "src/bin/holla/domain/activity.rs"],
+        ["apps/holla/src/screens/activity.rs", "apps/holla/src/domain/activity.rs"],
         "Detach and attach do not stop the task. Stop and escalation affect only that task.",
         [
             ("attach", "Detach, observe the monitor, attach, request stop, and escalate a resistant process.", "The task is still running after detach. Stop changes that task only.", "Detach stops the task."),
@@ -1388,7 +1388,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H03.guards",
         "holla",
-        ["src/bin/holla/app.rs", "src/bin/holla/screens/activity.rs"],
+        ["apps/holla/src/app.rs", "apps/holla/src/screens/activity.rs"],
         "Running-tab close and quit offer Stay or Stop. Finder q stays query text. Confirmed exit restores the terminal.",
         [
             ("quit", "Close a completed tab. Close a running tab and choose Stay, then Stop and quit. Type q in the Finder query.", "Stay leaves the task running. q is query text. The confirmed exit is code 0.", "Stay stops the task."),
@@ -1397,7 +1397,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H04.actions",
         "holla",
-        ["src/bin/holla/domain/catalog.rs", "src/bin/holla/domain/outcomes.rs", "src/bin/holla/sim/world.rs"],
+        ["apps/holla/src/domain/catalog.rs", "apps/holla/src/domain/outcomes.rs", "apps/holla/src/sim/world.rs"],
         "Each action family shows its command, directory, host, and confirmation, and the follow-up screen shows the simulated effect.",
         [
             ("families", "Run one action in each of Git, Cargo, Docker, Compose, Homebrew services, Gradle, IDEA, and upgrade managers, including batch members.", "The follow-up state matches that action. A batch member keeps its identity.", "The command preview belongs to a different action than the one confirmed."),
@@ -1416,7 +1416,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H04.snapshots-git",
         "holla",
-        ["src/bin/holla/screens/snapshot.rs"],
+        ["apps/holla/src/screens/snapshot.rs"],
         "Git snapshot families show their own empty, unavailable, or populated body and their follow-up action.",
         [
             ("git", "Open git, git-diff, git-stash, and git-all.", "Each body is that family. The follow-up action names the same repository.", "git-diff shows git-stash entries."),
@@ -1425,7 +1425,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H04.snapshots-host",
         "holla",
-        ["src/bin/holla/screens/snapshot.rs"],
+        ["apps/holla/src/screens/snapshot.rs"],
         "Host snapshot families keep their kind in the title and body.",
         [
             ("host", "Open system, processes, port, disk-history, and ssh.", "The title kind matches the opened snapshot.", "One family shows another family's rows."),
@@ -1434,7 +1434,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H04.snapshots-docker",
         "holla",
-        ["src/bin/holla/screens/snapshot.rs"],
+        ["apps/holla/src/screens/snapshot.rs"],
         "Docker snapshot families include the unavailable state.",
         [
             ("docker", "Open docker-ps, docker-df, compose-ps, and docker-unavailable.", "Unavailable does not list containers as running.", "Unavailable offers a follow-up that claims a container started."),
@@ -1444,7 +1444,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H04.snapshots-services",
         "holla",
-        ["src/bin/holla/screens/snapshot.rs"],
+        ["apps/holla/src/screens/snapshot.rs"],
         "Service snapshot families show their own rows.",
         [
             ("services", "Open pg, pg-blocking, mise, mise-outdated, service, and brew-services.", "Each body names its family.", "A service row appears in the mise snapshot."),
@@ -1454,7 +1454,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H04.plan",
         "holla",
-        ["src/bin/holla/screens/plan.rs", "src/bin/holla/domain/plan.rs"],
+        ["apps/holla/src/screens/plan.rs", "apps/holla/src/domain/plan.rs"],
         "Plan selection, both confirmation stages, drift, start, failure, and final tally use the reviewed steps.",
         [
             ("plan", "Remove an optional step, undo, restore, and reach no runnable steps. Cancel both confirmation stages. Enter the exact phrase and start. Show drift and re-review. Run success and failure. Cancel remaining work.", "The started plan is the reviewed plan. A cancelled confirmation does not start it. Completed steps do not run twice.", "A wrong phrase starts the plan."),
@@ -1464,7 +1464,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H05.files",
         "holla",
-        ["src/bin/holla/screens/files.rs", "src/bin/holla/sim/fs.rs"],
+        ["apps/holla/src/screens/files.rs", "apps/holla/src/sim/fs.rs"],
         "Directory entry and parent or root boundaries keep the path identity.",
         [
             ("nav", "Enter a directory and return to the parent and the root boundary.", "The visible path is that directory and then its parent.", "Parent jumps to an unrelated directory."),
@@ -1474,7 +1474,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H05.find",
         "holla",
-        ["src/bin/holla/screens/files.rs"],
+        ["apps/holla/src/screens/files.rs"],
         "Find queries, empty results, and opening the selected path stay in the file pane.",
         [
             ("find", "Search, clear to empty results, select a hit, and open it.", "The opened directory is the selected hit.", "Empty results open the previous path."),
@@ -1483,7 +1483,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H05.previews",
         "holla",
-        ["src/bin/holla/screens/files.rs", "src/bin/holla/sim/fs.rs"],
+        ["apps/holla/src/screens/files.rs", "apps/holla/src/sim/fs.rs"],
         "Each fixture preview type is distinct, and the file list does not move when the preview scrolls.",
         [
             ("preview", "Show text, binary, missing, unreadable, and symlink previews when the fixture has them. Toggle hidden files. Find, select, and copy inside a large preview.", "Hidden-file toggle keeps a valid selection. Preview scrolling leaves the file list in place.", "Copy returns a different file's text."),
@@ -1492,7 +1492,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H05.scan",
         "holla",
-        ["src/bin/holla/screens/disk.rs", "src/bin/holla/sim/world.rs"],
+        ["apps/holla/src/screens/disk.rs", "apps/holla/src/sim/world.rs"],
         "Scan start, progress, partial data, completion, cancellation, cache, and partial errors are distinct.",
         [
             ("scan", "Start a scan, observe progress and partial data, cancel one scan, and complete another. Change the scan root.", "Cancellation does not show a completed total. A stale result is labelled when the root changes.", "A cancelled scan shows the completed byte total as final."),
@@ -1502,7 +1502,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H05.disk",
         "holla",
-        ["src/bin/holla/screens/disk.rs"],
+        ["apps/holla/src/screens/disk.rs"],
         "Tree sorting, selection totals, Overview, and TopFiles return to the same node.",
         [
             ("tree", "Expand, sort, multi-select, and read the selected-byte total. Open Overview and TopFiles and return.", "The returned node is the node that was open. The neighbour pane is unchanged.", "Sort changes the total without changing the selected set."),
@@ -1512,7 +1512,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H06.cleanup",
         "holla",
-        ["src/bin/holla/screens/cleanup.rs", "src/bin/holla/domain/cleanup.rs"],
+        ["apps/holla/src/screens/cleanup.rs", "apps/holla/src/domain/cleanup.rs"],
         "Only eligible, unprotected items can be selected for a dry run, Trash, or permanent delete.",
         [
             ("select", "Detect categories, try disabled and protected items, and select eligible items in each mode.", "Protected items stay. The mode label matches the selected mode.", "A protected descendant is included."),
@@ -1522,7 +1522,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H06.gate",
         "holla",
-        ["src/bin/holla/screens/review.rs", "src/bin/holla/domain/cleanup.rs"],
+        ["apps/holla/src/screens/review.rs", "apps/holla/src/domain/cleanup.rs"],
         "Each confirmation stage can be cancelled. Partial, wrong, and stale plans do not delete.",
         [
             ("confirm", "Cancel each stage. Enter partial, wrong, and exact text. Change the plan and try the old confirmation. Refuse a second cleanup and a failed Gradle stop.", "Exact text on the current plan is the only path that deletes. A failed prerequisite deletes nothing.", "The old phrase deletes after the plan changes."),
@@ -1532,7 +1532,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H06.report",
         "holla",
-        ["src/bin/holla/screens/snapshot.rs", "src/bin/holla/domain/cleanup.rs"],
+        ["apps/holla/src/screens/snapshot.rs", "apps/holla/src/domain/cleanup.rs"],
         "Per-item success, failure, and partial results and the freed-byte total match the simulation.",
         [
             ("results", "Complete a cleanup with mixed item outcomes and open the running and final reports.", "The total and each item status match the simulation.", "A failed item is counted as freed."),
@@ -1542,7 +1542,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H06.log",
         "holla",
-        ["src/bin/holla/domain/cleanup.rs", "src/bin/holla/app.rs"],
+        ["apps/holla/src/domain/cleanup.rs", "apps/holla/src/app.rs"],
         "Log failure is visible and recovery does not claim a missing log entry.",
         [
             ("log", "Produce an operation log and the fixture's log failure.", "The failure text is the log failure. Recovery does not invent entries.", "Log failure is shown as a successful delete."),
@@ -1551,7 +1551,7 @@ def consumer_leaves() -> list[dict]:
     add(
         "H06.quit",
         "holla",
-        ["src/bin/holla/app.rs", "src/bin/holla/screens/cleanup.rs"],
+        ["apps/holla/src/app.rs", "apps/holla/src/screens/cleanup.rs"],
         "Quit during cleanup waits for the current report and log contract.",
         [
             ("quit", "Quit while cleanup runs, including when another activity is running.", "The exit path shows the guard. Confirmed exit waits for the report contract.", "Quit drops the report and returns success immediately."),
@@ -1688,7 +1688,7 @@ def consumer_leaves() -> list[dict]:
         [("export", "Enter an invalid path, cancel a valid path, and confirm a valid path.", "Invalid is rejected. Cancel writes no success report. Confirm reports that path.", "The test claims a host file was written.")])
 
     # Cross-application
-    add("X01.cli", "cross", ["src/cli.rs", "src/bin/showcase/main.rs", "apps/tablepro/src/main.rs", "src/bin/holla/main.rs", "src/bin/jackin/main.rs"],
+    add("X01.cli", "cross", ["src/cli.rs", "src/bin/showcase/main.rs", "apps/tablepro/src/main.rs", "apps/holla/src/main.rs", "src/bin/jackin/main.rs"],
         "Help and invalid CLI values return the current exit status and error text. Short commands do not use the Ctrl+Q helper.",
         [("cli", "Run --help and an unknown page, scenario, connection, option key, and option value for each binary. Repeat --opt and observe precedence.", "The exit status and the error name the bad argument. A valid option is accepted.", "An invalid option starts the full-screen UI and is treated as success.")])
     add("X01.env", "cross", ["src/cli.rs", "src/theme.rs", "src/motion.rs"],
@@ -1704,7 +1704,7 @@ def consumer_leaves() -> list[dict]:
         "The first input after startup and a bounded burst leave the process alive with the expected final screen.",
         [("start", "Send the first key after startup. Send a burst of keys, pointer motion, wheel, and resize.", "The final semantic result is the result of the last intended action. The process is alive.", "The process exits during the burst.")],
         deps=["G03", "G04", "G05"])
-    add("X02.resize", "cross", ["src/core/shape.rs", "src/shell/app.rs", "apps/tablepro/src/app.rs", "src/bin/holla/app.rs", "src/bin/jackin/app.rs"],
+    add("X02.resize", "cross", ["src/core/shape.rs", "src/shell/app.rs", "apps/tablepro/src/app.rs", "apps/holla/src/app.rs", "src/bin/jackin/app.rs"],
         "Narrow and too-small states are captured before the terminal grows. Open layers survive.",
         [("resize", "Shrink to 71x20, 72x19, and 72x20 and to each source breakpoint below, at, and above. Do this with a form, a picker, a destructive gate, and running output open. Then grow.", "The narrow checkpoint is the narrow size. After growth the same draft, selection, and focus remain.", "The narrow baseline is captured after the terminal returns to 120x40.")],
         deps=["G03", "G04", "G05", "T05.quit", "H03.guards", "J06.exit"])

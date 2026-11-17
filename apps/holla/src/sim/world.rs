@@ -16,8 +16,8 @@ use crate::domain::stack::{
 };
 use crate::scenario::Scenario;
 use crate::sim::fs::Fs;
-use junie_tui::clock::SimClock;
 use std::collections::BTreeSet;
+use termrock::clock::SimClock;
 
 pub const TICK_MS: i64 = 80;
 
@@ -636,7 +636,7 @@ impl World {
         }
         let mut effects = vec![];
 
-        junie_tui::record_work!(SchedulingRecordsVisited, self.activities.len());
+        termrock::record_work!(SchedulingRecordsVisited, self.activities.len());
         let ready: Vec<String> = self
             .activities
             .iter()
@@ -652,7 +652,7 @@ impl World {
             self.edit_activity(&id, |a| a.start(tick));
         }
         let mut transitioned = false;
-        junie_tui::record_work!(SchedulingRecordsVisited, self.activities.len());
+        termrock::record_work!(SchedulingRecordsVisited, self.activities.len());
         for a in &mut self.activities {
             let was = a.state;
             a.advance(tick);
@@ -684,7 +684,7 @@ impl World {
                 });
             }
         }
-        junie_tui::record_work!(SchedulingRecordsVisited, self.plans.len());
+        termrock::record_work!(SchedulingRecordsVisited, self.plans.len());
         for pi in 0..self.plans.len() {
             msgs.extend(self.tick_plan(pi));
         }

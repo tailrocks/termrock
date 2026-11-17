@@ -657,7 +657,7 @@ impl Fs {
         let mut cut = raw.len().min(PREVIEW_MAX_BYTES);
 
         while cut < raw.len() && cut > 0 {
-            junie_tui::record_work!(PrefixRollbackProbes, 1usize);
+            termrock::record_work!(PrefixRollbackProbes, 1usize);
             if (raw[cut] & 0b1100_0000) != 0b1000_0000 {
                 break;
             }
@@ -665,13 +665,13 @@ impl Fs {
         }
         let head = &raw[..cut];
         let first_nul = head.iter().position(|&b| b == 0);
-        junie_tui::record_work!(NulBytesProbed, first_nul.map_or(head.len(), |at| at + 1));
+        termrock::record_work!(NulBytesProbed, first_nul.map_or(head.len(), |at| at + 1));
         if first_nul.is_some() {
             return Preview::Binary {
                 reason: "NUL byte in the first 256 KiB".into(),
             };
         }
-        junie_tui::record_work!(Utf8BytesValidated, head.len());
+        termrock::record_work!(Utf8BytesValidated, head.len());
         let text = match std::str::from_utf8(head) {
             Ok(t) => t,
             Err(_) => {
@@ -688,10 +688,10 @@ impl Fs {
                 truncated_lines = true;
                 break;
             }
-            junie_tui::record_work!(TextBytesSanitized, l.len());
+            termrock::record_work!(TextBytesSanitized, l.len());
             let mut s = sanitize(l);
             let chars = s.chars().count();
-            junie_tui::record_work!(LineCharsCounted, chars);
+            termrock::record_work!(LineCharsCounted, chars);
             if chars > PREVIEW_MAX_LINE_CHARS {
                 s = s.chars().take(PREVIEW_MAX_LINE_CHARS).collect::<String>() + " …";
                 long_lines += 1;
@@ -1102,18 +1102,18 @@ impl Fs {
             let (score, matched) = if lname == lq || stem == lq {
                 (
                     0,
-                    junie_tui::ui::text::fuzzy(name, q)
+                    termrock::ui::text::fuzzy(name, q)
                         .map(|(_, m)| m)
                         .unwrap_or_default(),
                 )
             } else if let Some(i) = lname.find(&lq) {
                 (
                     10,
-                    junie_tui::ui::text::fuzzy(name, q)
+                    termrock::ui::text::fuzzy(name, q)
                         .map(|(_, m)| m)
                         .unwrap_or_else(|| (i..i + lq.len()).collect()),
                 )
-            } else if let Some((s, m)) = junie_tui::ui::text::fuzzy(name, q) {
+            } else if let Some((s, m)) = termrock::ui::text::fuzzy(name, q) {
                 (50 + s, m)
             } else {
                 continue;

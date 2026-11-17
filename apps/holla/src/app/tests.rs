@@ -4,7 +4,7 @@ use crate::domain::context::ScopeTag;
 use crate::domain::effect::Effect;
 use crate::screens::finder::FinderPage;
 use crate::sim::world::{Batch, BatchMember, BatchMode};
-use junie_tui::core::event::Input;
+use termrock::core::event::Input;
 
 const ID: &str = "docker-cleanup";
 
@@ -324,7 +324,7 @@ fn quit_dialog_body(app: &App) -> String {
     let top = app.modals.top().expect("a dialog is open");
     assert_eq!(top.tag.kind, "quit");
     match &app.modals.top_as::<Dialog>().expect("dialog").body {
-        junie_tui::widgets::dialog::DialogBody::Text(text) => text.clone(),
+        termrock::widgets::dialog::DialogBody::Text(text) => text.clone(),
         _ => panic!("quit dialog has a text body"),
     }
 }
@@ -1620,7 +1620,7 @@ fn shows_retained_lines(text: &str, count: usize) -> bool {
 fn drawn_text_sized(app: &mut App, columns: u16) -> String {
     let mut term = ratatui::Terminal::new(ratatui::backend::TestBackend::new(columns, 40))
         .expect("test terminal");
-    term.draw(|f| junie_tui::shell::render(app, f))
+    term.draw(|f| termrock::shell::render(app, f))
         .expect("test backend draws");
     let buf = term.backend().buffer();
     let area = buf.area;
@@ -2338,7 +2338,7 @@ fn focus_markers(app: &mut App) -> usize {
 }
 
 fn click_at(app: &mut App, x: u16, y: u16) {
-    use junie_tui::core::event::{Mouse, MouseKind};
+    use termrock::core::event::{Mouse, MouseKind};
     let at = ratatui::layout::Position::new(x, y);
     app.handle_input(Input::Mouse(Mouse::new(MouseKind::Down, at)));
     app.handle_input(Input::Mouse(Mouse::new(MouseKind::Up, at)));
@@ -2495,7 +2495,7 @@ fn long_explore_tiles(order: &[&str]) -> Vec<crate::domain::catalog::ExploreTile
 }
 
 fn scroll_preview_down(app: &mut App, times: usize) {
-    use junie_tui::core::event::{Mouse, MouseKind};
+    use termrock::core::event::{Mouse, MouseKind};
     let at = ratatui::layout::Position::new(100, 9);
     for _ in 0..times {
         app.handle_input(Input::Mouse(Mouse::new(MouseKind::WheelDown, at)));
@@ -2883,7 +2883,7 @@ fn finder_reselecting_the_result_by_click_keeps_preview_scroll() {
 
 #[test]
 fn finder_secondary_click_on_the_selected_result_keeps_preview_scroll() {
-    use junie_tui::core::event::{Mouse, MouseKind};
+    use termrock::core::event::{Mouse, MouseKind};
     let mut app = long_preview_result_app();
     let scrolled = scrolled_long_preview(&mut app);
     let (x, y) = result_row_at(&mut app);

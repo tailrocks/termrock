@@ -10,14 +10,14 @@ default-run = "holla"
 
 [[bin]]
 name = "holla"
-path = "../../src/bin/holla/main.rs"
+path = "src/main.rs"
 
 [features]
 default = []
-work-metrics = ["junie-tui/work-metrics"]
+work-metrics = ["termrock/work-metrics"]
 
 [dependencies]
-junie-tui = { path = "../..", default-features = false, features = ["cli"] }
+termrock = { path = "../../crates/termrock", default-features = false, features = ["cli"] }
 clap = { workspace = true }
 ratatui = { workspace = true }
 serde_json = { workspace = true }

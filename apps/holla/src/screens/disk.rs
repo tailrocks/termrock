@@ -1,36 +1,36 @@
 use crate::screens::{DetailRewind, Holla};
-use junie_tui::shell::Page as ShellPage;
-use junie_tui::widgets::page_header::Heading;
 use std::collections::BTreeSet;
+use termrock::shell::Page as ShellPage;
+use termrock::widgets::page_header::Heading;
 
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::hit::Axis;
-use junie_tui::core::id::{Part, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::core::scroll::ScrollState;
-use junie_tui::core::selection::ClickPolicy;
-use junie_tui::theme::Tone;
-use junie_tui::ui::context::{ContextAnchor, ContextSource};
-use junie_tui::ui::ctx::{RenderCtx, fill, legible_on_fill};
-use junie_tui::ui::master_detail::MasterDetail;
-use junie_tui::ui::text::{fit, width, wrap};
-use junie_tui::widgets::empty::{self, EmptyState};
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::menu::MenuItem;
-use junie_tui::widgets::meter_list::{MeterList, MeterRow};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::progress::{
-    Meter, MeterTone, MeterVisual, ProgressStatus, render_bar, render_spinner,
-};
-use junie_tui::widgets::props::Prop;
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::statusbar::StatusItem;
-use junie_tui::widgets::tree::{TreeAction, TreeNode, TreeView};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::hit::Axis;
+use termrock::core::id::{Part, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::core::scroll::ScrollState;
+use termrock::core::selection::ClickPolicy;
+use termrock::theme::Tone;
+use termrock::ui::context::{ContextAnchor, ContextSource};
+use termrock::ui::ctx::{RenderCtx, fill, legible_on_fill};
+use termrock::ui::master_detail::MasterDetail;
+use termrock::ui::text::{fit, width, wrap};
+use termrock::widgets::empty::{self, EmptyState};
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::menu::MenuItem;
+use termrock::widgets::meter_list::{MeterList, MeterRow};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::progress::{
+    Meter, MeterTone, MeterVisual, ProgressStatus, render_bar, render_spinner,
+};
+use termrock::widgets::props::Prop;
+use termrock::widgets::scrollbar;
+use termrock::widgets::statusbar::StatusItem;
+use termrock::widgets::tree::{TreeAction, TreeNode, TreeView};
 
 use crate::domain::cleanup::{DeleteItem, DeletePlan, Mode, NOISE_NAMES};
 use crate::domain::stack::Spotlight;
@@ -40,8 +40,8 @@ use crate::screens::{
 };
 use crate::sim::fs::ScanNode;
 use crate::sim::world::{ScanPhase, World};
-use junie_tui::ui::layer::LayerTag;
-use junie_tui::ui::text::plural;
+use termrock::ui::layer::LayerTag;
+use termrock::ui::text::plural;
 
 pub const TREE: WidgetId = WidgetId::of("disk.tree");
 pub const DETAIL: WidgetId = WidgetId::of("disk.detail");
@@ -210,7 +210,7 @@ impl DiskPage {
         let foldable = self.fold && n.is_dir && NOISE_NAMES.contains(&name.as_str());
         let mut meta = format!(
             "{:>9} · {pct:>3}%",
-            junie_tui::ui::text::bytes(self.node_size(n))
+            termrock::ui::text::bytes(self.node_size(n))
         );
         if let Some(e) = &n.error {
             meta = format!("{meta} · {}", short_error(e));
@@ -384,7 +384,7 @@ impl DiskPage {
                 cx.status(format!(
                     "Unselected · {} selected · {}",
                     self.selected.len(),
-                    junie_tui::ui::text::bytes(self.selected_bytes(w))
+                    termrock::ui::text::bytes(self.selected_bytes(w))
                 ));
             }
             self.reviewed = None;
@@ -412,7 +412,7 @@ impl DiskPage {
         cx.status(format!(
             "{} selected · {} estimated",
             plural(self.selected.len(), "item", "items"),
-            junie_tui::ui::text::bytes(self.selected_bytes(w))
+            termrock::ui::text::bytes(self.selected_bytes(w))
         ));
         self.reviewed = None;
         self.rebuild_tree(w);
@@ -549,13 +549,13 @@ impl DiskPage {
                 if let Some(n) = node {
                     v.push(Prop::new(
                         "Allocated",
-                        junie_tui::ui::text::bytes(n.allocated),
+                        termrock::ui::text::bytes(n.allocated),
                     ));
                     v.push(Prop::new(
                         "Apparent",
                         format!(
                             "{}{}",
-                            junie_tui::ui::text::bytes(n.apparent),
+                            termrock::ui::text::bytes(n.apparent),
                             if n.apparent > n.allocated {
                                 " · sparse"
                             } else if n.apparent < n.allocated {
@@ -603,7 +603,7 @@ impl DiskPage {
                             "Cached",
                             format!(
                                 "{} · {} · hint only",
-                                junie_tui::ui::text::bytes(h.allocated),
+                                termrock::ui::text::bytes(h.allocated),
                                 w.clock.ago(h.recorded_secs)
                             ),
                         )
@@ -704,7 +704,7 @@ impl DiskPage {
                             "Cached",
                             format!(
                                 "{} · {} · a hint, not a measurement",
-                                junie_tui::ui::text::bytes(b),
+                                termrock::ui::text::bytes(b),
                                 w.clock.ago(at)
                             ),
                         )
@@ -743,7 +743,7 @@ impl DiskPage {
                             if r.missing {
                                 "stat failed · the file vanished".into()
                             } else {
-                                format!("{} allocated", junie_tui::ui::text::bytes(r.bytes))
+                                format!("{} allocated", termrock::ui::text::bytes(r.bytes))
                             },
                         )
                         .tone(if r.missing {
@@ -804,7 +804,7 @@ impl DiskPage {
             buf.set_string(
                 inner.x + label_w,
                 y,
-                junie_tui::ui::reveal::cut(Rect::new(inner.x + label_w, y, (vw) as u16, 1), v),
+                termrock::ui::reveal::cut(Rect::new(inner.x + label_w, y, (vw) as u16, 1), v),
                 Style::new().fg(t.tone(*tone)).bg(bg),
             );
         }
@@ -838,7 +838,7 @@ impl DiskPage {
                             Some((b, at)) => {
                                 format!(
                                     "{:>9} · cached {}",
-                                    junie_tui::ui::text::bytes(b),
+                                    termrock::ui::text::bytes(b),
                                     w.clock.ago(at)
                                 )
                             }
@@ -858,7 +858,7 @@ impl DiskPage {
                         if r.missing {
                             "stat failed".to_owned()
                         } else {
-                            format!("{:>9}", junie_tui::ui::text::bytes(r.bytes))
+                            format!("{:>9}", termrock::ui::text::bytes(r.bytes))
                         },
                         String::new(),
                         self.selected.contains(&r.path),
@@ -919,7 +919,7 @@ impl DiskPage {
                 buf.set_string(
                     x,
                     y,
-                    junie_tui::ui::reveal::cut(Rect::new(x, y, (avail) as u16, 1), size),
+                    termrock::ui::reveal::cut(Rect::new(x, y, (avail) as u16, 1), size),
                     plain.fg(t.text_secondary),
                 );
             }
@@ -929,7 +929,7 @@ impl DiskPage {
                 buf.set_string(
                     x,
                     y,
-                    junie_tui::ui::reveal::cut(Rect::new(x, y, (avail) as u16, 1), kind),
+                    termrock::ui::reveal::cut(Rect::new(x, y, (avail) as u16, 1), kind),
                     plain.fg(t.text_muted),
                 );
             }
@@ -1431,7 +1431,7 @@ impl ShellPage<Holla> for DiskPage {
                             }
                             cx.status(format!(
                                 "Every visible entry selected · {}",
-                                junie_tui::ui::text::bytes(self.selected_bytes(w))
+                                termrock::ui::text::bytes(self.selected_bytes(w))
                             ));
                         }
                         self.reviewed = None;
@@ -1692,12 +1692,12 @@ impl ShellPage<Holla> for DiskPage {
                             (scan.progress(w.tick) * 100.0).round(),
                             scan.revealed(w.tick),
                             self.selected.len(),
-                            junie_tui::ui::text::bytes(self.selected_bytes(w))
+                            termrock::ui::text::bytes(self.selected_bytes(w))
                         );
                         buf.set_string(
                             area.x + 1,
                             y1,
-                            junie_tui::ui::reveal::cut(
+                            termrock::ui::reveal::cut(
                                 Rect::new(area.x + 1, y1, area.width.saturating_sub(2), 1),
                                 &line,
                             ),
@@ -1729,10 +1729,10 @@ impl ShellPage<Holla> for DiskPage {
                     } else {
                         let mut line = format!(
                             "scan complete · {} allocated · {} entries · {} selected ({})",
-                            junie_tui::ui::text::bytes(scan.tree.allocated),
+                            termrock::ui::text::bytes(scan.tree.allocated),
                             scan.tree.entries,
                             self.selected.len(),
-                            junie_tui::ui::text::bytes(self.selected_bytes(w))
+                            termrock::ui::text::bytes(self.selected_bytes(w))
                         );
                         if errors > 0 {
                             line = format!(
@@ -1746,7 +1746,7 @@ impl ShellPage<Holla> for DiskPage {
                         buf.set_string(
                             area.x + 1,
                             y1,
-                            junie_tui::ui::reveal::cut(
+                            termrock::ui::reveal::cut(
                                 Rect::new(area.x + 1, y1, area.width.saturating_sub(2), 1),
                                 &line,
                             ),
@@ -1760,10 +1760,10 @@ impl ShellPage<Holla> for DiskPage {
                 }
             }
             View::Overview => {
-                buf.set_string(area.x + 1, y1, junie_tui::ui::reveal::cut(Rect::new(area.x + 1, y1, area.width.saturating_sub(2), 1), "home folders alphabetically, then insight roots · cached sizes are hints with their age · Enter analyses live"), t.muted());
+                buf.set_string(area.x + 1, y1, termrock::ui::reveal::cut(Rect::new(area.x + 1, y1, area.width.saturating_sub(2), 1), "home folders alphabetically, then insight roots · cached sizes are hints with their age · Enter analyses live"), t.muted());
             }
             View::TopFiles => {
-                buf.set_string(area.x + 1, y1, junie_tui::ui::reveal::cut(Rect::new(area.x + 1, y1, area.width.saturating_sub(2), 1), &format!("{} · regular files of 100 MiB or more · top 50 by allocated size · Space selects for the same cleanup gate", self.top_state.clone().unwrap_or(format!("{} files", self.top.len())))), t.muted());
+                buf.set_string(area.x + 1, y1, termrock::ui::reveal::cut(Rect::new(area.x + 1, y1, area.width.saturating_sub(2), 1), &format!("{} · regular files of 100 MiB or more · top 50 by allocated size · Space selects for the same cleanup gate", self.top_state.clone().unwrap_or(format!("{} files", self.top.len())))), t.muted());
             }
         }
         let mut body_y = area.y + 3;
@@ -1875,7 +1875,7 @@ impl ShellPage<Holla> for DiskPage {
                 hint("t", "Top files"),
                 hint("p", "Details"),
                 hint("Esc", "Back"),
-                junie_tui::widgets::keyhint::CONTEXT_MENU,
+                termrock::widgets::keyhint::CONTEXT_MENU,
             ],
             View::Overview => vec![
                 hint("↑↓", "Move"),
@@ -1883,7 +1883,7 @@ impl ShellPage<Holla> for DiskPage {
                 hint("t", "Top files"),
                 hint("p", "Details"),
                 hint("Esc", "Back"),
-                junie_tui::widgets::keyhint::CONTEXT_MENU,
+                termrock::widgets::keyhint::CONTEXT_MENU,
             ],
             View::TopFiles => vec![
                 hint("↑↓", "Move"),
@@ -1891,7 +1891,7 @@ impl ShellPage<Holla> for DiskPage {
                 hint("d", "Delete…"),
                 hint("y", "Copy path"),
                 hint("Esc", "Back"),
-                junie_tui::widgets::keyhint::CONTEXT_MENU,
+                termrock::widgets::keyhint::CONTEXT_MENU,
             ],
         }
     }
@@ -1945,7 +1945,7 @@ impl Screen for DiskPage {
                 format!(
                     "{} selected · {}",
                     self.selected.len(),
-                    junie_tui::ui::text::bytes(self.selected_bytes(w))
+                    termrock::ui::text::bytes(self.selected_bytes(w))
                 ),
                 false,
             ),
@@ -1976,9 +1976,9 @@ mod context_tests {
     use crate::domain::fixtures::world_for;
     use crate::scenario::{Motion, Scenario};
     use crate::screens::pointer_tests::{cell_of, render_hits, secondary_open};
-    use junie_tui::core::focus::{Focus, FocusRing};
-    use junie_tui::core::id::{ItemKey, PartRef};
-    use junie_tui::shell::Request;
+    use termrock::core::focus::{Focus, FocusRing};
+    use termrock::core::id::{ItemKey, PartRef};
+    use termrock::shell::Request;
 
     /// Opens the page's menu through the real context-key path, with `focus` on the list or tree.
     fn open_menu(page: &mut DiskPage, w: &mut World, focus: WidgetId) -> LayerTag {
@@ -2400,11 +2400,11 @@ mod detail_scroll_tests {
     use crate::domain::fixtures::world_for;
     use crate::scenario::{Motion, Scenario};
     use crate::screens::pointer_tests::{cell_of, render_hits, secondary_open};
-    use junie_tui::core::focus::{Focus, FocusRing};
-    use junie_tui::core::hit::HitRegistry;
-    use junie_tui::core::id::{ItemKey, PartRef};
     use ratatui::crossterm::event::KeyModifiers;
     use ratatui::layout::Position;
+    use termrock::core::focus::{Focus, FocusRing};
+    use termrock::core::hit::HitRegistry;
+    use termrock::core::id::{ItemKey, PartRef};
 
     fn overview_page(w: &World) -> DiskPage {
         let mut page = DiskPage::overview();
@@ -2646,7 +2646,7 @@ mod cleanup_rescan_tests {
     use crate::domain::fixtures::world_for;
     use crate::scenario::{Motion, Scenario};
     use crate::sim::world::scan_test_support::run_to_completion;
-    use junie_tui::core::focus::{Focus, FocusRing};
+    use termrock::core::focus::{Focus, FocusRing};
 
     #[test]
     fn a_cleanup_rescan_keeps_an_entry_the_reader_deselected_deselected() {

@@ -1047,7 +1047,7 @@ fn cargo(w: &World, c: &Command) -> Script {
                             &format!(
                                 "     Summary {} files, {} total (dry run)",
                                 cg.target_files,
-                                junie_tui::ui::text::bytes(cg.target_bytes)
+                                termrock::ui::text::bytes(cg.target_bytes)
                             ),
                         ),
                         toned(2, "nothing removed · --dry-run", LineTone::Muted),
@@ -1072,7 +1072,7 @@ fn cargo(w: &World, c: &Command) -> Script {
                         &format!(
                             "     Removed {} files, {} total",
                             cg.target_files,
-                            junie_tui::ui::text::bytes(cg.target_bytes)
+                            termrock::ui::text::bytes(cg.target_bytes)
                         ),
                     ),
                 ],
