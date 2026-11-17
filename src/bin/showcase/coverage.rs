@@ -156,6 +156,21 @@ pub enum ScenarioId {
     // lane:routing begin: this lane adds its ScenarioId variants between these two lines only
     // lane:routing end
     // lane:state begin: this lane adds its ScenarioId variants between these two lines only
+    StateIdentity,
+    StateFocusRing,
+    StateFocusBlur,
+    StateResponseFlow,
+    StatePointerShapes,
+    StateListCursor,
+    StateTypeAhead,
+    StateNavProfile,
+    StateRowSelection,
+    StateClickPolicy,
+    StateTextBuffer,
+    StateTextCommands,
+    StateUndoHistory,
+    StateEditEntry,
+    StatePartRegions,
     // lane:state end
     // lane:scroll begin: this lane adds its ScenarioId variants between these two lines only
     ScrollStateGeometry,
