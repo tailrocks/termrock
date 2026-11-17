@@ -2150,6 +2150,7 @@ name = "termrock"
 version = "0.1.0"
 dependencies = [
  "junie-tui",
+ "ratatui",
 ]
 
 [[package]]

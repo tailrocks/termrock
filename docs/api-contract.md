@@ -76,6 +76,8 @@ and each runs in its own Cargo invocation and target directory. See the
   `ListBox::on_key_source` borrow any `ListSource` for one call.
 - `WidgetId` names a widget instance for focus, hit testing and layers.
   `WidgetId::of` is a constant function of its text; `sub` derives a child.
+- Example: [`keyed_list`](../crates/termrock/examples/keyed_list.rs) keeps the
+  cursor on its record while the host reorders the rows.
 
 ## Source revisions
 
@@ -96,6 +98,8 @@ pushed, and a host handles them in that order. Zero or one action is stored
 inline; a second allocates. A host must not rely on one action standing in for
 a batch: the fixture `consumer_keyed_modal_preserves_selection` reads the
 activation and the selection change of one Enter as two actions, in order.
+Example: [`grid_effects`](../crates/termrock/examples/grid_effects.rs) turns the
+typed actions of a grid edit into host effects, in order.
 `termrock::core::keymap::Actions` is a different, key-map concept.
 
 ## Focus and layers
@@ -109,6 +113,17 @@ for "click elsewhere". Floating content goes through the overlay layer
 (`RenderCtx::overlay`, flushed by `flush_overlays` and `begin_modal`) and never
 depends on draw order inside a page.
 
+Example: [`modal_focus`](../crates/termrock/examples/modal_focus.rs) routes keys
+to the modal before the page and restores focus when it closes.
+
+## Nested scrolling
+
+A `ScrollView` handles a scroll key only when it has something to scroll, and
+answers `None` otherwise. The host offers a key to the innermost view first and
+to the next outer view when the answer is `None`, so the inner view consumes
+before the outer one. Example:
+[`nested_scroll`](../crates/termrock/examples/nested_scroll.rs).
+
 ## Edit errors
 
 A fallible change validates before it commits, or leaves the prior state
@@ -116,7 +131,9 @@ intact. A provider that breaks the keyed contract is rejected with a
 `KeyedSourceError` and the collection keeps its previous state. When a record
 disappears under an open edit, reconcile cancels the edit and reports
 `edit_cancelled`; a pointer press whose row left is cancelled the same way. A
-refused control reports through the refusal channel instead of mutating.
+refused control reports through the refusal channel instead of mutating. Example:
+[`validated_input`](../crates/termrock/examples/validated_input.rs) refuses an
+invalid value and keeps the one the host saved.
 
 ## Render lifetime
 
@@ -138,7 +155,10 @@ a producer that finds the queue full or closed gets its message back in
 terminal events and hands the application at most `ExternalPolicy::max_messages`
 external messages, within `max_duration`, before it checks resize and tick
 again, so a flood of either cannot starve input. The bound cannot interrupt one
-handler that blocks. `TerminalSession` enters raw mode and restores the
+handler that blocks. Example:
+[`bounded_messages`](../crates/termrock/examples/bounded_messages.rs) runs
+turns under a budget and retries what a full queue returned.
+`TerminalSession` enters raw mode and restores the
 terminal on drop and on panic.
 
 ## Breaking changes in v0.1 and migration
@@ -171,7 +191,13 @@ Version 0.1 is not a compatibility release. A consumer of an older checkout:
 A rename or removal of the implementation names is a separate, versioned
 decision.
 
-## Fixtures that hold this contract
+## Examples and fixtures that hold this contract
+
+Six runnable examples in [`crates/termrock/examples`](../crates/termrock/examples)
+(`cargo run -p termrock --example <name>`, listed in the
+[README](../README.md#examples)) show each contract above, and each carries a
+`#[test]` for its outcome. The fixtures below hold the feature and dependency
+boundaries.
 
 Each fixture is a package with its own `[workspace]`, a committed `Cargo.lock`
 and its own tests. `scripts/check-consumers.sh` builds and runs all four in
