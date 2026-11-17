@@ -6,6 +6,7 @@ use ratatui::style::Modifier;
 use crate::core::edit::{EditEntry, EditKind, FieldKeys, FocusSelect, TextCmd};
 use crate::core::event::{Key, Outcome};
 use crate::core::focus::{BlurAction, request_focus_next};
+use crate::core::hints::{HasHints, HintCx};
 use crate::core::id::WidgetId;
 use crate::ui::ctx::RenderCtx;
 use crate::ui::edit_menu::{
@@ -15,6 +16,7 @@ use crate::ui::edit_menu::{
 use crate::ui::text::width;
 use crate::widgets::edit::{EditField, Editable, FieldError, LineLook, ValidateWhen, Validator};
 use crate::widgets::field_common::{EditAction, PointerField, PointerSelect, paste_clipboard};
+use crate::widgets::keyhint::Hint;
 
 impl crate::ui::measure::Measure for TextInput {
     fn measure(
@@ -1001,6 +1003,12 @@ impl EditMenuHost for TextInput {
         }
         self.sync_required();
         self.field.run(cmd).edited
+    }
+}
+
+impl HasHints for TextInput {
+    fn hints(&self, _: &HintCx) -> Vec<Hint> {
+        TextInput::hints(self)
     }
 }
 

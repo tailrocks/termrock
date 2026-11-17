@@ -4,16 +4,16 @@ use ratatui::layout::{Margin, Position, Rect};
 use ratatui::style::Color;
 
 use crate::core::event::{Key, Outcome};
+use crate::core::hints::{Binding, Bindings, HasHints, HintCx, nav_bindings, nav_hints};
 use crate::core::id::{Part, WidgetId};
-use crate::core::keymap::Nav;
-use crate::core::keymap::NavKeys;
-use crate::core::keymap::unassigned_chord;
+use crate::core::keymap::{Nav, NavKeys, unassigned_chord};
 use crate::core::list::{Cursor, KeyStep, Moved, Navigable, RowSource};
 use crate::core::refusal::{Control, Reason};
 use crate::core::scroll::{Scrollable, TrackClick};
 use crate::theme::CursorStyle;
 use crate::ui::ctx::{RenderCtx, fill};
 use crate::ui::popup::{Dismiss, Placement, backdrop_id, place_with, surface_for};
+use crate::widgets::keyhint::{Hint, hint};
 use crate::widgets::option_list::OptionList;
 use crate::widgets::scrollbar;
 
@@ -874,5 +874,28 @@ impl crate::core::pointer::MouseTarget for Select {
             Some(Phase::Click) => self.on_click(id).into(),
             _ => Response::ignored(),
         }
+    }
+}
+
+impl HasHints for Select {
+    fn hints(&self, _: &HintCx) -> Vec<Hint> {
+        if self.disabled {
+            return vec![];
+        }
+        if !self.open {
+            return vec![hint("Enter", "Open")];
+        }
+        let mut v = nav_hints(&self.list.nav, self.list.type_ahead, false);
+        v.extend([hint("Enter", "Choose"), hint("Esc", "Close")]);
+        v
+    }
+}
+
+impl Bindings for Select {
+    fn bindings(&self) -> Vec<Binding> {
+        let mut v = vec![Binding::group("Enter Space", "Open")];
+        v.extend(nav_bindings(&self.list.nav, self.list.type_ahead));
+        v.push(Binding::group("Esc", "Close"));
+        v
     }
 }

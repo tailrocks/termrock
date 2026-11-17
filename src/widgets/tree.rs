@@ -6,6 +6,9 @@ use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier};
 
 use crate::core::event::{Key, Outcome};
+use crate::core::hints::{
+    Binding, Bindings, HasHints, HintCx, actions_bindings, nav_bindings, nav_hints,
+};
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::core::keyed::{KeyedSourceError, KeyedState};
 use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup, unassigned_chord};
@@ -19,6 +22,7 @@ use crate::theme::Tone;
 use crate::ui::ctx::RenderCtx;
 use crate::ui::list_core::ListCore;
 use crate::ui::row::{MarkKind, RowLook, RowUi};
+use crate::widgets::keyhint::{Hint, hint};
 
 #[derive(Debug, Clone)]
 pub struct TreeNode {
@@ -286,6 +290,24 @@ fn label_matches(label: &str, query: &str) -> bool {
     #[cfg(test)]
     work::record_label_test(lowered.len());
     lowered.contains(query)
+}
+
+impl HasHints for TreeView {
+    fn hints(&self, _: &HintCx) -> Vec<Hint> {
+        let mut v = nav_hints(&self.nav, self.type_ahead, false);
+        v.push(hint("←→", "Fold"));
+        v
+    }
+}
+
+impl Bindings for TreeView {
+    fn bindings(&self) -> Vec<Binding> {
+        let mut v = nav_bindings(&self.nav, self.type_ahead);
+        v.push(Binding::group("←→", "Fold / unfold"));
+        v.push(Binding::group("Enter", "Activate"));
+        v.extend(actions_bindings(&self.keymap));
+        v
+    }
 }
 
 #[cfg(test)]
