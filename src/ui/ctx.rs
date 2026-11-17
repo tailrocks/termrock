@@ -5,6 +5,7 @@ use crate::core::focus::FocusRing;
 use crate::core::hit::HitRegistry;
 use crate::core::id::WidgetId;
 use crate::theme::Theme;
+pub use crate::theme::VisualState;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Interaction {
@@ -76,23 +77,6 @@ impl Interaction {
     pub fn flash_within(&self, container: WidgetId) -> bool {
         self.flash == Some(container)
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct VisualState {
-    pub focused: bool,
-    pub hovered: bool,
-    pub pressed: bool,
-    pub selected: bool,
-    pub disabled: bool,
-    pub fixed: bool,
-    pub error: bool,
-    pub editing: bool,
-    pub busy: bool,
-
-    pub backdrop: bool,
-
-    pub inactive_selection: Option<crate::theme::InactiveSelection>,
 }
 
 type OverlayFn = Box<dyn for<'r> FnOnce(&mut Buffer, &mut RenderCtx<'r>)>;

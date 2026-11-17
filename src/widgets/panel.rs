@@ -13,6 +13,7 @@ use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
 use crate::core::response::Response;
 use crate::core::scroll::{HScroll, ScrollPane, Scrollable};
 use crate::theme::Theme;
+pub use crate::theme::CardHeading;
 use crate::ui::ctx::{RenderCtx, fill};
 use crate::ui::edit_menu::{
     EditCaps, EditMenu, EditMenuHost, edit_menu_key, edit_menu_pointer, edit_menu_route,
@@ -36,36 +37,6 @@ pub enum PanelFocus {
     Title,
 
     Bar,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-pub enum CardHeading {
-    Plain,
-
-    #[default]
-    Rule,
-
-    Band,
-
-    Emphasis,
-}
-
-impl CardHeading {
-    pub const ALL: [CardHeading; 4] = [
-        CardHeading::Plain,
-        CardHeading::Rule,
-        CardHeading::Band,
-        CardHeading::Emphasis,
-    ];
-
-    pub fn label(self) -> &'static str {
-        match self {
-            CardHeading::Plain => "plain",
-            CardHeading::Rule => "rule",
-            CardHeading::Band => "band",
-            CardHeading::Emphasis => "emphasis",
-        }
-    }
 }
 
 pub const TITLE_MIN: u16 = 12;
