@@ -2,7 +2,8 @@
 //! when a pending connect completes. State and text assertions only, so the
 //! journey adds no visual baseline.
 
-use crate::support::{App, TABLEPRO, find_all, text};
+use crate::bins::tablepro;
+use crate::support::{App, find_all, text};
 use tui_test::TerminalSnapshot;
 
 const NAME: &str = "Local PostgreSQL";
@@ -18,7 +19,7 @@ fn listed(screen: &TerminalSnapshot) -> usize {
 fn tablepro_same_name_connection_connects_to_its_own_settings() {
     let app = App::new(
         "t01-identity-same-name",
-        TABLEPRO,
+        tablepro(),
         &["--motion", "reduced"],
         120,
         40,

@@ -13,7 +13,8 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, HOLLA, Launch, text, try_launch};
+use crate::bins::holla;
+use crate::support::{App, Launch, text, try_launch};
 
 const SCENARIO: &str = "parity-task-input";
 const DIR: &str = "/srv/app";
@@ -40,7 +41,7 @@ const FINISHED: &str = "The program has finished · nothing reads input";
 const FOREIGN: &[&str] = &["~/work/poly", "~/work/acme", "~/work/team", "Bad Id"];
 
 fn open(name: &str) -> App {
-    let mut launch = Launch::new(name, HOLLA);
+    let mut launch = Launch::new(name, holla());
     launch.args = vec!["--scenario".to_string(), SCENARIO.to_string()];
     launch.cols = 120;
     launch.rows = 40;

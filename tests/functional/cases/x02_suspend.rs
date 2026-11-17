@@ -16,7 +16,8 @@ use ratatui::crossterm::event::{self, Event, KeyCode};
 use ratatui::widgets::Paragraph;
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, SHOWCASE, text, try_launch};
+use crate::bins::showcase;
+use crate::support::{App, Launch, text, try_launch};
 
 const BLURB: &str = "Tokens and principles behind every component";
 const CAPTION: &str = "the live widget";
@@ -24,7 +25,7 @@ const CHROME: &str = "App shell ›";
 const BRAND: &str = "Brand lockup";
 
 fn open(name: &str) -> App {
-    let mut launch = Launch::new(name, SHOWCASE);
+    let mut launch = Launch::new(name, showcase());
     launch.clock = false;
     launch.cols = 120;
     launch.rows = 40;

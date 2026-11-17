@@ -5,7 +5,8 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, TABLEPRO, find_all, flash_settle, row_text, text, try_launch};
+use crate::bins::tablepro;
+use crate::support::{App, Launch, find_all, flash_settle, row_text, text, try_launch};
 
 const ROUTE_ID: &str = "pre_refactor/t01_connections/t01_connections_route_120x40";
 const SELECT_ID: &str = "pre_refactor/t01_connections/t01_connections_select_120x40";
@@ -28,7 +29,7 @@ const QUERY: &str = "Query 1";
 const PLACEHOLDER: &str = "Filter connections";
 
 fn open(name: &str, motion: &str) -> App {
-    let mut launch = Launch::new(name, TABLEPRO);
+    let mut launch = Launch::new(name, tablepro());
     launch.cols = 120;
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());

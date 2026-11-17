@@ -7,7 +7,8 @@ use std::time::Duration;
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, Point, TABLEPRO, find_all, row_text, text, try_launch};
+use crate::bins::tablepro;
+use crate::support::{App, Launch, Point, find_all, row_text, text, try_launch};
 
 const ENTRY: &str = "t04_history_entry";
 const DECOY: &str = "t04_history_decoy";
@@ -42,7 +43,7 @@ fn visual_id(checkpoint: &str) -> String {
 }
 
 fn open(name: &str) -> App {
-    let mut launch = Launch::new(name, TABLEPRO);
+    let mut launch = Launch::new(name, tablepro());
     launch.cols = 120;
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());

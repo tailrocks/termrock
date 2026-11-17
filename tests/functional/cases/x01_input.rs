@@ -13,7 +13,8 @@ use std::path::PathBuf;
 use tui_test::TerminalSnapshot;
 use tuiscotti_latest::check::CheckOutcome;
 
-use crate::support::{App, Launch, SHOWCASE, find_all, row_text, text, try_launch};
+use crate::bins::showcase;
+use crate::support::{App, Launch, find_all, row_text, text, try_launch};
 
 const TOKEN: &str = "qx01paste";
 const TITLE: &str = "Rename task";
@@ -26,7 +27,7 @@ const WIDE_ID: &str = "pre_refactor/x01_input/x01_input_input_120x40";
 const NARROW_ID: &str = "pre_refactor/x01_input/x01_input_input_narrow";
 
 fn open(name: &str, env: &[(&str, &str)]) -> App {
-    let mut launch = Launch::new(name, SHOWCASE);
+    let mut launch = Launch::new(name, showcase());
     launch.clock = false;
     launch.cols = 120;
     launch.rows = 40;

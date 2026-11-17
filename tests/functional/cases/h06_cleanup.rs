@@ -16,7 +16,8 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, HOLLA, Launch, row_text, text, try_launch};
+use crate::bins::holla;
+use crate::support::{App, Launch, row_text, text, try_launch};
 
 const LABEL: &str = "Review cleanup candidates";
 const CRUMB: &str = "Here › Cleanup";
@@ -67,7 +68,7 @@ fn visual_id(checkpoint: &str) -> String {
 }
 
 fn launch(name: &str) -> App {
-    let mut launch = Launch::new(name, HOLLA);
+    let mut launch = Launch::new(name, holla());
     launch.cols = 120;
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());

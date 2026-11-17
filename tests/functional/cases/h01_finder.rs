@@ -8,7 +8,8 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, HOLLA, Launch, text, try_launch};
+use crate::bins::holla;
+use crate::support::{App, Launch, text, try_launch};
 
 const WIDE: &str = "H01.finder.discovery.120x40";
 const NARROW: &str = "H01.finder.discovery.narrow";
@@ -28,7 +29,7 @@ fn visual_id(checkpoint: &str) -> String {
 }
 
 fn launch(name: &str, scenario: &str, motion: &str, frame: Option<u64>) -> App {
-    let mut launch = Launch::new(name, HOLLA);
+    let mut launch = Launch::new(name, holla());
     launch.cols = 120;
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());

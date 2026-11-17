@@ -12,7 +12,8 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, HOLLA, Launch, row_text, text, try_launch};
+use crate::bins::holla;
+use crate::support::{App, Launch, row_text, text, try_launch};
 
 const NOTES_LABEL: &str = "Browse ~/work/notes";
 const SITE_LABEL: &str = "Browse ~/work/site";
@@ -35,7 +36,7 @@ fn visual_id(checkpoint: &str) -> String {
 }
 
 fn open(name: &str, scenario: &str) -> App {
-    let mut launch = Launch::new(name, HOLLA);
+    let mut launch = Launch::new(name, holla());
     launch.args = vec!["--scenario".to_string(), scenario.to_string()];
     launch.cols = 120;
     launch.rows = 40;

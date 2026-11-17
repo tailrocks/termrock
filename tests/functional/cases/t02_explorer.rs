@@ -7,9 +7,8 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{
-    App, Launch, Point, TABLEPRO, find_all, flash_settle, row_text, text, try_launch,
-};
+use crate::bins::tablepro;
+use crate::support::{App, Launch, Point, find_all, flash_settle, row_text, text, try_launch};
 
 const WIDE_ID: &str = "pre_refactor/t02_explorer/t02_explorer_tree_120x40";
 const NARROW_ID: &str = "pre_refactor/t02_explorer/t02_explorer_tree_narrow";
@@ -33,7 +32,7 @@ const UNREACHABLE: &str = "Could not reach the host";
 const AUTH_FAILED: &str = "Authentication failed";
 
 fn open(name: &str) -> App {
-    let mut launch = Launch::new(name, TABLEPRO);
+    let mut launch = Launch::new(name, tablepro());
     launch.cols = 120;
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());

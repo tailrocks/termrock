@@ -15,7 +15,8 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, HOLLA, Launch, text, try_launch};
+use crate::bins::holla;
+use crate::support::{App, Launch, text, try_launch};
 
 const PUSH: &str = "git -C /Users/alex/work/svc push";
 const ALPHA_GITLAB: &str = "git -C /Users/alex/work/repos/alpha push gitlab";
@@ -63,7 +64,7 @@ fn open_stepped(name: &str, scenario: &str) -> App {
 }
 
 fn launch(name: &str, scenario: &str, clock: bool) -> App {
-    let mut launch = Launch::new(name, HOLLA);
+    let mut launch = Launch::new(name, holla());
     launch.clock = clock;
     launch.args = ["--scenario", scenario]
         .into_iter()

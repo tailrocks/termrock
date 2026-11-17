@@ -11,9 +11,8 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{
-    App, Launch, Point, TABLEPRO, find_all, flash_settle, row_text, text, try_launch,
-};
+use crate::bins::tablepro;
+use crate::support::{App, Launch, Point, find_all, flash_settle, row_text, text, try_launch};
 
 const WIDE_ID: &str = "pre_refactor/t02_structure/t02_structure_tabs_120x40";
 const NARROW_ID: &str = "pre_refactor/t02_structure/t02_structure_tabs_narrow";
@@ -32,7 +31,7 @@ const CUSTOMER_INDEX: &str = "customers_org_idx";
 const PRODUCT_CHECK: &str = "products_unit_price_check";
 
 fn open() -> App {
-    let mut launch = Launch::new("t02-structure", TABLEPRO);
+    let mut launch = Launch::new("t02-structure", tablepro());
     launch.cols = 120;
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());

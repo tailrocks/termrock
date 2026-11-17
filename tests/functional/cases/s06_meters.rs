@@ -5,8 +5,9 @@
 
 use tui_test::{SnapshotColor, TerminalSnapshot};
 
+use crate::bins::showcase;
 use crate::support::{
-    App, Launch, Point, SHOWCASE, clusters, find_all, flash_settle, row_text, text, try_launch,
+    App, Launch, Point, clusters, find_all, flash_settle, row_text, text, try_launch,
 };
 
 const CRUMB: &str = "Feedback › Meters";
@@ -36,7 +37,7 @@ fn visual_id(case_id: &str) -> String {
 }
 
 fn open(name: &str, cols: u16, rows: u16, args: &[&str], motion: &str) -> App {
-    let mut launch = Launch::new(name, SHOWCASE);
+    let mut launch = Launch::new(name, showcase());
     launch.args = args.iter().copied().map(str::to_string).collect();
     launch.cols = cols;
     launch.rows = rows;

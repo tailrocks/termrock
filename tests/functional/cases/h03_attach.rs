@@ -13,7 +13,8 @@
 
 use tui_test::{SnapshotColor, TerminalSnapshot};
 
-use crate::support::{App, HOLLA, Launch, Point, cell_bg, row_text, text, try_launch};
+use crate::bins::holla;
+use crate::support::{App, Launch, Point, cell_bg, row_text, text, try_launch};
 
 const BANNER: &str = "btm 0.11.1";
 const ATTACHED: &str = "Attached to btm";
@@ -32,7 +33,7 @@ fn visual_id(checkpoint: &str) -> String {
 }
 
 fn launch(name: &str, scenario: &str, motion: &str) -> App {
-    let mut launch = Launch::new(name, HOLLA);
+    let mut launch = Launch::new(name, holla());
     launch.cols = 120;
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());

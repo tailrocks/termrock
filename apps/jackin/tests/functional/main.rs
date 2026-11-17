@@ -1,5 +1,13 @@
 #![cfg(any(target_os = "macos", target_os = "linux"))]
 
+/// The engine types the shared harness (`tests/functional/support.rs`) names.
+/// Each target that includes it supplies them from the crate it can depend on.
+mod engine {
+    pub use termrock::clock::TestRequest;
+    pub use termrock::core::pointer::PointerConfig;
+    pub use termrock::shell::StatusLine;
+}
+
 mod jackin;
 mod legacy;
 mod legacy_cross_app;
