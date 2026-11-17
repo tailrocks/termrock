@@ -1,0 +1,2 @@
+# Reachability allow list for the showcase catalog's own reach_tests! invocation.
+# One line per hidden word: <app> <case> <WxH> <words...> # <reason>. It lists none.

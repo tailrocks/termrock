@@ -6,6 +6,8 @@
 //! report activations by key. The host never mirrors a selection or a row
 //! index: reordering, inserting or removing rows cannot retarget an action.
 
+pub mod layered;
+
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Rect;

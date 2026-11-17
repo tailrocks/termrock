@@ -14,9 +14,9 @@
 //! (`src/widgets/splitter.rs`).
 //!
 //! The text-area fixture line is `Review 日本語 · 👩‍💻 · cafe\u{301}` inside
-//! the numbered Unicode line (`src/bin/showcase/pages/textareas.rs`). Those
+//! the numbered Unicode line (`apps/showcase/src/pages/textareas.rs`). Those
 //! are document characters. The sidebar's selected marker is a hardcoded
-//! `›` (`TreeView::selected_marker` in `src/bin/showcase/app.rs`), not
+//! `›` (`TreeView::selected_marker` in `apps/showcase/src/app.rs`), not
 //! `Glyphs::current`.
 
 use tui_test::TerminalSnapshot;

@@ -5,9 +5,9 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use junie_tui::clock::TestRequest;
-use junie_tui::core::pointer::PointerConfig;
-use junie_tui::shell::StatusLine;
+use termrock::clock::TestRequest;
+use termrock::core::pointer::PointerConfig;
+use termrock::shell::StatusLine;
 use tui_test::{
     CheckedMouseAction, KeyAction, LaunchEnvMode, LaunchOptions, MouseOptions, OpenOptions,
     Operation, OperationResult, RunOptions, Session, SnapshotCell, SnapshotScope, TerminalSnapshot,
@@ -1329,11 +1329,15 @@ fn evidence_directory(name: &str) -> PathBuf {
         .join(format!("{name}-{}-{nanos}-{seq}", std::process::id()))
 }
 
+/// A package that keeps its own `tests/functional/baselines` (jackin) reads
+/// them there. Every other functional target, and every `pre_refactor/`
+/// baseline, reads the repository-level store.
 fn baseline_root(test_id: &str) -> PathBuf {
-    if test_id.starts_with("pre_refactor/") {
-        workspace_root().join("tests/functional/baselines")
+    let own = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
+    if !test_id.starts_with("pre_refactor/") && own.is_dir() {
+        own
     } else {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines")
+        workspace_root().join("tests/functional/baselines")
     }
 }
 
@@ -1351,7 +1355,7 @@ pub fn workspace_root() -> PathBuf {
         return workspace.canonicalize().expect("app workspace root");
     }
     panic!(
-        "CARGO_MANIFEST_DIR is neither the workspace root nor apps/jackin: {}",
+        "CARGO_MANIFEST_DIR is neither the workspace root nor an apps/<name> package: {}",
         manifest.display()
     );
 }

@@ -14,6 +14,7 @@ default = []
 cli = ["junie-tui/cli"]
 terminal = ["junie-tui/terminal"]
 product = ["terminal", "junie-tui/product"]
+work-metrics = ["junie-tui/work-metrics"]
 
 [dependencies]
 junie-tui = { path = "../..", version = "0.1.0", default-features = false }
