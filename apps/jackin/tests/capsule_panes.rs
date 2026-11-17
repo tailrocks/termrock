@@ -711,9 +711,9 @@ fn a_new_pane_leaves_the_session_list_to_the_backend() {
 
 /// Draws the rig's screen on a terminal of the given size.
 fn draw_at(rig: &mut Rig, cols: u16, rows: u16) {
-    use junie_tui::runtime::Application;
     use ratatui::Terminal;
     use ratatui::backend::TestBackend;
+    use termrock::runtime::Application;
     let mut terminal = Terminal::new(TestBackend::new(cols, rows)).expect("test terminal");
     terminal
         .draw(|f| Application::render(&mut rig.app, f))
@@ -722,8 +722,8 @@ fn draw_at(rig: &mut Rig, cols: u16, rows: u16) {
 
 #[test]
 fn a_split_of_a_pane_a_shrunk_terminal_left_three_rows_high_is_refused() {
-    use junie_tui::core::event::Input;
-    use junie_tui::runtime::Application;
+    use termrock::core::event::Input;
+    use termrock::runtime::Application;
 
     let mut rig = Rig::new();
     rig.attach();

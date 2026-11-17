@@ -25,11 +25,11 @@ use jackin_console::sim::{self, SimBackend};
 use jackin_console::world::{
     DaemonHealth, GlobalConfig, Msg, SaveFailure, SaveSuccess, SaveWarning, Snapshot, World,
 };
-use junie_tui::core::event::{External, Input, Outcome};
-use junie_tui::motion::Motion;
-use junie_tui::runtime::Application;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::widgets::file_browser::FileEntry;
+use termrock::core::event::{External, Input, Outcome};
+use termrock::motion::Motion;
+use termrock::runtime::Application;
+use termrock::theme::{ColorLevel, Theme};
+use termrock::widgets::file_browser::FileEntry;
 
 fn iid(label: &str) -> InstanceId {
     InstanceId::simulated(label)
@@ -2013,7 +2013,7 @@ fn a_restored_instance_gets_the_host_pane_policy_when_it_is_created() {
     } = &mut app;
     let (_, requests) = shell.deliver(true, |cx| match router.screen_mut(route) {
         Some(screen) => screen.on_msg(&msg, world, cx),
-        None => junie_tui::core::event::Outcome::Ignored,
+        None => termrock::core::event::Outcome::Ignored,
     });
     assert!(!requests.is_empty(), "the screen asks to attach");
 
@@ -3095,10 +3095,7 @@ fn an_unsynced_reply_after_a_newer_commit_is_ignored_without_a_durability_warnin
         "a stale reply must leave the status of the newer commit alone"
     );
 
-    app.set_status(
-        "Routine refresh complete",
-        junie_tui::theme::Tone::Secondary,
-    );
+    app.set_status("Routine refresh complete", termrock::theme::Tone::Secondary);
     assert_eq!(
         status(&app),
         "Routine refresh complete",

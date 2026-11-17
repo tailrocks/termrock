@@ -27,10 +27,10 @@ use jackin_console::launch::{LaunchFeed, LaunchTarget};
 use jackin_console::panes::{PaneBody, PaneRequest, PaneSpawn};
 use jackin_console::sim::provider;
 use jackin_console::world::{Msg, World};
-use junie_tui::core::event::Input;
-use junie_tui::motion::Motion;
-use junie_tui::runtime::Application;
-use junie_tui::theme::{ColorLevel, Theme};
+use termrock::core::event::Input;
+use termrock::motion::Motion;
+use termrock::runtime::Application;
+use termrock::theme::{ColorLevel, Theme};
 
 /// The simulator, with every effect recorded.
 #[derive(Debug)]

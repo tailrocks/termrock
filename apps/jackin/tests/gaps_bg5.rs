@@ -21,10 +21,10 @@ use jackin_console::panes::{
 use jackin_console::screens::Go;
 use jackin_console::sim::{self, SimBackend};
 use jackin_console::world::{Msg, World};
-use junie_tui::core::event::{External, Input, Outcome};
-use junie_tui::runtime::Application;
-use junie_tui::theme::Tone;
 use pane_support::*;
+use termrock::core::event::{External, Input, Outcome};
+use termrock::runtime::Application;
+use termrock::theme::Tone;
 
 fn wake(rig: &mut Rig, pane: PaneId) -> Outcome {
     wake_of(rig, INSTANCE, pane)

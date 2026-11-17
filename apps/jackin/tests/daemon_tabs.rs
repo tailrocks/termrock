@@ -4,8 +4,8 @@ use std::sync::Arc;
 
 use jackin_console::domain::instance::AgentState;
 use jackin_console::panes::{Daemon, Lease, LinkEvent, PaneId, PaneTiming, TerminalPane};
-use junie_tui::ui::layout::SplitDir;
 use pane_support::*;
+use termrock::ui::layout::SplitDir;
 
 fn make(
     bench: &Arc<Bench>,

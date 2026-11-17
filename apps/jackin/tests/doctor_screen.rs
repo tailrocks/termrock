@@ -38,9 +38,9 @@ fn a_report_with_only_warnings_does_not_say_all_checks_pass() {
     let mut report = doctor.report().expect("a report").clone();
     for (i, check) in report.checks.iter_mut().enumerate() {
         check.status = if i == 0 {
-            junie_tui::theme::StatusKind::Warn
+            termrock::theme::StatusKind::Warn
         } else {
-            junie_tui::theme::StatusKind::Ok
+            termrock::theme::StatusKind::Ok
         };
     }
     doctor.state = DoctorState::Done(report);
@@ -53,8 +53,8 @@ fn a_report_with_only_warnings_does_not_say_all_checks_pass() {
 }
 
 fn ticks(app: &mut jackin_console::app::App, n: usize) -> (i64, u64) {
-    use junie_tui::core::event::Input;
-    use junie_tui::runtime::Application;
+    use termrock::core::event::Input;
+    use termrock::runtime::Application;
 
     app.world.clock.running = true;
     let (secs, changed) = (app.world.now_secs(), app.world.work().changed_ticks);

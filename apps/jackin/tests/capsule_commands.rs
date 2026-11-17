@@ -7,8 +7,8 @@ mod pane_support;
 mod product_support;
 
 use capsule_support::*;
-use junie_tui::core::event::MouseKind;
 use ratatui::layout::Position;
+use termrock::core::event::MouseKind;
 
 #[derive(PartialEq)]
 struct Seen {
