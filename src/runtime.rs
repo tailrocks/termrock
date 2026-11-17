@@ -1638,7 +1638,16 @@ fn discard_pending(
 
 fn discard_ready(source: &mut impl RawSource, max_events: usize) -> std::io::Result<usize> {
     let mut discarded = 0;
-    while discarded < max_events && source.poll()? {
+    while discarded < max_events {
+        match source.poll() {
+            Ok(true) => {}
+            Ok(false) => break,
+            // A signal such as a resize's SIGWINCH can interrupt the zero-wait
+            // poll. Nothing is ready then, as in `poll_uninterrupted`; it is
+            // not a terminal failure, so startup must not abort on it.
+            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => break,
+            Err(e) => return Err(e),
+        }
         source.read()?;
         discarded += 1;
     }
@@ -2100,6 +2109,39 @@ mod raw_input_tests {
             self.raw = false;
             Ok(())
         }
+    }
+
+    struct Interrupted {
+        polls: usize,
+    }
+
+    impl RawSource for Interrupted {
+        fn poll(&mut self) -> std::io::Result<bool> {
+            self.polls += 1;
+            Err(std::io::ErrorKind::Interrupted.into())
+        }
+        fn read(&mut self) -> std::io::Result<Event> {
+            unreachable!("nothing is read after an interrupted poll")
+        }
+        fn dropped(&mut self, _event: &Event) -> bool {
+            false
+        }
+        fn now(&mut self) -> Instant {
+            Instant::now()
+        }
+    }
+
+    #[test]
+    fn startup_discard_treats_an_interrupted_poll_as_nothing_pending() {
+        let mut source = Interrupted { polls: 0 };
+        let mut mode = Mode::default();
+        assert_eq!(discard_pending(&mut source, &mut mode, 256).unwrap(), 0);
+        assert_eq!(source.polls, 1);
+        assert!(
+            !mode.raw,
+            "raw mode is restored after the interrupted drain"
+        );
+        assert_eq!(mode.calls, ["enabled", "enable", "disable"]);
     }
 
     #[test]
