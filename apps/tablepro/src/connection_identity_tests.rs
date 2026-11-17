@@ -1,14 +1,14 @@
 //! Regression tests for stable connection identity (#85). They drive the real
 //! `App::handle_input` path with keys and ticks.
 
-use junie_tui::core::event::{Input, Key};
-use junie_tui::theme::{ColorLevel, Theme};
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use termrock::core::event::{Input, Key};
+use termrock::theme::{ColorLevel, Theme};
 
 use clap::error::ErrorKind;
-use junie_tui::core::id::{ItemKey, WidgetId};
+use termrock::core::id::{ItemKey, WidgetId};
 
 use crate::app::{App, Route};
 use crate::connections::{ConnState, ConnectionEntry, ConnectionsScreen};
@@ -59,7 +59,7 @@ fn select_row(app: &mut App, downs: usize) {
 
 fn draw(app: &mut App) {
     let mut terminal = Terminal::new(TestBackend::new(120, 40)).unwrap();
-    terminal.draw(|f| junie_tui::shell::render(app, f)).unwrap();
+    terminal.draw(|f| termrock::shell::render(app, f)).unwrap();
 }
 
 fn delete_selected(app: &mut App) {

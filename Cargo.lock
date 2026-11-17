@@ -2182,11 +2182,11 @@ name = "termrock-tablepro"
 version = "0.1.0"
 dependencies = [
  "clap",
- "junie-tui",
  "ratatui",
  "regex",
  "serde_json",
  "sha2 0.10.9",
+ "termrock",
 ]
 
 [[package]]

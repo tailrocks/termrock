@@ -54,7 +54,7 @@ T	app::tests::holla_projection_idle_cleanup_page_ticks_do_no_source_work
 T	app::tests::holla_projection_hidden_pages_catch_up_once
 S	Holla projection reuse (Finder)	termrock-holla::bin/holla	/holla_projection_/	src/bin/holla/screens/finder/tests.rs
 T	screens::finder::tests::holla_projection_group_change_reranks_without_source_work
-S	TablePro page scenarios	termrock-tablepro::bin/tablepro	/^work_metrics_tests::/	src/bin/tablepro/work_metrics_tests.rs
+S	TablePro page scenarios	termrock-tablepro::bin/tablepro	/^work_metrics_tests::/	apps/tablepro/src/work_metrics_tests.rs
 T	work_metrics_tests::work_contract_tablepro_idle_and_cell_edit
 S	Showcase page scenarios and stress fits	termrock-showcase::bin/showcase	/^work_metrics_tests::/	src/bin/showcase/work_metrics_tests.rs
 T	work_metrics_tests::work_contract_showcase_idle_and_switch

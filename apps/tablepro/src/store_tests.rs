@@ -1,5 +1,5 @@
-use junie_tui::core::id::{ItemKey, WidgetId};
-use junie_tui::widgets::grid::{
+use termrock::core::id::{ItemKey, WidgetId};
+use termrock::widgets::grid::{
     CellValue, ColumnSpec, DataGrid, GridChangeSet, GridCommitReceipt, GridRows, RowTotal,
 };
 

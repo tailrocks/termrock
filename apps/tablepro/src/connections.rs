@@ -4,30 +4,30 @@ use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::id::{ItemKey, Part, PartRef, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::list::SourceStamp;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::theme::Tone;
-use junie_tui::ui::context::{ContextAnchor, ContextRequest, ContextSource};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::{Stack, StackChild, StackScroll};
-use junie_tui::ui::leave::{KeyContext, Leave, LeaveGuard, Resolved, Stakes, letters_allowed};
-use junie_tui::ui::master_detail::{MasterDetail, Mode};
-use junie_tui::widgets::action_row::ActionRow;
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::choice::{Checkbox, RadioGroup, Toggle};
-use junie_tui::widgets::detail_card::DetailCard;
-use junie_tui::widgets::field_common::{PointerField, route_click, route_drag, route_press};
-use junie_tui::widgets::input::{InputAction, TextInput};
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::notice::Notice;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::Prop;
-use junie_tui::widgets::select::Select;
-use junie_tui::widgets::tabs::Tabs;
-use junie_tui::widgets::tree::{TreeAction, TreeNodeRef, TreeSource, TreeView};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::list::SourceStamp;
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::theme::Tone;
+use termrock::ui::context::{ContextAnchor, ContextRequest, ContextSource};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::{Stack, StackChild, StackScroll};
+use termrock::ui::leave::{KeyContext, Leave, LeaveGuard, Resolved, Stakes, letters_allowed};
+use termrock::ui::master_detail::{MasterDetail, Mode};
+use termrock::widgets::action_row::ActionRow;
+use termrock::widgets::button::Button;
+use termrock::widgets::choice::{Checkbox, RadioGroup, Toggle};
+use termrock::widgets::detail_card::DetailCard;
+use termrock::widgets::field_common::{PointerField, route_click, route_drag, route_press};
+use termrock::widgets::input::{InputAction, TextInput};
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::notice::Notice;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::Prop;
+use termrock::widgets::select::Select;
+use termrock::widgets::tabs::Tabs;
+use termrock::widgets::tree::{TreeAction, TreeNodeRef, TreeSource, TreeView};
 
 use crate::app::OpenDialog as _;
 use crate::db::{ConnectOutcome, Connection, Engine, Environment, SafeMode};
@@ -171,7 +171,7 @@ struct Roster {
 struct ConnTree<'a> {
     entries: &'a [ConnectionEntry],
     roster: &'a Roster,
-    glyphs: &'a junie_tui::theme::Glyphs,
+    glyphs: &'a termrock::theme::Glyphs,
 }
 
 impl TreeSource for ConnTree<'_> {
@@ -256,7 +256,7 @@ pub struct ConnectionsScreen {
 
     pub leave: LeaveGuard<FormLeave>,
 
-    glyphs: junie_tui::theme::Glyphs,
+    glyphs: termrock::theme::Glyphs,
 }
 
 /// The tree node a pointer event landed on, by key.
@@ -323,7 +323,7 @@ struct ConnForm {
     ssh: Toggle,
     ssh_host: TextInput,
     ssh_user: TextInput,
-    startup: junie_tui::widgets::textarea::TextArea,
+    startup: termrock::widgets::textarea::TextArea,
     local_only: Toggle,
     test_btn: Button,
     cancel_btn: Button,
@@ -446,7 +446,7 @@ impl ConnForm {
                 .value(c.and_then(|c| c.ssh.as_deref()).unwrap_or(""))
                 .placeholder("bastion.example.com"),
             ssh_user: TextInput::new(f.sub("sshuser"), "SSH user").value("deploy"),
-            startup: junie_tui::widgets::textarea::TextArea::new(
+            startup: termrock::widgets::textarea::TextArea::new(
                 f.sub("startup"),
                 "Startup commands",
                 3,
@@ -565,7 +565,7 @@ impl ConnectionsScreen {
                 .detail_owns(&[ID.sub("edit"), ID.sub("dup"), ID.sub("del")]),
             form: None,
             leave: LeaveGuard::new(ID.sub("leave")),
-            glyphs: junie_tui::theme::Glyphs::default(),
+            glyphs: termrock::theme::Glyphs::default(),
         };
         s.rebuild_tree();
         if let Some(first) = s.entries.first().map(|e| e.key) {
@@ -807,7 +807,7 @@ impl ConnectionsScreen {
         let stakes = self.form_stakes();
         match self
             .leave
-            .request(Leave::To(to), &stakes, &junie_tui::theme::Strings::DEFAULT)
+            .request(Leave::To(to), &stakes, &termrock::theme::Strings::DEFAULT)
         {
             Ok(_) => self.go_to(to, cx),
             Err(d) => cx.open_dialog(*d),
@@ -839,7 +839,7 @@ impl ConnectionsScreen {
 
     pub fn resolve_leave(
         &mut self,
-        result: junie_tui::widgets::dialog::DialogResult,
+        result: termrock::widgets::dialog::DialogResult,
         cx: &mut crate::app::Cx,
     ) -> bool {
         let to = match self.leave.resolve(result) {
@@ -915,7 +915,7 @@ impl ConnectionsScreen {
 
     fn begin_connect(&mut self, key: ItemKey, cx: &mut crate::app::Cx) {
         if let Err(e) = self.start_connect(key) {
-            cx.status_as(junie_tui::theme::StatusKind::Warn, e.message());
+            cx.status_as(termrock::theme::StatusKind::Warn, e.message());
         }
     }
 
@@ -1158,14 +1158,14 @@ impl ConnectionsScreen {
                     match self.duplicate(key) {
                         Ok(true) => cx.status("Duplicated"),
                         Ok(false) => {}
-                        Err(e) => cx.status_as(junie_tui::theme::StatusKind::Warn, e.message()),
+                        Err(e) => cx.status_as(termrock::theme::StatusKind::Warn, e.message()),
                     }
                 }
             }
             3 => {
                 if let Some(entry) = self.selected_key().and_then(|k| self.get(k)) {
                     let (key, c) = (entry.key, &entry.value);
-                    let d = junie_tui::widgets::dialog::Dialog::destructive(
+                    let d = termrock::widgets::dialog::Dialog::destructive(
                         ID.sub("delete-dialog"),
                         "Delete connection?",
                         &format!(
@@ -1233,11 +1233,11 @@ impl ConnectionsScreen {
     pub fn on_dialog_closed(
         &mut self,
         id: WidgetId,
-        result: junie_tui::widgets::dialog::DialogResult,
+        result: termrock::widgets::dialog::DialogResult,
     ) -> bool {
         if id == ID.sub("delete-dialog") {
             let target = self.delete_target.take();
-            if result == junie_tui::widgets::dialog::DialogResult::Action(1)
+            if result == termrock::widgets::dialog::DialogResult::Action(1)
                 && let Some(key) = target
             {
                 self.delete(key);
@@ -1315,7 +1315,7 @@ impl ConnectionsScreen {
         }
         if f == form.engine.id {
             let (o, ev) = form.engine.on_key(key);
-            if let Some(junie_tui::widgets::select::SelectAction::Changed(i)) = ev {
+            if let Some(termrock::widgets::select::SelectAction::Changed(i)) = ev {
                 let port = match i {
                     0 => "5432",
                     1 => "3306",
@@ -1396,7 +1396,7 @@ impl ConnectionsScreen {
         }
         if !form.validate() {
             cx.status_as(
-                junie_tui::theme::StatusKind::Warn,
+                termrock::theme::StatusKind::Warn,
                 "Fix the highlighted fields",
             );
             cx.focus.focus(if form.name.field.error.is_some() {
@@ -1412,14 +1412,14 @@ impl ConnectionsScreen {
                 Some(e) if e.revision == expected => Some(e.value.clone()),
                 Some(_) => {
                     cx.status_as(
-                        junie_tui::theme::StatusKind::Warn,
+                        termrock::theme::StatusKind::Warn,
                         "Connection changed since this form opened; reopen it to edit",
                     );
                     return Outcome::Changed;
                 }
                 None => {
                     cx.status_as(
-                        junie_tui::theme::StatusKind::Warn,
+                        termrock::theme::StatusKind::Warn,
                         "Connection no longer exists",
                     );
                     return Outcome::Changed;
@@ -1435,7 +1435,7 @@ impl ConnectionsScreen {
         let key = match saved {
             Ok(key) => key,
             Err(e) => {
-                cx.status_as(junie_tui::theme::StatusKind::Warn, e.message());
+                cx.status_as(termrock::theme::StatusKind::Warn, e.message());
                 return Outcome::Changed;
             }
         };
@@ -1443,7 +1443,7 @@ impl ConnectionsScreen {
         self.clear_form_state();
         self.rebuild_tree();
         self.select_key(key);
-        cx.status_as(junie_tui::theme::StatusKind::Ok, "Connection saved");
+        cx.status_as(termrock::theme::StatusKind::Ok, "Connection saved");
         if connect {
             self.begin_connect(key, cx);
         } else {
@@ -1638,8 +1638,8 @@ impl ConnectionsScreen {
         Outcome::Ignored
     }
 
-    pub fn on_blur(&mut self, ch: junie_tui::core::focus::FocusChange) -> Outcome {
-        use junie_tui::core::focus::forward_blur;
+    pub fn on_blur(&mut self, ch: termrock::core::focus::FocusChange) -> Outcome {
+        use termrock::core::focus::forward_blur;
         let mut out = forward_blur(ch, &mut [&mut self.filter]);
         if let Some(f) = self.form.as_mut() {
             out = out.or(forward_blur(
@@ -1691,10 +1691,10 @@ impl ConnectionsScreen {
     pub fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint> {
         if self.form.is_some() {
             if self.is_editing() {
-                return junie_tui::widgets::keyhint::EDIT_FIELD.to_vec();
+                return termrock::widgets::keyhint::EDIT_FIELD.to_vec();
             }
             return vec![
-                junie_tui::widgets::widget_hints::EDIT,
+                termrock::widgets::widget_hints::EDIT,
                 hint("←→", "Basic / Advanced"),
                 hint("Ctrl+S", "Save"),
             ];
@@ -1714,7 +1714,7 @@ impl ConnectionsScreen {
             hint("Alt+D", "Duplicate"),
             hint("/", "Filter"),
             hint("Ctrl+N", "New"),
-            junie_tui::widgets::keyhint::CONTEXT_MENU,
+            termrock::widgets::keyhint::CONTEXT_MENU,
         ]
         .into_iter()
         .chain(self.md.hints(focus))
@@ -1773,13 +1773,13 @@ impl ConnectionsScreen {
             inner.height.saturating_sub(2),
         );
         if self.entries.is_empty() {
-            junie_tui::widgets::empty::render_ctx(
+            termrock::widgets::empty::render_ctx(
                 tree_area,
                 buf,
                 ctx,
-                &junie_tui::widgets::empty::EmptyState::new("No connections")
+                &termrock::widgets::empty::EmptyState::new("No connections")
                     .hint("Ctrl+N creates one")
-                    .actions(vec![junie_tui::widgets::empty::EmptyAction::primary(
+                    .actions(vec![termrock::widgets::empty::EmptyAction::primary(
                         NEW_ID,
                         "New connection",
                     )]),
@@ -1803,7 +1803,7 @@ impl ConnectionsScreen {
             .map(|e| (e.key, e.revision, e.value.clone()))
         else {
             DetailCard::empty(
-                junie_tui::widgets::empty::EmptyState::new("Select a connection")
+                termrock::widgets::empty::EmptyState::new("Select a connection")
                     .hint("↑↓ moves, Ctrl+N creates one"),
             )
             .render(r, buf, ctx, t.canvas, &mut []);
@@ -1811,7 +1811,7 @@ impl ConnectionsScreen {
         };
 
         let ssl = if c.ssl {
-            let ok = junie_tui::theme::StatusKind::Ok;
+            let ok = termrock::theme::StatusKind::Ok;
             Prop::new("SSL", format!("{} on", t.status(ok).0)).tone(ok.tone())
         } else {
             Prop::new("SSL", "off").tone(Tone::Secondary)
@@ -1894,7 +1894,7 @@ impl ConnectionsScreen {
                     4..=7 => "Authenticating…",
                     _ => "Loading schema…",
                 };
-                junie_tui::widgets::progress::render_spinner(
+                termrock::widgets::progress::render_spinner(
                     Rect::new(inner.x, sy, inner.width, 1),
                     buf,
                     ctx,
@@ -1953,7 +1953,7 @@ impl ConnectionsScreen {
             height: body.height.saturating_sub(2),
             ..body
         };
-        let (lc, rc) = junie_tui::ui::layout::Split::new(58, 30, 24).horizontal(body, 4);
+        let (lc, rc) = termrock::ui::layout::Split::new(58, 30, 24).horizontal(body, 4);
         let fh = TextInput::HEIGHT;
 
         let stack = Stack::default();
@@ -1994,7 +1994,7 @@ impl ConnectionsScreen {
             }
             match l.slot(2) {
                 Some(r) => {
-                    let (hl, hr) = junie_tui::ui::layout::Split::new(70, 12, 8).horizontal(r, 2);
+                    let (hl, hr) = termrock::ui::layout::Split::new(70, 12, 8).horizontal(r, 2);
                     form.host.render(hl, buf, ctx, bg);
                     form.port.render(hr, buf, ctx, bg);
                 }
@@ -2019,7 +2019,7 @@ impl ConnectionsScreen {
 
             let desc = SafeMode::ALL[form.safe.selected.min(5)].description();
             let desc_lines: Vec<String> =
-                junie_tui::ui::text::wrap(desc, rc.width.saturating_sub(2) as usize)
+                termrock::ui::text::wrap(desc, rc.width.saturating_sub(2) as usize)
                     .into_iter()
                     .take(2)
                     .collect();
@@ -2051,7 +2051,7 @@ impl ConnectionsScreen {
                 let rows = r.height.min(desc_lines.len() as u16);
                 let area = Rect::new(r.x + 2, r.y, r.width.saturating_sub(2), rows);
                 let focused = focus == Some(form.safe.id);
-                let lines = junie_tui::ui::reveal::clamp(ctx, area, desc, focused);
+                let lines = termrock::ui::reveal::clamp(ctx, area, desc, focused);
                 for (i, line) in lines.iter().enumerate() {
                     buf.set_string(area.x, area.y + i as u16, line, t.muted().bg(bg));
                 }
@@ -2118,7 +2118,7 @@ impl ConnectionsScreen {
                 buf.set_string(
                     r.x + 2,
                     r.y,
-                    junie_tui::ui::reveal::cut(
+                    termrock::ui::reveal::cut(
                         Rect::new(r.x + 2, r.y, r.width.saturating_sub(2), 1),
                         "External clients: read only",
                     ),
@@ -2143,13 +2143,13 @@ impl ConnectionsScreen {
         );
         if let ConnState::Tested(res) = &self.state {
             let (kind, m) = match res {
-                Ok(m) => (junie_tui::theme::StatusKind::Ok, m),
-                Err(e) => (junie_tui::theme::StatusKind::Fail, e),
+                Ok(m) => (termrock::theme::StatusKind::Ok, m),
+                Err(e) => (termrock::theme::StatusKind::Fail, e),
             };
             let (glyph, gs) = t.status(kind);
             let x = rects[3].right() + 2;
             let room = inner.right().saturating_sub(x) as usize;
-            let msg = junie_tui::ui::text::truncate(&format!("{glyph} {m}"), room);
+            let msg = termrock::ui::text::truncate(&format!("{glyph} {m}"), room);
             buf.set_string(x, ay, &msg, t.status_label(kind).bg(bg));
             if !msg.is_empty() {
                 buf.set_string(x, ay, glyph, gs.bg(bg));

@@ -4,9 +4,9 @@
 
 use super::test_support::review_code;
 use super::*;
-use junie_tui::core::event::Key;
-use junie_tui::widgets::document_workspace::CloseDecision;
-use junie_tui::widgets::grid::{CellEditResult, FinishEdit, GridEditError, cell_validator};
+use termrock::core::event::Key;
+use termrock::widgets::document_workspace::CloseDecision;
+use termrock::widgets::grid::{CellEditResult, FinishEdit, GridEditError, cell_validator};
 
 const PRODUCT_NAME: usize = 2;
 const CUSTOMER_NAME: usize = 3;
@@ -418,7 +418,7 @@ fn issue11_save_finishes_live_editor_once() {
     with_grid(&mut app, products, |g| {
         g.validator = cell_validator(move |spec, text| {
             seen.set(seen.get() + 1);
-            junie_tui::widgets::grid::default_validator(spec, text)
+            termrock::widgets::grid::default_validator(spec, text)
         });
         g.cursor = (0, PRODUCT_NAME);
         let _ = g.begin_edit();

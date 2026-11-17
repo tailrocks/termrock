@@ -5,37 +5,37 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Constraint, Rect, Size};
 use ratatui::style::Modifier;
 
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::hit::Axis;
-use junie_tui::core::id::{ItemKey, WidgetId};
-use junie_tui::core::keymap::hint_key;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::theme::{StatusKind, SyntaxTone, Tone};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::{Split, SplitDir};
-use junie_tui::ui::scroll_view::{Axes, ScrollView};
-use junie_tui::ui::text::{DurationStyle, duration};
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::chips::{Chip, ChipBar, ChipCmd};
-use junie_tui::widgets::code::{CodeEditor, Diagnostic, EditorAction, Severity};
-use junie_tui::widgets::completion::{Completion, CompletionAction};
-use junie_tui::widgets::empty::EmptyState;
-use junie_tui::widgets::grid::{
+use termrock::core::event::{Key, Outcome};
+use termrock::core::hit::Axis;
+use termrock::core::id::{ItemKey, WidgetId};
+use termrock::core::keymap::hint_key;
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::theme::{StatusKind, SyntaxTone, Tone};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::{Split, SplitDir};
+use termrock::ui::scroll_view::{Axes, ScrollView};
+use termrock::ui::text::{DurationStyle, duration};
+use termrock::widgets::button::Button;
+use termrock::widgets::chips::{Chip, ChipBar, ChipCmd};
+use termrock::widgets::code::{CodeEditor, Diagnostic, EditorAction, Severity};
+use termrock::widgets::completion::{Completion, CompletionAction};
+use termrock::widgets::empty::EmptyState;
+use termrock::widgets::grid::{
     CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridChangeSet, GridCmd, GridCommitError,
     GridCommitFailure, GridCommitToken, GridDataError, GridRows, RowTotal,
 };
-use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::list::{ListBox, ListItem, SelectMode};
-use junie_tui::widgets::notice::Notice;
-use junie_tui::widgets::option_list::Item;
-use junie_tui::widgets::panel::{Panel, ScrollPanel};
-use junie_tui::widgets::props::{self, Prop};
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::splitter::Splitter;
-use junie_tui::widgets::table::{Cell, Column, DataTable, SortDir};
-use junie_tui::widgets::tabs::{TabAction, TabCmd, TabItem, Tabs};
-use junie_tui::widgets::tree::{TreeNode, TreeView};
+use termrock::widgets::input::TextInput;
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::list::{ListBox, ListItem, SelectMode};
+use termrock::widgets::notice::Notice;
+use termrock::widgets::option_list::Item;
+use termrock::widgets::panel::{Panel, ScrollPanel};
+use termrock::widgets::props::{self, Prop};
+use termrock::widgets::scrollbar;
+use termrock::widgets::splitter::Splitter;
+use termrock::widgets::table::{Cell, Column, DataTable, SortDir};
+use termrock::widgets::tabs::{TabAction, TabCmd, TabItem, Tabs};
+use termrock::widgets::tree::{TreeNode, TreeView};
 
 use crate::app::Cx;
 use crate::db::{Catalog, ColType, Table, Value};
@@ -44,7 +44,7 @@ use crate::sql::{self, PlanNode, Statement};
 use crate::store::{Source, TableId};
 use crate::workbench::WorkTab;
 
-const ALT_D: junie_tui::core::event::Key = junie_tui::core::event::Key {
+const ALT_D: termrock::core::event::Key = termrock::core::event::Key {
     code: KeyCode::Char('d'),
     mods: ratatui::crossterm::event::KeyModifiers::ALT,
 };
@@ -945,7 +945,7 @@ impl TableTab {
 
     pub fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint> {
         if self.grid.is_editing() {
-            return junie_tui::widgets::keyhint::EDIT_CELL.to_vec();
+            return termrock::widgets::keyhint::EDIT_CELL.to_vec();
         }
         match focus {
             Some(f) if f == self.mode_tabs.id => {
@@ -968,7 +968,7 @@ impl TableTab {
                 let mut h = vec![hint("↑↓←→", "Cell")];
 
                 if self.grid.cell_editable() {
-                    h.push(junie_tui::widgets::widget_hints::EDIT);
+                    h.push(termrock::widgets::widget_hints::EDIT);
                 }
                 if self.grid.editable
                     && let Some(k) = hint_key(km, GridCmd::DuplicateRow)
@@ -982,7 +982,7 @@ impl TableTab {
                 } else {
                     h.push(hint("Space", "Select row"));
                 }
-                h.push(junie_tui::widgets::keyhint::CONTEXT_MENU);
+                h.push(termrock::widgets::keyhint::CONTEXT_MENU);
                 h
             }
             _ => vec![hint("↑↓", "Move"), hint("Ctrl+D", "Data / Structure")],
@@ -1051,7 +1051,7 @@ impl TableTab {
                         .collect::<Vec<_>>()
                         .join(" · ")
                 };
-                while parts.len() > 1 && junie_tui::ui::text::width(&joined(&parts)) > avail {
+                while parts.len() > 1 && termrock::ui::text::width(&joined(&parts)) > avail {
                     let (i, _) = parts
                         .iter()
                         .enumerate()
@@ -1062,7 +1062,7 @@ impl TableTab {
                 buf.set_string(
                     body.x + 1,
                     sy,
-                    junie_tui::ui::reveal::cut(
+                    termrock::ui::reveal::cut(
                         Rect::new(body.x + 1, sy, (avail) as u16, 1),
                         &joined(&parts),
                     ),
@@ -1582,9 +1582,9 @@ impl QueryTab {
             return vec![hint("Esc", "Cancel query")];
         }
         if self.completion.is_open() {
-            return junie_tui::core::hints::HasHints::hints(
+            return termrock::core::hints::HasHints::hints(
                 &self.completion,
-                &junie_tui::core::hints::HintCx::new(focus),
+                &termrock::core::hints::HintCx::new(focus),
             );
         }
         if self.editor.wants_text_input() {
@@ -1606,7 +1606,7 @@ impl QueryTab {
             let km = &g.keymap;
             let mut hints = vec![hint("↑↓←→", "Cell")];
             if g.cell_editable() {
-                hints.push(junie_tui::widgets::widget_hints::EDIT);
+                hints.push(termrock::widgets::widget_hints::EDIT);
             }
             if g.editable
                 && let Some(k) = hint_key(km, GridCmd::DuplicateRow)
@@ -1615,12 +1615,12 @@ impl QueryTab {
             }
             hints.extend(hint_key(km, GridCmd::Sort).map(|k| hint(k, "Sort")));
             hints.extend(hint_key(km, GridCmd::Copy).map(|k| hint(k, "Copy")));
-            hints.push(junie_tui::widgets::keyhint::CONTEXT_MENU);
+            hints.push(termrock::widgets::keyhint::CONTEXT_MENU);
             return hints;
         }
         match focus {
             Some(f) if f == self.editor.id => vec![
-                junie_tui::widgets::widget_hints::EDIT,
+                termrock::widgets::widget_hints::EDIT,
                 hint("Ctrl+R", "Run"),
                 hint(crate::app::key_label(&crate::app::RUN_ALL), "Run all"),
                 hint("Ctrl+X", "Explain"),
@@ -1939,7 +1939,7 @@ impl QueryTab {
 
         let mut buttons: Vec<Button> = buttons.into_iter().map(|b| b.focusable(false)).collect();
         let widths: Vec<u16> = buttons.iter().map(Button::width).collect();
-        let rects = junie_tui::widgets::button::row_layout(area, &widths, 1);
+        let rects = termrock::widgets::button::row_layout(area, &widths, 1);
         for (b, r) in buttons.iter_mut().zip(rects) {
             if r.bottom() <= area.bottom() {
                 b.render(r, buf, ctx, bg);
@@ -1994,7 +1994,7 @@ impl QueryTab {
         let status_line = if let Some(r) = &self.running {
             format!(
                 "{} running {} · Esc cancels",
-                junie_tui::widgets::progress::spinner_frame(ctx.interaction.tick),
+                termrock::widgets::progress::spinner_frame(ctx.interaction.tick),
                 duration(
                     std::time::Duration::from_millis(u64::from(r.started_ticks * 80)),
                     DurationStyle::Compact
@@ -2008,13 +2008,13 @@ impl QueryTab {
                         RowTotal::Unknown => g.len(),
                     };
                     let rows = if g.more {
-                        format!("Showing {} rows", junie_tui::ui::text::thousands(g.len()))
+                        format!("Showing {} rows", termrock::ui::text::thousands(g.len()))
                     } else if total == 1 {
                         "1 row".into()
                     } else if total == 0 {
                         "No rows".into()
                     } else {
-                        format!("{} rows", junie_tui::ui::text::thousands(total))
+                        format!("{} rows", termrock::ui::text::thousands(total))
                     };
                     format!(
                         "{rows} · {}",
@@ -2075,7 +2075,7 @@ impl QueryTab {
                 None => status_line,
             };
             let shown =
-                junie_tui::ui::text::truncate(&line, bottom.width.saturating_sub(2) as usize);
+                termrock::ui::text::truncate(&line, bottom.width.saturating_sub(2) as usize);
             buf.set_string(bottom.x + 1, y, &shown, st.bg(bg));
             if let Some(kind) = done
                 && !shown.is_empty()
@@ -2087,7 +2087,7 @@ impl QueryTab {
                 buf.set_string(
                     bottom.x + 1,
                     y,
-                    junie_tui::widgets::progress::spinner_frame(ctx.interaction.tick),
+                    termrock::widgets::progress::spinner_frame(ctx.interaction.tick),
                     t.accent_fg().bg(bg),
                 );
             }
@@ -2095,7 +2095,7 @@ impl QueryTab {
         }
         let body = Rect::new(bottom.x, y, bottom.width, bottom.bottom().saturating_sub(y));
         if self.results.is_empty() && self.running.is_none() {
-            junie_tui::widgets::empty::render(
+            termrock::widgets::empty::render(
                 body,
                 buf,
                 t,
@@ -2125,7 +2125,7 @@ impl QueryTab {
                             ctx,
                             &[
                                 Prop::new("Statement", verb.clone()),
-                                Prop::new("Rows affected", junie_tui::ui::text::thousands(*rows)),
+                                Prop::new("Rows affected", termrock::ui::text::thousands(*rows)),
                                 Prop::new(
                                     "Duration",
                                     duration(
@@ -2298,7 +2298,7 @@ impl QueryTab {
                                         facts.push(
                                             Prop::new(
                                                 "Est. rows",
-                                                junie_tui::ui::text::thousands(info.rows),
+                                                termrock::ui::text::thousands(info.rows),
                                             )
                                             .tone(Tone::Secondary),
                                         );
@@ -2334,7 +2334,7 @@ impl QueryTab {
                         }
                     }
                     ResultBody::Cancelled => {
-                        junie_tui::widgets::empty::render(
+                        termrock::widgets::empty::render(
                         body,
                         buf,
                         t,
@@ -2500,7 +2500,7 @@ fn execute(
             Some(t) => format!("{verb} {t}"),
             None => verb.to_owned(),
         };
-        junie_tui::ui::text::truncate(&l, 28)
+        termrock::ui::text::truncate(&l, 28)
     };
     match stmt {
         Statement::Select(sel) => match sql::run_select(src, &sel) {
@@ -2883,7 +2883,7 @@ impl HistoryTab {
             .map(|e| {
                 let label = e.first_line();
                 let meta = format!("{} · {}", e.when(), e.duration());
-                let mut it = ListItem::new(&junie_tui::ui::text::truncate(&label, 90)).meta(&meta);
+                let mut it = ListItem::new(&termrock::ui::text::truncate(&label, 90)).meta(&meta);
                 if e.duration_ms.is_some_and(|ms| ms > self.slow_ms) {
                     it = it.meta_tone(Tone::Warning);
                 }
@@ -2977,7 +2977,7 @@ impl HistoryTab {
                 hint("y", "Copy"),
                 hint("/", "Search"),
                 hint("c s", "Scope · Status"),
-                junie_tui::widgets::keyhint::CONTEXT_MENU,
+                termrock::widgets::keyhint::CONTEXT_MENU,
             ],
             _ => vec![hint("↑↓", "Move"), hint("/", "Search")],
         }
@@ -3004,7 +3004,7 @@ impl HistoryTab {
             if self.failed_only { "failed" } else { "any" }
         );
 
-        let scope_w = junie_tui::ui::text::width(&scope) as u16;
+        let scope_w = termrock::ui::text::width(&scope) as u16;
         let search_w = area
             .width
             .min(60)
@@ -3018,7 +3018,7 @@ impl HistoryTab {
             buf.set_string(
                 sx,
                 area.y + 1,
-                junie_tui::ui::reveal::cut(
+                termrock::ui::reveal::cut(
                     Rect::new(sx, area.y + 1, area.right().saturating_sub(sx), 1),
                     &scope,
                 ),
@@ -3061,7 +3061,7 @@ impl HistoryTab {
             return;
         }
         let Some(e) = self.current_entry(history).cloned() else {
-            junie_tui::widgets::empty::render(
+            termrock::widgets::empty::render(
                 r,
                 buf,
                 t,
@@ -3079,7 +3079,7 @@ impl HistoryTab {
         let wrapped = e
             .sql
             .lines()
-            .flat_map(|l| junie_tui::ui::text::wrap(l, inner.width.saturating_sub(8) as usize))
+            .flat_map(|l| termrock::ui::text::wrap(l, inner.width.saturating_sub(8) as usize))
             .collect::<Vec<_>>()
             .join("\n");
         if self.detail.text() != wrapped {
@@ -3101,7 +3101,7 @@ impl HistoryTab {
             Prop::new(
                 "Rows",
                 e.rows
-                    .map(junie_tui::ui::text::thousands)
+                    .map(termrock::ui::text::thousands)
                     .unwrap_or("–".into()),
             )
             .tone(Tone::Secondary),
@@ -3124,7 +3124,7 @@ impl HistoryTab {
                     + 1
                     + props::measure(&facts, a.width)
                     + 1
-                    + junie_tui::widgets::button::row_lines(a.width, &action_widths, 2),
+                    + termrock::widgets::button::row_lines(a.width, &action_widths, 2),
             )
         };
         let size = self.detail_view.fit(inner.as_size(), natural);
@@ -3152,9 +3152,9 @@ impl HistoryTab {
                 cbg,
             );
 
-            let lines = junie_tui::widgets::button::row_lines(inner.width, &action_widths, 2);
+            let lines = termrock::widgets::button::row_lines(inner.width, &action_widths, 2);
             let ay = (fy + used + 1).min(inner.bottom().saturating_sub(lines));
-            let rects = junie_tui::widgets::button::row_layout(
+            let rects = termrock::widgets::button::row_layout(
                 Rect::new(inner.x, ay, inner.width, lines),
                 &action_widths,
                 2,
@@ -3170,7 +3170,7 @@ impl HistoryTab {
 #[cfg(test)]
 mod issue47_tests {
     use super::*;
-    use junie_tui::widgets::grid::{CellKind, default_validator};
+    use termrock::widgets::grid::{CellKind, default_validator};
 
     #[test]
     fn issue47_fixture_named_values_parse_under_the_explicit_grammar() {
@@ -4094,7 +4094,7 @@ mod issue84_tests {
 
     #[test]
     fn completion_prefix_ctrl_space_at_home_through_on_key() {
-        use junie_tui::core::focus::{Focus, FocusRing};
+        use termrock::core::focus::{Focus, FocusRing};
 
         let cat = Catalog::acme_prod();
         let original = " SELECT id FROM users";

@@ -111,8 +111,8 @@ impl Environment {
         }
     }
 
-    pub fn kind(self) -> junie_tui::theme::EnvKind {
-        use junie_tui::theme::EnvKind;
+    pub fn kind(self) -> termrock::theme::EnvKind {
+        use termrock::theme::EnvKind;
         match self {
             Environment::Local => EnvKind::Local,
             Environment::Development => EnvKind::Development,

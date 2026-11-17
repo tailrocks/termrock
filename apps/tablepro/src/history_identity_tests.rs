@@ -1,11 +1,11 @@
 use std::sync::{Arc, Mutex};
 
-use junie_tui::core::event::{Input, Key, Mouse, MouseKind};
-use junie_tui::shell::{self, Clipboard, NativeClipboard};
-use junie_tui::theme::Theme;
 use ratatui::backend::TestBackend;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Position;
+use termrock::core::event::{Input, Key, Mouse, MouseKind};
+use termrock::shell::{self, Clipboard, NativeClipboard};
+use termrock::theme::Theme;
 
 use crate::app::App;
 use crate::model::{HistoryEntry, HistorySource};

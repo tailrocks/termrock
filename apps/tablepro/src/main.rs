@@ -19,11 +19,11 @@ mod workbench;
 mod work_metrics_tests;
 
 use clap::{CommandFactory, Parser, error::ErrorKind};
-use junie_tui::cli::CommonArgs;
+use termrock::cli::CommonArgs;
 
 use crate::app::App;
 use crate::connections::{ConnectionsScreen, NameLookup};
-use junie_tui::core::id::ItemKey;
+use termrock::core::id::ItemKey;
 
 const NO_MOTION_ENV: &str = "TABLEPRO_NO_MOTION";
 
@@ -46,7 +46,7 @@ fn cli_after_help() -> String {
         "{}\n\
          Frame:     with --motion paused, the exact tick to render\n\n\
          Keys: Ctrl+O open quickly · Ctrl+T new query · Ctrl+R run · Ctrl+Y history · ? help · q quit",
-        junie_tui::cli::motion_help(NO_MOTION_ENV)
+        termrock::cli::motion_help(NO_MOTION_ENV)
     )
 }
 
@@ -63,13 +63,13 @@ fn connection_key(connections: &ConnectionsScreen, name: &str) -> Result<ItemKey
 }
 
 fn main() -> std::io::Result<()> {
-    let cli: Cli = junie_tui::cli::parse(cli_after_help());
+    let cli: Cli = termrock::cli::parse(cli_after_help());
     let mut app = App::new(cli.common.theme());
     if let Some(name) = cli.connect {
         let key = connection_key(&app.connections, &name).unwrap_or_else(|error| error.exit());
         app.connect_key(key);
     }
     app.set_motion(cli.common.motion(NO_MOTION_ENV), cli.common.frame);
-    app.shell.set_clipboard(junie_tui::shell::Clipboard::new());
-    junie_tui::shell::run(&mut app)
+    app.shell.set_clipboard(termrock::shell::Clipboard::new());
+    termrock::shell::run(&mut app)
 }
