@@ -186,10 +186,14 @@ impl Sources {
     }
 }
 
-fn rows(tree: &SourceTree) -> Result<Vec<(&'static str, Inventory)>, Vec<String>> {
+fn rows(s: &Sources) -> Result<Vec<(&'static str, Inventory)>, Vec<String>> {
+    let preferred: BTreeSet<String> = catalog_entries(&s.catalog)
+        .into_iter()
+        .map(|(id, _)| id)
+        .collect();
     MATRIX
         .iter()
-        .map(|row| build(tree, row, EXPANSIONS).map(|inv| (row.name, inv)))
+        .map(|row| build(&s.tree, row, EXPANSIONS, &preferred).map(|inv| (row.name, inv)))
         .collect()
 }
 
@@ -683,7 +687,7 @@ fn validate(rows: &[(&'static str, Inventory)], s: &Sources) -> (Vec<String>, Re
 }
 
 fn check(s: &Sources) -> Vec<String> {
-    match rows(&s.tree) {
+    match rows(s) {
         Ok(rows) => validate(&rows, s).0,
         Err(errors) => errors,
     }
@@ -712,7 +716,7 @@ fn catalog_repository_gate_is_closed() {
 #[test]
 fn catalog_reports_the_proof_layers_separately() {
     let s = Sources::load();
-    let rows = rows(&s.tree).expect("inventory builds");
+    let rows = rows(&s).expect("inventory builds");
     let (errors, report) = validate(&rows, &s);
     assert!(errors.is_empty());
     let functional = std::fs::read_dir(root().join("tests/functional/baselines/functional"))
@@ -744,7 +748,7 @@ fn catalog_reports_the_proof_layers_separately() {
 #[test]
 fn catalog_module_graph_covers_every_source_file() {
     let s = Sources::load();
-    let rows = rows(&s.tree).expect("inventory builds");
+    let rows = rows(&s).expect("inventory builds");
     let all = &rows.last().expect("rows").1;
     let on_disk: BTreeSet<_> = s.tree.files.keys().cloned().collect();
     let missing = all.orphan_files(&s.tree);
@@ -802,7 +806,7 @@ fn with_probe_module(declaration: &str) -> Sources {
 }
 
 fn orphans(s: &Sources) -> Vec<PathBuf> {
-    let rows = rows(&s.tree).expect("inventory builds");
+    let rows = rows(s).expect("inventory builds");
     rows.last().expect("rows").1.orphan_files(&s.tree)
 }
 
@@ -810,7 +814,7 @@ fn orphans(s: &Sources) -> Vec<PathBuf> {
 fn catalog_cfg_test_module_file_is_test_only_not_an_orphan() {
     let s = with_probe_module("#[cfg(test)]\nmod zz_probe;");
     assert!(orphans(&s).is_empty(), "{:?}", orphans(&s));
-    let rows = rows(&s.tree).expect("inventory builds");
+    let rows = rows(&s).expect("inventory builds");
     let all = &rows.last().expect("rows").1;
     assert!(all.test_only_files.contains(Path::new(PROBE_FILE)));
     assert!(!all.files_read.contains(Path::new(PROBE_FILE)));
@@ -915,7 +919,7 @@ fn catalog_restricted_visibility_is_not_export() {
         "src/lib.rs",
         "pub mod a { pub fn open() {} pub(crate) fn crate_only() {} pub(super) fn parent_only() {} pub(in crate::a) fn scoped() {} pub struct S { pub shown: u8, pub(crate) hidden: u8, private: u8 } }\nmod b { pub fn unreachable() {} }\n",
     )]);
-    let inv = build(&tree, &MATRIX[2], &[]).expect("fixture builds");
+    let inv = build(&tree, &MATRIX[2], &[], &BTreeSet::new()).expect("fixture builds");
     let ids: Vec<_> = inv.exports.keys().map(String::as_str).collect();
     assert_eq!(ids, ["a::S", "a::S::shown", "a::open"]);
 }
@@ -932,8 +936,8 @@ fn catalog_resolves_reexports_and_cfg() {
             "pub struct Plain;\nimpl Plain { pub fn go(&self) {} }\n#[cfg(feature = \"terminal\")]\npub struct Gated { pub n: u8 }\n#[cfg(all(unix, not(test)))]\npub fn on_unix() {}\n#[cfg(windows)]\npub fn on_windows() {}\n",
         ),
     ]);
-    let minimal = build(&tree, &MATRIX[0], &[]).expect("minimal builds");
-    let all = build(&tree, &MATRIX[2], &[]).expect("all builds");
+    let minimal = build(&tree, &MATRIX[0], &[], &BTreeSet::new()).expect("minimal builds");
+    let all = build(&tree, &MATRIX[2], &[], &BTreeSet::new()).expect("all builds");
     let ids = |inv: &Inventory| inv.exports.keys().cloned().collect::<Vec<_>>();
     assert_eq!(ids(&minimal), ["Renamed", "Renamed::go", "outer::on_unix"]);
     assert!(all.exports.contains_key("Gated") && all.exports.contains_key("Gated::n"));
@@ -950,13 +954,73 @@ fn catalog_resolves_reexports_and_cfg() {
     );
 }
 
+const MOVED_HOME: &str = "pub mod new_home { pub struct Moved; impl Moved { pub fn go(&self) {} } }\npub mod old_home { pub use crate::new_home::Moved; }\n";
+
+fn moved_ids(preferred: &[&str]) -> Inventory {
+    let tree = SourceTree::from_files(&[("src/lib.rs", MOVED_HOME)]);
+    let preferred = preferred.iter().map(|id| (*id).to_owned()).collect();
+    build(&tree, &MATRIX[2], &[], &preferred).expect("fixture builds")
+}
+
+#[test]
+fn catalog_a_moved_definition_keeps_the_spelling_the_catalog_already_has() {
+    let kept = moved_ids(&["old_home::Moved"]);
+    let ids: Vec<_> = kept.exports.keys().map(String::as_str).collect();
+    assert_eq!(ids, ["old_home::Moved", "old_home::Moved::go"]);
+    assert_eq!(
+        kept.aliases.get("new_home::Moved").map(String::as_str),
+        Some("old_home::Moved"),
+        "the other spelling stays an alias"
+    );
+}
+
+#[test]
+fn catalog_without_a_preferred_spelling_the_definition_path_wins() {
+    let ids: Vec<_> = moved_ids(&[]).exports.into_keys().collect();
+    assert_eq!(ids, ["new_home::Moved", "new_home::Moved::go"]);
+    let unrelated: Vec<_> = moved_ids(&["elsewhere::Moved"])
+        .exports
+        .into_keys()
+        .collect();
+    assert_eq!(
+        unrelated, ids,
+        "a preferred name that is no spelling is ignored"
+    );
+}
+
+#[test]
+fn catalog_the_catalog_spelling_leaves_the_repository_ids_unchanged() {
+    let s = Sources::load();
+    let with_catalog = rows(&s).expect("inventory builds");
+    for (name, inv) in &with_catalog {
+        let row = MATRIX.iter().find(|r| r.name == *name).expect("row");
+        let bare = build(&s.tree, row, EXPANSIONS, &BTreeSet::new()).expect("builds");
+        assert_eq!(
+            inv.exports.keys().collect::<Vec<_>>(),
+            bare.exports.keys().collect::<Vec<_>>(),
+            "row {name}"
+        );
+    }
+}
+
+#[test]
+fn catalog_a_moved_definition_adds_no_second_obligation() {
+    let inv = moved_ids(&["old_home::Moved"]);
+    assert!(inv.exports.contains_key("old_home::Moved"));
+    assert!(
+        !inv.exports.contains_key("new_home::Moved"),
+        "a second spelling adds no second obligation"
+    );
+}
+
 #[test]
 fn catalog_rejects_unsupported_public_expansion() {
     let tree = SourceTree::from_files(&[(
         "src/lib.rs",
         "macro_rules! make { () => { pub fn made() {} } }\nmake!();\n",
     )]);
-    let errors = build(&tree, &MATRIX[2], &[]).expect_err("unsupported macro fails");
+    let errors =
+        build(&tree, &MATRIX[2], &[], &BTreeSet::new()).expect_err("unsupported macro fails");
     expect_error(&errors, "unsupported item macro `make!`");
     expect_error(&errors, "expansion manifest");
 }
@@ -968,12 +1032,12 @@ fn catalog_rejects_unsupported_cfg_and_reexports() {
         "#[cfg(target_os = \"linux\")]\npub fn os() {}\n",
     )]);
     expect_error(
-        &build(&tree, &MATRIX[2], &[]).expect_err("cfg fails"),
+        &build(&tree, &MATRIX[2], &[], &BTreeSet::new()).expect_err("cfg fails"),
         "unsupported cfg key",
     );
     let tree = SourceTree::from_files(&[("src/lib.rs", "pub use external::Thing;\n")]);
     expect_error(
-        &build(&tree, &MATRIX[2], &[]).expect_err("re-export fails"),
+        &build(&tree, &MATRIX[2], &[], &BTreeSet::new()).expect_err("re-export fails"),
         "unsupported public re-export `external::Thing`",
     );
 }
@@ -1238,7 +1302,7 @@ fn catalog_test_scan_ignores_string_literals_and_comments() {
 #[test]
 fn catalog_owner_type_must_appear_in_the_test_or_its_file() {
     let s = Sources::load();
-    let rows = rows(&s.tree).expect("inventory builds");
+    let rows = rows(&s).expect("inventory builds");
     let inv = &rows.last().expect("rows").1;
     let id = "widgets::table::DataTable::rows";
     let test = |body: &[&str], file: &[&str]| TestFn {

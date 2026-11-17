@@ -909,10 +909,17 @@ impl Walker<'_> {
 }
 
 /// Build the inventory for one matrix row.
+///
+/// `preferred` holds spellings that already carry a catalog line. When a
+/// definition has several public spellings, one of those wins, so moving the
+/// definition to another module behind a `pub use` keeps its id. Without a
+/// preferred spelling the definition's own path wins when it is public, else
+/// the shortest spelling.
 pub fn build(
     tree: &SourceTree,
     row: &Row,
     manifest: &[Expansion],
+    preferred: &BTreeSet<String>,
 ) -> Result<Inventory, Vec<String>> {
     let mut walker = Walker {
         tree,
@@ -958,7 +965,11 @@ pub fn build(
 
     let mut canonical: BTreeMap<String, String> = BTreeMap::new();
     for (def, names) in &spellings {
-        let pick = if names.contains(def) {
+        let pick = if names.len() > 1
+            && let Some(kept) = names.iter().find(|n| preferred.contains(*n))
+        {
+            kept.clone()
+        } else if names.contains(def) {
             def.clone()
         } else {
             names
@@ -1379,7 +1390,8 @@ pub fn module_api(source: &str, module: &str) -> BTreeSet<String> {
     lib.push_str(&" }".repeat(parents.len()));
     let tree =
         SourceTree::from_files(&[("src/lib.rs", &lib), (&format!("{dir}/{leaf}.rs"), source)]);
-    let inventory = build(&tree, &MATRIX[2], &[]).unwrap_or_else(|e| panic!("{}", e.join("\n")));
+    let inventory = build(&tree, &MATRIX[2], &[], &BTreeSet::new())
+        .unwrap_or_else(|e| panic!("{}", e.join("\n")));
     inventory
         .exports
         .into_iter()
