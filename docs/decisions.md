@@ -137,3 +137,11 @@ moved into the library because the library holds no SQL concept, and it is
 not shared between the apps because that would make one demo depend on the
 other's binary. Revisit only if the library gains a SQL-neutral
 identifier-quoting capability with a consumer in each app.
+
+TablePro's filter SQL (`apps/tablepro/src/sql.rs`) keeps one policy of its
+own: plain lowercase names print bare so a previewed filter reads as typed.
+Review found that its reserved-word list was incomplete (a column named
+`current_date`, `fetch` or `natural` printed bare and no longer meant the
+column). It now lists every PostgreSQL reserved word and quotes through
+`model::quote_ident`, so TablePro has one place that doubles an embedded
+quote. Pinned by `issue181_every_postgres_reserved_word_is_quoted_in_filter_sql`.

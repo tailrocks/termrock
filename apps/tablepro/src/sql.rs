@@ -349,16 +349,66 @@ fn join_sql(xs: &[Expr], sep: &str) -> String {
     parts.join(sep)
 }
 
-/// PostgreSQL reserved words the simulator's keyword list leaves out. A column
-/// named like one must be quoted to parse.
-const RESERVED_IDENTS: &[&str] = &["user", "only", "for", "some", "array", "window"];
+/// PostgreSQL reserved words (the "reserved" and "reserved, requires AS"
+/// categories of the SQL key words table) the simulator's keyword list leaves
+/// out. A column named like one must be quoted to parse and to keep its meaning.
+const RESERVED_IDENTS: &[&str] = &[
+    "analyse",
+    "any",
+    "array",
+    "asymmetric",
+    "authorization",
+    "binary",
+    "both",
+    "collate",
+    "collation",
+    "concurrently",
+    "current_catalog",
+    "current_date",
+    "current_role",
+    "current_schema",
+    "current_time",
+    "current_timestamp",
+    "current_user",
+    "deferrable",
+    "do",
+    "except",
+    "fetch",
+    "for",
+    "foreign",
+    "freeze",
+    "initially",
+    "intersect",
+    "isnull",
+    "lateral",
+    "leading",
+    "localtime",
+    "localtimestamp",
+    "natural",
+    "notnull",
+    "only",
+    "overlaps",
+    "placing",
+    "session_user",
+    "similar",
+    "some",
+    "symmetric",
+    "system_user",
+    "tablesample",
+    "trailing",
+    "user",
+    "variadic",
+    "verbose",
+    "window",
+];
 
 fn is_reserved_ident(name: &str) -> bool {
     is_keyword(name) || RESERVED_IDENTS.iter().any(|r| name.eq_ignore_ascii_case(r))
 }
 
 /// Plain lowercase names stay bare, so previews read as typed. Anything else
-/// is double-quoted with embedded quotes doubled.
+/// goes through [`crate::model::quote_ident`], the one place that doubles an
+/// embedded quote.
 fn quote_ident(name: &str) -> String {
     let plain = name
         .chars()
@@ -367,7 +417,7 @@ fn quote_ident(name: &str) -> String {
     if plain && !name.is_empty() && !is_reserved_ident(name) {
         name.to_owned()
     } else {
-        format!("\"{}\"", name.replace('"', "\"\""))
+        crate::model::quote_ident(name)
     }
 }
 
@@ -2536,6 +2586,49 @@ mod issue10_sql_tests {
                 op: PredicateOp::IsNull,
             });
             assert_eq!(leaf.to_sql(), format!("\"{name}\" IS NULL"), "{name}");
+        }
+    }
+
+    #[test]
+    fn issue181_every_postgres_reserved_word_is_quoted_in_filter_sql() {
+        let reserved = "all analyse analyze and any array as asc asymmetric authorization \
+            binary both case cast check collate collation column concurrently constraint \
+            create cross current_catalog current_date current_role current_schema \
+            current_time current_timestamp current_user default deferrable desc distinct do \
+            else end except false fetch for foreign freeze from full grant group having \
+            ilike in initially inner intersect into is isnull join lateral leading left \
+            like limit localtime localtimestamp natural not notnull null offset on only or \
+            order outer overlaps placing primary references returning right select \
+            session_user similar some symmetric system_user table tablesample then to \
+            trailing true union unique user using variadic verbose when where window with";
+        for name in reserved.split_whitespace() {
+            assert_eq!(
+                quote_ident(name),
+                crate::model::quote_ident(name),
+                "{name} must be quoted"
+            );
+        }
+    }
+
+    #[test]
+    fn issue181_filter_sql_quotes_like_the_commit_preview_when_it_quotes() {
+        for name in [
+            "UserId",
+            "we\"ird",
+            "\"",
+            "two words",
+            "x; DROP TABLE t",
+            "",
+            "9lives",
+        ] {
+            assert_eq!(
+                quote_ident(name),
+                crate::model::quote_ident(name),
+                "{name:?}"
+            );
+        }
+        for name in ["notes", "user_id", "a1", "_x"] {
+            assert_eq!(quote_ident(name), name, "plain lowercase stays bare");
         }
     }
 
