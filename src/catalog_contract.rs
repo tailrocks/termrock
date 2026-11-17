@@ -21,6 +21,7 @@ use api_inventory::{
     build_crates, idents,
 };
 use scenario_reach::FnIndex;
+use sha2::{Digest, Sha256};
 use syn::visit::Visit;
 
 const EXPANSIONS: &[Expansion] = &[
@@ -792,6 +793,154 @@ fn expect_error(errors: &[String], needle: &str) {
 fn replaced(text: &str, old: &str, new: &str) -> String {
     assert!(text.contains(old), "mutation target not found: {old}");
     text.replacen(old, new, 1)
+}
+
+/// The golden API id lists: one line per matrix row, `<row> <id count> <sha256>`, where the digest
+/// is of the sorted ids of that row, one per line. A PR that moves code must leave it as it is.
+const API_IDS: &str = "tests/regressions/api-ids.sha256";
+
+fn api_id_lines(rows: &[(&'static str, Inventory)]) -> String {
+    rows.iter()
+        .map(|(name, inv)| {
+            let mut digest = Sha256::new();
+            for id in inv.exports.keys() {
+                digest.update(id.as_bytes());
+                digest.update(b"\n");
+            }
+            let hex: String = digest
+                .finalize()
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect();
+            format!("{name} {} {hex}\n", inv.exports.len())
+        })
+        .collect()
+}
+
+/// The rows whose line in `committed` is not the one in `actual`.
+fn changed_api_rows(actual: &str, committed: &str) -> Vec<String> {
+    let committed: BTreeMap<&str, &str> = committed
+        .lines()
+        .filter_map(|line| Some((line.split(' ').next()?, line)))
+        .collect();
+    actual
+        .lines()
+        .filter(|line| committed.get(line.split(' ').next().unwrap_or("")) != Some(line))
+        .map(str::to_owned)
+        .collect()
+}
+
+/// The sorted ids of each row, written under `target/` so two checkouts can be compared with `diff`.
+fn write_api_id_lists(rows: &[(&'static str, Inventory)]) -> PathBuf {
+    let target = std::env::var_os("CARGO_TARGET_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| root().join("target"));
+    let dir = target.join("api-ids");
+    std::fs::create_dir_all(&dir).expect("create target/api-ids");
+    for (name, inv) in rows {
+        let ids: String = inv.exports.keys().map(|id| format!("{id}\n")).collect();
+        std::fs::write(dir.join(format!("{name}.txt")), ids).expect("write the id list");
+    }
+    dir
+}
+
+#[test]
+fn catalog_api_ids_match_the_committed_digest() {
+    let s = Sources::load();
+    let rows = rows(&s).expect("inventory builds");
+    let actual = api_id_lines(&rows);
+    let lists = write_api_id_lists(&rows);
+    if std::env::var_os("UPDATE_API_IDS").is_some() {
+        std::fs::write(root().join(API_IDS), &actual).expect("write the digest");
+        return;
+    }
+    let committed = std::fs::read_to_string(root().join(API_IDS))
+        .unwrap_or_else(|e| panic!("read {API_IDS}: {e}"));
+    let changed = changed_api_rows(&actual, &committed);
+    assert!(
+        changed.is_empty() && actual.lines().count() == committed.lines().count(),
+        "the declared API id set changed for: {changed:#?}\n\
+         A PR that moves code must not change it: the ids are facade spellings, so a moved item \
+         needs its re-export at the old path. The sorted ids are in {lists}, one file per row; \
+         `diff` them against the same files from a checkout of origin/main.\n\
+         When the API itself changes on purpose, run this test with UPDATE_API_IDS=1 and commit \
+         {API_IDS}.",
+        lists = lists.display()
+    );
+}
+
+#[test]
+fn catalog_api_id_digest_names_the_row_that_changed() {
+    let s = Sources::load();
+    let committed = api_id_lines(&rows(&s).expect("inventory builds"));
+    let mut s = s;
+    s.tree
+        .files
+        .get_mut(Path::new("src/clock.rs"))
+        .expect("clock.rs")
+        .push_str("\npub fn undeclared_probe() {}\n");
+    let actual = api_id_lines(&rows(&s).expect("inventory builds"));
+    let changed = changed_api_rows(&actual, &committed);
+    assert_eq!(changed.len(), 3, "every row gains the id: {changed:?}");
+    assert!(changed_api_rows(&committed, &committed).is_empty());
+}
+
+/// Moves `src/widgets/brand.rs` into a crate of its own and leaves `pub use zz_brand::*;` at the
+/// old path, the way an extraction PR does.
+fn with_brand_in_a_scratch_crate(s: &mut Sources) {
+    let brand = Path::new("src/widgets/brand.rs");
+    let moved = s
+        .tree
+        .files
+        .insert(brand.to_owned(), "pub use zz_brand::*;\n".to_owned())
+        .expect("brand.rs");
+    s.tree
+        .files
+        .insert(PathBuf::from("crates/zz-brand/src/lib.rs"), moved);
+    s.crates
+        .push(("zz_brand".into(), "crates/zz-brand/src".into()));
+}
+
+#[test]
+fn catalog_a_scratch_move_into_a_crate_leaves_every_id_and_the_gate_unchanged() {
+    let before = Sources::load();
+    let ids_before = rows(&before).expect("inventory builds");
+    let mut moved = before.clone();
+    with_brand_in_a_scratch_crate(&mut moved);
+    let ids_after = rows(&moved).expect("inventory builds after the move");
+    assert_eq!(api_id_lines(&ids_after), api_id_lines(&ids_before));
+    for ((name, after), (_, before)) in ids_after.iter().zip(&ids_before) {
+        assert_eq!(
+            after.exports.keys().collect::<Vec<_>>(),
+            before.exports.keys().collect::<Vec<_>>(),
+            "row {name}"
+        );
+    }
+    let errors = check(&moved);
+    assert!(errors.is_empty(), "{}", errors.join("\n"));
+    assert!(
+        ids_after[2]
+            .1
+            .exports
+            .contains_key("widgets::brand::Lockup::new"),
+        "the facade spelling of the moved item"
+    );
+}
+
+#[test]
+fn catalog_a_move_that_drops_its_reexport_changes_the_ids() {
+    let mut s = Sources::load();
+    with_brand_in_a_scratch_crate(&mut s);
+    s.tree
+        .files
+        .insert(PathBuf::from("src/widgets/brand.rs"), String::new());
+    let moved = rows(&s).expect("inventory builds");
+    let committed = api_id_lines(&rows(&Sources::load()).expect("inventory builds"));
+    assert_eq!(changed_api_rows(&api_id_lines(&moved), &committed).len(), 3);
+    expect_error(
+        &check(&s),
+        "catalog entry is not an exported API (stale): widgets::brand::Lockup",
+    );
 }
 
 #[test]
