@@ -16,7 +16,8 @@ use std::time::{Duration, Instant};
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, HOLLA, Launch, row_text, text, try_launch};
+use crate::bins::holla;
+use crate::support::{App, Launch, row_text, text, try_launch};
 
 const MAC: &str = "parity-platforms";
 const LINUX: &str = "parity-platforms-linux";
@@ -54,7 +55,7 @@ fn launch_paused(name: &str, scenario: &str) -> App {
 }
 
 fn launch_motion(name: &str, scenario: &str, motion: &str, frame: Option<u64>) -> App {
-    let mut launch = Launch::new(name, HOLLA);
+    let mut launch = Launch::new(name, holla());
     launch.cols = 120;
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());
