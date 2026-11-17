@@ -13,13 +13,13 @@
 
 use jackin_console::app::App;
 use jackin_console::fixtures::{Scenario, app_for};
-use junie_tui::core::event::{Input, Key};
-use junie_tui::metrics::harness::{Harness, assert_exact};
-use junie_tui::metrics::{Metric, measure};
-use junie_tui::motion::Motion;
-use junie_tui::runtime::Application;
-use junie_tui::theme::{ColorLevel, Theme};
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use termrock::core::event::{Input, Key};
+use termrock::metrics::harness::{Harness, assert_exact};
+use termrock::metrics::{Metric, measure};
+use termrock::motion::Motion;
+use termrock::runtime::Application;
+use termrock::theme::{ColorLevel, Theme};
 
 const VIEWPORT: (u16, u16) = (140, 40);
 

@@ -10,8 +10,8 @@ use jackin_console::domain::instance::{AgentState, InstanceEntry, InstanceId, In
 use jackin_console::panes::{Lease, LinkEvent, PaneCommand, PaneEffect, PanePolicy};
 use jackin_console::screens::Go;
 use jackin_console::world::Msg;
-use junie_tui::core::event::{External, Input};
-use junie_tui::runtime::Application;
+use termrock::core::event::{External, Input};
+use termrock::runtime::Application;
 
 const OTHER: &str = "jk-zzz";
 const FOCUS_OUT: &[u8] = b"\x1b[O";

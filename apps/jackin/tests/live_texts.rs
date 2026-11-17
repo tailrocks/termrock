@@ -10,11 +10,11 @@ use jackin_console::domain::vocabulary::Vocabulary;
 use jackin_console::fixtures::{Scenario, app_with_world, world_for};
 use jackin_console::screens::Go;
 use jackin_console::world::World;
-use junie_tui::core::event::{Input, Mouse, MouseKind};
-use junie_tui::motion::Motion;
-use junie_tui::runtime::Application;
-use junie_tui::theme::{ColorLevel, Theme};
 use ratatui::layout::Position;
+use termrock::core::event::{Input, Mouse, MouseKind};
+use termrock::motion::Motion;
+use termrock::runtime::Application;
+use termrock::theme::{ColorLevel, Theme};
 
 fn live(scenario: Scenario) -> World {
     let mut world = world_for(scenario);

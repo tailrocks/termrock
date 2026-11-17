@@ -3,13 +3,13 @@
 mod pane_support;
 
 use jackin_console::panes::{LinkStatus, PaneBody, PaneNote};
-use junie_tui::core::focus::FocusRing;
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::theme::{ColorLevel, Theme, Tone};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
 use pane_support::*;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
+use termrock::core::focus::FocusRing;
+use termrock::core::hit::HitRegistry;
+use termrock::theme::{ColorLevel, Theme, Tone};
+use termrock::ui::ctx::{Interaction, RenderCtx};
 
 fn paint(pane: &impl PaneBody, area: Rect, caret_allowed: bool) -> (Buffer, Option<Position>) {
     let theme = Theme::for_level(ColorLevel::TrueColor);
@@ -108,7 +108,7 @@ fn cursor_visibility_rules() {
     bench.output(0, &lines);
     pane.tick(1_200);
     pane.viewport_mut()
-        .wheel(junie_tui::core::hit::Axis::Vertical, -3);
+        .wheel(termrock::core::hit::Axis::Vertical, -3);
     assert_eq!(paint(&pane, area, true).1, None, "scrolled back");
 }
 

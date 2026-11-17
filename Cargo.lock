@@ -957,7 +957,6 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "jackin-console",
- "junie-tui",
  "ratatui",
  "serde_json",
  "termrock",

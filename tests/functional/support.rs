@@ -5,9 +5,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use junie_tui::clock::TestRequest;
-use junie_tui::core::pointer::PointerConfig;
-use junie_tui::shell::StatusLine;
+use crate::engine::{PointerConfig, StatusLine, TestRequest};
 use tui_test::{
     CheckedMouseAction, KeyAction, LaunchEnvMode, LaunchOptions, MouseOptions, OpenOptions,
     Operation, OperationResult, RunOptions, Session, SnapshotCell, SnapshotScope, TerminalSnapshot,

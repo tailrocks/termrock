@@ -9,10 +9,10 @@ use jackin_console::domain::vocabulary::Vocabulary;
 use jackin_console::fixtures::{Scenario, world_for};
 use jackin_console::panes::{PaneBody, PaneKey, PaneKindTag, PaneRequest, PaneSpawn, PasteOutcome};
 use jackin_console::sim::SimBackend;
-use junie_tui::core::event::Key;
-use junie_tui::widgets::viewport::CellPos;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Rect;
+use termrock::core::event::Key;
+use termrock::widgets::viewport::CellPos;
 
 const WORKSPACE: &str = "payments-platform";
 const AREA: Rect = Rect::new(0, 0, 80, 24);
@@ -269,11 +269,11 @@ fn the_new_agent_scripts_reach_a_prompt_and_leave_working_state() {
 }
 
 fn text_of(body: &mut dyn PaneBody) -> String {
-    use junie_tui::core::focus::FocusRing;
-    use junie_tui::core::hit::HitRegistry;
-    use junie_tui::theme::{ColorLevel, Theme};
-    use junie_tui::ui::ctx::{Interaction, RenderCtx};
     use ratatui::buffer::Buffer;
+    use termrock::core::focus::FocusRing;
+    use termrock::core::hit::HitRegistry;
+    use termrock::theme::{ColorLevel, Theme};
+    use termrock::ui::ctx::{Interaction, RenderCtx};
 
     body.sync_size(AREA);
     let theme = Theme::for_level(ColorLevel::TrueColor);
