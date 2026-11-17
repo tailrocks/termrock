@@ -241,3 +241,68 @@ catalog line and showcase disposition, and its own change. Until then
 `scripts/performance-report.sh` prints each app's counts, and the timing
 section carries the library families only. This is a stated gap, not a result:
 no app time is claimed anywhere.
+
+## 2026-11-18: Crate boundaries and the layering check (#439, #440)
+
+Context: epic #439 splits the `junie-tui` monolith into `termrock-*` crates.
+`docs/architecture.md` had a target table from before the split was measured.
+A source scan of `origin/main` (`ecffc8e21`, then `bf62acd30`) showed that the
+target table does not hold, and that nothing enforced any direction between
+the modules of the single package.
+
+Decision 1, crate boundaries. The crate table in `docs/architecture.md` and the
+`[allow]` table in `docs/layering.toml` replace the earlier table. They differ
+from it in four ways, each measured:
+
+- `layout` is a component-layer crate, not a foundation. `Split` uses
+  `scrollbar` and `keyhint`, and `Measure` takes `RenderCtx`.
+- Overlays split into `termrock-overlays` (menus, popups, layers) and
+  `termrock-dialogs` (dialogs, forms, file browser). `input` needs a context
+  menu and the dialogs need `input`, so a single crate is a cycle. There is no
+  `forms` crate.
+- `termrock-session` holds the run loop and `termrock-runtime` holds
+  `RenderCtx`. The facade module `termrock::runtime` comes from `session`.
+- Focus, hit testing and key maps stay in `termrock-core`. `list`, `keyed` and
+  `intent` depend on them, and `core::{hit, intent, pointer, scroll, shape}`
+  with `core::{keymap, list}` form a five-module cycle.
+
+Decision 2, how the direction is enforced. `tests/regressions/layering.rs`
+checks `docs/layering.toml` at module level now (stage A) and at crate level
+from `cargo metadata` once `crates/termrock-*` exist (stage B, off until #444).
+Known upward dependencies are recorded in
+`tests/regressions/layering-allowlist.tsv`. The list may only shrink; a line
+that no longer matches a dependency fails as stale. The allowlist is not a way
+to land a new violation: fix the design.
+
+Where the implementation differs from the plan in #440, and why:
+
+- Counts. #440 expected 94 allowlist pairs (36 production, 58 test). The
+  scanner finds 42: 38 production in 10 files and 4 test. The production
+  difference of two pairs is not reconciled pair by pair: #439 counted with a
+  regex over path text, this scan resolves syntax to the defining module and
+  keeps one line per (file, target module). The test difference is the file map. #444 to #449
+  say where each test file lands, mostly `termrock-conformance`, which the
+  table allows to depend on every library crate, so those files are not
+  upward edges; the 58 counted them against the module they sit in today.
+  Test files that stay with a crate (`widgets/code/tests.rs`,
+  `widgets/textarea/tests.rs`, `widgets/picker.rs`, `ui/layer.rs`) still
+  record their upward edges.
+- `[allow]` is checked together with what its dependencies use. #439 says "every
+  row also allows the foundation crates that the row's dependencies already
+  use", so the permitted set is the transitive closure of `[allow]`. `[allow]`
+  itself is the #439 table verbatim.
+- `tests/support/*` is scanned and mapped to `catalog`, because
+  `src/catalog_contract.rs` includes it through `#[path]`.
+- `[layers]`, `layer_order` and the `functional`, `junie-tui` and `termrock`
+  rows are additions to the #439 table: the layer rule makes the sentence
+  "apps, then facade, then components, then runtime, then foundations" a
+  checked property, and stage B needs a row for every `termrock-*` package.
+  `junie-tui` sits below `termrock` while it is the implementation package;
+  #452 flips it.
+- The scan covers `crate::`, `self::`, `super::` and child-module paths in
+  code, types, `use` trees and macro arguments. Doc comments, string literals
+  and `pub(crate)` are not dependencies. A `#[macro_export]` macro used as
+  `crate::record_work!` counts as a dependency on the module that defines it
+  (`metrics`).
+
+Revisit when #452 removes `[files]`: from then on only stage B remains.

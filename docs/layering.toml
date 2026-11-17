@@ -1,0 +1,346 @@
+# Crate layering table (#439, #440). Read by tests/regressions/layering.rs.
+#
+# The check fails any dependency that points up the layers. Stage A scans the
+# modules of the single `junie-tui` package (`src/`) and attributes each file
+# to its target crate through [files]. Stage B reads `cargo metadata` once the
+# crates exist (`crates/termrock-*`). Both read this one table.
+#
+# Names are short: `core` means the package `termrock-core`. `termrock` is the
+# facade (`crates/termrock`). `junie-tui` is the transitional implementation
+# package; #452 turns it into a shim and flips its position here.
+#
+# Editing rules
+#   * [allow] is the table of #439 and changes only by a recorded decision.
+#   * An extraction PR (#444 to #448) deletes the [files] entries of the files
+#     it moves, because those files then belong to a crate of their own and
+#     stage B checks their dependencies. #452 deletes [files] entirely.
+#   * [files] is not an allowlist for violations; known violations live in
+#     tests/regressions/layering-allowlist.tsv, which may only shrink.
+
+schema = 1
+
+# Crates from the bottom of the stack to the top. A crate may depend only on
+# crates listed before it.
+order = [
+    "metrics",
+    "text",
+    "core",
+    "theme",
+    "runtime",
+    "session",
+    "controls",
+    "feedback",
+    "overlays",
+    "viewport",
+    "fields",
+    "editors",
+    "layout",
+    "collections",
+    "navigation",
+    "grid",
+    "dialogs",
+    "shell",
+    "terminal",
+    "cli",
+    "catalog",
+    "conformance",
+    "junie-tui",
+    "termrock",
+    "functional",
+]
+
+# The layer each crate belongs to, lowest first. A dependency may not point to a
+# higher layer than its owner.
+layer_order = ["foundations", "runtime", "components", "host", "optional", "proof", "facade", "test"]
+
+[layers]
+metrics = "foundations"
+text = "foundations"
+core = "foundations"
+theme = "foundations"
+runtime = "runtime"
+session = "runtime"
+controls = "components"
+feedback = "components"
+overlays = "components"
+viewport = "components"
+fields = "components"
+editors = "components"
+layout = "components"
+collections = "components"
+navigation = "components"
+grid = "components"
+dialogs = "components"
+shell = "host"
+terminal = "optional"
+cli = "optional"
+catalog = "proof"
+conformance = "proof"
+"junie-tui" = "facade"
+termrock = "facade"
+functional = "test"
+
+# Direct dependencies each crate may declare (the table in #439). The effective
+# permission is this list plus everything those crates may themselves depend on:
+# "every row also allows the foundation crates that the row's dependencies
+# already use". Applications are not listed; they may depend on `termrock` only.
+[allow]
+metrics = []
+text = ["metrics"]
+core = ["metrics", "text"]
+theme = ["core"]
+runtime = ["metrics", "text", "core", "theme"]
+session = ["metrics", "text", "core", "runtime"]
+controls = ["metrics", "text", "core", "theme", "runtime"]
+feedback = ["controls"]
+overlays = ["feedback", "controls"]
+viewport = ["overlays", "controls"]
+fields = ["overlays", "controls"]
+editors = ["viewport", "fields", "overlays", "controls"]
+layout = ["viewport", "overlays", "controls"]
+collections = ["layout", "fields", "viewport", "overlays", "feedback", "controls"]
+navigation = ["collections", "overlays", "controls"]
+grid = ["overlays", "feedback", "controls"]
+dialogs = ["navigation", "collections", "layout", "editors", "fields", "viewport", "overlays", "controls"]
+shell = ["dialogs", "navigation", "overlays", "feedback", "controls", "session", "runtime"]
+terminal = ["viewport", "controls", "runtime", "theme", "core", "text", "metrics"]
+cli = ["core", "theme"]
+catalog = ["grid", "navigation", "collections", "editors", "fields", "viewport", "controls", "session", "runtime", "core"]
+conformance = ["metrics", "text", "core", "theme", "runtime", "session", "controls", "feedback", "overlays", "viewport", "fields", "editors", "layout", "collections", "navigation", "grid", "dialogs", "shell", "terminal", "cli", "catalog"]
+"junie-tui" = ["metrics", "text", "core", "theme", "runtime", "session", "controls", "feedback", "overlays", "viewport", "fields", "editors", "layout", "collections", "navigation", "grid", "dialogs", "shell", "terminal", "cli", "catalog"]
+termrock = ["metrics", "text", "core", "theme", "runtime", "session", "controls", "feedback", "overlays", "viewport", "fields", "editors", "layout", "collections", "navigation", "grid", "dialogs", "shell", "terminal", "cli", "catalog", "conformance", "junie-tui"]
+functional = ["termrock"]
+
+# Pre-split stage only: source file to target crate, from the implementation
+# maps of #444 to #449. `tests/support/*` is the test support that
+# `src/catalog_contract.rs` includes through `#[path]`: #449 moves
+# `api_inventory.rs` into `termrock-catalog`, and `scenario_reach.rs`, which only
+# `catalog_contract` uses, follows it. The shim modules (`lib.rs`,
+# `core/mod.rs`, `ui/mod.rs`, `widgets/mod.rs`) hold only `mod` lines and belong
+# to the facade.
+[files]
+
+# metrics
+"src/metrics.rs" = "metrics"
+"src/metrics/measurement.rs" = "metrics"
+"src/metrics/state.rs" = "metrics"
+
+# text
+"src/core/text.rs" = "text"
+"src/core/text_index.rs" = "text"
+"src/ui/text.rs" = "text"
+"src/ui/text/wrap_tests.rs" = "text"
+
+# core
+"src/core/data.rs" = "core"
+"src/core/edit.rs" = "core"
+"src/core/event.rs" = "core"
+"src/core/focus.rs" = "core"
+"src/core/hints.rs" = "core"
+"src/core/hit.rs" = "core"
+"src/core/id.rs" = "core"
+"src/core/intent.rs" = "core"
+"src/core/keyboard.rs" = "core"
+"src/core/keyed.rs" = "core"
+"src/core/keymap.rs" = "core"
+"src/core/list.rs" = "core"
+"src/core/nav.rs" = "core"
+"src/core/pointer.rs" = "core"
+"src/core/refusal.rs" = "core"
+"src/core/response.rs" = "core"
+"src/core/scroll.rs" = "core"
+"src/core/selection.rs" = "core"
+"src/core/shape.rs" = "core"
+"src/core/text/tests.rs" = "core"
+"src/core/typeahead.rs" = "core"
+"src/motion.rs" = "core"
+"src/widgets/edit.rs" = "core"
+"src/widgets/edit/parsers.rs" = "core"
+"src/widgets/field_common.rs" = "core"
+"src/widgets/text_select.rs" = "core"
+
+# theme
+"src/theme.rs" = "theme"
+
+# runtime
+"src/ui/columns.rs" = "runtime"
+"src/ui/ctx.rs" = "runtime"
+"src/ui/fade.rs" = "runtime"
+"src/ui/fitting.rs" = "runtime"
+"src/ui/measure.rs" = "runtime"
+"src/ui/popup.rs" = "runtime"
+"src/ui/reveal.rs" = "runtime"
+"src/ui/row.rs" = "runtime"
+"src/ui/specimen.rs" = "runtime"
+"src/ui/tooltip.rs" = "runtime"
+
+# session
+"src/clock.rs" = "session"
+"src/runtime.rs" = "session"
+"src/runtime/isolated.rs" = "session"
+"src/runtime/job_control/tests.rs" = "session"
+"src/runtime/metered.rs" = "session"
+"src/runtime/panic_bridge.rs" = "session"
+"src/runtime/panic_bridge/tests.rs" = "session"
+"src/runtime/tests.rs" = "session"
+
+# controls
+"src/widgets/action_row.rs" = "controls"
+"src/widgets/brand.rs" = "controls"
+"src/widgets/button.rs" = "controls"
+"src/widgets/choice.rs" = "controls"
+"src/widgets/hintbar.rs" = "controls"
+"src/widgets/icon_button.rs" = "controls"
+"src/widgets/keyhint.rs" = "controls"
+"src/widgets/keyref.rs" = "controls"
+"src/widgets/scrollbar.rs" = "controls"
+"src/widgets/segments.rs" = "controls"
+"src/widgets/widget_hints.rs" = "controls"
+
+# feedback
+"src/widgets/empty.rs" = "feedback"
+"src/widgets/meter_list.rs" = "feedback"
+"src/widgets/notice.rs" = "feedback"
+"src/widgets/page_header.rs" = "feedback"
+"src/widgets/progress.rs" = "feedback"
+"src/widgets/statusbar.rs" = "feedback"
+"src/widgets/too_small.rs" = "feedback"
+
+# overlays
+"src/ui/context.rs" = "overlays"
+"src/ui/edit_menu.rs" = "overlays"
+"src/ui/layer.rs" = "overlays"
+"src/ui/modal.rs" = "overlays"
+"src/widgets/completion.rs" = "overlays"
+"src/widgets/menu.rs" = "overlays"
+"src/widgets/option_editor.rs" = "overlays"
+"src/widgets/option_list.rs" = "overlays"
+"src/widgets/picker.rs" = "overlays"
+"src/widgets/row_menu.rs" = "overlays"
+
+# viewport
+"src/core/pointer/nested_scrollbar_tests.rs" = "viewport"
+"src/ui/scroll_view.rs" = "viewport"
+"src/widgets/panel.rs" = "viewport"
+"src/widgets/panel/tests.rs" = "viewport"
+"src/widgets/viewport.rs" = "viewport"
+"src/widgets/viewport_ops.rs" = "viewport"
+"src/widgets/viewport_specimen.rs" = "viewport"
+
+# fields
+"src/widgets/chips.rs" = "fields"
+"src/widgets/input.rs" = "fields"
+"src/widgets/select.rs" = "fields"
+
+# editors
+"src/widgets/code.rs" = "editors"
+"src/widgets/code/index.rs" = "editors"
+"src/widgets/code/tests.rs" = "editors"
+"src/widgets/code_specimen.rs" = "editors"
+"src/widgets/diff.rs" = "editors"
+"src/widgets/textarea.rs" = "editors"
+"src/widgets/textarea/tests.rs" = "editors"
+
+# layout
+"src/ui/layout.rs" = "layout"
+"src/ui/master_detail.rs" = "layout"
+"src/ui/pane_tree.rs" = "layout"
+"src/widgets/splitter.rs" = "layout"
+
+# collections
+"src/ui/content.rs" = "collections"
+"src/ui/list_core.rs" = "collections"
+"src/widgets/detail_card.rs" = "collections"
+"src/widgets/list.rs" = "collections"
+"src/widgets/list_detail.rs" = "collections"
+"src/widgets/props.rs" = "collections"
+"src/widgets/search_detail.rs" = "collections"
+"src/widgets/search_detail/detail.rs" = "collections"
+"src/widgets/search_detail/projection.rs" = "collections"
+"src/widgets/search_detail/session.rs" = "collections"
+"src/widgets/search_detail/session/tests.rs" = "collections"
+"src/widgets/tree.rs" = "collections"
+
+# navigation
+"src/widgets/breadcrumb.rs" = "navigation"
+"src/widgets/document_workspace.rs" = "navigation"
+"src/widgets/nav_list.rs" = "navigation"
+"src/widgets/rail.rs" = "navigation"
+"src/widgets/steps.rs" = "navigation"
+"src/widgets/tabs.rs" = "navigation"
+"src/widgets/toolbar.rs" = "navigation"
+
+# grid
+"src/widgets/collection_edit_tests.rs" = "grid"
+"src/widgets/grid.rs" = "grid"
+"src/widgets/grid_changes.rs" = "grid"
+"src/widgets/grid_changeset_tests.rs" = "grid"
+"src/widgets/grid_sort_tests.rs" = "grid"
+"src/widgets/grid_specimen.rs" = "grid"
+"src/widgets/grid_submission.rs" = "grid"
+"src/widgets/grid_submission_tests.rs" = "grid"
+"src/widgets/grid_undo_tests.rs" = "grid"
+"src/widgets/table.rs" = "grid"
+"src/widgets/table_specimen.rs" = "grid"
+
+# dialogs
+"src/ui/layers.rs" = "dialogs"
+"src/ui/leave.rs" = "dialogs"
+"src/widgets/choice_dialog.rs" = "dialogs"
+"src/widgets/dialog.rs" = "dialogs"
+"src/widgets/file_browser.rs" = "dialogs"
+"src/widgets/form_dialog.rs" = "dialogs"
+"src/widgets/form_dialog/tests.rs" = "dialogs"
+"src/widgets/help.rs" = "dialogs"
+"src/widgets/info_dialog.rs" = "dialogs"
+"src/widgets/inspect_changes.rs" = "dialogs"
+
+# shell
+"src/shell/app.rs" = "shell"
+"src/shell/chrome.rs" = "shell"
+"src/shell/clipboard.rs" = "shell"
+"src/shell/cx.rs" = "shell"
+"src/shell/footer.rs" = "shell"
+"src/shell/mod.rs" = "shell"
+"src/shell/nav.rs" = "shell"
+"src/shell/page.rs" = "shell"
+"src/shell/reach.rs" = "shell"
+"src/shell/router.rs" = "shell"
+"src/shell/status.rs" = "shell"
+
+# terminal
+"src/terminal.rs" = "terminal"
+"src/terminal/forward.rs" = "terminal"
+"src/terminal/guard.rs" = "terminal"
+"src/terminal/session.rs" = "terminal"
+"src/terminal/viewport.rs" = "terminal"
+
+# cli
+"src/cli.rs" = "cli"
+
+# catalog
+"src/catalog.rs" = "catalog"
+"src/catalog_contract.rs" = "catalog"
+"src/docs.rs" = "catalog"
+"tests/support/api_inventory.rs" = "catalog"
+"tests/support/scenario_reach.rs" = "catalog"
+
+# conformance
+"src/metrics/harness.rs" = "conformance"
+"src/metrics/report.rs" = "conformance"
+"src/metrics/tests.rs" = "conformance"
+"src/runtime/raw_input_tests/work.rs" = "conformance"
+"src/test_alloc.rs" = "conformance"
+"src/ui/intrinsic_tests.rs" = "conformance"
+"src/ui/intrinsic_wide_tests.rs" = "conformance"
+"src/ui/overflow_parity_tests.rs" = "conformance"
+"src/ui/overflow_work_tests.rs" = "conformance"
+"src/ui/scroll_view/window_tests.rs" = "conformance"
+"src/widgets/keyed_cost_tests.rs" = "conformance"
+"src/widgets/search_detail/cost_tests.rs" = "conformance"
+
+# termrock
+"src/core/mod.rs" = "termrock"
+"src/lib.rs" = "termrock"
+"src/ui/mod.rs" = "termrock"
+"src/widgets/mod.rs" = "termrock"
