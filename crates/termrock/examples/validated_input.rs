@@ -9,6 +9,16 @@ use ratatui::crossterm::event::KeyCode;
 use termrock::core::id::WidgetId;
 use termrock::widgets::input::{InputAction, TextInput};
 
+/// Deletes " beta" from the refused value and types "2".
+const FIX: [KeyCode; 6] = [
+    KeyCode::Backspace,
+    KeyCode::Backspace,
+    KeyCode::Backspace,
+    KeyCode::Backspace,
+    KeyCode::Backspace,
+    KeyCode::Char('2'),
+];
+
 /// The host owns the accepted value. The field only proposes a new one.
 struct Profile {
     handle: String,
@@ -30,10 +40,16 @@ impl Profile {
 
     /// Types `text` after the current value, then presses Enter.
     fn submit(&mut self, text: &str) {
+        self.press(&text.chars().map(KeyCode::Char).collect::<Vec<_>>());
+    }
+
+    /// Presses `keys` in the open edit (opening one if needed), then Enter.
+    /// A refused value leaves the edit open, so the next call continues it.
+    fn press(&mut self, keys: &[KeyCode]) {
         self.field.begin_edit();
         self.field.on_key(&key(KeyCode::End));
-        for c in text.chars() {
-            self.field.on_key(&key(KeyCode::Char(c)));
+        for code in keys {
+            self.field.on_key(&key(*code));
         }
         let (_, action) = self.field.on_key(&key(KeyCode::Enter));
         if action == Some(InputAction::Committed) && self.field.error().is_none() {
@@ -55,8 +71,7 @@ fn main() {
     let mut profile = Profile::new("alpha");
     profile.submit(" beta");
     println!("-- refused --\n{}", profile.screen());
-    profile.field.set_value("alpha");
-    profile.submit("2");
+    profile.press(&FIX);
     println!("-- accepted --\n{}", profile.screen());
 }
 
@@ -77,10 +92,11 @@ mod tests {
     fn a_valid_value_is_saved_and_clears_the_error() {
         let mut profile = Profile::new("alpha");
         profile.submit(" beta");
-        profile.field.set_value("alpha");
-        profile.submit("2");
-        assert_eq!(profile.field.error(), None);
-        assert_eq!(profile.handle, "alpha2");
+        assert_eq!(profile.field.error(), Some("No spaces"));
+        assert_eq!(profile.handle, "alpha");
+        profile.press(&FIX);
+        assert_eq!(profile.field.error(), None, "a valid commit clears it");
+        assert_eq!(profile.handle, "alpha2", "the corrected value was saved");
     }
 
     #[test]

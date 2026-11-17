@@ -156,8 +156,10 @@ terminal events and hands the application at most `ExternalPolicy::max_messages`
 external messages, within `max_duration`, before it checks resize and tick
 again, so a flood of either cannot starve input. The bound cannot interrupt one
 handler that blocks. Example:
-[`bounded_messages`](../crates/termrock/examples/bounded_messages.rs) runs
-turns under a budget and retries what a full queue returned.
+[`bounded_messages`](../crates/termrock/examples/bounded_messages.rs) sends
+through a bounded channel, spells out one turn's budget over the public
+receiver (the runtime's own loop is private) and retries what a full queue
+returned.
 `TerminalSession` enters raw mode and restores the
 terminal on drop and on panic.
 

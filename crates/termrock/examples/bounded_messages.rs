@@ -3,6 +3,13 @@
 //! producer that finds the queue full gets its message back and decides what
 //! to do. This example retries it. `send` is the lossy alternative.
 //!
+//! The channel, its capacity, `try_send`'s `Full` and `Closed` errors, the
+//! receiver's `policy` and `try_recv` are the library's. The runtime's own
+//! per-turn loop (`pump_external`) is private and needs a terminal, so `turn`
+//! below spells out the same count and time budget over the public receiver
+//! to show what the runtime does between two reads of terminal input. The
+//! runtime's loop is tested in `src/runtime.rs`.
+//!
 //! `cargo run -p termrock --example bounded_messages`
 
 use std::collections::VecDeque;
@@ -47,7 +54,8 @@ impl Producer {
     }
 }
 
-/// One runtime turn: handle messages until the receiver's own budget is spent.
+/// Stands in for one runtime turn: handle messages until the receiver's own
+/// budget is spent, as the runtime's private `pump_external` does.
 fn turn(receiver: &ExternalReceiver) -> Vec<u32> {
     let policy = receiver.policy();
     let start = Instant::now();
