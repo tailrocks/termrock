@@ -12,7 +12,5 @@ production	src/core/hints.rs	widgets::keyhint
 production	src/core/selection.rs	theme
 production	src/theme.rs	ui::ctx
 production	src/theme.rs	widgets::panel
-test	src/ui/layer.rs	ui::layers
 test	src/widgets/code/tests.rs	test_alloc
-test	src/widgets/picker.rs	ui::layers
 test	src/widgets/textarea/tests.rs	test_alloc

@@ -5,12 +5,16 @@ use ratatui::style::Modifier;
 
 use crate::core::event::{Key, Outcome};
 use crate::core::hints::{HasHints, HintCx};
+use crate::core::hit::Axis;
 use crate::core::id::WidgetId;
 use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
+use crate::core::pointer::{MouseTarget, PointerEvent};
 use crate::core::response::Response;
 use crate::core::scroll::{ScrollPane, Scrollable};
 use crate::ui::ctx::RenderCtx;
-use crate::ui::layer::{DismissReason, LayerSpec, Overlay};
+use crate::ui::layer::{
+    DismissReason, Layer, LayerCx, LayerOut, LayerResult, LayerSpec, Overlay, layer_out,
+};
 use crate::ui::modal::Frame;
 use crate::ui::popup::{Dismiss, Placement};
 use crate::ui::text::{truncate, width};
@@ -18,6 +22,7 @@ use crate::widgets::button::Button;
 use crate::widgets::icon_button::IconButton;
 use crate::widgets::keyhint::Hint;
 use crate::widgets::scrollbar;
+use ratatui::layout::Position;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HelpCmd {
@@ -440,7 +445,7 @@ impl crate::core::pointer::MouseTarget for HelpOverlay {
     ) -> Option<crate::core::response::Response<()>> {
         let owner = ev.owner();
         let mine = owner == self.id || owner == self.done.id || owner == crate::ui::modal::CLOSE;
-        mine.then(|| self.pointer(ev))
+        mine.then(|| MouseTarget::pointer(self, ev))
     }
 
     fn pointer(
@@ -476,6 +481,40 @@ impl Overlay for HelpOverlay {
     }
     fn close_button(&self) -> Option<&IconButton> {
         Some(&self.close_button)
+    }
+}
+
+impl<R: From<LayerResult> + 'static, W: ?Sized + 'static> Layer<R, W> for HelpOverlay {
+    fn hints(&self, focused: Option<WidgetId>) -> Vec<Hint> {
+        HasHints::hints(self, &HintCx::new(focused))
+    }
+    fn spec(&self) -> LayerSpec {
+        Overlay::spec(self)
+    }
+    fn render(&mut self, screen: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, _: &W) {
+        HelpOverlay::render(self, screen, buf, ctx);
+    }
+    fn on_key(&mut self, key: &Key, _: &mut LayerCx<'_, W>) -> Outcome {
+        HelpOverlay::on_key(self, key).or(Outcome::Consumed)
+    }
+    fn pointer(&mut self, ev: &PointerEvent, _: &mut LayerCx<'_, W>) -> Outcome {
+        MouseTarget::pointer(self, ev).outcome()
+    }
+    fn on_click(&mut self, id: WidgetId, _: Position, _: &mut LayerCx<'_, W>) -> Outcome {
+        HelpOverlay::on_click(self, id)
+    }
+    fn on_wheel(&mut self, delta: i32, _: Position) -> Outcome {
+        Scrollable::wheel(self, Axis::Vertical, delta).outcome()
+    }
+    fn on_dismiss(&mut self, reason: DismissReason) {
+        let _ = Overlay::on_dismiss(self, reason);
+    }
+    fn take_result(&mut self) -> Option<LayerOut<R>> {
+        if !self.closed {
+            return None;
+        }
+        self.closed = false;
+        Some(layer_out(LayerResult::Help, true))
     }
 }
 
