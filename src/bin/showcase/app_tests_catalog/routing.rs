@@ -3,7 +3,7 @@
 //! Each scenario builds real components, sends real input, reads typed
 //! outcomes and renders to a `Buffer`. Register one `ScenarioCase` per
 //! `ScenarioId` variant from the `lane:routing` block in `../coverage.rs`. Edit only
-//! this file, `../coverage/lane_routing.rs` and `../coverage_debt/routing.txt`.
+//! this file and `../coverage/lane_routing.rs`.
 
 use junie_tui::core::event::{
     ClientPlatform, External, Input, InputConfig, Key, Mouse, MouseKind, Outcome,

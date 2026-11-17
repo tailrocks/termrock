@@ -475,8 +475,10 @@ impl TreeView {
             show_selection: true,
         };
 
-        for i in 0..tv.nodes.len() {
-            tv.expanded.insert(vec![i]);
+        for (i, node) in tv.nodes.iter().enumerate() {
+            if !(node.lazy && node.children.is_empty()) {
+                tv.expanded.insert(vec![i]);
+            }
         }
         tv.flatten();
         tv

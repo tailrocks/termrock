@@ -3,7 +3,7 @@
 //! Each scenario builds real components, sends real input, reads typed
 //! outcomes and renders to a `Buffer`. Register one `ScenarioCase` per
 //! `ScenarioId` variant from the `lane:dialogs` block in `../coverage.rs`. Edit only
-//! this file, `../coverage/lane_dialogs.rs` and `../coverage_debt/dialogs.txt`.
+//! this file and `../coverage/lane_dialogs.rs`.
 
 use junie_tui::core::edit::EditEntry;
 use junie_tui::core::event::{Key, Outcome};

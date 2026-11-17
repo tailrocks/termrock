@@ -3,7 +3,7 @@
 //! Each scenario builds real components, sends real input, reads typed
 //! outcomes and renders to a `Buffer`. Register one `ScenarioCase` per
 //! `ScenarioId` variant from the `lane:menus` block in `../coverage.rs`. Edit only
-//! this file, `../coverage/lane_menus.rs` and `../coverage_debt/menus.txt`.
+//! this file and `../coverage/lane_menus.rs`.
 
 use junie_tui::core::edit::{EditEntry, FieldKeys, TextCmd, clipboard};
 use junie_tui::core::event::ClientPlatform;

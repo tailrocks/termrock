@@ -3,16 +3,15 @@
 //! `PROOFS` lists the APIs a callable scenario in `app_tests_catalog.rs`
 //! exercises. `EXCEPTIONS` lists APIs with no page demonstration (`Nonvisual`,
 //! or `Deferred` with a tracking issue) and the exact test that pins them.
-//! `coverage_debt/<lane>.txt` lists what still owes one of the two; it may only
-//! shrink. `src/catalog_contract.rs` checks all three against the exported API.
+//! `src/catalog_contract.rs` checks both against the exported API: every public
+//! API has exactly one proof or exception, and there is no third bucket.
 //! One line per record keeps a restack mechanical.
 //!
-//! The #14 burn-down is split into lanes so parallel work never edits the same
+//! The records are split into lanes so parallel work never edits the same
 //! file. A lane owns one `coverage/lane_<lane>.rs` (its `PROOFS` and
 //! `EXCEPTIONS`), one `app_tests_catalog/<lane>.rs` (its `CASES` and scenario
-//! functions), one `coverage_debt/<lane>.txt`, and its own marked section of
-//! `ScenarioId` below. `proofs()` and `exceptions()` chain the lane arrays with
-//! the older records in this file, so nothing else here changes per lane.
+//! functions), and its own marked section of `ScenarioId` below. `proofs()` and
+//! `exceptions()` chain the lane arrays with the older records in this file.
 
 use crate::app::PageId;
 
@@ -308,6 +307,22 @@ pub enum ScenarioId {
     OptionListQueryPointer,
     // lane:pickers end
     // lane:collections begin: this lane adds its ScenarioId variants between these two lines only
+    CollectionsTabsLook,
+    CollectionsTabsInput,
+    CollectionsTabsOverflow,
+    CollectionsNavList,
+    CollectionsListSingle,
+    CollectionsListMulti,
+    CollectionsListOptions,
+    CollectionsTreeStructure,
+    CollectionsTreeInput,
+    CollectionsTreeOptions,
+    CollectionsMasterDetailLayout,
+    CollectionsMasterDetailInput,
+    CollectionsListDetailSurface,
+    CollectionsFileBrowserChoose,
+    CollectionsFileBrowserFields,
+    CollectionsFileBrowserSources,
     // lane:collections end
     // lane:layout begin: this lane adds its ScenarioId variants between these two lines only
     LayoutSplitGeometry,

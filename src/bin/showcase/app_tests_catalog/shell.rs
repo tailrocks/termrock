@@ -3,7 +3,7 @@
 //! Each scenario builds real components, sends real input, reads typed
 //! outcomes and renders to a `Buffer`. Register one `ScenarioCase` per
 //! `ScenarioId` variant from the `lane:shell` block in `../coverage.rs`. Edit only
-//! this file, `../coverage/lane_shell.rs` and `../coverage_debt/shell.txt`.
+//! this file and `../coverage/lane_shell.rs`.
 
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};

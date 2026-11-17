@@ -3,7 +3,7 @@
 //! Each scenario builds real components, sends real input, reads typed
 //! outcomes and renders to a `Buffer`. Register one `ScenarioCase` per
 //! `ScenarioId` variant from the `lane:pickers` block in `../coverage.rs`. Edit only
-//! this file, `../coverage/lane_pickers.rs` and `../coverage_debt/pickers.txt`.
+//! this file and `../coverage/lane_pickers.rs`.
 
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::focus::FocusRing;

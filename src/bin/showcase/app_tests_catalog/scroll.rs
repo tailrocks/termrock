@@ -3,7 +3,7 @@
 //! Each scenario builds real components, sends real input, reads typed
 //! outcomes and renders to a `Buffer`. Register one `ScenarioCase` per
 //! `ScenarioId` variant from the `lane:scroll` block in `../coverage.rs`. Edit only
-//! this file, `../coverage/lane_scroll.rs` and `../coverage_debt/scroll.txt`.
+//! this file and `../coverage/lane_scroll.rs`.
 
 use junie_tui::core::edit::clipboard;
 use junie_tui::core::event::{Input, Key, Mouse, MouseKind, Outcome};

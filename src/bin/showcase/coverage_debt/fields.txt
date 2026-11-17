@@ -1,7 +1,0 @@
-# Lane `fields` debt for #14: APIs that still owe a disposition.
-# One id per line. This file is owned by exactly one lane; edit no other.
-# Delete a line when the API gets a CapabilityProof or CapabilityException
-# in src/bin/showcase/coverage/lane_fields.rs. Never add an id: the list is a
-# ratchet that only shrinks (src/catalog_contract.rs, coverage_debt_baseline.txt).
-# `python3 -I scripts/catalog-debt-lanes.py prune` removes the lines the gate
-# calls stale.
