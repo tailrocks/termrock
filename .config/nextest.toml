@@ -68,8 +68,9 @@ test-threads = 1
 slow-timeout = { period = "120s", terminate-after = 5 }
 
 # Builds the binaries the functional-cross cases and the root functional
-# journeys launch into target/app-bins and exports TCB_BIN_<NAME> and, unless
-# scripts/run_functional.py already did, TERMROCK_TEST_<NAME>.
+# journeys launch, with the feature set of this run (scripts/build-app-bins.sh),
+# and exports TCB_BIN_<NAME> and, unless scripts/run_functional.py already did,
+# TERMROCK_TEST_<NAME>.
 [scripts.setup.app-bins]
 command = ["sh", "scripts/build-app-bins.sh"]
 slow-timeout = { period = "120s", terminate-after = 2 }

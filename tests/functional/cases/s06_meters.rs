@@ -1133,6 +1133,16 @@ fn option_work_counters_card_follows_the_build() {
     ];
     see(&screen, &common, &[]);
     assert_size(&app, 120, 70);
+    assert_eq!(
+        flat(&screen).contains("compiled out"),
+        !junie_tui::metrics::ENABLED,
+        "the Showcase binary and this test target disagree on `work-metrics` \
+         (test target: {}). The app binaries must be built with the run's feature \
+         set: see scripts/build-app-bins.sh (TCB_APP_FEATURES) and \
+         scripts/run_functional.py.\n{}",
+        junie_tui::metrics::ENABLED,
+        text(&screen)
+    );
     if junie_tui::metrics::ENABLED {
         see(
             &screen,
