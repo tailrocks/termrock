@@ -4,12 +4,16 @@ use crate::core::hints::{HasHints, HintCx};
 use crate::core::id::WidgetId;
 use crate::core::intent::DismissReason;
 use crate::core::keymap::{Nav, NavKeys};
+use crate::core::response::Response;
 use crate::theme::{ButtonKind, Strings, Tone};
 use crate::ui::ctx::RenderCtx;
+use crate::ui::layer::{LayerSpec, Overlay};
+use crate::ui::popup::Dismiss;
 use crate::ui::specimen::{Specimen, SpecimenState};
 use crate::ui::text::truncate;
 use crate::widgets::button::{Button, row_layout_right, row_lines};
 use crate::widgets::choice::RadioGroup;
+use crate::widgets::icon_button::IconButton;
 use crate::widgets::keyhint::Hint;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
@@ -477,5 +481,22 @@ impl Specimen for ChoiceDialog {
             _ => None,
         };
         d.render(area, buf, ctx);
+    }
+}
+
+impl Overlay for ChoiceDialog {
+    type Action = Option<usize>;
+    fn dismiss(&self) -> Dismiss {
+        self.dismiss
+    }
+    fn spec(&self) -> LayerSpec {
+        LayerSpec::modal(self.dismiss).initial_focus(self.initial_focus())
+    }
+    fn on_dismiss(&mut self, _: DismissReason) -> Response<Option<usize>> {
+        self.cancel_implicit();
+        Response::emit(None)
+    }
+    fn close_button(&self) -> Option<&IconButton> {
+        Some(&self.close_button)
     }
 }

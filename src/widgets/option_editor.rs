@@ -9,9 +9,11 @@ use crate::core::hit::Axis;
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::core::keymap::{Nav, NavKeys, unassigned_chord};
 use crate::core::list::{Cursor, KeyStep, Moved, RowSource};
+use crate::core::response::Response;
 use crate::core::selection::{RowSelection, SelectGesture};
 use crate::theme::{CursorStyle, Tone};
 use crate::ui::ctx::{RenderCtx, fill};
+use crate::ui::layer::{DismissReason, LayerSpec, Overlay};
 use crate::ui::popup::{Dismiss, Place, Placement, backdrop_id, place_with, surface_for};
 use crate::ui::text::{truncate, width};
 use crate::widgets::edit::EditField;
@@ -1081,5 +1083,18 @@ impl RowSource for Shown<'_> {
     }
     fn label(&self, k: usize) -> &str {
         &self.ed.options.0[self.rows[k]].label
+    }
+}
+
+impl Overlay for ChoiceEditor {
+    type Action = ChoiceResult;
+    fn dismiss(&self) -> Dismiss {
+        self.list.dismiss
+    }
+    fn spec(&self) -> LayerSpec {
+        LayerSpec::popover(self.list.dismiss)
+    }
+    fn on_dismiss(&mut self, _: DismissReason) -> Response<Self::Action> {
+        Response::emit(ChoiceResult::Cancel)
     }
 }
