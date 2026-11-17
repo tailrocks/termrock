@@ -848,6 +848,21 @@ fn prime_input() -> std::io::Result<()> {
     poll_uninterrupted(Duration::ZERO).map(|_| ())
 }
 
+/// Test-only knob: `JUNIE_TUI_DRAW_LAG_MS` holds every frame back by that many
+/// milliseconds after the input that caused it was handled and before any byte
+/// of it reaches the terminal. It makes a slow draw deterministic, so a
+/// functional case that reads the screen after a fixed quiet wait instead of
+/// waiting for the frame fails on every run, not only on a loaded machine.
+fn draw_lag() -> Option<Duration> {
+    static LAG: std::sync::OnceLock<Option<Duration>> = std::sync::OnceLock::new();
+    *LAG.get_or_init(|| parse_draw_lag(std::env::var("JUNIE_TUI_DRAW_LAG_MS").ok().as_deref()))
+}
+
+fn parse_draw_lag(value: Option<&str>) -> Option<Duration> {
+    let ms: u64 = value?.parse().ok()?;
+    (ms > 0).then(|| Duration::from_millis(ms))
+}
+
 fn first_poll_delay() -> Option<Duration> {
     std::env::var("JUNIE_TUI_FIRST_POLL_DELAY_MS")
         .ok()?
@@ -1439,6 +1454,9 @@ fn draw_frame(
     suppress_colors: bool,
     dirty: &mut bool,
 ) -> std::io::Result<()> {
+    if let Some(lag) = draw_lag() {
+        std::thread::sleep(lag);
+    }
     queue!(terminal.backend_mut(), BeginSynchronizedUpdate)?;
     let drawn = paint(terminal, app, suppress_colors, dirty);
     let ended = execute!(terminal.backend_mut(), EndSynchronizedUpdate);
@@ -2501,5 +2519,32 @@ mod render_pending_tests {
         assert!(!dirty, "a stable draw ends the requests");
         assert_eq!(turn_wait(wait, dirty), wait, "an idle turn keeps its wait");
         assert_eq!(app.draws, 2);
+    }
+}
+
+#[cfg(test)]
+mod draw_lag_tests {
+    use super::*;
+
+    #[test]
+    fn a_whole_positive_millisecond_count_is_a_lag() {
+        assert_eq!(
+            parse_draw_lag(Some("300")),
+            Some(Duration::from_millis(300))
+        );
+    }
+
+    #[test]
+    fn unset_zero_and_junk_leave_the_draw_alone() {
+        for value in [
+            None,
+            Some("0"),
+            Some(""),
+            Some("-5"),
+            Some("fast"),
+            Some("1.5"),
+        ] {
+            assert_eq!(parse_draw_lag(value), None, "{value:?}");
+        }
     }
 }

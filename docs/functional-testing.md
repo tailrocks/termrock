@@ -240,6 +240,31 @@ page to change instead, for a step known to move it. The plain `screen` and
 `wait_*` reads do not fence: write a wait for the state the action produces,
 not for a state the frame before it also has.
 
+### Prove a wait under draw lag
+
+A fixed sleep or a quiet-only wait passes on an idle machine and fails on a
+loaded one, so a case that passes tells nothing about it. Two knobs make the
+slow draw deterministic, and the case is then proven by running it with and
+without the fix.
+
+- `JUNIE_TUI_DRAW_LAG_MS=<ms>` holds every frame of the app back by that many
+  milliseconds after the input that caused it was handled and before any byte of
+  it reaches the terminal (`draw_lag` in `src/runtime.rs`). The harness forwards
+  it to every launch, so
+  `JUNIE_TUI_DRAW_LAG_MS=300 python3 scripts/run_functional.py --test-name s07_`
+  runs that file with every frame 300 ms late.
+- `TERMROCK_TEST_LEGACY_WAITS=1` makes `App::settle` wait for quiet alone and
+  `App::flash_expired` sleep a fixed 200 ms, as they did before the fence. Run a
+  file with both knobs to see it fail on the old wait, then with the lag alone
+  to see it pass on the fence.
+
+A wheel loop that reads the page after a quiet wait is the typical case: at
+300 ms of lag the old wait fails 138 of the 670 cases in the files that scroll,
+and the fence leaves 18 of them failing, all in click, drag and typing
+windows. A case that holds a click or drag state in a short
+fixed window (a press flash, a drag, a double click) still depends on the wall
+clock, and the lag shows which ones; those windows are not wheel waits.
+
 ## Write one journey around observable contracts
 
 Start from a user task, such as "cancel a write, retry it, and execute it only
@@ -364,6 +389,12 @@ There is no separate PTY implementation or synthetic application event.
 The helper is deliberately small and should be replaced by a checked,
 coordinate-aware upstream wheel API when one is released.
 
+Read the page after a wheel only through `settle()`, `wheel_until` or
+`wheel_applied`. A fixed poll or a `wait_text` alone returns on the first frame
+that shows the needle while later notches are still queued, and a loop that
+sends another step on a stale frame overshoots. Prove it under the draw lag
+described above.
+
 After scrolling, assert the actual first visible row or line changed. Also
 assert a neighboring pane's content stayed fixed, the original selection
 did not unexpectedly move, and keyboard navigation follows the clicked
@@ -373,10 +404,12 @@ scrollbar dragging, split press/drag/release and inspect the thumb while held.
 ### Synchronize on effects
 
 `wait_text` and `wait_screen` have bounded deadlines and check that the process
-is still alive. `settle` is a supplemental quiet wait. It is not an event
-acknowledgment or application frame boundary; the fork itself documents this
-limitation. A negative assertion evaluated immediately after an input can
-pass before the application handles that input.
+is still alive. `settle` fences first for Showcase, TablePro, Holla and Jackin
+builds, so it returns after the frame of every input sent so far. For any
+other program it is a supplemental quiet wait, not an event acknowledgment or
+application frame boundary; the fork itself documents this limitation. A
+negative assertion evaluated immediately after an input can pass before the
+application handles that input.
 
 Pair absence/unchanged assertions with positive progress: observe a modal
 close, wait for a distinct result, or perform a subsequent visible action

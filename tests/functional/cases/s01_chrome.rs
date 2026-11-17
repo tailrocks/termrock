@@ -375,16 +375,13 @@ fn compare_levels_then_restore() {
         .next()
         .unwrap_or_else(|| panic!("rest row missing\n{}", text(&on)));
     session.app.wheel(anchor, true, 4);
+    session.app.settle();
     let bands = session.app.wait_text("no color");
+    // The four notches scroll the button out of view, so the settled frame is
+    // the one the capture below stores.
     expect(
         &bands,
-        &[
-            "● Compare levels",
-            "256 colors",
-            "16 colors",
-            "no color",
-            CHROME,
-        ],
+        &["256 colors", "16 colors", "no color", CHROME],
         &["Page options", "○ Compare levels"],
     );
     see(
@@ -401,6 +398,7 @@ fn compare_levels_then_restore() {
         .next()
         .expect("compare button");
     session.app.wheel(top, false, 8);
+    session.app.settle();
     let narrow_bands = session.app.wait_text("256 colors");
     expect(
         &narrow_bands,

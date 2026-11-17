@@ -521,6 +521,7 @@ fn compare_levels_then_restore() {
         .next()
         .unwrap_or_else(|| panic!("compare button missing\n{}", text(&on)));
     app.wheel(anchor, true, 4);
+    app.settle();
     let bands = app.wait_text("no color");
     assert_size(&bands, 120, 40);
     expect(

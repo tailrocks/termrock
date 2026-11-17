@@ -17,8 +17,6 @@
 //! cancels its activities on simulated ticks, so on wall time the process
 //! can exit between the `stopping` frame and the next assertion.
 
-use std::time::Duration;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{
@@ -108,20 +106,10 @@ fn await_exit(app: &App, reason: &str) {
 /// header has the size chip (120 columns), the nudge waits for the chip the app
 /// drew at the nudged size and again at the restored size.
 fn flash_settle(app: &App) {
-    std::thread::sleep(Duration::from_millis(200));
-    let screen = app.screen();
-    let cols = u16::try_from(screen.cols()).expect("cols");
-    let rows = u16::try_from(screen.rows()).expect("rows");
-    let nudged = cols + 1;
-    let drawn = move |screen: &TerminalSnapshot, cols: u16| {
-        screen.cols() == u32::from(cols)
-            && screen.rows() == u32::from(rows)
-            && (cols < 100 || text(screen).contains(&format!("{cols}×{rows}")))
-    };
-    app.resize(nudged, rows);
-    app.wait_screen("nudge", move |screen| drawn(screen, nudged));
-    app.resize(cols, rows);
-    app.wait_screen("nudge restored", move |screen| drawn(screen, cols));
+    app.nudge_sized(
+        |screen, cols, rows| cols < 100 || text(screen).contains(&format!("{cols}×{rows}")),
+        None,
+    );
 }
 
 fn guard_open(screen: &TerminalSnapshot) -> bool {

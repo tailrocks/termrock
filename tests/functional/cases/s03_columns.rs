@@ -872,22 +872,18 @@ fn compare_levels_narrows_before_restore() {
     let point = Point { x: 70, y: 20 };
     let mut bands = None;
     for _ in 0..24 {
-        let started = Instant::now();
-        while started.elapsed() < Duration::from_millis(200) {
-            let screen = app.screen();
-            if no_color_cursor(&screen) {
-                bands = Some(screen);
-                break;
-            }
-            std::thread::sleep(Duration::from_millis(15));
+        let screen = app.settle();
+        if no_color_cursor(&screen) {
+            bands = Some(screen);
+            break;
         }
-        if bands.is_some() || text(&app.screen()).contains("no color") {
+        if text(&screen).contains("no color") {
             break;
         }
         app.wheel(point, true, 2);
     }
     let bands = bands.unwrap_or_else(|| {
-        let screen = app.screen();
+        let screen = app.settle();
         let cursor = screen.cursor();
         panic!(
             "no-color cursor at {},{} not 118,36\n{}",

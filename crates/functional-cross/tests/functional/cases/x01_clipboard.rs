@@ -55,7 +55,6 @@ fn ctrl_c_exits(app: &App) {
 }
 
 fn frame_with(app: &App, needle: &str, cols: u32, rows: u32) -> TerminalSnapshot {
-    thread::sleep(Duration::from_millis(250));
     app.wait_screen(needle, |screen| {
         text(screen).contains(needle) && screen.cols() == cols && screen.rows() == rows
     })
@@ -200,6 +199,10 @@ fn copy_report(app: &App) {
         hit.y > 4 && row_text(screen, u32::from(hit.y)).contains("Copy report")
     });
     app.wait_text(REPORT);
+    // The stored frame is the one after the click's press flash has expired
+    // and been redrawn, so the cursor it carries is the settled one.
+    app.flash_expired();
+    app.settle();
 }
 
 fn checkpoints() {
