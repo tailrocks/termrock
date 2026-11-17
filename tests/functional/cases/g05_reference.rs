@@ -1436,7 +1436,7 @@ fn g05_candidate_cannot_select_reference_manifest_override() {
 
 #[test]
 fn g05_reference_mode_requires_manifest_identity() {
-    let candidate = Path::new(SHOWCASE);
+    let candidate = Path::new(&SHOWCASE);
     assert!(candidate.is_file(), "missing candidate showcase");
     assert_ne!(sha256_file(candidate), SHOWCASE_REFERENCE_SHA256);
     let mut launch = Launch::new("g05-reference-identity", SHOWCASE);

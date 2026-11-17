@@ -491,5 +491,5 @@ fn harness_failing_run_saves_the_latest_checkpoint_cells() {
 #[test]
 #[should_panic(expected = "empty app binary path")]
 fn harness_empty_binary_path_fails_fast() {
-    let _ = Launch::new("harness-empty-binary", crate::support::HOLLA);
+    let _ = Launch::new("harness-empty-binary", "");
 }
