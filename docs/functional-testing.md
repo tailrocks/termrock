@@ -114,13 +114,13 @@ split larger existing gates as necessary.
 | Tool | Verified identity | Role |
 | --- | --- | --- |
 | Live driver | Registry `tuiscotti-tui-test = "=0.2.1"` (crate `tui_test`) | The only live driver: checked mouse/keyboard input, native PTY launch, owned terminal snapshots, bounded waits. |
-| Visual gate | Latest Tuiscotti main `92ef2d9ee082b35f68e066c5129fedbf07675a80` (renamed dev-dependency `tuiscotti-latest`, 0.4.0) | Offline frozen check: every functional test ends with `App::visual("<id>")`, a `FrozenStore` check that asserts `is_pass()`. A missing or changed baseline fails. |
+| Visual gate | Latest Tuiscotti main `f1fb3f276b8d49948881c07b3bbc619840b6cc93` (renamed dev-dependency `tuiscotti-latest`, 0.4.0) | Offline frozen check: every functional test ends with `App::visual("<id>")`, a `FrozenStore` check that asserts `is_pass()`. A missing or changed baseline fails. |
 | Tuiscotti CLI (latest, built from the pinned rev) | `tuiscotti accept --candidate <sample> --candidate-sha256 <sha> --expect-baseline missing --baselines tests/functional/baselines` | The only way a baseline is approved. Tests never approve baselines. |
 
 ```toml
 [dev-dependencies]
 tui-test = { package = "tuiscotti-tui-test", version = "=0.2.1" }
-tuiscotti-latest = { package = "tuiscotti", git = "https://github.com/tailrocks/tuiscotti", rev = "92ef2d9ee082b35f68e066c5129fedbf07675a80" }
+tuiscotti-latest = { package = "tuiscotti", git = "https://github.com/tailrocks/tuiscotti", rev = "f1fb3f276b8d49948881c07b3bbc619840b6cc93" }
 ```
 
 The legacy Tuiscotti 0.2 live API (git rev `a1ea27f`), `libtest-mimic` and
@@ -598,7 +598,7 @@ test-module removal).
 - [Microsoft tui-test 0.1.1 release][upstream-release].
 - [Upstream checked-input contribution #282][upstream-checked].
 
-[tuiscotti-readme]: https://github.com/tailrocks/tuiscotti/blob/92ef2d9ee082b35f68e066c5129fedbf07675a80/README.md
+[tuiscotti-readme]: https://github.com/tailrocks/tuiscotti/blob/f1fb3f276b8d49948881c07b3bbc619840b6cc93/README.md
 [fork-package]: https://github.com/tailrocks/tui-test/blob/7abeac8478aa9c05ec7bef93afb10209cc348bec/crates/tui-test/Cargo.toml
 [fork-session]: https://github.com/tailrocks/tui-test/blob/7abeac8478aa9c05ec7bef93afb10209cc348bec/crates/tui-test/src/runtime.rs
 [fork-checked]: https://github.com/tailrocks/tui-test/blob/7abeac8478aa9c05ec7bef93afb10209cc348bec/crates/tui-test/src/session.rs
@@ -621,7 +621,7 @@ exception below and no legacy-API tests:
    steps (hover/held/release, cancellation, focus, neighbouring panes).
 3. End with `app.visual("<test-id>")`: the live screen is frozen as a
    Tuiscotti state sample and compared with `FrozenStore` from latest
-   Tuiscotti (`tuiscotti-latest`, main `92ef2d9`). The test asserts
+   Tuiscotti (`tuiscotti-latest`, main `f1fb3f2`). The test asserts
    `outcome.is_pass()`; a missing or changed baseline fails. A baseline
    for every test that ends in `visual` lives in `tests/functional/baselines/`;
    each was approved once with the Tuiscotti CLI `accept` command — tests
@@ -661,7 +661,7 @@ crate includes that file with `#[path]`; each crate keeps its approved
 baselines under its own `tests/functional/baselines`, and evidence goes to
 the workspace `target/functional` for both.
 
-`visual.rs` uses latest Tuiscotti main `92ef2d9` (0.4.0, renamed dev-dependency
+`visual.rs` uses latest Tuiscotti main `f1fb3f2` (0.4.0, renamed dev-dependency
 `tuiscotti-latest`): a live `tui_test` snapshot is checked with
 `FrozenStore::check` and the test asserts `outcome.is_pass()` — an `Ok` result
 alone is not a pass, and a missing baseline fails. The approved baseline lives
