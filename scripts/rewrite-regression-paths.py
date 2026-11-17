@@ -8,12 +8,17 @@ of them stale. This script reads the renames of that PR and rewrites the paths
 in `apps/showcase/src/coverage.rs` and `apps/showcase/src/coverage/lane_*.rs`.
 Only the path part before `::` changes; the test name is kept.
 
-The renames come from `git diff -M --name-status`, by default against
-`origin/main...HEAD`, or from `--renames FILE` (the same lines, or `old -> new`):
+The renames come from `git diff -B -M --name-status`, by default against
+`origin/main...HEAD`, or from `--renames FILE` (the same lines, or `old -> new`).
+`-B` matters: an extraction leaves a `pub use` shim at the old path, and without
+`-B` git sees a modified file and a new file, not a move:
 
     python3 scripts/rewrite-regression-paths.py --dry
     python3 scripts/rewrite-regression-paths.py
-    git diff -M --name-status HEAD | python3 scripts/rewrite-regression-paths.py --renames -
+    git diff -B -M --name-status HEAD | python3 scripts/rewrite-regression-paths.py --renames -
+
+Git's rename detection can miss a very small file; list such a move in a
+`--renames` file as `old -> new`.
 
 `--dry` lists the candidates and writes nothing. A path whose file was deleted
 or no longer exists on disk and has no rename is listed as unresolved, and the
@@ -32,11 +37,15 @@ REGRESSION = re.compile(r'(regression_test:\s*")([^"]*?\.rs)(::[^"]*")')
 
 
 def parse_renames(text):
-    """`{old: new}` from `git diff -M --name-status` lines or `old -> new` lines.
+    """`{old: new}` from `git diff -B -M --name-status` lines or `old -> new` lines.
 
-    A deleted file maps to None, so the caller can say it has no new home.
+    A deleted file maps to None, so the caller can say it has no new home. A copy
+    counts as a move when its source was rewritten from scratch (`M<score>` under
+    `-B`): that is the shim an extraction leaves at the old path.
     """
     renames = {}
+    copies = {}
+    broken = set()
     for line in text.splitlines():
         line = line.strip()
         if not line or line.startswith("#"):
@@ -49,8 +58,15 @@ def parse_renames(text):
         status = fields[0]
         if status.startswith("R") and len(fields) == 3:
             renames[fields[1]] = fields[2]
+        elif status.startswith("C") and len(fields) == 3:
+            copies[fields[1]] = fields[2]
+        elif status.startswith("M") and len(status) > 1 and len(fields) == 2:
+            broken.add(fields[1])
         elif status == "D" and len(fields) == 2:
             renames[fields[1]] = None
+    for old, new in copies.items():
+        if old in broken:
+            renames[old] = new
     return renames
 
 
@@ -94,7 +110,7 @@ def stale_paths(text, root, renames):
 
 
 def git_renames(root, git_range):
-    args = ["git", "diff", "-M", "--name-status"]
+    args = ["git", "diff", "-B", "-M", "--name-status"]
     if git_range:
         args.append(git_range)
     result = subprocess.run(

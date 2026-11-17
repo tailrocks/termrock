@@ -938,6 +938,59 @@ fn catalog_a_move_that_drops_its_reexport_changes_the_ids() {
     );
 }
 
+/// What `scripts/rewrite-regression-paths.py` does for a moved test file, and what a move does to
+/// test discovery: the coverage tables name `new` and the tests of `old` are found under `new`.
+fn move_test_file(s: &mut Sources, old: &str, new: &str, rekey_tests: bool) {
+    let from = format!("regression_test: \"{old}::");
+    let to = format!("regression_test: \"{new}::");
+    s.coverage = s.coverage.replace(&from, &to);
+    for (_, text) in &mut s.coverage_lanes {
+        *text = text.replace(&from, &to);
+    }
+    if rekey_tests {
+        let moved: Vec<_> = s
+            .tests
+            .keys()
+            .filter(|key| key.starts_with(&format!("{old}::")))
+            .cloned()
+            .collect();
+        assert!(!moved.is_empty(), "{old} holds tests");
+        for key in moved {
+            let test = s.tests.remove(&key).expect("test");
+            s.tests.insert(key.replacen(old, new, 1), test);
+        }
+    }
+}
+
+#[test]
+fn catalog_regression_paths_follow_a_moved_test_file() {
+    let mut s = Sources::load();
+    assert!(
+        s.coverage
+            .contains("regression_test: \"src/widgets/picker.rs::")
+    );
+    move_test_file(
+        &mut s,
+        "src/widgets/picker.rs",
+        "crates/zz-picker/src/lib.rs",
+        true,
+    );
+    let errors = check(&s);
+    assert!(errors.is_empty(), "{}", errors.join("\n"));
+}
+
+#[test]
+fn catalog_a_regression_path_the_move_left_stale_fails() {
+    let mut s = Sources::load();
+    move_test_file(
+        &mut s,
+        "src/widgets/picker.rs",
+        "crates/zz-picker/src/lib.rs",
+        false,
+    );
+    expect_error(&check(&s), "which is no #[test] fn at that");
+}
+
 #[test]
 fn catalog_repository_gate_is_closed() {
     let s = Sources::load();

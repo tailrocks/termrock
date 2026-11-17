@@ -50,6 +50,17 @@ class ParseRenamesTests(unittest.TestCase):
             rewrite.parse_renames(NAME_STATUS), {MOVE: MOVED, "tests/old.rs": None}
         )
 
+    def test_a_copy_whose_source_was_rewritten_is_a_move_behind_a_shim(self):
+        self.assertEqual(
+            rewrite.parse_renames(f"C100\t{MOVE}\t{MOVED}\nM100\t{MOVE}\n"),
+            {MOVE: MOVED},
+        )
+
+    def test_a_plain_copy_or_a_plain_modification_is_not_a_move(self):
+        self.assertEqual(
+            rewrite.parse_renames(f"C095\t{MOVE}\t{MOVED}\nM\t{MOVE}\n"), {}
+        )
+
     def test_reads_arrow_lines_comments_and_blank_lines(self):
         self.assertEqual(
             rewrite.parse_renames("# scratch\n\nsrc/a.rs -> crates/x/src/a.rs\n"),
@@ -144,37 +155,53 @@ class GitMoveTests(unittest.TestCase):
             capture_output=True,
         )
 
-    def test_a_scratch_git_move_is_found_and_fixed_end_to_end(self):
+    def workspace(self, root):
+        (root / "apps/showcase/src").mkdir(parents=True)
+        (root / "apps/showcase/src/coverage.rs").write_text(COVERAGE)
+        (root / "src/widgets").mkdir(parents=True)
+        (root / "src/widgets/brand_tests.rs").write_text("")
+        (root / "tests/regressions").mkdir(parents=True)
+        (root / "tests/regressions/ids.rs").write_text("")
+        body = "".join(f"#[test]\nfn case_{n}() {{ assert_eq!({n}, {n}); }}\n" for n in range(40))
+        (root / MOVE).write_text(body)
+        self.git(root, "init", "-q")
+        self.git(root, "add", "-A")
+        self.git(root, "commit", "-q", "-m", "base")
+        (root / MOVED).parent.mkdir(parents=True)
+
+    def run_script(self, root, *flags):
+        with contextlib.redirect_stdout(io.StringIO()):
+            return rewrite.main(["--root", str(root), "--range", "HEAD", *flags])
+
+    def check_move(self, root):
+        coverage = root / "apps/showcase/src/coverage.rs"
+        self.assertEqual(self.run_script(root, "--dry"), 0)
+        self.assertEqual(coverage.read_text(), COVERAGE, "--dry writes nothing")
+        self.assertEqual(self.run_script(root), 0)
+        self.assertEqual(coverage.read_text(), COVERAGE.replace(MOVE, MOVED))
+
+    def test_a_scratch_git_mv_is_found_and_fixed_end_to_end(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            (root / "apps/showcase/src").mkdir(parents=True)
-            (root / "apps/showcase/src/coverage.rs").write_text(COVERAGE)
-            (root / "src/widgets").mkdir(parents=True)
-            (root / MOVE).write_text("#[test]\nfn brand_draws_the_mark() {}\n" * 4)
-            self.git(root, "init", "-q")
-            self.git(root, "add", "-A")
-            self.git(root, "commit", "-q", "-m", "base")
-            (root / MOVED).parent.mkdir(parents=True)
+            self.workspace(root)
             self.git(root, "mv", MOVE, MOVED)
-            with contextlib.redirect_stdout(io.StringIO()):
-                dry = rewrite.main(["--root", str(root), "--range", "HEAD", "--dry"])
-            self.assertEqual(dry, 1)
-            self.assertIn(
-                "tests/regressions/ids.rs", (root / "apps/showcase/src/coverage.rs").read_text()
-            )
-            self.assertIn(
-                f'"{MOVE}::', (root / "apps/showcase/src/coverage.rs").read_text()
-            )
-            (root / "src/widgets/brand_tests.rs").write_text("")
-            (root / "tests/regressions").mkdir(parents=True)
-            (root / "tests/regressions/ids.rs").write_text("")
-            with contextlib.redirect_stdout(io.StringIO()):
-                real = rewrite.main(["--root", str(root), "--range", "HEAD"])
-            self.assertEqual(real, 0)
-            self.assertEqual(
-                (root / "apps/showcase/src/coverage.rs").read_text(),
-                COVERAGE.replace(MOVE, MOVED),
-            )
+            self.check_move(root)
+
+    def test_a_move_that_leaves_a_pub_use_shim_behind_is_found_too(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.workspace(root)
+            self.git(root, "mv", MOVE, MOVED)
+            (root / MOVE).write_text("pub use termrock_controls::brand::*;\n")
+            self.git(root, "add", "-A")
+            self.check_move(root)
+
+    def test_a_deleted_test_file_fails_the_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.workspace(root)
+            self.git(root, "rm", "-q", MOVE)
+            self.assertEqual(self.run_script(root), 1)
 
 
 if __name__ == "__main__":
