@@ -1,0 +1,10 @@
+# This fixture is its own Cargo workspace, so nextest does not read the
+# repository's .config/nextest.toml. The generated `Rust / <crate>` job runs
+# `--profile ci`, so the profile must exist here.
+
+[profile.default]
+fail-fast = false
+
+[profile.ci]
+fail-fast = false
+slow-timeout = { period = "60s", terminate-after = 10 }
