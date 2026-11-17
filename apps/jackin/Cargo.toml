@@ -25,10 +25,11 @@ required-features = ["demo"]
 default = []
 demo = ["dep:clap", "junie-tui/cli"]
 product = []
-work-metrics = ["junie-tui/work-metrics"]
+work-metrics = ["junie-tui/work-metrics", "termrock/work-metrics"]
 
 [dependencies]
 junie-tui = { path = "../..", default-features = false, features = ["terminal"] }
+termrock = { path = "../../crates/termrock", default-features = false, features = ["terminal"] }
 clap = { workspace = true, optional = true }
 ratatui = { workspace = true }
 unicode-segmentation = "1"

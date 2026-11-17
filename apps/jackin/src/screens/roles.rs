@@ -1,28 +1,28 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::screens::Jackin;
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::shell::Page;
-use junie_tui::theme::{ButtonKind, StatusKind, Tone};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::Split;
-use junie_tui::widgets::dialog::Dialog;
-use junie_tui::widgets::empty::{self, EmptyAction, EmptyState};
-use junie_tui::widgets::form_dialog::{FieldValue, FormField};
-use junie_tui::widgets::info_dialog::InfoDialog;
-use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::notice::Notice;
-use junie_tui::widgets::option_list::Item;
-use junie_tui::widgets::picker::Picker;
-use junie_tui::widgets::props::Prop;
-use junie_tui::widgets::segments::Segment;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
+use termrock::core::event::{Key, Outcome};
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::PointerEvent;
+use termrock::shell::Page;
+use termrock::theme::{ButtonKind, StatusKind, Tone};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::Split;
+use termrock::widgets::dialog::Dialog;
+use termrock::widgets::empty::{self, EmptyAction, EmptyState};
+use termrock::widgets::form_dialog::{FieldValue, FormField};
+use termrock::widgets::info_dialog::InfoDialog;
+use termrock::widgets::input::TextInput;
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::notice::Notice;
+use termrock::widgets::option_list::Item;
+use termrock::widgets::picker::Picker;
+use termrock::widgets::props::Prop;
+use termrock::widgets::segments::Segment;
 
 use super::modals::{self, FormDialog};
 use super::{Cx, Go, LayerTag, ModalResult, Screen};
@@ -33,10 +33,10 @@ use crate::domain::precedence::PrecedenceLevel;
 use crate::domain::role::{RoleCheckState, RoleManifestDoc, RoleRecord};
 use crate::domain::workspace::{AllowedRoles, RoleEntry, RoleName, RoleSource, usability_of};
 use crate::world::{Msg, RoleLoad, SaveSuccess, World, job};
-use junie_tui::core::id::ItemKey;
-use junie_tui::core::keyed::KeyedVec;
-use junie_tui::ui::text::plural;
-use junie_tui::widgets::list_detail::{Action, Event, Line, ListDetail, ListRow, SourceFrame};
+use termrock::core::id::ItemKey;
+use termrock::core::keyed::KeyedVec;
+use termrock::ui::text::plural;
+use termrock::widgets::list_detail::{Action, Event, Line, ListDetail, ListRow, SourceFrame};
 
 pub const LIST: WidgetId = WidgetId::of("roles.list");
 pub const DETAIL: WidgetId = WidgetId::of("roles.detail");
@@ -1076,8 +1076,8 @@ impl Page<Jackin> for RolesScreen {
         }
         if let Some((axis, delta)) = ev.wheel() {
             return match axis {
-                junie_tui::core::hit::Axis::Vertical => self.ld.wheel(ev.id, delta),
-                junie_tui::core::hit::Axis::Horizontal => Outcome::Ignored,
+                termrock::core::hit::Axis::Vertical => self.ld.wheel(ev.id, delta),
+                termrock::core::hit::Axis::Horizontal => Outcome::Ignored,
             };
         }
         self.build_rows(w);
@@ -1242,7 +1242,7 @@ impl Screen for RolesScreen {
                 Segment::new(
                     format!(
                         "{} binding…",
-                        junie_tui::widgets::progress::spinner_frame(w.now_ms() as u64 / 80)
+                        termrock::widgets::progress::spinner_frame(w.now_ms() as u64 / 80)
                     ),
                     Tone::Secondary,
                 )
