@@ -18,6 +18,19 @@ pub const BACKDROP: WidgetId = WidgetId::of("modal.backdrop");
 
 pub const CLOSE_WIDTH: u16 = 3;
 
+pub const OUTER_MARGIN: Margin = Margin {
+    horizontal: 3,
+    vertical: 1,
+};
+
+pub fn body_bounds(screen: Rect, top: u16, bottom: u16) -> Rect {
+    let h = screen.height.saturating_sub(top + bottom);
+    if h == 0 {
+        return screen;
+    }
+    Rect::new(screen.x, screen.y + top, screen.width, h)
+}
+
 pub fn refuse_outside_click(
     pointer: &mut crate::core::pointer::PointerState,
     dismiss: Dismiss,
@@ -358,8 +371,8 @@ impl<'a> Frame<'a> {
     }
 
     pub fn area(&self, screen: Rect) -> Rect {
-        let bounds = crate::widgets::dialog::body_bounds(screen, self.top, self.bottom);
-        let m = crate::widgets::dialog::OUTER_MARGIN;
+        let bounds = body_bounds(screen, self.top, self.bottom);
+        let m = OUTER_MARGIN;
         let w = self
             .width
             .min(bounds.width.saturating_sub(2 * m.horizontal))
