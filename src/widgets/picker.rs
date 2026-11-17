@@ -14,7 +14,7 @@ use crate::core::keymap::{
 };
 use crate::core::list::{Cursor, KeyStep, Navigable, RowSource};
 use crate::theme::CursorStyle;
-use crate::ui::columns::{self, Col};
+use crate::ui::column_solver::{Col, solve};
 use crate::ui::ctx::{Backdrop, RenderCtx, fill};
 use crate::ui::edit_menu::{
     EditCaps, EditMenu, EditMenuHost, edit_menu_key, edit_menu_pointer, edit_menu_route,
@@ -1252,7 +1252,7 @@ impl Picker {
         if group_col > 0 {
             cols.push(Col::fixed(group_col));
         }
-        let widths = columns::solve(&cols, row_w.saturating_sub(4), 2);
+        let widths = solve(&cols, row_w.saturating_sub(4), 2);
         let label_col = widths[0];
         let detail_col = widths[1];
         let rows = VisibleRows {
