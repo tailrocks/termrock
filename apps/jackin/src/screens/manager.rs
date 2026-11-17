@@ -1,36 +1,36 @@
 use crate::screens::Jackin;
-use junie_tui::shell::Page;
 use std::collections::HashSet;
+use termrock::shell::Page;
 
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::hit::Axis;
-use junie_tui::core::id::{ItemKey, Part, PartRef, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::core::scroll::{ScrollState, TrackClick};
-use junie_tui::core::selection::ClickPolicy;
-use junie_tui::theme::{ButtonKind, Tone};
-use junie_tui::ui::ctx::{RenderCtx, fill, legible_on_fill};
-use junie_tui::ui::layout::{Split, SplitDir};
-use junie_tui::ui::master_detail::{MasterDetail, Mode};
-use junie_tui::ui::text::{fit, truncate_middle, width};
-use junie_tui::widgets::button::{Button, row_layout, row_lines};
-use junie_tui::widgets::dialog::Dialog;
-use junie_tui::widgets::empty::{self, EmptyState};
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::option_list::Item;
-use junie_tui::widgets::panel::{Panel, PanelFocus};
-use junie_tui::widgets::picker::{Picker, PickerAction};
-use junie_tui::widgets::progress::spinner_frame;
-use junie_tui::widgets::props::{self, Prop};
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::segments::Segment;
-use junie_tui::widgets::splitter::Splitter;
-use junie_tui::widgets::viewport::Span;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::hit::Axis;
+use termrock::core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::pointer::PointerEvent;
+use termrock::core::scroll::{ScrollState, TrackClick};
+use termrock::core::selection::ClickPolicy;
+use termrock::theme::{ButtonKind, Tone};
+use termrock::ui::ctx::{RenderCtx, fill, legible_on_fill};
+use termrock::ui::layout::{Split, SplitDir};
+use termrock::ui::master_detail::{MasterDetail, Mode};
+use termrock::ui::text::{fit, truncate_middle, width};
+use termrock::widgets::button::{Button, row_layout, row_lines};
+use termrock::widgets::dialog::Dialog;
+use termrock::widgets::empty::{self, EmptyState};
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::option_list::Item;
+use termrock::widgets::panel::{Panel, PanelFocus};
+use termrock::widgets::picker::{Picker, PickerAction};
+use termrock::widgets::progress::spinner_frame;
+use termrock::widgets::props::{self, Prop};
+use termrock::widgets::scrollbar;
+use termrock::widgets::segments::Segment;
+use termrock::widgets::splitter::Splitter;
+use termrock::widgets::viewport::Span;
 
 use super::modals::{InfoDialog, InfoResult};
 use super::row_meta::{ClockStamp, Moment, RowMeta, clocks};
@@ -47,10 +47,10 @@ use crate::domain::tuple::{AccountRequirement, InstanceChoice, TupleIdentity};
 use crate::domain::vocabulary::fill_in;
 use crate::domain::workspace::WorkspaceId;
 use crate::world::{Health, LaunchSource, Msg, World, job};
-use junie_tui::ui::context::ContextAnchor;
-use junie_tui::ui::text::plural;
-use junie_tui::widgets::menu::MenuItem;
-use junie_tui::widgets::row_menu::RowMenu;
+use termrock::ui::context::ContextAnchor;
+use termrock::ui::text::plural;
+use termrock::widgets::menu::MenuItem;
+use termrock::widgets::row_menu::RowMenu;
 
 pub const TREE: WidgetId = WidgetId::of("manager.tree");
 pub const DETAIL: WidgetId = WidgetId::of("manager.detail");
@@ -1046,7 +1046,7 @@ impl ManagerScreen {
                 format!(
                     "jackin/derived:{}-{}",
                     w.workspace_label(i),
-                    junie_tui::ui::text::clip(i.run_id.trim_start_matches("run-"), 4)
+                    termrock::ui::text::clip(i.run_id.trim_start_matches("run-"), 4)
                 ),
             ),
             Prop::new(
@@ -1912,7 +1912,7 @@ impl ManagerScreen {
                 buf.set_string(
                     inner.x,
                     y,
-                    junie_tui::ui::reveal::cut(Rect::new(inner.x, y, inner.width, 1), text),
+                    termrock::ui::reveal::cut(Rect::new(inner.x, y, inner.width, 1), text),
                     style.bg(bg),
                 );
             }
@@ -2061,10 +2061,10 @@ impl ManagerScreen {
                                     }
                                 });
                                 let line = entry_line(entry, tone, &w.surfaces.vocabulary);
-                                let text = junie_tui::widgets::viewport::line_text(&line);
+                                let text = termrock::widgets::viewport::line_text(&line);
                                 put(buf, y, &text, t.secondary());
                                 if y < inner.bottom() {
-                                    junie_tui::widgets::viewport::render_spans(
+                                    termrock::widgets::viewport::render_spans(
                                         buf,
                                         inner.x,
                                         y,
@@ -2241,7 +2241,7 @@ impl ManagerScreen {
                                 buf.set_string(
                                     r.x + 2,
                                     yy,
-                                    junie_tui::ui::reveal::cut(
+                                    termrock::ui::reveal::cut(
                                         Rect::new(r.x + 2, yy, r.width.saturating_sub(3), 1),
                                         text,
                                     ),
@@ -2398,7 +2398,7 @@ impl ManagerScreen {
                     buf.set_string(
                         inner.x,
                         y,
-                        junie_tui::ui::reveal::cut(
+                        termrock::ui::reveal::cut(
                             Rect::new(inner.x, y, inner.width, 1),
                             &format!(
                                 "◉ {}  {ws} · {role} · {}",
@@ -2411,7 +2411,7 @@ impl ManagerScreen {
                     buf.set_string(
                         inner.x + 3,
                         y + 1,
-                        junie_tui::ui::reveal::cut(
+                        termrock::ui::reveal::cut(
                             Rect::new(inner.x + 3, y + 1, inner.width.saturating_sub(3), 1),
                             &display.reason,
                         ),
@@ -2443,7 +2443,7 @@ impl ManagerScreen {
             buf.set_string(
                 inner.x,
                 y,
-                junie_tui::ui::reveal::cut(
+                termrock::ui::reveal::cut(
                     Rect::new(inner.x, y, inner.width, 1),
                     &format!(
                         "◉ {}  {ws} · {} · {}",
@@ -2454,9 +2454,9 @@ impl ManagerScreen {
                 ),
                 st,
             );
-            let running_for = junie_tui::ui::text::duration(
+            let running_for = termrock::ui::text::duration(
                 std::time::Duration::from_secs((w.now_secs() - i.created_secs).max(0) as u64),
-                junie_tui::ui::text::DurationStyle::Spoken,
+                termrock::ui::text::DurationStyle::Spoken,
             );
             let words = &w.surfaces.vocabulary.daemon;
             let live = match &i.daemon {
@@ -2475,7 +2475,7 @@ impl ManagerScreen {
             buf.set_string(
                 inner.x + 3,
                 y + 1,
-                junie_tui::ui::reveal::cut(
+                termrock::ui::reveal::cut(
                     Rect::new(inner.x + 3, y + 1, inner.width.saturating_sub(3), 1),
                     &live,
                 ),
@@ -2494,7 +2494,7 @@ impl ManagerScreen {
             buf.set_string(
                 inner.x + 3,
                 y + 2,
-                junie_tui::ui::reveal::cut(
+                termrock::ui::reveal::cut(
                     Rect::new(inner.x + 3, y + 2, inner.width.saturating_sub(3), 1),
                     &format!("account {}", acc.label(&w.accounts)),
                 ),
@@ -2533,7 +2533,7 @@ impl ManagerScreen {
                 buf.set_string(
                     inner.x,
                     y,
-                    junie_tui::ui::reveal::cut(
+                    termrock::ui::reveal::cut(
                         Rect::new(inner.x, y, inner.width, 1),
                         &format!(
                             "◌ {}  {ws} · {} · {}",
@@ -2553,7 +2553,7 @@ impl ManagerScreen {
             buf.set_string(
                 inner.x,
                 y,
-                junie_tui::ui::text::capitalize(&hv.noun),
+                termrock::ui::text::capitalize(&hv.noun),
                 t.secondary().bg(bg).add_modifier(Modifier::BOLD),
             );
             let ago = w.clock.ago(hv.at_secs);
@@ -2580,7 +2580,7 @@ impl ManagerScreen {
             buf.set_string(
                 inner.x,
                 y,
-                junie_tui::ui::reveal::cut(
+                termrock::ui::reveal::cut(
                     Rect::new(inner.x, y, inner.width, 1),
                     &format!(
                         "Usage        {} · {}",
@@ -3819,7 +3819,7 @@ impl Page<Jackin> for ManagerScreen {
 
     fn hints(&self, focus: Option<WidgetId>, w: &World) -> Vec<Hint> {
         if self.menu.is_open() {
-            return junie_tui::widgets::row_menu::hints();
+            return termrock::widgets::row_menu::hints();
         }
         let mut v = vec![];
         if focus == Some(DETAIL) {
@@ -4121,7 +4121,7 @@ impl ManagerScreen {
             if inner.y + i as u16 >= inner.bottom() {
                 break;
             }
-            junie_tui::widgets::viewport::render_spans(
+            termrock::widgets::viewport::render_spans(
                 buf,
                 inner.x,
                 inner.y + i as u16,

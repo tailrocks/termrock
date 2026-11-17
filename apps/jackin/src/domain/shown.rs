@@ -1,4 +1,4 @@
-use junie_tui::terminal::is_spoofing_format;
+use termrock::terminal::is_spoofing_format;
 
 pub fn shown(raw: &str, max_chars: usize) -> String {
     let mut out = String::new();

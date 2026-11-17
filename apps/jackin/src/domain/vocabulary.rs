@@ -1203,7 +1203,7 @@ impl Vocabulary {
     }
 
     pub fn count(&self, n: usize) -> String {
-        junie_tui::ui::text::plural(n, &self.project_one, &self.project_many)
+        termrock::ui::text::plural(n, &self.project_one, &self.project_many)
     }
 
     pub fn info_label(&self) -> String {

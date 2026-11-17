@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use junie_tui::ui::text::plural;
+use termrock::ui::text::plural;
 
 use super::account::{Account, AccountId, Lifecycle};
 use super::agent::{Provider, UsageSurface};
@@ -189,8 +189,8 @@ impl QuotaWindow {
             (_, _, _, QuotaStatus::NotStarted) => "not started".into(),
             (Some(u), Some(l), _, _) if self.unit != WindowUnit::Percent => format!(
                 "{} / {} {}",
-                junie_tui::ui::text::thousands(u as usize),
-                junie_tui::ui::text::thousands(l as usize),
+                termrock::ui::text::thousands(u as usize),
+                termrock::ui::text::thousands(l as usize),
                 self.unit.label()
             ),
             (_, _, Some(p), _) => format!("{p}% used"),
@@ -516,8 +516,8 @@ impl OverallSummary {
         parts.join(" · ")
     }
 
-    pub fn issue_parts(&self) -> Vec<(String, junie_tui::theme::Tone)> {
-        use junie_tui::theme::Tone;
+    pub fn issue_parts(&self) -> Vec<(String, termrock::theme::Tone)> {
+        use termrock::theme::Tone;
         let c = &self.counts;
         let mut parts = vec![];
         if c.warnings > 0 {

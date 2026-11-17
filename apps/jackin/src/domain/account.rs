@@ -1,4 +1,4 @@
-use junie_tui::core::refusal::Reason;
+use termrock::core::refusal::Reason;
 
 use super::agent::{Agent, Provider, UsageSurface};
 use super::fixed::Fixed;

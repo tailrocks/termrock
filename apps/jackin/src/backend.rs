@@ -20,13 +20,13 @@ use crate::launch::{LaunchFeed, LaunchTarget};
 use crate::panes::{PaneBody, PaneKind, PaneRefusal, PaneRequest, PaneSpawn, PaneTiming};
 use crate::world::{GlobalConfig, Msg, World};
 
-pub use junie_tui::widgets::diff::UnreadFile;
-pub use junie_tui::widgets::diff::{
+pub use termrock::widgets::diff::UnreadFile;
+pub use termrock::widgets::diff::{
     DiffFile as ChangedFile, DiffHunk as Hunk, DiffLine, DiffStatus,
 };
-pub use junie_tui::widgets::file_browser::FileSource;
-use junie_tui::widgets::file_browser::{FileEntry, MemorySource};
-pub use junie_tui::widgets::inspect_changes::{ChangeSet, ChangeWords};
+pub use termrock::widgets::file_browser::FileSource;
+use termrock::widgets::file_browser::{FileEntry, MemorySource};
+pub use termrock::widgets::inspect_changes::{ChangeSet, ChangeWords};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValidationOutcome {

@@ -1,6 +1,6 @@
-use junie_tui::clock::SimClock;
-use junie_tui::motion::Motion;
-use junie_tui::theme::Theme;
+use termrock::clock::SimClock;
+use termrock::motion::Motion;
+use termrock::theme::Theme;
 
 use super::world_for;
 use crate::app::{App, AppOptions, ClipboardMode, Entry, EntryPage, assemble};
