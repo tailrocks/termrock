@@ -2691,7 +2691,7 @@ fn list_detail_hosted_panes() {
     );
     let wheel = PointerEvent::new(
         &hits,
-        Phase::Move,
+        Phase::Middle,
         DETAIL,
         Position::new(100, 3),
         1,

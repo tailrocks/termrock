@@ -568,7 +568,7 @@ fn layout_stack_scroll() {
         Some(Outcome::Consumed)
     );
     assert_eq!(
-        state.pointer(id, &on_bar(Phase::Move, 9)),
+        state.pointer(id, &on_bar(Phase::Middle, 9)),
         Some(Outcome::Ignored)
     );
 

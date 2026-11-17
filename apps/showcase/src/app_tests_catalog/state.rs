@@ -28,7 +28,7 @@ use termrock::core::list::{
 };
 use termrock::core::nav::step_index;
 use termrock::core::pointer::PointerState;
-use termrock::core::response::{Actions, Flow, Invalidate, Response, StateFlags};
+use termrock::core::response::{Actions, Flow, Invalidate, Response};
 use termrock::core::selection::{
     Activate, CheckClick, ClickPolicy, RowSelection, SelectGesture, SelectionMode, TriState,
 };
@@ -122,8 +122,8 @@ fn state_identity() {
     assert_eq!(Part::ROW.name(), Some("ROW"));
     assert_eq!(tag.name(), None);
 
-    let whole = PartRef::of(Part::GUTTER);
-    assert_eq!((whole.part, whole.item), (Part::GUTTER, None));
+    let whole = PartRef::of(Part::TRACK);
+    assert_eq!((whole.part, whole.item), (Part::TRACK, None));
     let row2 = PartRef::item(Part::ROW, ItemKey::Index(2));
     assert_eq!((row2.part, row2.item), (Part::ROW, Some(ItemKey::Index(2))));
     assert_eq!(
@@ -150,7 +150,7 @@ fn state_identity() {
     );
     assert_ne!(root.part(whole), root);
     assert_ne!(
-        root.part(PartRef::of(Part::GUTTER)),
+        root.part(PartRef::of(Part::TRACK)),
         root.part(PartRef::of(Part::MARKER))
     );
     assert_eq!(
@@ -2150,54 +2150,37 @@ fn state_part_regions() {
 }
 
 // ---------------------------------------------------------------------------
-// Nonvisual exceptions: the sixteen Part constants no widget registers as a hit
-// region, and the StateFlags bit set that nothing in the workspace consumes.
+// Nonvisual exception: the built-in Part constants are distinct identity tags.
 // ---------------------------------------------------------------------------
 
 #[test]
 fn catalog_state_part_constants_are_distinct_identity_tags() {
     let parts = [
-        Part::ACTION,
         Part::ACTIONS,
         Part::BACKDROP,
-        Part::BADGE,
-        Part::BODY,
-        Part::BORDER,
         Part::CELL,
-        Part::CHANGE,
         Part::CLOSE,
         Part::CONTAINER,
-        Part::DETAIL,
-        Part::EMPTY,
         Part::FIELD,
-        Part::GUTTER,
         Part::HEADER,
-        Part::HELP,
         Part::ICON,
         Part::KEY,
-        Part::LABEL,
         Part::MARKER,
-        Part::META,
         Part::NEW,
         Part::OVERFLOW,
-        Part::PLACEHOLDER,
-        Part::PREFIX,
         Part::QUERY,
         Part::ROW,
         Part::ROW_NUMBER,
-        Part::RULE,
         Part::SEAM,
-        Part::SUMMARY,
         Part::TAB,
-        Part::TEXT,
         Part::THUMB,
         Part::TITLE,
         Part::TRACK,
     ];
-    assert_eq!(parts.len(), 36);
-    assert_eq!(Part::ALL.len(), 36, "every built-in part is listed once");
+    assert_eq!(parts.len(), 20);
+    assert_eq!(Part::ALL.len(), 20, "every built-in part is listed once");
     let raws: std::collections::BTreeSet<u16> = parts.iter().map(|p| p.raw()).collect();
-    assert_eq!(raws.len(), 36, "no two parts share a number");
+    assert_eq!(raws.len(), 20, "no two parts share a number");
     let owner = WidgetId::of("scenario.parts");
     let ids: std::collections::BTreeSet<WidgetId> = parts
         .iter()
@@ -2206,77 +2189,9 @@ fn catalog_state_part_constants_are_distinct_identity_tags() {
         .collect();
     assert_eq!(
         ids.len(),
-        35,
+        19,
         "each part addresses its own region of a widget"
     );
     assert_eq!(Part::CONTAINER.raw(), 0);
     assert_eq!(Part::ROW_NUMBER.name(), Some("ROW_NUMBER"));
-}
-
-#[test]
-fn catalog_state_flags_combine_as_a_bit_set() {
-    let all = [
-        StateFlags::ACTIVE,
-        StateFlags::BUSY,
-        StateFlags::CHECKED,
-        StateFlags::DIRTY,
-        StateFlags::DISABLED,
-        StateFlags::EDITING,
-        StateFlags::ERROR,
-        StateFlags::EXPANDED,
-        StateFlags::FOCUSED,
-        StateFlags::FOCUS_VISIBLE,
-        StateFlags::HOVERED,
-        StateFlags::LOADING,
-        StateFlags::PRESSED,
-        StateFlags::READ_ONLY,
-        StateFlags::SELECTED,
-        StateFlags::WARNING,
-    ];
-    let mut seen = 0u16;
-    for flag in all {
-        assert_eq!(flag.bits().count_ones(), 1, "{flag:?} is one bit");
-        assert_eq!(seen & flag.bits(), 0, "{flag:?} is not shared");
-        seen |= flag.bits();
-    }
-    assert_eq!(seen, u16::MAX, "sixteen flags fill the word");
-
-    let none = StateFlags::empty();
-    assert!(none.is_empty() && none.bits() == 0);
-    assert_eq!(
-        StateFlags::from_bits(StateFlags::FOCUSED.bits()),
-        StateFlags::FOCUSED
-    );
-    let both = StateFlags::FOCUSED.union(StateFlags::HOVERED);
-    assert!(both.contains(StateFlags::FOCUSED) && both.contains(both));
-    assert!(
-        !StateFlags::FOCUSED.contains(both),
-        "contains needs every bit"
-    );
-    assert!(both.intersects(StateFlags::HOVERED) && !both.intersects(StateFlags::PRESSED));
-    let mut flags = StateFlags::empty();
-    flags.insert(StateFlags::SELECTED);
-    flags.insert(StateFlags::DISABLED);
-    assert!(flags.contains(StateFlags::SELECTED | StateFlags::DISABLED));
-    flags.remove(StateFlags::DISABLED);
-    assert!(!flags.intersects(StateFlags::DISABLED));
-    flags.set(StateFlags::BUSY, true);
-    flags.set(StateFlags::SELECTED, false);
-    assert_eq!(flags, StateFlags::BUSY);
-    assert_eq!(
-        StateFlags::empty()
-            .with(StateFlags::ERROR, true)
-            .with(StateFlags::WARNING, true),
-        StateFlags::ERROR | StateFlags::WARNING
-    );
-    assert_eq!(
-        StateFlags::ERROR.with(StateFlags::ERROR, false),
-        StateFlags::empty()
-    );
-    assert!(StateFlags::from_bits(0).is_empty());
-    assert!(!StateFlags::ACTIVE.is_empty());
-    assert!(!StateFlags::CHECKED.is_empty() && !StateFlags::EXPANDED.is_empty());
-    assert!(!StateFlags::EDITING.is_empty() && !StateFlags::LOADING.is_empty());
-    assert!(!StateFlags::READ_ONLY.is_empty() && !StateFlags::FOCUS_VISIBLE.is_empty());
-    assert!(!StateFlags::DIRTY.is_empty() && !StateFlags::PRESSED.is_empty());
 }

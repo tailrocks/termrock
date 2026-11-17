@@ -1968,7 +1968,7 @@ mod details {
 
         let response = ld.on_detail_key(&crate::common::key(KeyCode::PageDown), &mut focus);
         assert_eq!(response.outcome(), Outcome::Changed);
-        let wheel = frame.event(Phase::Move, DETAIL, Position::new(100, 3));
+        let wheel = frame.event(Phase::Middle, DETAIL, Position::new(100, 3));
         assert_eq!(ld.wheel_event(&wheel, 2), Outcome::Changed);
         let mut scrolled = ScrollHost::default();
         scrolled_to(&mut ld, &mut scrolled);

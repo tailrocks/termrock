@@ -733,8 +733,8 @@ fn render_ctx_registration() {
     ctx.focus_stop(c);
     ctx.selection(a);
     ctx.clickable(d, Rect::new(0, 2, 10, 1));
-    let label = ctx.register_part(a, PartRef::of(Part::LABEL), Rect::new(0, 3, 10, 1));
-    assert_eq!(label, a.part(PartRef::of(Part::LABEL)));
+    let label = ctx.register_part(a, PartRef::of(Part::TITLE), Rect::new(0, 3, 10, 1));
+    assert_eq!(label, a.part(PartRef::of(Part::TITLE)));
     ctx.register_part_as(
         d.sub("icon"),
         a,
