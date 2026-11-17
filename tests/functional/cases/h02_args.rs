@@ -17,7 +17,8 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, HOLLA, Launch, flash_settle, text, try_launch};
+use crate::bins::holla;
+use crate::support::{App, Launch, flash_settle, text, try_launch};
 
 const SCENARIO: &str = "parity-task-sources";
 const DIR: &str = "~/work/poly";
@@ -39,7 +40,7 @@ fn visual_id(checkpoint: &str) -> String {
 }
 
 fn open(name: &str) -> App {
-    let mut launch = Launch::new(name, HOLLA);
+    let mut launch = Launch::new(name, holla());
     launch.args = vec!["--scenario".to_string(), SCENARIO.to_string()];
     launch.cols = 120;
     launch.rows = 40;

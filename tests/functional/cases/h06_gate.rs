@@ -12,7 +12,8 @@ use std::time::{Duration, Instant};
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, HOLLA, Launch, row_text, text, try_launch};
+use crate::bins::holla;
+use crate::support::{App, Launch, row_text, text, try_launch};
 
 const GRADLE_PREFIX: &str = "Clean Gradle outputs under ~/work/android";
 const IDEA_PREFIX: &str = "Clean IntelliJ metadata under ~/work/ide";
@@ -70,7 +71,7 @@ fn visual_id(checkpoint: &str) -> String {
 }
 
 fn launch(name: &str, scenario: &str) -> App {
-    let mut launch = Launch::new(name, HOLLA);
+    let mut launch = Launch::new(name, holla());
     launch.cols = 120;
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());

@@ -10,8 +10,9 @@ use tui_test::{
     SnapshotParts, SnapshotScope, SnapshotUnderline, TerminalSnapshot,
 };
 
+use crate::bins::showcase;
 use crate::support::{
-    App, Launch, SHOWCASE, SessionMode, reference_binary, reference_digest, text, try_launch,
+    App, Launch, SessionMode, reference_binary, reference_digest, text, try_launch,
 };
 
 const REFERENCE_SHA: &str = "fffe002e936d3621f22f9132144066a1374d5d74";
@@ -56,7 +57,7 @@ fn reference_showcase() -> PathBuf {
 }
 
 fn launch_showcase(name: &str) -> App {
-    let mut launch = Launch::new(name, SHOWCASE);
+    let mut launch = Launch::new(name, showcase());
     launch.args = vec![
         "--page".to_string(),
         "overview".to_string(),
@@ -1416,7 +1417,7 @@ fn g05_candidate_refuses_reference_binary() {
 
 #[test]
 fn g05_candidate_cannot_select_reference_manifest_override() {
-    let mut launch = Launch::new("g05-candidate-reference-manifest", SHOWCASE);
+    let mut launch = Launch::new("g05-candidate-reference-manifest", showcase());
     launch.reference_manifest = Some(
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("docs/testing/reference-manifest-j06-pr2.json"),
@@ -1436,10 +1437,10 @@ fn g05_candidate_cannot_select_reference_manifest_override() {
 
 #[test]
 fn g05_reference_mode_requires_manifest_identity() {
-    let candidate = Path::new(SHOWCASE);
+    let candidate = Path::new(showcase());
     assert!(candidate.is_file(), "missing candidate showcase");
     assert_ne!(sha256_file(candidate), SHOWCASE_REFERENCE_SHA256);
-    let mut launch = Launch::new("g05-reference-identity", SHOWCASE);
+    let mut launch = Launch::new("g05-reference-identity", showcase());
     launch.mode = SessionMode::Reference;
     let Err(error) = try_launch(launch) else {
         panic!("candidate digest is not the reference identity");
