@@ -17,7 +17,8 @@ use std::path::{Path, PathBuf};
 mod scenario_reach;
 
 use api_inventory::{
-    ApiKind, Expansion, Inventory, MATRIX, Record, SourceTree, TestFn, Value, build, idents,
+    ApiKind, CrateRoot, Expansion, Inventory, MATRIX, Record, SourceTree, TestFn, Value, build,
+    build_crates, idents,
 };
 use scenario_reach::FnIndex;
 use syn::visit::Visit;
@@ -117,6 +118,8 @@ const STATE_KIND: &str = "state";
 
 #[derive(Clone)]
 struct Sources {
+    /// The crates of the walk as `(crate name, source dir)`, the facade first.
+    crates: Vec<(String, String)>,
     tree: SourceTree,
     catalog: String,
     coverage: String,
@@ -132,6 +135,72 @@ struct Sources {
 
 fn root() -> &'static Path {
     Path::new(env!("CARGO_MANIFEST_DIR"))
+}
+
+/// The crates whose public API the gate walks, the facade first, from `docs/layering.toml`.
+///
+/// The facade is the root package `junie-tui` while its `src/lib.rs` holds the implementation (the
+/// `termrock` crate only re-exports it today), and `crates/termrock` after the cutover (#452).
+/// Every other crate of the table that has a `crates/termrock-<name>/src/lib.rs` follows, except
+/// the transitional facade and the test-only crates. Before the split nothing else exists and the
+/// walk is the root package.
+fn crate_roots(root: &Path) -> Vec<(String, String)> {
+    let text = std::fs::read_to_string(root.join("docs/layering.toml"))
+        .unwrap_or_else(|e| panic!("read docs/layering.toml: {e}"));
+    let doc: toml::Table = text.parse().expect("layering table is valid TOML");
+    let strings = |key: &str| -> Vec<String> {
+        doc.get(key)
+            .and_then(toml::Value::as_array)
+            .map(|a| {
+                a.iter()
+                    .filter_map(|v| v.as_str().map(str::to_owned))
+                    .collect()
+            })
+            .unwrap_or_default()
+    };
+    let layers = doc
+        .get("layers")
+        .and_then(toml::Value::as_table)
+        .expect("layering table has [layers]");
+    let facade = if root.join("src/lib.rs").is_file() {
+        "src"
+    } else {
+        "crates/termrock/src"
+    };
+    let mut out = vec![("termrock".to_owned(), facade.to_owned())];
+    for name in strings("order") {
+        let layer = layers.get(&name).and_then(toml::Value::as_str);
+        if matches!(layer, Some("facade" | "test")) {
+            continue;
+        }
+        let dir = format!("crates/termrock-{name}/src");
+        if root.join(&dir).join("lib.rs").is_file() {
+            out.push((format!("termrock_{}", name.replace('-', "_")), dir));
+        }
+    }
+    out
+}
+
+/// The directories whose `#[test]` fns can prove an API: the facade and apps as before, and every
+/// crate's `src` and `tests`.
+fn test_dirs(root: &Path, crates: &[(String, String)]) -> Vec<String> {
+    let mut dirs: Vec<String> = ["src", "tests", "apps"].map(str::to_owned).into();
+    let mut members: Vec<_> = std::fs::read_dir(root.join("crates"))
+        .map(|d| d.flatten().map(|e| e.path()).collect())
+        .unwrap_or_default();
+    members.sort();
+    for member in members.iter().filter(|p| p.is_dir()) {
+        let name = member
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or_default();
+        dirs.push(format!("crates/{name}/src"));
+        dirs.push(format!("crates/{name}/tests"));
+    }
+    dirs.extend(crates.iter().map(|(_, dir)| dir.clone()));
+    dirs.sort();
+    dirs.dedup();
+    dirs
 }
 
 impl Sources {
@@ -161,8 +230,13 @@ impl Sources {
                 })
                 .collect()
         };
+        let crates = crate_roots(root());
+        let dirs: Vec<&str> = crates.iter().map(|(_, dir)| dir.as_str()).collect();
+        let test_dirs = test_dirs(root(), &crates);
+        let test_dirs: Vec<&str> = test_dirs.iter().map(String::as_str).collect();
         Self {
-            tree: SourceTree::from_dir(root(), "src"),
+            tree: SourceTree::from_dirs(root(), &dirs),
+            crates: crates.clone(),
             catalog: read("src/catalog.rs"),
             coverage: read("apps/showcase/src/coverage.rs"),
             coverage_lanes: dir_files("apps/showcase/src/coverage", "rs"),
@@ -181,7 +255,7 @@ impl Sources {
                 })
                 .map(|(path, text)| (path.display().to_string(), text))
                 .collect(),
-            tests: api_inventory::test_names(root(), &["src", "tests", "apps"]),
+            tests: api_inventory::test_names(root(), &test_dirs),
         }
     }
 }
@@ -191,9 +265,23 @@ fn rows(s: &Sources) -> Result<Vec<(&'static str, Inventory)>, Vec<String>> {
         .into_iter()
         .map(|(id, _)| id)
         .collect();
+    rows_preferring(s, &preferred)
+}
+
+fn rows_preferring(
+    s: &Sources,
+    preferred: &BTreeSet<String>,
+) -> Result<Vec<(&'static str, Inventory)>, Vec<String>> {
+    let crates: Vec<CrateRoot<'_>> = s
+        .crates
+        .iter()
+        .map(|(name, dir)| CrateRoot { name, dir })
+        .collect();
     MATRIX
         .iter()
-        .map(|row| build(&s.tree, row, EXPANSIONS, &preferred).map(|inv| (row.name, inv)))
+        .map(|row| {
+            build_crates(&s.tree, &crates, row, EXPANSIONS, preferred).map(|inv| (row.name, inv))
+        })
         .collect()
 }
 
@@ -992,9 +1080,8 @@ fn catalog_without_a_preferred_spelling_the_definition_path_wins() {
 fn catalog_the_catalog_spelling_leaves_the_repository_ids_unchanged() {
     let s = Sources::load();
     let with_catalog = rows(&s).expect("inventory builds");
-    for (name, inv) in &with_catalog {
-        let row = MATRIX.iter().find(|r| r.name == *name).expect("row");
-        let bare = build(&s.tree, row, EXPANSIONS, &BTreeSet::new()).expect("builds");
+    let bare = rows_preferring(&s, &BTreeSet::new()).expect("inventory builds");
+    for ((name, inv), (_, bare)) in with_catalog.iter().zip(&bare) {
         assert_eq!(
             inv.exports.keys().collect::<Vec<_>>(),
             bare.exports.keys().collect::<Vec<_>>(),
@@ -1011,6 +1098,365 @@ fn catalog_a_moved_definition_adds_no_second_obligation() {
         !inv.exports.contains_key("new_home::Moved"),
         "a second spelling adds no second obligation"
     );
+}
+
+/// Two crates behind a facade: the facade spells the ids, the other crates only supply definitions.
+const FACADE: &str = "\
+pub mod core { pub use termrock_text::buffer as text; pub use termrock_text::Width; }
+pub use termrock_metrics::record_work;
+pub use termrock_metrics::reach_tests as reach;
+#[cfg(feature = \"terminal\")]
+pub use termrock_text::Gated;
+";
+const TEXT_CRATE: &str = "\
+pub mod buffer {
+    pub struct TextBuffer { pub len: usize, pub(crate) hidden: u8 }
+    impl TextBuffer { pub fn new() -> Self { Self { len: 0, hidden: 0 } } pub(crate) fn inner(&self) {} }
+    pub(crate) fn crate_only() {}
+}
+pub struct Width(pub u8);
+pub use crate::buffer::TextBuffer as Buf;
+mod private { pub struct Internal; }
+pub(crate) struct CrateOnly;
+#[cfg(feature = \"terminal\")]
+pub struct Gated;
+pub mod unexposed { pub fn not_reexported() {} }
+";
+const METRICS_CRATE: &str = "\
+#[macro_export]
+macro_rules! record_work { () => {} }
+#[macro_export]
+macro_rules! unexposed_macro { () => {} }
+mod inner {
+    #[macro_export]
+    macro_rules! reach_tests { () => {} }
+}
+";
+
+fn two_crates(facade: &str) -> (SourceTree, Vec<CrateRoot<'static>>) {
+    let tree = SourceTree::from_files(&[
+        ("src/lib.rs", facade),
+        ("crates/text/src/lib.rs", TEXT_CRATE),
+        ("crates/metrics/src/lib.rs", METRICS_CRATE),
+    ]);
+    let crates = vec![
+        CrateRoot {
+            name: "termrock",
+            dir: "src",
+        },
+        CrateRoot {
+            name: "termrock_text",
+            dir: "crates/text/src",
+        },
+        CrateRoot {
+            name: "termrock_metrics",
+            dir: "crates/metrics/src",
+        },
+    ];
+    (tree, crates)
+}
+
+fn crate_inventory(facade: &str, row: usize, preferred: &[&str]) -> Inventory {
+    let (tree, crates) = two_crates(facade);
+    let preferred = preferred.iter().map(|id| (*id).to_owned()).collect();
+    build_crates(&tree, &crates, &MATRIX[row], &[], &preferred)
+        .unwrap_or_else(|e| panic!("{}", e.join("\n")))
+}
+
+#[test]
+fn catalog_ids_of_a_second_crate_use_the_facade_spelling() {
+    let inv = crate_inventory(FACADE, 2, &[]);
+    let ids: Vec<_> = inv.exports.keys().map(String::as_str).collect();
+    assert_eq!(
+        ids,
+        [
+            "Gated",
+            "core::Width",
+            "core::Width::0",
+            "core::text::TextBuffer",
+            "core::text::TextBuffer::len",
+            "core::text::TextBuffer::new",
+            "reach!",
+            "record_work!",
+        ]
+    );
+}
+
+#[test]
+fn catalog_a_feature_gated_reexport_follows_the_matrix_row() {
+    let minimal = crate_inventory(FACADE, 0, &[]);
+    assert!(!minimal.exports.contains_key("Gated"));
+    assert!(minimal.exports.contains_key("core::Width"));
+}
+
+#[test]
+fn catalog_a_second_crate_exports_nothing_the_facade_does_not_reexport() {
+    let inv = crate_inventory(FACADE, 2, &[]);
+    for hidden in [
+        "unexposed::not_reexported",
+        "unexposed_macro!",
+        "Internal",
+        "CrateOnly",
+        "buffer::crate_only",
+        "core::text::TextBuffer::hidden",
+        "core::text::TextBuffer::inner",
+    ] {
+        assert!(
+            !inv.exports.keys().any(|id| id.ends_with(hidden)),
+            "{hidden} must not be exported: {:?}",
+            inv.exports.keys().collect::<Vec<_>>()
+        );
+    }
+}
+
+#[test]
+fn catalog_a_macro_is_exported_at_the_root_of_its_own_crate() {
+    let inv = crate_inventory(FACADE, 2, &[]);
+    assert_eq!(inv.exports["record_work!"].kind, ApiKind::Macro);
+    assert_eq!(
+        inv.exports["reach!"].kind,
+        ApiKind::Macro,
+        "a macro_export macro in a nested module is still at the crate root, and a rename keeps the `!`"
+    );
+}
+
+#[test]
+fn catalog_a_whole_second_crate_reexport_spells_its_modules_and_aliases() {
+    let facade = "pub use termrock_text as text;\npub use termrock_text::*;\n";
+    let inv = crate_inventory(facade, 2, &[]);
+    assert!(
+        inv.exports.contains_key("Width"),
+        "{:?}",
+        inv.exports.keys()
+    );
+    assert_eq!(
+        inv.aliases.get("text::Width").map(String::as_str),
+        Some("Width"),
+        "the fewest-segment spelling wins and the other stays an alias"
+    );
+    assert_eq!(
+        inv.aliases
+            .get("text::buffer::TextBuffer")
+            .map(String::as_str),
+        Some("Buf"),
+        "a path through `crate::` inside the second crate resolves in that crate"
+    );
+}
+
+#[test]
+fn catalog_a_catalog_spelling_decides_between_crate_spellings() {
+    let facade = "pub use termrock_text::Width;\npub mod core { pub use termrock_text::Width; }\n";
+    let bare = crate_inventory(facade, 2, &[]);
+    assert!(bare.exports.contains_key("Width"));
+    let pinned = crate_inventory(facade, 2, &["core::Width"]);
+    assert!(pinned.exports.contains_key("core::Width"));
+    assert!(!pinned.exports.contains_key("Width"));
+    assert_eq!(
+        pinned.aliases.get("Width").map(String::as_str),
+        Some("core::Width")
+    );
+}
+
+#[test]
+fn catalog_a_second_crate_that_is_not_reexported_adds_no_ids() {
+    let facade = "pub fn own() {}\n";
+    let inv = crate_inventory(facade, 2, &[]);
+    assert_eq!(inv.exports.keys().collect::<Vec<_>>(), ["own"]);
+    assert!(inv.modules.contains("@termrock_text::buffer"));
+    assert!(
+        inv.files_read.contains(Path::new("crates/text/src/lib.rs")),
+        "the walk still reads every crate"
+    );
+}
+
+#[test]
+fn catalog_an_item_of_a_second_crate_needs_that_crate_in_the_walk() {
+    let tree = SourceTree::from_files(&[("src/lib.rs", "pub use termrock_text::Width;\n")]);
+    let errors = build(&tree, &MATRIX[2], &[], &BTreeSet::new()).expect_err("unresolved crate");
+    expect_error(
+        &errors,
+        "unsupported public re-export `termrock_text::Width`",
+    );
+}
+
+/// A throwaway workspace on disk: `docs/layering.toml`, a `crates/` tree and a facade `src/`.
+struct TempWorkspace(PathBuf);
+
+impl TempWorkspace {
+    fn new(tag: &str) -> Self {
+        let dir = std::env::temp_dir().join(format!("termrock-443-{tag}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("temp workspace");
+        Self(dir)
+    }
+
+    fn write(&self, rel: &str, text: &str) {
+        let path = self.0.join(rel);
+        std::fs::create_dir_all(path.parent().expect("parent")).expect("dirs");
+        std::fs::write(path, text).expect("write fixture file");
+    }
+}
+
+impl Drop for TempWorkspace {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+const TEMP_LAYERING: &str = "order = [\"metrics\", \"text\", \"termrock\", \"functional\"]\n[layers]\nmetrics = \"foundations\"\ntext = \"foundations\"\ntermrock = \"facade\"\nfunctional = \"test\"\n";
+
+#[test]
+fn catalog_a_temp_workspace_of_crates_gives_facade_spelled_ids_from_disk() {
+    let ws = TempWorkspace::new("ids");
+    ws.write("docs/layering.toml", TEMP_LAYERING);
+    ws.write("crates/termrock/src/lib.rs", FACADE);
+    ws.write("crates/termrock-text/src/lib.rs", TEXT_CRATE);
+    ws.write("crates/termrock-metrics/src/lib.rs", METRICS_CRATE);
+    ws.write(
+        "crates/termrock-functional/src/lib.rs",
+        "pub fn skipped() {}\n",
+    );
+    let crates = crate_roots(&ws.0);
+    assert_eq!(
+        crates,
+        [
+            ("termrock".to_owned(), "crates/termrock/src".to_owned()),
+            (
+                "termrock_metrics".to_owned(),
+                "crates/termrock-metrics/src".to_owned()
+            ),
+            (
+                "termrock_text".to_owned(),
+                "crates/termrock-text/src".to_owned()
+            ),
+        ],
+        "the facade first, then the table's crates in order, and no test-only crate"
+    );
+    let dirs: Vec<&str> = crates.iter().map(|(_, dir)| dir.as_str()).collect();
+    let tree = SourceTree::from_dirs(&ws.0, &dirs);
+    let roots: Vec<CrateRoot<'_>> = crates
+        .iter()
+        .map(|(name, dir)| CrateRoot { name, dir })
+        .collect();
+    let inv = build_crates(&tree, &roots, &MATRIX[2], &[], &BTreeSet::new())
+        .unwrap_or_else(|e| panic!("{}", e.join("\n")));
+    assert!(inv.exports.contains_key("core::text::TextBuffer::new"));
+    assert!(inv.exports.contains_key("record_work!"));
+    assert!(inv.orphan_files(&tree).is_empty());
+}
+
+#[test]
+fn catalog_test_discovery_scans_every_crate_src_and_tests() {
+    let ws = TempWorkspace::new("tests");
+    ws.write(
+        "crates/termrock-text/src/wrap.rs",
+        "#[test]\nfn wraps() {}\n",
+    );
+    ws.write(
+        "crates/termrock-text/tests/edge.rs",
+        "#[test]\nfn edge() {}\n",
+    );
+    ws.write(
+        "crates/termrock-text/benches/skip.rs",
+        "#[test]\nfn skipped() {}\n",
+    );
+    ws.write("src/lib.rs", "#[test]\nfn facade() {}\n");
+    let crates = vec![("termrock".to_owned(), "src".to_owned())];
+    let dirs = test_dirs(&ws.0, &crates);
+    let dirs: Vec<&str> = dirs.iter().map(String::as_str).collect();
+    let found = api_inventory::test_names(&ws.0, &dirs);
+    let keys: Vec<_> = found.keys().map(String::as_str).collect();
+    assert_eq!(
+        keys,
+        [
+            "crates/termrock-text/src/wrap.rs::wraps",
+            "crates/termrock-text/tests/edge.rs::edge",
+            "src/lib.rs::facade",
+        ]
+    );
+}
+
+const SECOND_CRATE_DIR: &str = "crates/zz-probe/src";
+
+/// `undeclared_probe` lives in a crate of its own that `clock.rs` re-exports, so its id is
+/// `clock::undeclared_probe` as it was when the function sat in `clock.rs`.
+fn with_probe_in_second_crate(s: &mut Sources, catalog_line: bool) {
+    s.tree.files.insert(
+        PathBuf::from(format!("{SECOND_CRATE_DIR}/lib.rs")),
+        PROBE.to_owned(),
+    );
+    s.crates.push(("zz_probe".into(), SECOND_CRATE_DIR.into()));
+    s.tree
+        .files
+        .get_mut(Path::new("src/clock.rs"))
+        .expect("clock.rs")
+        .push_str("\npub use zz_probe::undeclared_probe;\n");
+    if catalog_line {
+        s.catalog = replaced(
+            &s.catalog,
+            "static MEMBERS: &[Capability] = &[",
+            "static MEMBERS: &[Capability] = &[\n    Capability::function(\"clock::undeclared_probe\"),",
+        );
+    }
+}
+
+#[test]
+fn catalog_rejects_an_unlisted_public_api_of_a_second_crate() {
+    let mut s = Sources::load();
+    with_probe_in_second_crate(&mut s, false);
+    expect_error(
+        &check(&s),
+        "exported API is missing from catalog: clock::undeclared_probe",
+    );
+}
+
+#[test]
+fn catalog_rejects_a_second_crate_api_without_a_disposition() {
+    let mut s = Sources::load();
+    with_probe_in_second_crate(&mut s, true);
+    expect_error(
+        &check(&s),
+        "API has no disposition: clock::undeclared_probe",
+    );
+}
+
+#[test]
+fn catalog_rejects_a_proof_that_never_reaches_a_second_crate_api() {
+    let mut s = Sources::load();
+    with_probe_in_second_crate(&mut s, true);
+    lane_file(&mut s, "lane_shell.rs").push_str(&lane_proof("clock::undeclared_probe"));
+    expect_error(
+        &check(&s),
+        "proof for clock::undeclared_probe names scenarios [\"NarrowLayout\"] that never exercise it: `undeclared_probe` never appears",
+    );
+}
+
+#[test]
+fn catalog_accepts_a_proof_that_reaches_a_second_crate_api() {
+    let mut s = Sources::load();
+    with_probe_in_second_crate(&mut s, true);
+    lane_file(&mut s, "lane_shell.rs").push_str(&lane_proof("clock::undeclared_probe"));
+    s.cases = replaced(
+        &s.cases,
+        "fn narrow_layout() {",
+        "fn narrow_layout() {\n    undeclared_probe();",
+    );
+    let errors = check(&s);
+    assert!(errors.is_empty(), "{}", errors.join("\n"));
+}
+
+#[test]
+fn catalog_a_second_crate_nobody_reexports_adds_no_obligation() {
+    let mut s = Sources::load();
+    with_probe_in_second_crate(&mut s, false);
+    let clock = s
+        .tree
+        .files
+        .get_mut(Path::new("src/clock.rs"))
+        .expect("clock.rs");
+    *clock = clock.replace("\npub use zz_probe::undeclared_probe;\n", "");
+    let errors = check(&s);
+    assert!(errors.is_empty(), "{}", errors.join("\n"));
 }
 
 #[test]
