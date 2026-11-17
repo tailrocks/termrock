@@ -5,15 +5,15 @@
 //! test thread only. Every number below was measured with
 //!
 //! ```text
-//! cargo nextest run -p junie-tui --features work-metrics --bin tablepro \
+//! cargo nextest run -p termrock-tablepro --features work-metrics --bin tablepro \
 //!     --no-tests fail -E 'test(/^work_metrics_tests::/)'
 //! ```
 
-use junie_tui::metrics::harness::{Harness, assert_exact};
-use junie_tui::metrics::{Metric, WorkDelta, measure};
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::widgets::grid::{CellValue, DataGrid};
 use ratatui::crossterm::event::KeyCode;
+use termrock::metrics::harness::{Harness, assert_exact};
+use termrock::metrics::{Metric, WorkDelta, measure};
+use termrock::theme::{ColorLevel, Theme};
+use termrock::widgets::grid::{CellValue, DataGrid};
 
 use crate::app::App;
 use crate::workbench::WorkTab;

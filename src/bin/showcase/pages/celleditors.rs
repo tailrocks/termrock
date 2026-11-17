@@ -5,23 +5,23 @@ use crate::pages::layout::{sheet_height, sheet_width};
 use crate::pages::tables::route_table;
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::focus::BlurAction;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::theme::CursorStyle;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::StackChild;
-use junie_tui::ui::popup::{Dismiss, Placement};
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::option_editor::{
+use termrock::core::event::Outcome;
+use termrock::core::focus::BlurAction;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::MouseTarget;
+use termrock::theme::CursorStyle;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::StackChild;
+use termrock::ui::popup::{Dismiss, Placement};
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::button::Button;
+use termrock::widgets::option_editor::{
     Affordance, ChoiceEditor, ChoiceResult, ColumnEditor, EditorConfig, OptionItem, Options,
 };
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::{self, Prop};
-use junie_tui::widgets::table::{Cell, Column, DataTable, TableAction, Tone};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::{self, Prop};
+use termrock::widgets::table::{Cell, Column, DataTable, TableAction, Tone};
 
 const ID: WidgetId = WidgetId::of("celleditors");
 
@@ -484,7 +484,7 @@ impl CellEditorsPage {
             buf.set_string(
                 area.x + 23,
                 y,
-                junie_tui::ui::text::truncate(what, area.width.saturating_sub(24) as usize),
+                termrock::ui::text::truncate(what, area.width.saturating_sub(24) as usize),
                 t.muted(),
             );
         }
@@ -522,7 +522,7 @@ impl CellEditorsPage {
         let choice = Panel::card(Some("A ChoiceEditor on its own"));
         let inner = choice.inner(ratatui::layout::Size::new(width, 0)).width;
         let lines =
-            junie_tui::ui::text::wrap(&self.choice_line(), inner.max(1) as usize).len() as u16;
+            termrock::ui::text::wrap(&self.choice_line(), inner.max(1) as usize).len() as u16;
         [
             (self.table.len() as u16 + 5).max(8),
             LEGEND.len() as u16,
@@ -581,7 +581,7 @@ impl CellEditorsPage {
                     c.render(at, buf, ctx, &cfg);
                 }
                 let line = self.choice_line();
-                for (i, l) in junie_tui::ui::text::wrap(&line, inner.width.max(1) as usize)
+                for (i, l) in termrock::ui::text::wrap(&line, inner.width.max(1) as usize)
                     .iter()
                     .enumerate()
                 {
@@ -683,11 +683,11 @@ impl Page for CellEditorsPage {
     }
 
     fn measure(&self, avail: ratatui::layout::Size, ctx: &RenderCtx) -> ratatui::layout::Size {
-        use junie_tui::ui::measure::Measure;
+        use termrock::ui::measure::Measure;
         let sets: Vec<Prop> = self.option_sets().into_iter().map(Prop::wrap).collect();
         let legend = LEGEND
             .iter()
-            .map(|(_, _, what)| 24 + junie_tui::ui::text::width(what) as u16)
+            .map(|(_, _, what)| 24 + termrock::ui::text::width(what) as u16)
             .max()
             .unwrap_or(0);
         let w = [
@@ -815,7 +815,7 @@ impl Page for CellEditorsPage {
         } else {
             vec![
                 ("↑↓←→", "Cell"),
-                junie_tui::widgets::widget_hints::EDIT_PAIR,
+                termrock::widgets::widget_hints::EDIT_PAIR,
                 ("Alt+↓", "Open"),
                 ("click twice", "Edit"),
             ]

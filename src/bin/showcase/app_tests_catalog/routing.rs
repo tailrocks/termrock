@@ -5,50 +5,50 @@
 //! `ScenarioId` variant from the `lane:routing` block in `../coverage.rs`. Edit only
 //! this file and `../coverage/lane_routing.rs`.
 
-use junie_tui::core::event::{
-    ClientPlatform, External, Input, InputConfig, Key, Mouse, MouseKind, Outcome,
-};
-use junie_tui::core::hit::{Axis, Bar, Hit, HitMark, HitRegion, HitRegistry, ReleaseFrom};
-use junie_tui::core::id::{ItemKey, Part, PartRef, WidgetId};
-use junie_tui::core::keyboard::{
-    self, AltKeys, DISAMBIGUATE, FLAGS, KeyboardProtocol, POP, ProtocolState, QUERY,
-    REPORT_ALTERNATE_KEYS,
-};
-use junie_tui::core::refusal::{self, Control, Reason, clear_refusal, take_refusal};
-use junie_tui::widgets::choice::Checkbox;
 use ratatui::crossterm::event::{
     Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
 };
 use ratatui::layout::{Position, Rect};
+use termrock::core::event::{
+    ClientPlatform, External, Input, InputConfig, Key, Mouse, MouseKind, Outcome,
+};
+use termrock::core::hit::{Axis, Bar, Hit, HitMark, HitRegion, HitRegistry, ReleaseFrom};
+use termrock::core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock::core::keyboard::{
+    self, AltKeys, DISAMBIGUATE, FLAGS, KeyboardProtocol, POP, ProtocolState, QUERY,
+    REPORT_ALTERNATE_KEYS,
+};
+use termrock::core::refusal::{self, Control, Reason, clear_refusal, take_refusal};
+use termrock::widgets::choice::Checkbox;
 
-use junie_tui::core::focus::{Focus, FocusChange, FocusRing};
-use junie_tui::core::hints::{
+use ratatui::buffer::Buffer;
+use ratatui::layout::Size;
+use termrock::core::focus::{Focus, FocusChange, FocusRing};
+use termrock::core::hints::{
     Binding, Bindings, HasHints, HintCx, TYPE_TO_JUMP, actions_bindings, keymap_bindings,
     nav_bindings, nav_hints,
 };
-use junie_tui::core::intent::{ActionKey, DismissReason, FocusVia, Intent, LayerEvent, Phase};
-use junie_tui::core::keymap::{
+use termrock::core::intent::{ActionKey, DismissReason, FocusVia, Intent, LayerEvent, Phase};
+use termrock::core::keymap::{
     Actions, KeyBinding, KeyMap, KeyboardCapabilities, Nav, NavKeys, SELECT_ALL, binding_for,
     deliverable_binding_for, deliverable_binding_for_with, hint_key, intern, label_for, lookup,
     lookup_with, normalized_key_mods, select_all_bindings, unassigned_chord,
 };
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::core::pointer::{
+use termrock::core::pointer::PointerEvent;
+use termrock::core::pointer::{
     FocusOn, MouseTarget, PointerConfig, PointerHost, PointerParts, PointerRouter, PointerState,
     Release, SecondaryOutside, SecondaryRoute, scroll_input,
 };
-use junie_tui::core::response::Response;
-use junie_tui::core::shape::{CaretShape, PointerShape, shapes_for};
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::ui::popup::Dismiss;
-use junie_tui::ui::scroll_view::{Axes, ScrollView};
-use junie_tui::widgets::choice::RadioGroup;
-use junie_tui::widgets::choice_dialog::ChoiceDialog;
-use junie_tui::widgets::keyhint::HintPriority;
-use junie_tui::widgets::list::{ListBox, ListItem, SelectMode};
-use ratatui::buffer::Buffer;
-use ratatui::layout::Size;
+use termrock::core::response::Response;
+use termrock::core::shape::{CaretShape, PointerShape, shapes_for};
+use termrock::theme::{ColorLevel, Theme};
+use termrock::ui::ctx::{Interaction, RenderCtx};
+use termrock::ui::popup::Dismiss;
+use termrock::ui::scroll_view::{Axes, ScrollView};
+use termrock::widgets::choice::RadioGroup;
+use termrock::widgets::choice_dialog::ChoiceDialog;
+use termrock::widgets::keyhint::HintPriority;
+use termrock::widgets::list::{ListBox, ListItem, SelectMode};
 
 use super::{ScenarioCase, ScenarioId, paint, paint_hits, text_of};
 
@@ -360,7 +360,7 @@ fn input_decoding() {
 
     // A decoded key reaches a real checkbox: space toggles, 'x' is ignored.
     let mut check = Checkbox::new(
-        junie_tui::core::id::WidgetId::of("scenario.input.check"),
+        termrock::core::id::WidgetId::of("scenario.input.check"),
         "Notify me",
         false,
     );
@@ -624,7 +624,7 @@ fn refusal_reasons() {
     assert_eq!(take_refusal(), None, "clearing drops a raised reason");
 
     // A real checkbox refuses its toggle and raises the reason.
-    let id = junie_tui::core::id::WidgetId::of("scenario.refusal.check");
+    let id = termrock::core::id::WidgetId::of("scenario.refusal.check");
     let mut locked = Checkbox::new(id, "Telemetry", false).fixed(reason.clone());
     let space = Key {
         code: KeyCode::Char(' '),

@@ -4,33 +4,33 @@ use ratatui::layout::Rect;
 
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, CxExt, Hint, Page, PageEvent};
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::focus::BlurAction;
-use junie_tui::core::id::{ItemKey, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::{Actions, KeyBinding, KeyMap, NavKeys, hint_key, label_for};
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::core::scroll::{HScroll, ScrollbarVisibility, TrackClick};
-use junie_tui::theme::{Strings, Tone};
-use junie_tui::ui::columns::HeaderLabels;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::StackChild;
-use junie_tui::ui::leave::{Leave, LeaveGuard, Resolved, Stakes};
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::chips::{Chip, ChipBar};
-use junie_tui::widgets::dialog::{Dialog, DialogResult};
-use junie_tui::widgets::empty::EmptyState;
-use junie_tui::widgets::grid::{
+use termrock::core::event::{Key, Outcome};
+use termrock::core::focus::BlurAction;
+use termrock::core::id::{ItemKey, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::keymap::{Actions, KeyBinding, KeyMap, NavKeys, hint_key, label_for};
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::core::scroll::{HScroll, ScrollbarVisibility, TrackClick};
+use termrock::theme::{Strings, Tone};
+use termrock::ui::columns::HeaderLabels;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::StackChild;
+use termrock::ui::leave::{Leave, LeaveGuard, Resolved, Stakes};
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::button::Button;
+use termrock::widgets::chips::{Chip, ChipBar};
+use termrock::widgets::dialog::{Dialog, DialogResult};
+use termrock::widgets::empty::EmptyState;
+use termrock::widgets::grid::{
     CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, DeletedRow, FinishEdit, GridAction,
     GridChangeSet, GridCmd, GridCommitFailure, GridCommitToken, GridDataError, GridEditError,
     GridRows, GridUndoKind, InsertedRow, RowState, RowTotal, UpdatedRow,
 };
-use junie_tui::widgets::option_editor::{
+use termrock::widgets::option_editor::{
     Affordance, ColumnEditor, EditorConfig, OptionItem, Options,
 };
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::{self, Prop};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::{self, Prop};
 
 const ID: WidgetId = WidgetId::of("grid");
 const PREVIEW: WidgetId = ID.sub("preview");
@@ -376,7 +376,7 @@ fn custom_keymap() -> KeyMap<GridCmd> {
 }
 
 fn strict(spec: &ColumnSpec, text: &str) -> Result<CellValue, String> {
-    let parsed = junie_tui::widgets::grid::default_validator(spec, text)?;
+    let parsed = termrock::widgets::grid::default_validator(spec, text)?;
     match (&*spec.name, &parsed) {
         ("seats", CellValue::Int(n)) if *n > 500 => Err("Seats above the plan limit (500)".into()),
         ("customer", CellValue::Text(s)) if s.trim().len() < 3 => {
@@ -1336,11 +1336,11 @@ impl Page for GridPage {
     fn blurb(&self) -> &'static str {
         "Typed cells, a pending-change queue, paging and local sort"
     }
-    fn leave_stakes(&self) -> junie_tui::ui::leave::Stakes {
+    fn leave_stakes(&self) -> termrock::ui::leave::Stakes {
         if !self.grid.pending().is_empty() {
-            junie_tui::ui::leave::Stakes::Unsaved { changes: 0 }
+            termrock::ui::leave::Stakes::Unsaved { changes: 0 }
         } else {
-            junie_tui::ui::leave::Stakes::Clean
+            termrock::ui::leave::Stakes::Clean
         }
     }
 
@@ -1358,7 +1358,7 @@ impl Page for GridPage {
     }
 
     fn measure(&self, avail: ratatui::layout::Size, ctx: &RenderCtx) -> ratatui::layout::Size {
-        use junie_tui::ui::measure::Measure;
+        use termrock::ui::measure::Measure;
         let wrap = |v: Vec<Prop>| -> Vec<Prop> { v.into_iter().map(Prop::wrap).collect() };
 
         let meta = format!("read-only · {}", self.grid.position_label());
@@ -1529,7 +1529,7 @@ impl Page for GridPage {
         let mut h = vec![("↑↓←→", "Cell")];
 
         if self.grid.cell_editable() {
-            h.push(junie_tui::widgets::widget_hints::EDIT_PAIR);
+            h.push(termrock::widgets::widget_hints::EDIT_PAIR);
         }
 
         let key = |cmd| hint_key(&self.grid.keymap, cmd);
@@ -1744,8 +1744,8 @@ mod tests {
 
     struct Rig {
         page: GridPage,
-        focus: junie_tui::core::focus::Focus,
-        ring: junie_tui::core::focus::FocusRing,
+        focus: termrock::core::focus::Focus,
+        ring: termrock::core::focus::FocusRing,
         statuses: Vec<String>,
     }
 
@@ -1753,8 +1753,8 @@ mod tests {
         fn new() -> Self {
             Self {
                 page: GridPage::new(),
-                focus: junie_tui::core::focus::Focus::default(),
-                ring: junie_tui::core::focus::FocusRing::default(),
+                focus: termrock::core::focus::Focus::default(),
+                ring: termrock::core::focus::FocusRing::default(),
                 statuses: Vec::new(),
             }
         }
@@ -1763,7 +1763,7 @@ mod tests {
             let mut cx = Cx::new(&mut self.focus, &self.ring);
             f(&mut self.page, &mut cx);
             for request in cx.take() {
-                if let junie_tui::shell::Request::Status(text, _) = request {
+                if let termrock::shell::Request::Status(text, _) = request {
                     self.statuses.push(text);
                 }
             }
@@ -1889,7 +1889,7 @@ mod tests {
         let id = rig.page.grid.value(1, 0).text();
         rig.with_cx(|page, cx| {
             page.on_event(
-                Some(GridAction::Undone(junie_tui::widgets::grid::GridUndo {
+                Some(GridAction::Undone(termrock::widgets::grid::GridUndo {
                     key,
                     kind: GridUndoKind::Cell,
                 })),

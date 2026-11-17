@@ -6,39 +6,39 @@
 //! this file and `../coverage/lane_fields.rs`.
 
 use super::*;
-use junie_tui::core::edit::{EditEntry, FocusSelect, UndoStack};
-use junie_tui::core::edit::{EditKind, clipboard};
-use junie_tui::core::focus::BlurAction;
-use junie_tui::core::keymap::KeyBinding;
-use junie_tui::core::keymap::NavKeys;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::core::refusal::Control;
-use junie_tui::core::scroll::HScroll;
-use junie_tui::core::text::TextBuffer;
-use junie_tui::theme::ButtonKind;
-use junie_tui::ui::ctx::FocusVisible;
-use junie_tui::ui::tooltip::Tip;
-use junie_tui::widgets::action_row::ActionRow;
-use junie_tui::widgets::button::{
+use ratatui::style::Style;
+use std::rc::Rc;
+use termrock::core::edit::{EditEntry, FocusSelect, UndoStack};
+use termrock::core::edit::{EditKind, clipboard};
+use termrock::core::focus::BlurAction;
+use termrock::core::keymap::KeyBinding;
+use termrock::core::keymap::NavKeys;
+use termrock::core::pointer::MouseTarget;
+use termrock::core::refusal::Control;
+use termrock::core::scroll::HScroll;
+use termrock::core::text::TextBuffer;
+use termrock::theme::ButtonKind;
+use termrock::ui::ctx::FocusVisible;
+use termrock::ui::tooltip::Tip;
+use termrock::widgets::action_row::ActionRow;
+use termrock::widgets::button::{
     Button, ButtonRow, MORE_LABEL, RowAlign, RowOverflow, row_layout, row_layout_right, row_lines,
 };
-use junie_tui::widgets::choice::{CheckHit, RadioGroup, Toggle};
-use junie_tui::widgets::code::{CodeCmd, CodeEditor as Editor, EditorAction};
-use junie_tui::widgets::edit::{
+use termrock::widgets::choice::{CheckHit, RadioGroup, Toggle};
+use termrock::widgets::code::{CodeCmd, CodeEditor as Editor, EditorAction};
+use termrock::widgets::edit::{
     EditExit, EditResult, Editable, FieldError, LineLook, Validate, ValidateFn, ValidateWhen,
 };
-use junie_tui::widgets::field_common::{
+use termrock::widgets::field_common::{
     Applied, EditAction, PointerField, PointerSelect, apply_edit, edit_key, edit_key_in,
     edit_key_with, paste_clipboard, route_click, route_drag, route_press, text_cmd_action,
     unbound_key,
 };
-use junie_tui::widgets::icon_button::{IconButton, IconLook};
-use junie_tui::widgets::input::{InputAction, ValidateOn};
-use junie_tui::widgets::keyhint::EDIT_FIELD;
-use junie_tui::widgets::textarea::TextArea;
-use junie_tui::widgets::widget_hints::EDIT as EDIT_HINT;
-use ratatui::style::Style;
-use std::rc::Rc;
+use termrock::widgets::icon_button::{IconButton, IconLook};
+use termrock::widgets::input::{InputAction, ValidateOn};
+use termrock::widgets::keyhint::EDIT_FIELD;
+use termrock::widgets::textarea::TextArea;
+use termrock::widgets::widget_hints::EDIT as EDIT_HINT;
 
 #[rustfmt::skip]
 pub const CASES: &[ScenarioCase] = &[
@@ -638,7 +638,7 @@ fn fields_icon_button() {
     assert_eq!(renamed.id, id("icon.edit"));
     assert!(renamed.part.is_none());
     let owner = id("icon.owner");
-    let owned = close.part_of(owner, junie_tui::core::id::PartRef::of(Part::ROW));
+    let owned = close.part_of(owner, termrock::core::id::PartRef::of(Part::ROW));
     assert_eq!(owned.part.map(|(o, _)| o), Some(owner));
     assert!(!close.danger_hover);
     let danger = close.clone().danger_hover(true);
@@ -963,7 +963,7 @@ fn fields_edit_field_core() {
     );
     let mut remapped = EditField::single("x").keys(FieldKeys::Desktop);
     remapped.text_keymap = Some(vec![(
-        junie_tui::core::keymap::KeyBinding::ctrl('q'),
+        termrock::core::keymap::KeyBinding::ctrl('q'),
         TextCmd::Copy,
     )]);
     assert_eq!(remapped.text_cmd(&ctrl('q')), Some(TextCmd::Copy));
@@ -1176,7 +1176,7 @@ fn fields_field_common() {
         edit_key_with(&ctrl('a'), false, FieldKeys::Emacs),
         EditAction::Apply(_)
     ));
-    let only_q = vec![(junie_tui::core::keymap::KeyBinding::ctrl('q'), TextCmd::Cut)];
+    let only_q = vec![(termrock::core::keymap::KeyBinding::ctrl('q'), TextCmd::Cut)];
     assert!(matches!(
         edit_key_in(&ctrl('q'), false, FieldKeys::Desktop, &only_q),
         EditAction::Cut
@@ -2757,9 +2757,9 @@ fn fields_code_editor_config() {
     assert!(text.contains("select 1") && !text.contains("-- write a query"));
 
     // A builder-set highlighter colours the keyword it finds.
-    fn keyword_tones(text: &str) -> Vec<(std::ops::Range<usize>, junie_tui::theme::SyntaxTone)> {
+    fn keyword_tones(text: &str) -> Vec<(std::ops::Range<usize>, termrock::theme::SyntaxTone)> {
         text.find("select")
-            .map(|at| vec![(at..at + 6, junie_tui::theme::SyntaxTone::Keyword)])
+            .map(|at| vec![(at..at + 6, termrock::theme::SyntaxTone::Keyword)])
             .unwrap_or_default()
     }
     let mut coloured = Editor::new(id("cc.hl"), "select 1").highlighter(keyword_tones);
@@ -2894,13 +2894,13 @@ fn fields_code_editor_config() {
     code_frame(&mut plain, false);
     assert!(!plain.scroll.h_cfg.enabled);
     let tracked =
-        Editor::new(id("cc.h"), "x").track_click(junie_tui::core::scroll::TrackClick::default());
+        Editor::new(id("cc.h"), "x").track_click(termrock::core::scroll::TrackClick::default());
     assert!(tracked.scroll.track_click.is_some());
     let jumping =
-        Editor::new(id("cc.h"), "x").track_click(junie_tui::core::scroll::TrackClick::Jump);
+        Editor::new(id("cc.h"), "x").track_click(termrock::core::scroll::TrackClick::Jump);
     assert_eq!(
         jumping.scroll.v_click(),
-        junie_tui::core::scroll::TrackClick::Jump,
+        termrock::core::scroll::TrackClick::Jump,
         "the editor's own track click wins over the app default"
     );
 

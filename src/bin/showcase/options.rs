@@ -6,14 +6,14 @@ use crate::app::PageId;
 use crate::pages::layout::Sections;
 use crate::pages::stress;
 use crate::pages::{Cx, Hint, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::StackChild;
-use junie_tui::widgets::choice::Toggle;
-use junie_tui::widgets::select::{Select, SelectAction};
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::MouseTarget;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::StackChild;
+use termrock::widgets::choice::Toggle;
+use termrock::widgets::select::{Select, SelectAction};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Effect {
@@ -2340,7 +2340,7 @@ impl OptionsView {
                     buf.set_string(r.x, y, *h, t.title().bg(bg));
                 }
                 (Row::Note(n), Some(r)) => {
-                    let text = junie_tui::ui::text::truncate(n, r.width as usize);
+                    let text = termrock::ui::text::truncate(n, r.width as usize);
                     buf.set_string(r.x, r.y, text, t.faint().bg(bg));
                 }
                 (Row::Option(_, Control::Toggle(tg)), Some(r)) => tg.render(r, buf, ctx, bg),

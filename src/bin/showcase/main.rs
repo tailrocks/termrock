@@ -12,7 +12,7 @@ mod work_metrics_tests;
 
 use crate::app::{App, NavExpand, PageId};
 use clap::{Parser, ValueEnum};
-use junie_tui::cli::CommonArgs;
+use termrock::cli::CommonArgs;
 
 const NO_MOTION_ENV: &str = "SHOWCASE_NO_MOTION";
 
@@ -67,7 +67,7 @@ fn cli_after_help() -> String {
         "{}\n\
          Frame:     with --motion paused, the exact tick to render\n\n\
          Keys: Tab/Shift+Tab focus · arrows move · Enter/Space activate · Esc back · [ ] pages · ? help · q quit",
-        junie_tui::cli::motion_help(NO_MOTION_ENV)
+        termrock::cli::motion_help(NO_MOTION_ENV)
     )
 }
 
@@ -94,7 +94,7 @@ fn main() -> std::io::Result<()> {
         coverage::proofs,
         coverage::exceptions,
     );
-    let cli: Cli = junie_tui::cli::parse(cli_after_help());
+    let cli: Cli = termrock::cli::parse(cli_after_help());
     let motion = cli.common.motion(NO_MOTION_ENV);
     let mut app = App::with_motion(cli.common.theme(), motion, cli.common.frame);
     if let Some(p) = cli.page {
@@ -104,5 +104,5 @@ fn main() -> std::io::Result<()> {
     for set in cli.opt {
         app.apply_opt(set);
     }
-    junie_tui::shell::run(&mut app)
+    termrock::shell::run(&mut app)
 }

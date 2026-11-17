@@ -2,7 +2,7 @@
 //! filtering, closing and reopening a table, and another query, all read it.
 
 use super::*;
-use junie_tui::widgets::table::SortDir;
+use termrock::widgets::table::SortDir;
 
 use crate::tabs::{TableTab, TableViewState};
 
@@ -408,7 +408,7 @@ fn issue51_peer_save_preserves_uncommitted_editor_input() {
         g.cursor = (1, NAME);
         let _ = g.begin_edit();
         for c in "-typing".chars() {
-            let _ = g.on_key(&junie_tui::core::event::Key {
+            let _ = g.on_key(&termrock::core::event::Key {
                 code: ratatui::crossterm::event::KeyCode::Char(c),
                 mods: ratatui::crossterm::event::KeyModifiers::NONE,
             });
@@ -764,7 +764,7 @@ fn issue51_saved_counts_reach_totals_and_explorer() {
     assert_eq!(tab(&mut app, key).total, seed - 1);
     assert_eq!(
         tab(&mut app, key).grid.total,
-        junie_tui::widgets::grid::RowTotal::Exact(seed - 1)
+        termrock::widgets::grid::RowTotal::Exact(seed - 1)
     );
     let meta = app
         .workbench

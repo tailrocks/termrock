@@ -7,22 +7,22 @@ use crate::options::page_options;
 use crate::pages::layout::{sheet_height, sheet_width};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, CxExt, Hint, Page, PageEvent};
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::focus::forward_blur;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::theme::Tone;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::leave::{
+use termrock::core::event::{Key, Outcome};
+use termrock::core::focus::forward_blur;
+use termrock::core::id::WidgetId;
+use termrock::core::pointer::MouseTarget;
+use termrock::theme::Tone;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::leave::{
     KeyContext, Leave, LeaveGuard, LeaveKey, QuitKeys, Resolved, Stakes, letters_allowed,
 };
-use junie_tui::ui::measure::{Tile, Tiled, tiles};
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::text;
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::input::{InputAction, TextInput};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::{self, Prop};
+use termrock::ui::measure::{Tile, Tiled, tiles};
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::text;
+use termrock::widgets::button::Button;
+use termrock::widgets::input::{InputAction, TextInput};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::{self, Prop};
 
 const ID: WidgetId = WidgetId::of("quitleave");
 
@@ -126,7 +126,7 @@ impl QuitLeavePage {
 
     fn request(&mut self, to: Leave<&'static str>, cx: &mut Cx) {
         let stakes = self.stakes();
-        let strings = junie_tui::theme::Strings::DEFAULT;
+        let strings = termrock::theme::Strings::DEFAULT;
         match self.guard.request(to, &stakes, &strings) {
             Ok(to) => {
                 self.last_request = format!("Ok({}): go now", leave_label(&to));

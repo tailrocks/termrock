@@ -5,21 +5,21 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::edit::{EditEntry, FieldKeys, FocusSelect, TextCmd};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::focus::BlurAction;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::{KeyBinding, KeyMap};
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::measure::{Measure, Tile, Tiled, tiles};
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::text;
-use junie_tui::widgets::field_common::PointerSelect;
-use junie_tui::widgets::input::{InputAction, TextInput};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::{self, Prop};
+use termrock::core::edit::{EditEntry, FieldKeys, FocusSelect, TextCmd};
+use termrock::core::event::Outcome;
+use termrock::core::focus::BlurAction;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::keymap::{KeyBinding, KeyMap};
+use termrock::core::pointer::MouseTarget;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::measure::{Measure, Tile, Tiled, tiles};
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::text;
+use termrock::widgets::field_common::PointerSelect;
+use termrock::widgets::input::{InputAction, TextInput};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::{self, Prop};
 
 const ID: WidgetId = WidgetId::of("inputs");
 
@@ -541,7 +541,7 @@ impl Page for InputsPage {
                 ("Ctrl+U", "Clear"),
             ]
         } else {
-            vec![junie_tui::widgets::widget_hints::EDIT_PAIR]
+            vec![termrock::widgets::widget_hints::EDIT_PAIR]
         }
     }
 

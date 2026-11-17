@@ -5,21 +5,21 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, CxExt, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::theme::{EnvKind, Glyphs, StatusKind, Tone};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::StackChild;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::button::{Button, row_layout};
-use junie_tui::widgets::dialog::{Dialog, DialogResult};
-use junie_tui::widgets::panel::{Panel, ScrollPanel};
-use junie_tui::widgets::progress::{ProgressBar, ProgressStatus, render_bar, render_indeterminate};
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::tree::TreeNode;
-use junie_tui::widgets::tree::TreeView;
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::MouseTarget;
+use termrock::theme::{EnvKind, Glyphs, StatusKind, Tone};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::StackChild;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::button::{Button, row_layout};
+use termrock::widgets::dialog::{Dialog, DialogResult};
+use termrock::widgets::panel::{Panel, ScrollPanel};
+use termrock::widgets::progress::{ProgressBar, ProgressStatus, render_bar, render_indeterminate};
+use termrock::widgets::scrollbar;
+use termrock::widgets::tree::TreeNode;
+use termrock::widgets::tree::TreeView;
 
 const ID: WidgetId = WidgetId::of("taskrunner");
 const CANCEL_DLG: WidgetId = ID.sub("cancel-dialog");
@@ -378,7 +378,7 @@ impl Page for TaskRunnerPage {
 
     fn measure(&self, _avail: Size, _ctx: &RenderCtx) -> Size {
         let buttons = self.run.width() + 2 + self.cancel.width();
-        let tasks = 14 + junie_tui::ui::text::width("cancelled") as u16;
+        let tasks = 14 + termrock::ui::text::width("cancelled") as u16;
         let pipe = Panel::card(Some("Pipeline · running"))
             .meta("99 of 99 done")
             .outer(Size::new(buttons.max(tasks), 0))
@@ -507,13 +507,13 @@ impl Page for TaskRunnerPage {
         self.running
     }
 
-    fn leave_stakes(&self) -> junie_tui::ui::leave::Stakes {
+    fn leave_stakes(&self) -> termrock::ui::leave::Stakes {
         if self.running {
-            junie_tui::ui::leave::Stakes::Running {
+            termrock::ui::leave::Stakes::Running {
                 what: "The pipeline".into(),
             }
         } else {
-            junie_tui::ui::leave::Stakes::Clean
+            termrock::ui::leave::Stakes::Clean
         }
     }
 
@@ -584,7 +584,7 @@ impl TaskRunnerPage {
                 break;
             }
             let label = format!("{:<12}", task.name);
-            let name = junie_tui::ui::text::truncate(&label, 10);
+            let name = termrock::ui::text::truncate(&label, 10);
             let bar = Rect::new(inner.x + 14, y, inner.width.saturating_sub(14).min(50), 1);
 
             let kind = match task.state {

@@ -9,31 +9,31 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::hit::Axis;
-use junie_tui::core::id::{Part, PartRef, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::NavKeys;
-use junie_tui::core::list::{
+use termrock::core::event::{Key, Outcome};
+use termrock::core::hit::Axis;
+use termrock::core::id::{Part, PartRef, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::keymap::NavKeys;
+use termrock::core::list::{
     Cursor, KeyStep, Moved, NavProfile, Navigable, RowFn, RowSource, TypeAheadPrecedence,
 };
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::core::scroll::{
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::core::scroll::{
     FollowCursor, HScroll, ScrollPane, ScrollState, ScrollbarVisibility, TrackClick,
 };
-use junie_tui::theme::{CursorStyle, Theme};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::StackChild;
-use junie_tui::ui::scroll_view::{Axes, ScrollView};
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::text::{fit, slice_cells, truncate};
-use junie_tui::widgets::grid::{CellKind, CellValue, ColumnSpec, DataGrid, GridRows, RowTotal};
-use junie_tui::widgets::list::{ListBox, ListItem, SelectMode};
-use junie_tui::widgets::panel::{Panel, ScrollPanel};
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::select::Select;
-use junie_tui::widgets::table::{Cell, Column, DataTable};
-use junie_tui::widgets::tree::{TreeNode, TreeView};
+use termrock::theme::{CursorStyle, Theme};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::StackChild;
+use termrock::ui::scroll_view::{Axes, ScrollView};
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::text::{fit, slice_cells, truncate};
+use termrock::widgets::grid::{CellKind, CellValue, ColumnSpec, DataGrid, GridRows, RowTotal};
+use termrock::widgets::list::{ListBox, ListItem, SelectMode};
+use termrock::widgets::panel::{Panel, ScrollPanel};
+use termrock::widgets::scrollbar;
+use termrock::widgets::select::Select;
+use termrock::widgets::table::{Cell, Column, DataTable};
+use termrock::widgets::tree::{TreeNode, TreeView};
 
 const ID: WidgetId = WidgetId::of("scrolling");
 
@@ -1120,9 +1120,9 @@ impl Page for ScrollingPage {
         };
         if focus == Some(self.log.id) {
             let mut v = nav_hints(&self.log.nav, false, "Scroll");
-            if let Some(k) = junie_tui::core::keymap::hint_key(
+            if let Some(k) = termrock::core::keymap::hint_key(
                 &self.log.keymap,
-                junie_tui::widgets::panel::PanelCmd::Follow,
+                termrock::widgets::panel::PanelCmd::Follow,
             ) {
                 v.push((k, "Follow"));
             }
@@ -1185,10 +1185,10 @@ impl Page for ScrollingPage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use junie_tui::core::focus::FocusRing;
-    use junie_tui::core::hit::HitRegistry;
-    use junie_tui::theme::ColorLevel;
-    use junie_tui::ui::ctx::Interaction;
+    use termrock::core::focus::FocusRing;
+    use termrock::core::hit::HitRegistry;
+    use termrock::theme::ColorLevel;
+    use termrock::ui::ctx::Interaction;
 
     fn render(page: &mut ScrollingPage) -> (Buffer, HitRegistry) {
         let theme = Theme::for_level(ColorLevel::TrueColor);

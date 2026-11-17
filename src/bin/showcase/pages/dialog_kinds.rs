@@ -6,33 +6,33 @@ use crate::options::{PageValues, page_options};
 use crate::pages::layout::{sheet_height, sheet_width};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent, Report};
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::{KeyBinding, NavKeys};
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::theme::Tone;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layer::LayerTag;
-use junie_tui::ui::layers::LayerResult;
-use junie_tui::ui::popup::Dismiss;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::text;
-use junie_tui::widgets::button::{Button, ButtonRow, row_layout};
-use junie_tui::widgets::choice::{Checkbox, RadioGroup};
-use junie_tui::widgets::choice_dialog::ChoiceDialog;
-use junie_tui::widgets::form_dialog::{
+use termrock::core::event::{Key, Outcome};
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::keymap::{KeyBinding, NavKeys};
+use termrock::core::pointer::MouseTarget;
+use termrock::theme::Tone;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layer::LayerTag;
+use termrock::ui::layers::LayerResult;
+use termrock::ui::popup::Dismiss;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::text;
+use termrock::widgets::button::{Button, ButtonRow, row_layout};
+use termrock::widgets::choice::{Checkbox, RadioGroup};
+use termrock::widgets::choice_dialog::ChoiceDialog;
+use termrock::widgets::form_dialog::{
     FieldValue, FormAction, FormDialog, FormField, FormFieldKind,
 };
-use junie_tui::widgets::help::HelpOverlay;
-use junie_tui::widgets::icon_button::IconButton;
-use junie_tui::widgets::info_dialog::{InfoCmd, InfoDialog, InfoResult};
-use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::option_list::Item;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::picker::{Picker, PickerAction};
-use junie_tui::widgets::props::{self, Prop};
-use junie_tui::widgets::select::Select;
+use termrock::widgets::help::HelpOverlay;
+use termrock::widgets::icon_button::IconButton;
+use termrock::widgets::info_dialog::{InfoCmd, InfoDialog, InfoResult};
+use termrock::widgets::input::TextInput;
+use termrock::widgets::option_list::Item;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::picker::{Picker, PickerAction};
+use termrock::widgets::props::{self, Prop};
+use termrock::widgets::select::Select;
 
 const ID: WidgetId = WidgetId::of("dialogkinds");
 const FORM: WidgetId = ID.sub("form");
@@ -104,7 +104,7 @@ impl DialogKindsPage {
     }
 
     fn close_button(&self) -> IconButton {
-        let b = IconButton::close(junie_tui::ui::modal::CLOSE);
+        let b = IconButton::close(termrock::ui::modal::CLOSE);
         if self.opts.value("dialogkinds.close_button") == "danger" {
             b.with_glyph("✕").danger_hover(true)
         } else {
@@ -407,7 +407,7 @@ impl DialogKindsPage {
             .fields
             .iter()
             .map(|x| {
-                use junie_tui::widgets::form_dialog::FormFieldKind as K;
+                use termrock::widgets::form_dialog::FormFieldKind as K;
                 match &x.kind {
                     K::Input(_) => "Input",
                     K::Select(_) => "Select",
@@ -553,7 +553,7 @@ impl DialogKindsPage {
                     buf.set_string(
                         rect.x,
                         y + 1,
-                        junie_tui::ui::text::truncate(OPENERS[r * per + k].1, rect.width as usize),
+                        termrock::ui::text::truncate(OPENERS[r * per + k].1, rect.width as usize),
                         t.faint().bg(bg),
                     );
                 }
@@ -581,7 +581,7 @@ impl DialogKindsPage {
             buf.set_string(
                 inner.x,
                 inner.y + k as u16,
-                junie_tui::ui::text::truncate(line, inner.width as usize),
+                termrock::ui::text::truncate(line, inner.width as usize),
                 st.bg(bg),
             );
         }

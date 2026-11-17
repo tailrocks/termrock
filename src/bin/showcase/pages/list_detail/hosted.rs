@@ -11,14 +11,14 @@ use ratatui::layout::Rect;
 use ratatui::style::Style;
 
 use super::{Job, JobRows, LIST};
-use junie_tui::core::id::{Part, PartRef};
-use junie_tui::theme::{CursorStyle, Tone};
-use junie_tui::ui::ctx::{RenderCtx, fill};
-use junie_tui::ui::text::{fit, width, wrap};
-use junie_tui::widgets::empty::{self, EmptyState};
-use junie_tui::widgets::list_detail::{DetailPane, ListDetailSource, MasterRow, PaneHost};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::scrollbar;
+use termrock::core::id::{Part, PartRef};
+use termrock::theme::{CursorStyle, Tone};
+use termrock::ui::ctx::{RenderCtx, fill};
+use termrock::ui::text::{fit, width, wrap};
+use termrock::widgets::empty::{self, EmptyState};
+use termrock::widgets::list_detail::{DetailPane, ListDetailSource, MasterRow, PaneHost};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::scrollbar;
 
 /// One master row in the plain look: the job, then its state in brackets.
 pub(super) fn paint_row(rows: &JobRows, row: MasterRow, buf: &mut Buffer, ctx: &mut RenderCtx) {

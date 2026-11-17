@@ -7,22 +7,22 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::KeyBinding;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::{Split, SplitCmd, SplitDir, SplitKeys, StackChild};
-use junie_tui::ui::master_detail::{MasterDetail, Mode};
-use junie_tui::ui::measure::Measure;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::text::{thousands, truncate};
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::list::{ListBox, ListItem, SelectMode};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::{self, Prop, PropsList};
-use junie_tui::widgets::splitter::Splitter;
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::keymap::KeyBinding;
+use termrock::core::pointer::MouseTarget;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::{Split, SplitCmd, SplitDir, SplitKeys, StackChild};
+use termrock::ui::master_detail::{MasterDetail, Mode};
+use termrock::ui::measure::Measure;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::text::{thousands, truncate};
+use termrock::widgets::button::Button;
+use termrock::widgets::list::{ListBox, ListItem, SelectMode};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::{self, Prop, PropsList};
+use termrock::widgets::splitter::Splitter;
 
 const ID: WidgetId = WidgetId::of("masterdetail");
 const LIST: WidgetId = WidgetId::of("masterdetail").sub("tables");
@@ -327,7 +327,7 @@ fn states_grid() -> StateGrid {
         .column("Master-detail", MasterDetail::new(id.child(0), id.child(1)))
 }
 
-pub(crate) fn page_hint(h: junie_tui::widgets::keyhint::Hint) -> Hint {
+pub(crate) fn page_hint(h: termrock::widgets::keyhint::Hint) -> Hint {
     let key = match h.key {
         Cow::Borrowed(key) => key,
         Cow::Owned(_) => "",

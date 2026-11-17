@@ -9,17 +9,17 @@ use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::terminal_session::{Script, SessionDemo};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::terminal::{Modes, TerminalState, TerminalView, encode_key};
-use junie_tui::theme::Tone;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::specimen::{Specimen, SpecimenState, StateGrid};
-use junie_tui::widgets::button::{Button, row_layout, row_lines};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::{self, Prop};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::terminal::{Modes, TerminalState, TerminalView, encode_key};
+use termrock::theme::Tone;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::specimen::{Specimen, SpecimenState, StateGrid};
+use termrock::widgets::button::{Button, row_layout, row_lines};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::{self, Prop};
 
 const ID: WidgetId = WidgetId::of("terminalpane");
 pub(super) const PANE: WidgetId = WidgetId::of("terminalpane.pane");
@@ -494,7 +494,7 @@ impl TerminalPanePage {
                 buf.set_string(
                     area.x,
                     y,
-                    junie_tui::ui::text::truncate(line, area.width as usize),
+                    termrock::ui::text::truncate(line, area.width as usize),
                     ratatui::style::Style::new().fg(t.tone(*tone)).bg(t.canvas),
                 );
             }
@@ -585,7 +585,7 @@ impl TerminalPanePage {
             buf.set_string(
                 area.x,
                 echo_y,
-                junie_tui::ui::text::truncate(&label, area.width as usize),
+                termrock::ui::text::truncate(&label, area.width as usize),
                 ratatui::style::Style::new().fg(t.tone(tone)).bg(t.canvas),
             );
         }
@@ -593,7 +593,7 @@ impl TerminalPanePage {
             buf.set_string(
                 area.x,
                 echo_y + 1,
-                junie_tui::ui::text::truncate(
+                termrock::ui::text::truncate(
                     "A stream that starts inside a sequence prints its tail as text until the next full redraw.",
                     area.width as usize,
                 ),
@@ -811,10 +811,10 @@ impl Page for TerminalPanePage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use junie_tui::core::focus::FocusRing;
-    use junie_tui::core::hit::HitRegistry;
-    use junie_tui::theme::{ColorLevel, Theme};
-    use junie_tui::ui::ctx::Interaction;
+    use termrock::core::focus::FocusRing;
+    use termrock::core::hit::HitRegistry;
+    use termrock::theme::{ColorLevel, Theme};
+    use termrock::ui::ctx::Interaction;
 
     const HOST: usize = 1;
     const DETACHES: usize = 2;
@@ -897,7 +897,7 @@ mod tests {
         }
         let log = page.session.as_ref().expect("session").log_lines();
         for (line, _) in log {
-            let line = junie_tui::ui::text::truncate(&line, usize::from(width));
+            let line = termrock::ui::text::truncate(&line, usize::from(width));
             assert!(
                 screen.contains(&line),
                 "log line {line:?} was overdrawn:\n{}",

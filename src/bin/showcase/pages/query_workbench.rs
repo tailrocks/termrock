@@ -9,32 +9,32 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::focus::{Focus, forward_blur};
-use junie_tui::core::id::{ItemKey, Part, PartRef, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::core::response::Response;
-use junie_tui::theme::{EnvKind, Glyphs, SyntaxTone, Tone};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::{Maximized, Split, SplitDir, StackChild};
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::code::{CodeEditor, Diagnostic, EditorAction, Severity};
-use junie_tui::widgets::document_workspace::{
+use termrock::core::event::{Key, Outcome};
+use termrock::core::focus::{Focus, forward_blur};
+use termrock::core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::core::response::Response;
+use termrock::theme::{EnvKind, Glyphs, SyntaxTone, Tone};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::{Maximized, Split, SplitDir, StackChild};
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::code::{CodeEditor, Diagnostic, EditorAction, Severity};
+use termrock::widgets::document_workspace::{
     CloseDecision, CloseToken, DocumentWorkspace, OpenKind, OperationToken, WorkspaceAction,
     WorkspaceDocument,
 };
-use junie_tui::widgets::empty::{self, EmptyState};
-use junie_tui::widgets::input::{InputAction, TextInput};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::progress::render_indeterminate;
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::segments::{self, Segment};
-use junie_tui::widgets::splitter::Splitter;
-use junie_tui::widgets::table::{Cell, Column, DataTable, TableAction};
-use junie_tui::widgets::tabs::{CloseReveal, TabAction, TabItem, Tabs};
-use junie_tui::widgets::toolbar::{ToolItem, Toolbar, ToolbarAction};
-use junie_tui::widgets::tree::{TreeAction, TreeNode, TreeView};
+use termrock::widgets::empty::{self, EmptyState};
+use termrock::widgets::input::{InputAction, TextInput};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::progress::render_indeterminate;
+use termrock::widgets::scrollbar;
+use termrock::widgets::segments::{self, Segment};
+use termrock::widgets::splitter::Splitter;
+use termrock::widgets::table::{Cell, Column, DataTable, TableAction};
+use termrock::widgets::tabs::{CloseReveal, TabAction, TabItem, Tabs};
+use termrock::widgets::toolbar::{ToolItem, Toolbar, ToolbarAction};
+use termrock::widgets::tree::{TreeAction, TreeNode, TreeView};
 
 const ID: WidgetId = WidgetId::of("queryworkbench");
 const OUTER: WidgetId = WidgetId::of("queryworkbench").sub("outer");
@@ -230,7 +230,7 @@ impl DocView<'_> {
             match &result {
                 Outcome2::Rows { count, ms, .. } => format!(
                     "{} · {ms} ms",
-                    junie_tui::ui::text::plural(*count, "row", "rows")
+                    termrock::ui::text::plural(*count, "row", "rows")
                 ),
                 Outcome2::Plan { ms } => format!("plan · {ms} ms"),
                 Outcome2::Error { .. } => "failed".into(),
@@ -1241,7 +1241,7 @@ impl QueryWorkbenchPage {
                 Segment::new("writes allowed", Tone::Muted)
             },
         ];
-        let tabs = junie_tui::ui::text::plural(self.workspace.len(), "tab", "tabs");
+        let tabs = termrock::ui::text::plural(self.workspace.len(), "tab", "tabs");
         let right = [Segment::new(tabs, Tone::Muted).priority(1)];
         segments::render(r, buf, ctx, &left, &right, ctx.theme.canvas);
     }
@@ -1535,13 +1535,13 @@ impl Page for QueryWorkbenchPage {
         self.running.is_some() || !self.loading.is_empty()
     }
 
-    fn leave_stakes(&self) -> junie_tui::ui::leave::Stakes {
+    fn leave_stakes(&self) -> termrock::ui::leave::Stakes {
         if self.running.is_some() {
-            junie_tui::ui::leave::Stakes::Running {
+            termrock::ui::leave::Stakes::Running {
                 what: "The query".into(),
             }
         } else {
-            junie_tui::ui::leave::Stakes::Clean
+            termrock::ui::leave::Stakes::Clean
         }
     }
 
@@ -1591,12 +1591,12 @@ impl Page for QueryWorkbenchPage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use junie_tui::core::focus::{Focus, FocusRing};
-    use junie_tui::core::hit::HitRegistry;
-    use junie_tui::theme::{ColorLevel, Theme};
-    use junie_tui::ui::ctx::Interaction;
     use ratatui::crossterm::event::{KeyCode, KeyModifiers};
     use ratatui::layout::Position;
+    use termrock::core::focus::{Focus, FocusRing};
+    use termrock::core::hit::HitRegistry;
+    use termrock::theme::{ColorLevel, Theme};
+    use termrock::ui::ctx::Interaction;
 
     const AREA: Rect = Rect::new(0, 0, 140, 44);
 
@@ -1655,7 +1655,7 @@ mod tests {
 
         fn collect(statuses: &mut Vec<String>, mut cx: Cx) {
             let statuses_iter = cx.take().into_iter().filter_map(|request| match request {
-                junie_tui::shell::Request::Status(text, _) => Some(text),
+                termrock::shell::Request::Status(text, _) => Some(text),
                 _ => None,
             });
             statuses.extend(statuses_iter);
@@ -2595,7 +2595,7 @@ mod tests {
         let ev = PointerEvent::wheel_on(
             &rig.hits,
             editor,
-            junie_tui::core::hit::Axis::Vertical,
+            termrock::core::hit::Axis::Vertical,
             3,
             pos,
             KeyModifiers::NONE,

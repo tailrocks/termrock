@@ -1,4 +1,4 @@
-use junie_tui::core::id::ItemKey;
+use termrock::core::id::ItemKey;
 
 use crate::db::{ColType, Table, Value};
 use crate::model::quote_text;
@@ -1816,7 +1816,7 @@ mod issue10_sql_tests {
     use super::*;
     use crate::db::{Catalog, Table};
     use crate::tabs::{Filter, FilterOp};
-    use junie_tui::core::id::WidgetId;
+    use termrock::core::id::WidgetId;
 
     fn orders(cat: &Catalog) -> &Table {
         cat.find(Some("public"), "orders").expect("orders fixture")

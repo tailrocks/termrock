@@ -5,17 +5,17 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::{Actions, KeyBinding, hint_key};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::{SplitDir, SplitKeys, StackChild};
-use junie_tui::ui::pane_tree::{Frames, PaneCmd, PaneId, PaneResult, PaneTree};
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::text::truncate;
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::panel::Panel;
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::keymap::{Actions, KeyBinding, hint_key};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::{SplitDir, SplitKeys, StackChild};
+use termrock::ui::pane_tree::{Frames, PaneCmd, PaneId, PaneResult, PaneTree};
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::text::truncate;
+use termrock::widgets::button::Button;
+use termrock::widgets::panel::Panel;
 
 const ID: WidgetId = WidgetId::of("panetree");
 const TREE: WidgetId = WidgetId::of("panetree").sub("tree");
@@ -184,7 +184,7 @@ impl PaneTreePage {
         let n = self.tree.leaves().len();
         format!(
             "{} · focus {}{}",
-            junie_tui::ui::text::plural(n, "pane", "panes"),
+            termrock::ui::text::plural(n, "pane", "panes"),
             name(self.tree.focused),
             if self.tree.zoomed().is_some() {
                 " · zoomed"
@@ -195,7 +195,7 @@ impl PaneTreePage {
     }
 
     fn card_size(&self) -> Size {
-        let w = |s: &str| junie_tui::ui::text::width(s) as u16;
+        let w = |s: &str| termrock::ui::text::width(s) as u16;
         let tree = self.tree.natural_size(&|p| {
             let lines = PANES[(p as usize).saturating_sub(1) % PANES.len()].1;
             let widest = lines.iter().map(|l| w(l)).max().unwrap_or(0);
@@ -228,7 +228,7 @@ impl PaneTreePage {
             "Zoom".into()
         };
         let widths: Vec<u16> = self.buttons.iter().map(Button::width).collect();
-        let rects = junie_tui::widgets::button::row_layout(
+        let rects = termrock::widgets::button::row_layout(
             Rect::new(inner.x, inner.y, inner.width, 1),
             &widths,
             2,

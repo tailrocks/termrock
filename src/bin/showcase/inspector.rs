@@ -7,13 +7,13 @@ use ratatui::style::Color;
 use crate::app::PageId;
 use crate::options::{Group, OptSet, OptionsView, SHELL, page_options};
 use crate::pages::{Cx, Hint, PageEvent};
-use junie_tui::core::event::{Input, Outcome};
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::scroll_view::{Axes, ScrollView};
-use junie_tui::widgets::props::{self, Prop};
-use junie_tui::widgets::tabs::Tabs;
+use termrock::core::event::{Input, Outcome};
+use termrock::core::id::WidgetId;
+use termrock::core::pointer::MouseTarget;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::scroll_view::{Axes, ScrollView};
+use termrock::widgets::props::{self, Prop};
+use termrock::widgets::tabs::Tabs;
 
 pub const ID: WidgetId = WidgetId::of("app.inspector");
 
@@ -109,7 +109,7 @@ impl Inspector {
             }
             Input::Key(k) => format!(
                 "Key {}",
-                junie_tui::core::keymap::KeyBinding::new(k.code, k.mods).label()
+                termrock::core::keymap::KeyBinding::new(k.code, k.mods).label()
             ),
             Input::Mouse(m) => {
                 let mods = crate::app::describe_mods(m.mods);
@@ -188,7 +188,7 @@ impl Inspector {
             }
             PageEvent::Pointer(p) => {
                 if let Some(r) = self.tabs.route(p) {
-                    if p.is(junie_tui::core::intent::Phase::Click) {
+                    if p.is(termrock::core::intent::Phase::Click) {
                         cx.focus.focus(self.tabs.id);
                     }
                     return Some((r.outcome(), None));

@@ -1,42 +1,42 @@
 use std::collections::BTreeSet;
 
-use junie_tui::clock::Clock;
-use junie_tui::core::event::{Input, Key, Outcome};
-use junie_tui::core::focus::FocusChange;
-use junie_tui::core::id::ItemKey;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{
-    MouseTarget, PointerEvent, PointerHost, PointerParts, PointerRouter,
-};
-use junie_tui::core::response::Response;
-use junie_tui::shell::{self, PageKey, Shell};
-use junie_tui::theme::{Theme, Tone};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layer::{
-    DismissReason, Dismissed, Layer, LayerCx, LayerPointer, LayerTag, Taken,
-};
-use junie_tui::ui::leave::{Leave, LeaveGuard, Resolved, Stakes};
-use junie_tui::ui::text::{crumb_fit, plural, truncate, truncate_middle, width};
-use junie_tui::widgets::brand::Lockup;
-use junie_tui::widgets::breadcrumb::Breadcrumb;
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::dialog::{Dialog, DialogResult};
-use junie_tui::widgets::help::{HelpOverlay, HelpSection};
-use junie_tui::widgets::hintbar::HintBar;
-use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::keyhint::hint;
-use junie_tui::widgets::menu::{ContextMenu, MenuBar, MenuBarAction, MenuItem, Placement};
-use junie_tui::widgets::option_list;
-use junie_tui::widgets::picker::{Picker, PickerAction};
-use junie_tui::widgets::props::Prop;
-use junie_tui::widgets::segments::{self, Segment};
-use junie_tui::widgets::statusbar::{StatusBar, StatusItem};
-use junie_tui::widgets::tabs::{TabAction, TabItem, Tabs};
-use junie_tui::widgets::too_small::TooSmall;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
+use termrock::clock::Clock;
+use termrock::core::event::{Input, Key, Outcome};
+use termrock::core::focus::FocusChange;
+use termrock::core::id::ItemKey;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{
+    MouseTarget, PointerEvent, PointerHost, PointerParts, PointerRouter,
+};
+use termrock::core::response::Response;
+use termrock::shell::{self, PageKey, Shell};
+use termrock::theme::{Theme, Tone};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layer::{
+    DismissReason, Dismissed, Layer, LayerCx, LayerPointer, LayerTag, Taken,
+};
+use termrock::ui::leave::{Leave, LeaveGuard, Resolved, Stakes};
+use termrock::ui::text::{crumb_fit, plural, truncate, truncate_middle, width};
+use termrock::widgets::brand::Lockup;
+use termrock::widgets::breadcrumb::Breadcrumb;
+use termrock::widgets::button::Button;
+use termrock::widgets::dialog::{Dialog, DialogResult};
+use termrock::widgets::help::{HelpOverlay, HelpSection};
+use termrock::widgets::hintbar::HintBar;
+use termrock::widgets::input::TextInput;
+use termrock::widgets::keyhint::hint;
+use termrock::widgets::menu::{ContextMenu, MenuBar, MenuBarAction, MenuItem, Placement};
+use termrock::widgets::option_list;
+use termrock::widgets::picker::{Picker, PickerAction};
+use termrock::widgets::props::Prop;
+use termrock::widgets::segments::{self, Segment};
+use termrock::widgets::statusbar::{StatusBar, StatusItem};
+use termrock::widgets::tabs::{TabAction, TabItem, Tabs};
+use termrock::widgets::too_small::TooSmall;
 
 use crate::domain::action::{Confirmation, Item, Launch, Risk};
 use crate::domain::activity::{ActivityKind, ActivityState};
@@ -1104,7 +1104,7 @@ impl App {
         self.dismissed(reason, dismiss, d)
     }
 
-    fn top_dismiss(&self) -> junie_tui::ui::popup::Dismiss {
+    fn top_dismiss(&self) -> termrock::ui::popup::Dismiss {
         self.modals
             .top()
             .map(|e| e.layer.spec().dismiss)
@@ -1114,7 +1114,7 @@ impl App {
     fn dismissed(
         &mut self,
         reason: DismissReason,
-        dismiss: junie_tui::ui::popup::Dismiss,
+        dismiss: termrock::ui::popup::Dismiss,
         d: Dismissed<ModalResult, (), usize>,
     ) -> Outcome {
         match d {
@@ -1122,7 +1122,7 @@ impl App {
             Dismissed::Refused => {
                 let now = self.now_ms();
                 if reason == DismissReason::OutsideClick
-                    && junie_tui::ui::modal::refuse_outside_click(
+                    && termrock::ui::modal::refuse_outside_click(
                         &mut self.shell.pointer,
                         dismiss,
                         now,
@@ -1399,7 +1399,7 @@ impl App {
     }
 
     fn layer_pointer(&mut self, ev: &PointerEvent) -> Outcome {
-        if ev.is(Phase::Click) && ev.id == junie_tui::ui::modal::CLOSE {
+        if ev.is(Phase::Click) && ev.id == termrock::ui::modal::CLOSE {
             return self.dismiss_layer(DismissReason::CloseButton);
         }
         let dismiss = self.top_dismiss();
@@ -1559,7 +1559,7 @@ impl App {
                     },
                     Scope::Children => format!(
                         "children · {}",
-                        junie_tui::ui::text::plural(loc.children.len(), "project", "projects")
+                        termrock::ui::text::plural(loc.children.len(), "project", "projects")
                     ),
                     Scope::System => format!("system · {}", self.world.host.name),
                 };
@@ -2341,7 +2341,7 @@ impl App {
                         self.set_status(
                             &format!(
                                 "cleanup started · {} · quitting waits for it",
-                                junie_tui::ui::text::plural(n, "item", "items")
+                                termrock::ui::text::plural(n, "item", "items")
                             ),
                             Tone::Secondary,
                         );
@@ -2501,7 +2501,7 @@ impl App {
                     &format!(
                         "{} · {} started {}",
                         it.label,
-                        junie_tui::ui::text::plural(ids.len(), "activity", "activities"),
+                        termrock::ui::text::plural(ids.len(), "activity", "activities"),
                         match it.batch_mode {
                             crate::sim::world::BatchMode::Parallel =>
                                 "in parallel · Ctrl+G lists them",
@@ -3136,7 +3136,7 @@ impl App {
         if live > 0 {
             bar.right.push(
                 StatusItem::new(
-                    junie_tui::ui::text::plural(live, "running", "running"),
+                    termrock::ui::text::plural(live, "running", "running"),
                     Tone::Secondary,
                 )
                 .busy()
@@ -3170,7 +3170,7 @@ impl App {
     }
 
     fn footer(&self, modal: bool) -> shell::Footer {
-        use junie_tui::core::hints::{HasHints, HintCx};
+        use termrock::core::hints::{HasHints, HintCx};
         let focus = self.shell.focus.current();
         let editing = self.modals.top().is_some_and(|t| t.layer.is_editing())
             || (!modal && self.top().is_some_and(|s| s.is_editing()) && self.active() == 0);
@@ -3234,7 +3234,7 @@ impl shell::App for App {
         self.handle_input(input)
     }
     fn advance_clock(&mut self, ms: u64) -> Option<Outcome> {
-        Some(junie_tui::clock::run_step(
+        Some(termrock::clock::run_step(
             self,
             |a| &mut a.world.clock,
             ms,
@@ -3392,10 +3392,10 @@ pub enum HollaCmd {
 }
 
 pub fn shell_keys() -> shell::ShellKeys<HollaCmd> {
-    use junie_tui::core::keymap::KeyBinding;
     use shell::ShellAction::App as Cmd;
+    use termrock::core::keymap::KeyBinding;
     let mut keys = shell::ShellKeys::new()
-        .quit(junie_tui::ui::leave::QuitKeys::DEFAULT.letter(None))
+        .quit(termrock::ui::leave::QuitKeys::DEFAULT.letter(None))
         .bind(KeyBinding::ctrl('g'), Cmd(HollaCmd::Activities))
         .bind(KeyBinding::ctrl('w'), Cmd(HollaCmd::CloseTab));
     for d in 0..=9u8 {

@@ -6,24 +6,24 @@ use crate::options::{PageValues, page_options};
 use crate::pages::row_menu::{MENU_HINTS, RowMenu};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::StackChild;
-use junie_tui::ui::measure::Measure;
-use junie_tui::ui::popup::Placement;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::empty::{self, EmptyAction, EmptyState};
-use junie_tui::widgets::grid::{
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::MouseTarget;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::StackChild;
+use termrock::ui::measure::Measure;
+use termrock::ui::popup::Placement;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::button::Button;
+use termrock::widgets::empty::{self, EmptyAction, EmptyState};
+use termrock::widgets::grid::{
     CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridRows, RowTotal,
 };
-use junie_tui::widgets::list::{ListBox, SelectMode};
-use junie_tui::widgets::menu::{ContextMenu, MenuItem};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::scrollbar;
+use termrock::widgets::list::{ListBox, SelectMode};
+use termrock::widgets::menu::{ContextMenu, MenuItem};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::scrollbar;
 
 const ID: WidgetId = WidgetId::of("emptyerror");
 const NEW: WidgetId = WidgetId::of("emptyerror").sub("new");
@@ -200,7 +200,7 @@ impl EmptyErrorPage {
                 buf.set_string(
                     inner.x,
                     inner.bottom().saturating_sub(1),
-                    junie_tui::ui::text::truncate(note, inner.width as usize),
+                    termrock::ui::text::truncate(note, inner.width as usize),
                     t.faint().bg(bg),
                 );
             }
@@ -286,7 +286,7 @@ impl Page for EmptyErrorPage {
                     .width,
             );
         let grid =
-            (GRID_W + 2 + self.actions.width()).max(junie_tui::ui::text::width(GRID_NOTE) as u16);
+            (GRID_W + 2 + self.actions.width()).max(termrock::ui::text::width(GRID_NOTE) as u16);
         let width = [
             half * 2 + 4,
             Panel::card(Some("Connections"))

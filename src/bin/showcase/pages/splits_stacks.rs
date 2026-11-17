@@ -6,19 +6,19 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::core::scroll::TrackClick;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::{
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::PointerEvent;
+use termrock::core::scroll::TrackClick;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::{
     Maximized, Overflow, Split, SplitDir, Stack, StackChild, StackLayout, StackScroll,
 };
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::splitter::{SeamDoubleClick, Splitter};
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::button::Button;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::splitter::{SeamDoubleClick, Splitter};
 
 const ID: WidgetId = WidgetId::of("splitsstacks");
 const OUTER: WidgetId = WidgetId::of("splitsstacks").sub("outer");
@@ -201,7 +201,7 @@ impl SplitsStacksPage {
         let pane = |title: &str, lines: &[&str]| {
             let w = lines
                 .iter()
-                .map(|l| junie_tui::ui::text::width(l) as u16)
+                .map(|l| termrock::ui::text::width(l) as u16)
                 .max()
                 .unwrap_or(0);
             Panel::framed(Some(title)).outer(Size::new(w, lines.len() as u16))
@@ -233,7 +233,7 @@ impl SplitsStacksPage {
 
     fn stack_width(&self) -> u16 {
         let meta = self.stack_meta();
-        let note = junie_tui::ui::text::width(&format!("{} not in view", CARDS.len())) as u16;
+        let note = termrock::ui::text::width(&format!("{} not in view", CARDS.len())) as u16;
         Panel::card(Some("Stack"))
             .meta(&meta)
             .outer(Size::new(STACK_W + 2 + note, 0))
@@ -261,7 +261,7 @@ impl SplitsStacksPage {
         let inner = panel.render(area, buf, t);
 
         let widths: Vec<u16> = self.zoom.iter().map(Button::width).collect();
-        let rects = junie_tui::widgets::button::row_layout(
+        let rects = termrock::widgets::button::row_layout(
             Rect::new(inner.x, inner.y, inner.width, 1),
             &widths,
             2,
@@ -312,12 +312,12 @@ impl SplitsStacksPage {
             }
             let head = format!(
                 "▸ {title} · {}",
-                junie_tui::ui::text::plural(r.height as usize, "row", "rows")
+                termrock::ui::text::plural(r.height as usize, "row", "rows")
             );
             buf.set_string(
                 r.x + 1,
                 r.y,
-                junie_tui::ui::text::truncate(&head, r.width.saturating_sub(2) as usize),
+                termrock::ui::text::truncate(&head, r.width.saturating_sub(2) as usize),
                 t.primary().bg(t.surface_elevated),
             );
         }
@@ -430,7 +430,7 @@ fn pane(area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, title: &str, lines: &
         buf.set_string(
             inner.x,
             y,
-            junie_tui::ui::text::truncate(line, inner.width as usize),
+            termrock::ui::text::truncate(line, inner.width as usize),
             t.secondary().bg(bg),
         );
     }

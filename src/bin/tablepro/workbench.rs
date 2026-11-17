@@ -2,27 +2,27 @@ use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
 
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::hit::Axis;
-use junie_tui::core::id::{ItemKey, Part, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::core::response::Response;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::{Split, SplitDir};
-use junie_tui::widgets::document_workspace::{
+use std::borrow::Cow;
+use termrock::core::event::{Key, Outcome};
+use termrock::core::hit::Axis;
+use termrock::core::id::{ItemKey, Part, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::core::response::Response;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::{Split, SplitDir};
+use termrock::widgets::document_workspace::{
     CloseDecision, CloseToken, DocumentWorkspace, OpenKind, OperationToken, WorkspaceAction,
     WorkspaceDocument,
 };
-use junie_tui::widgets::empty::EmptyState;
-use junie_tui::widgets::field_common::{PointerField, route_click, route_drag, route_press};
-use junie_tui::widgets::input::{InputAction, TextInput};
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::splitter::Splitter;
-use junie_tui::widgets::tabs::{TabAction, Tabs};
-use junie_tui::widgets::tree::{TreeAction, TreeNode, TreeView};
-use std::borrow::Cow;
+use termrock::widgets::empty::EmptyState;
+use termrock::widgets::field_common::{PointerField, route_click, route_drag, route_press};
+use termrock::widgets::input::{InputAction, TextInput};
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::splitter::Splitter;
+use termrock::widgets::tabs::{TabAction, Tabs};
+use termrock::widgets::tree::{TreeAction, TreeNode, TreeView};
 
 use crate::app::{Cx, TableChange};
 use crate::db::{Catalog, Connection, ObjectKind};
@@ -132,7 +132,7 @@ pub struct Settled {
 pub struct Workbench {
     pub connection: Connection,
     /// The configured connection this session was opened from.
-    pub connection_key: Option<junie_tui::core::id::ItemKey>,
+    pub connection_key: Option<termrock::core::id::ItemKey>,
     pub catalog: Catalog,
     /// The rows of this connection session. Every tab reads and saves through
     /// it, and it ends with the connection.
@@ -142,7 +142,7 @@ pub struct Workbench {
     pub explorer_filter: TextInput,
     pub explorer_visible: bool,
 
-    pub rail: junie_tui::widgets::rail::SidebarRail,
+    pub rail: termrock::widgets::rail::SidebarRail,
 
     pub explorer_split: Split,
     pub explorer_sized: bool,
@@ -169,7 +169,7 @@ pub struct Workbench {
 fn tab_id(role: &str, key: ItemKey) -> WidgetId {
     ID.sub("tab")
         .sub(role)
-        .part(junie_tui::core::id::PartRef::item(Part::ROW, key))
+        .part(termrock::core::id::PartRef::item(Part::ROW, key))
 }
 
 fn kind_glyph(k: ObjectKind) -> &'static str {
@@ -203,7 +203,7 @@ impl Workbench {
                 .placeholder("Filter objects")
                 .plain_label(),
             explorer_visible: true,
-            rail: junie_tui::widgets::rail::SidebarRail::new(EXPLORER_RAIL, "Explorer"),
+            rail: termrock::widgets::rail::SidebarRail::new(EXPLORER_RAIL, "Explorer"),
             explorer_split: Split::new(25, 20, 40),
             explorer_sized: false,
             explorer_seam: Splitter::new(EXPLORER.sub("seam"), SplitDir::Horizontal),
@@ -1103,7 +1103,7 @@ impl Workbench {
                 hint("→", "Expand"),
                 hint("/", "Filter"),
                 hint("Ctrl+O", "Quick open"),
-                junie_tui::widgets::keyhint::CONTEXT_MENU,
+                termrock::widgets::keyhint::CONTEXT_MENU,
             ];
         }
         if focus == Some(self.explorer_filter.id) {
@@ -1117,16 +1117,16 @@ impl Workbench {
             let mut v = vec![hint("←→", "Switch"), hint("Ctrl+T", "New query")];
 
             v.extend(
-                junie_tui::core::keymap::hint_key(
+                termrock::core::keymap::hint_key(
                     &self.strip.keymap,
-                    junie_tui::widgets::tabs::TabCmd::Close,
+                    termrock::widgets::tabs::TabCmd::Close,
                 )
                 .map(|k| hint(k, "Close")),
             );
             v.extend([
                 hint("Ctrl+G", "Tab list"),
                 hint("z", "Zoom"),
-                junie_tui::widgets::keyhint::CONTEXT_MENU,
+                termrock::widgets::keyhint::CONTEXT_MENU,
             ]);
             return v;
         }
@@ -1341,8 +1341,8 @@ impl Workbench {
     }
 
     /// The one handler for a filter chip gesture, from the keyboard or the pointer.
-    fn chip_event(t: &mut TableTab, ev: junie_tui::widgets::chips::ChipAction, cx: &mut Cx) {
-        use junie_tui::widgets::chips::ChipAction;
+    fn chip_event(t: &mut TableTab, ev: termrock::widgets::chips::ChipAction, cx: &mut Cx) {
+        use termrock::widgets::chips::ChipAction;
         match ev {
             ChipAction::Activate(i) => cx.go(crate::app::Act::EditFilter(Some(i))),
             ChipAction::Add => cx.go(crate::app::Act::EditFilter(None)),
@@ -1356,14 +1356,14 @@ impl Workbench {
 
     fn grid_event(
         t: &mut TableTab,
-        ev: junie_tui::widgets::grid::GridAction,
+        ev: termrock::widgets::grid::GridAction,
         cx: &mut Cx,
         cat: &Catalog,
         _conn: &str,
         _db: &str,
         _history: &mut History,
     ) -> Outcome {
-        use junie_tui::widgets::grid::GridAction;
+        use termrock::widgets::grid::GridAction;
         match ev {
             GridAction::SortRequested(s) => {
                 let change = TableChange::sort(t, s);
@@ -1626,7 +1626,7 @@ impl Workbench {
     /// active result), through the mutation gateway.
     pub fn modify_active_grid<R>(
         &mut self,
-        f: impl FnOnce(&mut junie_tui::widgets::grid::DataGrid) -> R,
+        f: impl FnOnce(&mut termrock::widgets::grid::DataGrid) -> R,
     ) -> Option<R> {
         self.modify_active(|tab| match tab {
             WorkTab::Table(t) => Some(f(&mut t.grid)),
@@ -1639,7 +1639,7 @@ impl Workbench {
     pub fn on_header_action(
         &mut self,
         col: usize,
-        action: junie_tui::ui::columns::HeaderAction,
+        action: termrock::ui::columns::HeaderAction,
         cx: &mut Cx,
         history: &mut History,
     ) -> Outcome {
@@ -1649,7 +1649,7 @@ impl Workbench {
     fn header_action(
         &mut self,
         col: usize,
-        action: junie_tui::ui::columns::HeaderAction,
+        action: termrock::ui::columns::HeaderAction,
         cx: &mut Cx,
         history: &mut History,
     ) -> Outcome {
@@ -1883,8 +1883,8 @@ impl Workbench {
         }
     }
 
-    pub fn on_blur(&mut self, ch: junie_tui::core::focus::FocusChange) -> Outcome {
-        use junie_tui::core::focus::forward_blur;
+    pub fn on_blur(&mut self, ch: termrock::core::focus::FocusChange) -> Outcome {
+        use termrock::core::focus::forward_blur;
         let mut out = forward_blur(ch, &mut [&mut self.explorer_filter]);
         for key in self.ws.ordered_keys().to_vec() {
             if !self.ws.get(key).is_some_and(WorkTab::is_editing) {
@@ -1909,7 +1909,7 @@ impl Workbench {
                 Outcome::Ignored if cx.focus.is(t.grid.id) => {
                     let (out, actions) = t.grid.paste_into_cell(text).into_parts();
                     for ev in actions {
-                        if let junie_tui::widgets::grid::GridAction::ReadOnly { reason } = ev {
+                        if let termrock::widgets::grid::GridAction::ReadOnly { reason } = ev {
                             cx.status(reason);
                         }
                     }
@@ -1998,7 +1998,7 @@ impl Workbench {
         let Some(active_key) = self.ws.active_key() else {
             let panel = Panel::framed(None);
             let inner = panel.render(main, buf, t);
-            junie_tui::widgets::empty::render(inner, buf, t, &EmptyState::new("No open tabs").hint("Enter on a table in the explorer opens it · Ctrl+T starts a query · Ctrl+O opens anything"), t.canvas);
+            termrock::widgets::empty::render(inner, buf, t, &EmptyState::new("No open tabs").hint("Enter on a table in the explorer opens it · Ctrl+T starts a query · Ctrl+O opens anything"), t.canvas);
             return;
         };
         let Some(active) = self.ws.get(active_key) else {
@@ -2024,9 +2024,9 @@ impl Workbench {
             WorkTab::Query(q) => q
                 .last_duration
                 .map(|ms| {
-                    junie_tui::ui::text::duration(
+                    termrock::ui::text::duration(
                         std::time::Duration::from_millis(u64::from(ms)),
-                        junie_tui::ui::text::DurationStyle::Compact,
+                        termrock::ui::text::DurationStyle::Compact,
                     )
                 })
                 .unwrap_or_default(),

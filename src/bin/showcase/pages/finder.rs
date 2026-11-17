@@ -25,34 +25,34 @@ use crate::options::{PageValues, page_options};
 use crate::pages::row_menu::{MENU_HINTS, RowMenu};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::edit::TextCmd;
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::id::{ItemKey, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::{Actions, KeyBinding, KeyMap};
-use junie_tui::core::list::{KeyedRowSource, RowSource, SourceStamp};
-use junie_tui::core::response::Response;
-use junie_tui::core::selection::ClickPolicy;
-use junie_tui::theme::{ButtonKind, Tone};
-use junie_tui::ui::context::ContextAnchor;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layer::LayerTag;
-use junie_tui::ui::layout::Split;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::text::fuzzy;
-use junie_tui::widgets::empty::EmptyState;
-use junie_tui::widgets::info_dialog::InfoDialog;
-use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::list_detail::{
+use termrock::core::edit::TextCmd;
+use termrock::core::event::{Key, Outcome};
+use termrock::core::id::{ItemKey, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::keymap::{Actions, KeyBinding, KeyMap};
+use termrock::core::list::{KeyedRowSource, RowSource, SourceStamp};
+use termrock::core::response::Response;
+use termrock::core::selection::ClickPolicy;
+use termrock::theme::{ButtonKind, Tone};
+use termrock::ui::context::ContextAnchor;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layer::LayerTag;
+use termrock::ui::layout::Split;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::text::fuzzy;
+use termrock::widgets::empty::EmptyState;
+use termrock::widgets::info_dialog::InfoDialog;
+use termrock::widgets::input::TextInput;
+use termrock::widgets::list_detail::{
     Action as PreviewAction, Line, ListDetailSource, ListRowRef, SourceFrame,
 };
-use junie_tui::widgets::menu::{ContextMenu, MenuItem};
-use junie_tui::widgets::props::Prop;
-use junie_tui::widgets::search_detail::{
+use termrock::widgets::menu::{ContextMenu, MenuItem};
+use termrock::widgets::props::Prop;
+use termrock::widgets::search_detail::{
     MissingSelection, QueryPasteMode, QueryRequest, ResultRowKind, SearchAction, SearchCmd,
     SearchConfig, SearchDetail, SearchFocusMode, SearchPhase, SearchSource,
 };
-use junie_tui::widgets::table::{Cell, Column, DataTable};
+use termrock::widgets::table::{Cell, Column, DataTable};
 
 const ID: WidgetId = WidgetId::of("finder");
 const QUERY: WidgetId = ID.sub("query");
@@ -792,7 +792,7 @@ impl FinderPage {
         }
     }
 
-    fn pointer(&mut self, ev: &junie_tui::core::pointer::PointerEvent, cx: &mut Cx) -> Outcome {
+    fn pointer(&mut self, ev: &termrock::core::pointer::PointerEvent, cx: &mut Cx) -> Outcome {
         if ev.id == SCOPE_LINK {
             if ev.is(Phase::Click) {
                 self.set_scope((self.scope + 1) % SCOPES.len());
@@ -1062,13 +1062,13 @@ mod tests {
     use super::*;
     use crate::app::App;
     use crate::options::OptSet;
-    use junie_tui::core::event::Input;
-    use junie_tui::motion::Motion;
-    use junie_tui::runtime::Application;
-    use junie_tui::theme::{ColorLevel, Theme};
     use ratatui::Terminal;
     use ratatui::backend::TestBackend;
     use ratatui::crossterm::event::KeyModifiers;
+    use termrock::core::event::Input;
+    use termrock::motion::Motion;
+    use termrock::runtime::Application;
+    use termrock::theme::{ColorLevel, Theme};
 
     struct Run {
         app: App,

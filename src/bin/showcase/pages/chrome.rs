@@ -7,29 +7,29 @@ use crate::pages::row_menu::RowMenu;
 use crate::pages::stress::{self, Mode};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::{Part, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::NavKeys;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::theme::{BadgeKind, StatusKind, Tone};
-use junie_tui::ui::context::ContextRequest;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::measure::{Measure, Tile, Tiled, tiles};
-use junie_tui::ui::popup::Dismiss;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::tooltip::Tip;
-use junie_tui::widgets::brand::Lockup;
-use junie_tui::widgets::hintbar::{HintBar, HintLayer};
-use junie_tui::widgets::keyhint::hint;
-use junie_tui::widgets::list::{ListBox, ListItem, SelectMode};
-use junie_tui::widgets::menu::{ContextMenu, MenuBar, MenuBarAction, MenuItem, OpenOn, Overflow};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::progress::MeterTone;
-use junie_tui::widgets::segments::{self, Segment};
-use junie_tui::widgets::statusbar::{Group, StatusBar, StatusItem};
-use junie_tui::widgets::viewport::{Span, render_spans};
 use ratatui::crossterm::event::KeyCode;
+use termrock::core::event::Outcome;
+use termrock::core::id::{Part, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::keymap::NavKeys;
+use termrock::core::pointer::MouseTarget;
+use termrock::theme::{BadgeKind, StatusKind, Tone};
+use termrock::ui::context::ContextRequest;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::measure::{Measure, Tile, Tiled, tiles};
+use termrock::ui::popup::Dismiss;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::tooltip::Tip;
+use termrock::widgets::brand::Lockup;
+use termrock::widgets::hintbar::{HintBar, HintLayer};
+use termrock::widgets::keyhint::hint;
+use termrock::widgets::list::{ListBox, ListItem, SelectMode};
+use termrock::widgets::menu::{ContextMenu, MenuBar, MenuBarAction, MenuItem, OpenOn, Overflow};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::progress::MeterTone;
+use termrock::widgets::segments::{self, Segment};
+use termrock::widgets::statusbar::{Group, StatusBar, StatusItem};
+use termrock::widgets::viewport::{Span, render_spans};
 
 const ID: WidgetId = WidgetId::of("chrome");
 const BAR: WidgetId = WidgetId::of("chrome.menubar");
@@ -211,7 +211,7 @@ impl ChromePage {
         ]
     }
 
-    fn strip(&self, tick: u64, t: &junie_tui::theme::Theme) -> (Vec<Segment>, Vec<Segment>) {
+    fn strip(&self, tick: u64, t: &termrock::theme::Theme) -> (Vec<Segment>, Vec<Segment>) {
         let g = &t.glyphs;
         let left = vec![
             Segment::new("payments-platform", Tone::Normal)
@@ -423,7 +423,7 @@ impl ChromePage {
             .iter()
             .map(String::as_str)
             .chain(std::iter::once(self.action_line().as_str()))
-            .flat_map(|l| junie_tui::ui::text::wrap(l, w.max(1) as usize))
+            .flat_map(|l| termrock::ui::text::wrap(l, w.max(1) as usize))
             .collect()
     }
 
@@ -444,7 +444,7 @@ impl ChromePage {
     fn natural_width(&self, ctx: &RenderCtx) -> u16 {
         let t = ctx.theme;
         let any = ratatui::layout::Size::new(0, 1);
-        let w = |s: &str| junie_tui::ui::text::width(s) as u16;
+        let w = |s: &str| termrock::ui::text::width(s) as u16;
         let spans: u16 = Self::checks_line().iter().map(|s| w(&s.text)).sum();
 
         let notes = NOTES_MIN.max(spans).max(44);
@@ -482,9 +482,9 @@ impl ChromePage {
 
     fn notes_lines(w: u16) -> Vec<String> {
         let w = w.max(1) as usize;
-        let mut lines = junie_tui::ui::text::wrap(NOTES_TEXT, w);
+        let mut lines = termrock::ui::text::wrap(NOTES_TEXT, w);
         lines.push(String::new());
-        lines.extend(junie_tui::ui::text::wrap(BRAND_NOTE, w));
+        lines.extend(termrock::ui::text::wrap(BRAND_NOTE, w));
         lines
     }
 
@@ -546,7 +546,7 @@ impl ChromePage {
         let sy = notes.y + lines.len() as u16 + 1;
         let max = notes.width;
         render_spans(buf, nx, sy, max, t, &Self::checks_line(), bg);
-        junie_tui::widgets::keyhint::render_status(
+        termrock::widgets::keyhint::render_status(
             Rect::new(nx, sy + 1, max.min(44), 1),
             buf,
             t,
@@ -564,7 +564,7 @@ impl ChromePage {
         buf.set_string(area.x, y, STRIP_CAPTION, t.faint().bg(t.canvas));
         let (left, right) = self.strip(ctx.interaction.tick, t);
         let row = Rect::new(area.x, y + 1, area.width, 1);
-        junie_tui::ui::ctx::fill(buf, row, ratatui::style::Style::new().bg(t.surface));
+        termrock::ui::ctx::fill(buf, row, ratatui::style::Style::new().bg(t.surface));
         segments::render(row, buf, ctx, &left, &right, t.surface);
         y += 3;
 

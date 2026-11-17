@@ -179,7 +179,7 @@ pub(crate) fn record(f: impl FnOnce(&mut Work)) {
 pub(crate) fn uncounted<R>(f: impl FnOnce() -> R) -> R {
     UNCOUNTED.with(|c| c.set(c.get() + 1));
     #[cfg(feature = "work-metrics")]
-    let out = junie_tui::metrics::suspended(f);
+    let out = termrock::metrics::suspended(f);
     #[cfg(not(feature = "work-metrics"))]
     let out = f();
     UNCOUNTED.with(|c| c.set(c.get() - 1));

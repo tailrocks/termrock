@@ -7,21 +7,21 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::{Part, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layer::{Layer, LayerCx};
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::button::{Button, row_layout};
-use junie_tui::widgets::diff::{DiffFile, DiffHunk, DiffLine, DiffMode, DiffStatus, DiffView};
-use junie_tui::widgets::inspect_changes::{
+use termrock::core::event::Outcome;
+use termrock::core::id::{Part, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::pointer::MouseTarget;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layer::{Layer, LayerCx};
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::button::{Button, row_layout};
+use termrock::widgets::diff::{DiffFile, DiffHunk, DiffLine, DiffMode, DiffStatus, DiffView};
+use termrock::widgets::inspect_changes::{
     ChangeSet, ChangeWords, InspectChanges, InspectMode, InspectOutcome,
 };
-use junie_tui::widgets::list::{ListBox, ListItem, SelectMode};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::viewport::ViewportAction;
+use termrock::widgets::list::{ListBox, ListItem, SelectMode};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::viewport::ViewportAction;
 
 const ID: WidgetId = WidgetId::of("diff");
 const INSPECT: WidgetId = ID.sub("inspect");

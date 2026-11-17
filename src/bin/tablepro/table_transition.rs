@@ -4,11 +4,11 @@
 //! replacement has been read and can be installed.
 
 use super::*;
-use junie_tui::widgets::chips::ChipAction;
-use junie_tui::widgets::grid::{CellEditResult, FinishEdit};
+use termrock::widgets::chips::ChipAction;
+use termrock::widgets::grid::{CellEditResult, FinishEdit};
 
 use crate::tabs::{TableTab, TableViewState};
-use junie_tui::widgets::document_workspace::CloseToken;
+use termrock::widgets::document_workspace::CloseToken;
 
 /// Shown when a second change arrives while one waits for its answer.
 pub const PENDING_NOTICE: &str = "Finish the open confirmation first";
@@ -63,14 +63,14 @@ impl TableChange {
         )
     }
 
-    pub fn sort(t: &TableTab, sort: Option<(usize, junie_tui::widgets::table::SortDir)>) -> Self {
+    pub fn sort(t: &TableTab, sort: Option<(usize, termrock::widgets::table::SortDir)>) -> Self {
         let mut next = t.view().clone();
         next.sort = sort;
         let notice = match sort {
             Some((c, d)) => format!(
                 "Sorted by {} {}",
                 t.columns[c].0,
-                if d == junie_tui::widgets::table::SortDir::Asc {
+                if d == termrock::widgets::table::SortDir::Asc {
                     "ascending"
                 } else {
                     "descending"
@@ -300,7 +300,7 @@ impl App {
                 format!("Cannot load the rows: {} · nothing was changed", e.message)
             })?;
             t.install_load(loaded, next).map_err(|e| match e {
-                junie_tui::widgets::grid::GridDataError::Busy => SAVING_NOTICE.to_owned(),
+                termrock::widgets::grid::GridDataError::Busy => SAVING_NOTICE.to_owned(),
                 other => format!("Cannot install the rows: {other} · nothing was changed"),
             })
         });

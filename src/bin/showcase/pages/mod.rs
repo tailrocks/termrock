@@ -1,16 +1,16 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::focus::FocusChange;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layer::{Layer, LayerTag};
-use junie_tui::ui::layers::LayerResult;
-use junie_tui::widgets::dialog::{Dialog, DialogResult};
-use junie_tui::widgets::form_dialog::{FieldValue, FormValues};
-use junie_tui::widgets::help::HelpOverlay;
+use termrock::core::event::{Key, Outcome};
+use termrock::core::focus::FocusChange;
+use termrock::core::id::WidgetId;
+use termrock::core::pointer::PointerEvent;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layer::{Layer, LayerTag};
+use termrock::ui::layers::LayerResult;
+use termrock::widgets::dialog::{Dialog, DialogResult};
+use termrock::widgets::form_dialog::{FieldValue, FormValues};
+use termrock::widgets::help::HelpOverlay;
 
 pub mod accounts_usage;
 pub mod activity;
@@ -160,12 +160,12 @@ impl From<LayerResult> for LayerRes {
 pub enum Go {
     SetOption(crate::options::OptSet),
 
-    Nav(junie_tui::shell::Nav<crate::app::PageId>),
+    Nav(termrock::shell::Nav<crate::app::PageId>),
 }
 
-pub type Request = junie_tui::shell::Request<LayerRes, (), Go>;
+pub type Request = termrock::shell::Request<LayerRes, (), Go>;
 
-pub type Cx<'a> = junie_tui::shell::Cx<'a, LayerRes, (), Go>;
+pub type Cx<'a> = termrock::shell::Cx<'a, LayerRes, (), Go>;
 
 pub const DIALOG_TAG: &str = "dialog";
 
@@ -192,7 +192,7 @@ impl CxExt for Cx<'_> {
         self.go(Go::SetOption(set));
     }
     fn open_page(&mut self, page: crate::app::PageId) {
-        self.go(Go::Nav(junie_tui::shell::Nav::Push(page)));
+        self.go(Go::Nav(termrock::shell::Nav::Push(page)));
     }
 }
 
@@ -214,8 +214,8 @@ pub trait Page {
         false
     }
 
-    fn leave_stakes(&self) -> junie_tui::ui::leave::Stakes {
-        junie_tui::ui::leave::Stakes::Clean
+    fn leave_stakes(&self) -> termrock::ui::leave::Stakes {
+        termrock::ui::leave::Stakes::Clean
     }
 
     fn animating(&self) -> bool {
@@ -239,15 +239,11 @@ pub trait Page {
         Outcome::Ignored
     }
 
-    fn external(&self) -> Option<&junie_tui::runtime::ExternalReceiver> {
+    fn external(&self) -> Option<&termrock::runtime::ExternalReceiver> {
         None
     }
 
-    fn on_external(
-        &mut self,
-        _message: &junie_tui::core::event::External,
-        _cx: &mut Cx,
-    ) -> Outcome {
+    fn on_external(&mut self, _message: &termrock::core::event::External, _cx: &mut Cx) -> Outcome {
         Outcome::Ignored
     }
 
@@ -272,7 +268,7 @@ pub mod layout {
     use ratatui::layout::Rect;
     use ratatui::style::Color;
 
-    use junie_tui::theme::Theme;
+    use termrock::theme::Theme;
 
     pub fn caption(x: u16, y: u16, buf: &mut Buffer, t: &Theme, text: &str, bg: Color) {
         buf.set_string(x, y, text, t.muted().bg(bg));
@@ -295,16 +291,16 @@ pub mod layout {
     }
 
     pub struct Sections {
-        pub id: junie_tui::core::id::WidgetId,
-        pub stack: junie_tui::ui::layout::Stack,
-        pub state: junie_tui::ui::layout::StackScroll,
+        pub id: termrock::core::id::WidgetId,
+        pub stack: termrock::ui::layout::Stack,
+        pub state: termrock::ui::layout::StackScroll,
     }
 
     impl Sections {
-        pub fn new(id: junie_tui::core::id::WidgetId) -> Self {
+        pub fn new(id: termrock::core::id::WidgetId) -> Self {
             Self {
                 id,
-                stack: junie_tui::ui::layout::Stack::default().gap(1),
+                stack: termrock::ui::layout::Stack::default().gap(1),
                 state: Default::default(),
             }
         }
@@ -312,17 +308,17 @@ pub mod layout {
         pub fn layout(
             &mut self,
             area: Rect,
-            sections: &[junie_tui::ui::layout::StackChild],
+            sections: &[termrock::ui::layout::StackChild],
             focus: Option<usize>,
             buf: &mut Buffer,
-            ctx: &mut junie_tui::ui::ctx::RenderCtx,
-        ) -> junie_tui::ui::layout::StackLayout {
+            ctx: &mut termrock::ui::ctx::RenderCtx,
+        ) -> termrock::ui::layout::StackLayout {
             let l = self.stack.layout(area, sections, &mut self.state, focus);
-            junie_tui::ui::layout::Stack::chrome(&l, area, buf, ctx, self.id, &self.state);
+            termrock::ui::layout::Stack::chrome(&l, area, buf, ctx, self.id, &self.state);
             l
         }
 
-        pub fn handle(&mut self, ev: &super::PageEvent) -> Option<junie_tui::core::event::Outcome> {
+        pub fn handle(&mut self, ev: &super::PageEvent) -> Option<termrock::core::event::Outcome> {
             match ev {
                 super::PageEvent::Pointer(p) => self.state.pointer(self.id, p),
                 _ => None,
@@ -331,20 +327,20 @@ pub mod layout {
     }
 
     pub fn sheet_width(
-        panel: &junie_tui::widgets::panel::Panel,
-        facts: &[junie_tui::widgets::props::Prop],
+        panel: &termrock::widgets::panel::Panel,
+        facts: &[termrock::widgets::props::Prop],
     ) -> u16 {
-        let w = junie_tui::widgets::props::width(facts);
+        let w = termrock::widgets::props::width(facts);
         panel.outer(ratatui::layout::Size::new(w, 0)).width
     }
 
     pub fn sheet_height(
-        panel: &junie_tui::widgets::panel::Panel,
-        facts: &[junie_tui::widgets::props::Prop],
+        panel: &termrock::widgets::panel::Panel,
+        facts: &[termrock::widgets::props::Prop],
         w: u16,
     ) -> u16 {
         let inner = panel.inner(ratatui::layout::Size::new(w, 0)).width;
-        let rows = junie_tui::widgets::props::measure(facts, inner);
+        let rows = termrock::widgets::props::measure(facts, inner);
         panel.outer(ratatui::layout::Size::new(inner, rows)).height
     }
 
@@ -370,10 +366,10 @@ pub mod layout {
 
 #[cfg(test)]
 pub fn page_text(page: &mut dyn Page, width: u16, height: u16) -> String {
-    use junie_tui::core::focus::FocusRing;
-    use junie_tui::core::hit::HitRegistry;
-    use junie_tui::theme::{ColorLevel, Theme};
-    use junie_tui::ui::ctx::Interaction;
+    use termrock::core::focus::FocusRing;
+    use termrock::core::hit::HitRegistry;
+    use termrock::theme::{ColorLevel, Theme};
+    use termrock::ui::ctx::Interaction;
 
     let theme = Theme::for_level(ColorLevel::TrueColor);
     let area = Rect::new(0, 0, width, height);

@@ -5,18 +5,18 @@ use ratatui::style::{Color, Modifier, Style};
 use crate::pages::layout::Sections;
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::theme::{
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::theme::{
     BadgeKind, ButtonKind, ColorLevel, CursorStyle, EnvKind, Glyphs, Insets, Kind, Ladder,
     LevelOverrides, Plane, StateModifiers, StatusKind, Strings, SyntaxTone, Theme, Tone,
     contrast_ratio,
 };
-use junie_tui::ui::ctx::{RenderCtx, VisualState, fill};
-use junie_tui::ui::layout::StackChild;
-use junie_tui::ui::specimen::{KindSample, SpecimenState, StateGrid};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::{self, Prop};
+use termrock::ui::ctx::{RenderCtx, VisualState, fill};
+use termrock::ui::layout::StackChild;
+use termrock::ui::specimen::{KindSample, SpecimenState, StateGrid};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::{self, Prop};
 
 const ID: WidgetId = WidgetId::of("overview");
 
@@ -298,12 +298,11 @@ impl Card {
             Card::Ladders => 13,
             Card::Contrast => 12,
             Card::Principles => {
-                let w = width.saturating_sub(2 * junie_tui::widgets::panel::CARD_PAD) as usize;
+                let w = width.saturating_sub(2 * termrock::widgets::panel::CARD_PAD) as usize;
                 PRINCIPLES
                     .iter()
                     .map(|(title, text)| {
-                        junie_tui::ui::text::wrap(&format!("{title}. {text}"), w.max(1)).len()
-                            as u16
+                        termrock::ui::text::wrap(&format!("{title}. {text}"), w.max(1)).len() as u16
                     })
                     .sum()
             }
@@ -323,7 +322,7 @@ fn put(buf: &mut Buffer, area: Rect, row: u16, col: u16, text: &str, style: Styl
         return;
     }
     let room = (area.width - col) as usize;
-    let text = junie_tui::ui::text::truncate(text, room);
+    let text = termrock::ui::text::truncate(text, room);
     buf.set_string(area.x + col, area.y + row, text, style);
 }
 
@@ -400,9 +399,9 @@ fn render_swatches(area: Rect, buf: &mut Buffer, t: &Theme, bg: Color, all: &[(&
         put(buf, area, row, 4, "▏", t.faint().bg(bg));
         put(buf, area, row, 6, name, t.primary().bg(bg));
         let note = swatch_note(*color);
-        let nw = junie_tui::ui::text::width(&note) as u16;
+        let nw = termrock::ui::text::width(&note) as u16;
         let nx = area.width.saturating_sub(nw);
-        if nx > 6 + junie_tui::ui::text::width(name) as u16 {
+        if nx > 6 + termrock::ui::text::width(name) as u16 {
             put(buf, area, row, nx, &note, t.muted().bg(bg));
         }
     }
@@ -526,7 +525,7 @@ fn ratio_label(r: f64) -> String {
 fn render_principles(area: Rect, buf: &mut Buffer, t: &Theme, bg: Color) {
     let mut row = 0;
     for (title, text) in PRINCIPLES {
-        let lines = junie_tui::ui::text::wrap(&format!("{title}. {text}"), area.width as usize);
+        let lines = termrock::ui::text::wrap(&format!("{title}. {text}"), area.width as usize);
         for (k, l) in lines.iter().enumerate() {
             put(buf, area, row, 0, l, t.secondary().bg(bg));
             if k == 0 {
@@ -654,7 +653,7 @@ fn render_spacing(area: Rect, buf: &mut Buffer, t: &Theme, bg: Color) {
         (ButtonKind::Toggle, "Toggle"),
     ] {
         let text = format!(" {label} ");
-        let w = junie_tui::ui::text::width(&text) as u16;
+        let w = termrock::ui::text::width(&text) as u16;
         if x + w > area.width {
             break;
         }
@@ -677,7 +676,7 @@ fn render_glyphs(area: Rect, buf: &mut Buffer, t: &Theme, bg: Color) {
             area,
             row,
             col(k),
-            &junie_tui::ui::text::truncate(text, 17),
+            &termrock::ui::text::truncate(text, 17),
             style,
         );
     };
@@ -864,7 +863,7 @@ fn render_roles(area: Rect, buf: &mut Buffer, t: &Theme) {
             buf.set_string(inner.x, y, label, t.muted().bg(bg));
             let mut x = inner.x + 7;
             for (text, style) in parts {
-                let w = junie_tui::ui::text::width(text) as u16;
+                let w = termrock::ui::text::width(text) as u16;
                 if x + w > inner.right() {
                     break;
                 }

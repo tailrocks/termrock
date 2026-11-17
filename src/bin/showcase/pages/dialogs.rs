@@ -6,24 +6,24 @@ use crate::options::{PageValues, page_options};
 use crate::pages::layout::{sheet_height, sheet_width};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, CxExt, Hint, Page, PageEvent};
-use junie_tui::core::edit::EditEntry;
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::{KeyBinding, NavKeys};
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::theme::StatusKind;
-use junie_tui::ui::ctx::{Backdrop, RenderCtx};
-use junie_tui::ui::popup::{Dismiss, Placement};
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::button::{Button, ButtonRow, RowAlign, RowOverflow, row_layout};
-use junie_tui::widgets::dialog::{
+use termrock::core::edit::EditEntry;
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::keymap::{KeyBinding, NavKeys};
+use termrock::core::pointer::MouseTarget;
+use termrock::theme::StatusKind;
+use termrock::ui::ctx::{Backdrop, RenderCtx};
+use termrock::ui::popup::{Dismiss, Placement};
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::button::{Button, ButtonRow, RowAlign, RowOverflow, row_layout};
+use termrock::widgets::dialog::{
     AckEnter, Dialog, DialogBody, DialogCmd, DialogResult, OUTER_MARGIN,
 };
-use junie_tui::widgets::icon_button::IconButton;
-use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::{self, Prop};
+use termrock::widgets::icon_button::IconButton;
+use termrock::widgets::input::TextInput;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::{self, Prop};
 
 const ID: WidgetId = WidgetId::of("dialogs");
 const CONFIRM: WidgetId = ID.sub("confirm");
@@ -274,7 +274,7 @@ impl DialogsPage {
         }
         if o.value("dialogs.close_button") == "danger" {
             d = d.close_button(
-                IconButton::close(junie_tui::ui::modal::CLOSE)
+                IconButton::close(termrock::ui::modal::CLOSE)
                     .with_glyph("✕")
                     .danger_hover(true),
             );
@@ -370,7 +370,7 @@ impl DialogsPage {
                     buf.set_string(
                         rect.x,
                         y + 1,
-                        junie_tui::ui::text::truncate(VARIANTS[r * per + k].1, rect.width as usize),
+                        termrock::ui::text::truncate(VARIANTS[r * per + k].1, rect.width as usize),
                         t.faint().bg(bg),
                     );
                 }
@@ -390,7 +390,7 @@ impl DialogsPage {
         buf.set_string(
             inner.x,
             inner.y,
-            junie_tui::ui::text::truncate(
+            termrock::ui::text::truncate(
                 &format!("Task: {} · Action(i) or Cancelled", self.task_name),
                 inner.width as usize,
             ),
@@ -404,7 +404,7 @@ impl DialogsPage {
             buf.set_string(
                 inner.x,
                 inner.y + 2 + i as u16,
-                junie_tui::ui::text::truncate(h, inner.width as usize),
+                termrock::ui::text::truncate(h, inner.width as usize),
                 st.bg(bg),
             );
         }
@@ -489,7 +489,7 @@ impl DialogsPage {
                     "{} · typed token: {} · glyph {}",
                     dismiss(d.dismiss),
                     dismiss(gate.dismiss),
-                    d.close_button.glyph(&junie_tui::theme::Theme::junie())
+                    d.close_button.glyph(&termrock::theme::Theme::junie())
                 ),
             ),
             Prop::new("Keys", keys(&d)),

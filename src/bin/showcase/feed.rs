@@ -10,8 +10,8 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 
-use junie_tui::core::event::External;
-use junie_tui::runtime::{ExternalSendError, ExternalSender};
+use termrock::core::event::External;
+use termrock::runtime::{ExternalSendError, ExternalSender};
 
 const RETRY_PAUSE: Duration = Duration::from_millis(2);
 const PAUSE_STEP: Duration = Duration::from_millis(10);
@@ -99,9 +99,9 @@ fn produce(sender: &ExternalSender, burst: usize, pause: Duration, counters: &Co
 #[cfg(test)]
 mod tests {
     use super::*;
-    use junie_tui::runtime::{ExternalPolicy, bounded_external_channel};
     use std::num::NonZeroUsize;
     use std::time::Instant;
+    use termrock::runtime::{ExternalPolicy, bounded_external_channel};
 
     #[test]
     fn a_burst_over_capacity_retries_on_full_and_loses_nothing() {

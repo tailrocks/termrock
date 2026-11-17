@@ -5,25 +5,25 @@ use ratatui::layout::{Position, Rect, Size};
 use crate::pages::layout::{sheet_height, sheet_width};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, LayerRes, Page, PageEvent, Report};
-use junie_tui::core::event::{ClientPlatform, InputConfig, Key, Outcome};
-use junie_tui::core::focus::cancel_focus_request;
-use junie_tui::core::id::{Part, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keyboard::{self, KeyboardProtocol, ProtocolState};
-use junie_tui::core::keymap::{KeyBinding, Nav, NavKeys, select_all_bindings};
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::ui::ctx::{FocusVisible, RenderCtx};
-use junie_tui::ui::layer::{DismissReason, Layer, LayerCx, LayerOut, LayerSpec, LayerTag};
-use junie_tui::ui::measure::{Tile, Tiled, tiles};
-use junie_tui::ui::modal::Frame;
-use junie_tui::ui::popup::{Dismiss, Placement};
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::button::{Button, row_layout};
-use junie_tui::widgets::input::{InputAction, TextInput};
-use junie_tui::widgets::list::{ListBox, ListItem, SelectMode};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::{self, Prop};
-use junie_tui::widgets::tabs::Tabs;
+use termrock::core::event::{ClientPlatform, InputConfig, Key, Outcome};
+use termrock::core::focus::cancel_focus_request;
+use termrock::core::id::{Part, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::keyboard::{self, KeyboardProtocol, ProtocolState};
+use termrock::core::keymap::{KeyBinding, Nav, NavKeys, select_all_bindings};
+use termrock::core::pointer::MouseTarget;
+use termrock::ui::ctx::{FocusVisible, RenderCtx};
+use termrock::ui::layer::{DismissReason, Layer, LayerCx, LayerOut, LayerSpec, LayerTag};
+use termrock::ui::measure::{Tile, Tiled, tiles};
+use termrock::ui::modal::Frame;
+use termrock::ui::popup::{Dismiss, Placement};
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::button::{Button, row_layout};
+use termrock::widgets::input::{InputAction, TextInput};
+use termrock::widgets::list::{ListBox, ListItem, SelectMode};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::{self, Prop};
+use termrock::widgets::tabs::Tabs;
 
 const ID: WidgetId = WidgetId::of("focusnav");
 
@@ -120,7 +120,7 @@ impl Layer<LayerRes> for FocusLayer {
         buf.set_string(
             inner.x,
             inner.y,
-            junie_tui::ui::text::truncate(self.demo.note(), inner.width as usize),
+            termrock::ui::text::truncate(self.demo.note(), inner.width as usize),
             t.muted().bg(bg),
         );
         if self.demo != LayerDemo::Tip && inner.height > 2 {
@@ -144,8 +144,8 @@ impl Layer<LayerRes> for FocusLayer {
         Outcome::Consumed
     }
 
-    fn hints(&self, _: Option<WidgetId>) -> Vec<junie_tui::widgets::keyhint::Hint> {
-        use junie_tui::widgets::keyhint::hint;
+    fn hints(&self, _: Option<WidgetId>) -> Vec<termrock::widgets::keyhint::Hint> {
+        use termrock::widgets::keyhint::hint;
         match self.demo {
             LayerDemo::Tip => vec![hint("Esc", "Close")],
             _ => vec![hint("Enter", "Focus Cancel"), hint("Esc", "Close")],
@@ -555,7 +555,7 @@ impl FocusNavPage {
             buf.set_string(
                 inner.x,
                 inner.y + 2,
-                junie_tui::ui::text::truncate(LAYER_NOTE, inner.width as usize),
+                termrock::ui::text::truncate(LAYER_NOTE, inner.width as usize),
                 t.muted().bg(bg),
             );
         }

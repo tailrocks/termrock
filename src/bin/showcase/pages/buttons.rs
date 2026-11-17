@@ -7,21 +7,21 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::theme::Tone;
-use junie_tui::ui::ctx::{FocusVisible, RenderCtx};
-use junie_tui::ui::layout::StackChild;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::tooltip::Tip;
-use junie_tui::widgets::action_row::ActionRow;
-use junie_tui::widgets::button::{
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::MouseTarget;
+use termrock::theme::Tone;
+use termrock::ui::ctx::{FocusVisible, RenderCtx};
+use termrock::ui::layout::StackChild;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::tooltip::Tip;
+use termrock::widgets::action_row::ActionRow;
+use termrock::widgets::button::{
     Button, ButtonRow, RowAlign, RowLayout, RowOverflow, row_layout, row_lines,
 };
-use junie_tui::widgets::icon_button::IconButton;
-use junie_tui::widgets::panel::Panel;
+use termrock::widgets::icon_button::IconButton;
+use termrock::widgets::panel::Panel;
 
 const ID: WidgetId = WidgetId::of("buttons");
 const LONG_JOB_TICKS: u8 = 28;
@@ -223,8 +223,8 @@ impl ButtonsPage {
         row
     }
 
-    fn natural_width(&self, t: &junie_tui::theme::Theme) -> u16 {
-        let w = |s: &str| junie_tui::ui::text::width(s) as u16;
+    fn natural_width(&self, t: &termrock::theme::Theme) -> u16 {
+        let w = |s: &str| termrock::ui::text::width(s) as u16;
         let row = |idx: &[usize]| {
             idx.iter()
                 .map(|&i| self.buttons[i].width() + 2)
@@ -267,7 +267,7 @@ impl ButtonsPage {
         .unwrap_or(0)
     }
 
-    fn heights(&self, width: u16, t: &junie_tui::theme::Theme) -> [u16; 4] {
+    fn heights(&self, width: u16, t: &termrock::theme::Theme) -> [u16; 4] {
         let room = width.saturating_sub(4);
         let row_lines = self.button_row().rows(self.row_width(room), &self.row, t);
         [15, 5 + self.tool_lines(room), row_lines + 7, 6]
@@ -380,7 +380,7 @@ impl ButtonsPage {
             buf.set_string(
                 inner.x,
                 note_y,
-                junie_tui::ui::text::truncate(TOOL_NOTE, inner.width as usize),
+                termrock::ui::text::truncate(TOOL_NOTE, inner.width as usize),
                 t.faint().bg(bg),
             );
         }
@@ -426,7 +426,7 @@ impl ButtonsPage {
             buf.set_string(
                 inner.x,
                 y,
-                junie_tui::ui::text::truncate(&readout, inner.width as usize),
+                termrock::ui::text::truncate(&readout, inner.width as usize),
                 t.muted().bg(bg),
             );
         }
@@ -458,7 +458,7 @@ impl ButtonsPage {
                 break;
             }
             buf.set_string(x, inner.y, cap, t.muted().bg(bg));
-            let cw = junie_tui::ui::text::width(cap) as u16;
+            let cw = termrock::ui::text::width(cap) as u16;
             b.render(x + cw + 1, inner.y, buf, ctx, host, None);
             x += cw + 1 + b.width(t) + 4;
         }
@@ -466,7 +466,7 @@ impl ButtonsPage {
             buf.set_string(
                 inner.x,
                 inner.y + 2,
-                junie_tui::ui::text::truncate(ICON_NOTE, inner.width as usize),
+                termrock::ui::text::truncate(ICON_NOTE, inner.width as usize),
                 t.faint().bg(bg),
             );
         }

@@ -5,21 +5,21 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::{Part, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::{Actions, KeyBinding, NavKeys};
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::core::scroll::{HScroll, TrackClick};
-use junie_tui::theme::Tone;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::{Split, SplitDir};
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::button::{Button, row_layout};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::splitter::Splitter;
-use junie_tui::widgets::steps::{Step, StepRail, StepState};
-use junie_tui::widgets::viewport::{Mark, Span, TextViewport, ViewportAction, ViewportCmd};
+use termrock::core::event::Outcome;
+use termrock::core::id::{Part, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::keymap::{Actions, KeyBinding, NavKeys};
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::core::scroll::{HScroll, TrackClick};
+use termrock::theme::Tone;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::{Split, SplitDir};
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::button::{Button, row_layout};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::splitter::Splitter;
+use termrock::widgets::steps::{Step, StepRail, StepState};
+use termrock::widgets::viewport::{Mark, Span, TextViewport, ViewportAction, ViewportCmd};
 
 const ID: WidgetId = WidgetId::of("terminal");
 const SEAM: WidgetId = WidgetId::of("terminal.seam");
@@ -374,7 +374,7 @@ impl TerminalPage {
         self.rail.render(rail_area, buf, ctx, bg);
 
         let widths = [self.run.width(), self.fail.width()];
-        let lines = junie_tui::widgets::button::row_lines(inner.width, &widths, 2);
+        let lines = termrock::widgets::button::row_lines(inner.width, &widths, 2);
         let rects = row_layout(
             Rect::new(
                 inner.x,
@@ -394,7 +394,7 @@ impl TerminalPage {
             buf.set_string(
                 inner.x,
                 y,
-                junie_tui::ui::text::truncate(
+                termrock::ui::text::truncate(
                     &format!(
                         "viewport work: {} lines segmented · {} reflowed · {} draw copies",
                         work.segmented_lines, work.reflowed_lines, work.draw_fallbacks
@@ -409,7 +409,7 @@ impl TerminalPage {
             buf.set_string(
                 inner.x,
                 y,
-                junie_tui::ui::text::truncate(&format!("copied: {c}"), inner.width as usize),
+                termrock::ui::text::truncate(&format!("copied: {c}"), inner.width as usize),
                 t.muted().bg(bg),
             );
         }

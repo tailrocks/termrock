@@ -5,15 +5,15 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::StackChild;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::progress::{
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::pointer::MouseTarget;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::StackChild;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::button::Button;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::progress::{
     BarLayout, Meter, MeterLevel, MeterTone, MeterVisual, ProgressBar, ProgressStatus, StaleStyle,
     Tally, render_spinner,
 };
@@ -144,7 +144,7 @@ impl ProgressPage {
             "Waiting for the test runner",
             bg,
         );
-        let rects = junie_tui::widgets::button::row_layout(
+        let rects = termrock::widgets::button::row_layout(
             Rect::new(inner.x, inner.y + 6, inner.width, 1),
             &[self.restart.width(), self.pause.width()],
             2,
@@ -184,7 +184,7 @@ impl ProgressPage {
             buf.set_string(
                 inner.x,
                 inner.y + i as u16,
-                junie_tui::ui::text::truncate(note, inner.width as usize),
+                termrock::ui::text::truncate(note, inner.width as usize),
                 t.muted().bg(bg),
             );
         }
@@ -307,7 +307,7 @@ impl Page for ProgressPage {
     fn measure(&self, _avail: Size, _ctx: &RenderCtx) -> Size {
         let note = METERS_NOTE
             .iter()
-            .map(|n| junie_tui::ui::text::width(n) as u16)
+            .map(|n| termrock::ui::text::width(n) as u16)
             .max()
             .unwrap_or(0);
         let width = [

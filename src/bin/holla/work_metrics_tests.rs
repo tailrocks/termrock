@@ -5,15 +5,15 @@
 //! test thread only. Every number below was measured with
 //!
 //! ```text
-//! cargo nextest run -p junie-tui --features work-metrics --bin holla \
+//! cargo nextest run -p termrock-holla --features work-metrics --bin holla \
 //!     --no-tests fail -E 'test(/^work_metrics_tests::/)'
 //! ```
 
-use junie_tui::metrics::harness::{Harness, assert_exact};
-use junie_tui::metrics::{Metric, WorkDelta, measure};
-use junie_tui::motion::Motion;
-use junie_tui::theme::Theme;
 use ratatui::crossterm::event::KeyCode;
+use termrock::metrics::harness::{Harness, assert_exact};
+use termrock::metrics::{Metric, WorkDelta, measure};
+use termrock::motion::Motion;
+use termrock::theme::Theme;
 
 use crate::app::App;
 use crate::scenario::Scenario;

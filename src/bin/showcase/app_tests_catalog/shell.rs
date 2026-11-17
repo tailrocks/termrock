@@ -9,44 +9,6 @@ use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use junie_tui::clock::{Moment, TestRequest};
-use junie_tui::core::event::{Input, Key, Mouse, MouseKind, Outcome};
-use junie_tui::core::focus::{Focus, FocusChange, FocusRing};
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::keymap::KeyBinding;
-use junie_tui::core::pointer::{PointerHost, PointerParts, PointerRouter};
-use junie_tui::core::refusal::Reason;
-use junie_tui::core::response::Response;
-use junie_tui::motion::Motion;
-use junie_tui::runtime::{
-    Application, Coalesce, DRAIN_BUDGET, ExternalReceiver, ExternalSender, FocusClickGuard,
-    InputPump, SizeWatch, drain_ready_inputs, external_channel,
-};
-use junie_tui::shell::clipboard::{self, Clipboard, Copied, NativeClipboard};
-use junie_tui::shell::reach::{self, Case, Harness, Reveal, SIZES, Words};
-use junie_tui::shell::{
-    App, Chrome, Cx, Footer, FooterStatus, JobKey, KeyHost, KeyRouter, LayerTag, Menus, Nav,
-    PageKey, Regions, Request, Router, Shell, ShellAction, ShellKeys, StatusLine, StopHandle,
-    background, blur_fan_out, deliverable, handle, render,
-};
-use junie_tui::shell::{
-    Page, PageCx, PageTypes, open_context, rebuild_on_tick, replay_key, row_anchor, row_choice,
-};
-use junie_tui::theme::{ColorLevel, HintAlign, StatusKind, Strings, Theme, Tone};
-use junie_tui::ui::context::ContextAnchor;
-use junie_tui::ui::context::{ContextConfig, ContextKeys};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layer::Layer;
-use junie_tui::ui::layers::LayerResult;
-use junie_tui::ui::leave::QuitKeys;
-use junie_tui::ui::leave::{LeaveGuard, Stakes};
-use junie_tui::ui::popup::Dismiss;
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::dialog::Dialog;
-use junie_tui::widgets::hintbar::HintBar;
-use junie_tui::widgets::keyhint::Hint;
-use junie_tui::widgets::menu::{MenuBarAction, MenuItem};
-use junie_tui::widgets::too_small::TooSmall;
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 use ratatui::buffer::Buffer;
@@ -55,6 +17,44 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Position;
 use ratatui::layout::Rect;
 use ratatui::style::Style;
+use termrock::clock::{Moment, TestRequest};
+use termrock::core::event::{Input, Key, Mouse, MouseKind, Outcome};
+use termrock::core::focus::{Focus, FocusChange, FocusRing};
+use termrock::core::id::WidgetId;
+use termrock::core::keymap::KeyBinding;
+use termrock::core::pointer::{PointerHost, PointerParts, PointerRouter};
+use termrock::core::refusal::Reason;
+use termrock::core::response::Response;
+use termrock::motion::Motion;
+use termrock::runtime::{
+    Application, Coalesce, DRAIN_BUDGET, ExternalReceiver, ExternalSender, FocusClickGuard,
+    InputPump, SizeWatch, drain_ready_inputs, external_channel,
+};
+use termrock::shell::clipboard::{self, Clipboard, Copied, NativeClipboard};
+use termrock::shell::reach::{self, Case, Harness, Reveal, SIZES, Words};
+use termrock::shell::{
+    App, Chrome, Cx, Footer, FooterStatus, JobKey, KeyHost, KeyRouter, LayerTag, Menus, Nav,
+    PageKey, Regions, Request, Router, Shell, ShellAction, ShellKeys, StatusLine, StopHandle,
+    background, blur_fan_out, deliverable, handle, render,
+};
+use termrock::shell::{
+    Page, PageCx, PageTypes, open_context, rebuild_on_tick, replay_key, row_anchor, row_choice,
+};
+use termrock::theme::{ColorLevel, HintAlign, StatusKind, Strings, Theme, Tone};
+use termrock::ui::context::ContextAnchor;
+use termrock::ui::context::{ContextConfig, ContextKeys};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layer::Layer;
+use termrock::ui::layers::LayerResult;
+use termrock::ui::leave::QuitKeys;
+use termrock::ui::leave::{LeaveGuard, Stakes};
+use termrock::ui::popup::Dismiss;
+use termrock::widgets::button::Button;
+use termrock::widgets::dialog::Dialog;
+use termrock::widgets::hintbar::HintBar;
+use termrock::widgets::keyhint::Hint;
+use termrock::widgets::menu::{MenuBarAction, MenuItem};
+use termrock::widgets::too_small::TooSmall;
 
 use super::{ScenarioCase, ScenarioId, paint, text_of};
 
@@ -623,18 +623,18 @@ fn shell_footer_hints() {
     let composed = dirty.compose(None);
     assert_eq!(
         composed[0].priority,
-        junie_tui::widgets::keyhint::HintPriority::Pinned
+        termrock::widgets::keyhint::HintPriority::Pinned
     );
     assert_ne!(
         composed[1].priority,
-        junie_tui::widgets::keyhint::HintPriority::Pinned
+        termrock::widgets::keyhint::HintPriority::Pinned
     );
     let failing = dirty.clone().status(Some(("Save failed", Tone::Error)));
     assert!(
         failing
             .compose(None)
             .iter()
-            .all(|h| h.priority == junie_tui::widgets::keyhint::HintPriority::Normal)
+            .all(|h| h.priority == termrock::widgets::keyhint::HintPriority::Normal)
     );
 
     // The three ways to set a status, and which of them is an error.
@@ -922,7 +922,7 @@ impl PointerHost for Host {
         self.now
     }
 
-    fn deliver(&mut self, _ev: &junie_tui::core::pointer::PointerEvent) -> Response<()> {
+    fn deliver(&mut self, _ev: &termrock::core::pointer::PointerEvent) -> Response<()> {
         Response::default()
     }
 }
@@ -1283,9 +1283,9 @@ fn shell_host_loop() {
         .copied()
         .expect("the footer registered its hints");
     let at = Position::new(hint_hit.area.x, hint_hit.area.y);
-    let click = junie_tui::core::pointer::PointerEvent::new(
+    let click = termrock::core::pointer::PointerEvent::new(
         &host.shell.hits,
-        junie_tui::core::intent::Phase::Click,
+        termrock::core::intent::Phase::Click,
         hint_hit.id,
         at,
         1,
@@ -1310,9 +1310,9 @@ fn shell_host_loop() {
         .find(|r| r.owner == HintBar::ID)
         .copied()
         .expect("the told footer registered its hint");
-    let click = junie_tui::core::pointer::PointerEvent::new(
+    let click = termrock::core::pointer::PointerEvent::new(
         &host.shell.hits,
-        junie_tui::core::intent::Phase::Click,
+        termrock::core::intent::Phase::Click,
         direct.id,
         Position::new(direct.area.x, direct.area.y),
         1,
@@ -1426,7 +1426,7 @@ fn shell_host_loop() {
         Outcome::Ignored
     );
     assert!(
-        junie_tui::shell::clipboard::take_output().contains(&TestRequest::FENCE_ACK.to_owned()),
+        termrock::shell::clipboard::take_output().contains(&TestRequest::FENCE_ACK.to_owned()),
         "a fence is acknowledged"
     );
     host.shell.test_requests = false;
@@ -1442,7 +1442,7 @@ fn shell_host_loop() {
     // A requests batch from a page: shown pages keep everything, others only status.
     let (out, all) = host
         .shell
-        .deliver::<junie_tui::ui::layers::LayerResult, (), ()>(true, |cx| {
+        .deliver::<termrock::ui::layers::LayerResult, (), ()>(true, |cx| {
             cx.status("Saved");
             cx.help();
             Outcome::Changed
@@ -1450,18 +1450,16 @@ fn shell_host_loop() {
     assert_eq!((out, all.len()), (Outcome::Changed, 2));
     let (_, hidden) = host
         .shell
-        .deliver::<junie_tui::ui::layers::LayerResult, (), ()>(false, |cx| {
+        .deliver::<termrock::ui::layers::LayerResult, (), ()>(false, |cx| {
             cx.status("Saved");
             cx.help();
             Outcome::Changed
         });
     assert_eq!(hidden.len(), 1);
-    host.shell.context = junie_tui::ui::context::ContextConfig::DEFAULT
-        .keys(junie_tui::ui::context::ContextKeys::NONE);
-    let cx = host
-        .shell
-        .cx::<junie_tui::ui::layers::LayerResult, (), ()>();
-    assert_eq!(cx.context.keys, junie_tui::ui::context::ContextKeys::NONE);
+    host.shell.context = termrock::ui::context::ContextConfig::DEFAULT
+        .keys(termrock::ui::context::ContextKeys::NONE);
+    let cx = host.shell.cx::<termrock::ui::layers::LayerResult, (), ()>();
+    assert_eq!(cx.context.keys, termrock::ui::context::ContextKeys::NONE);
 
     // The runtime's view of the same app.
     assert!(!Application::should_quit(&host));
@@ -1471,15 +1469,15 @@ fn shell_host_loop() {
     );
     assert_eq!(
         Application::coalesce(&host),
-        junie_tui::runtime::Coalesce::default()
+        termrock::runtime::Coalesce::default()
     );
     assert_eq!(
         Application::input_config(&host),
-        junie_tui::core::event::InputConfig::default()
+        termrock::core::event::InputConfig::default()
     );
     assert_eq!(
         Application::raw_input_policy(&host),
-        junie_tui::runtime::RawInputPolicy::default()
+        termrock::runtime::RawInputPolicy::default()
     );
     assert!(Application::external(&host).is_none());
     let _ = Application::shapes(&host);
@@ -1499,8 +1497,7 @@ fn shell_host_loop() {
     );
 
     let mut clean = Host::new(ShellKeys::new());
-    let mut guard =
-        junie_tui::ui::leave::LeaveGuard::<()>::new(WidgetId::of("scenario.host.leave"));
+    let mut guard = termrock::ui::leave::LeaveGuard::<()>::new(WidgetId::of("scenario.host.leave"));
     let strings = Strings::default();
     let asked = clean
         .shell
@@ -1778,13 +1775,13 @@ fn shell_clipboard_copy() {
     // The hook: a widget that copies through the core clipboard reaches the
     // shell's clipboard until the guard drops.
     let hook: clipboard::ClipboardHook = plain_copy.install();
-    junie_tui::core::edit::clipboard::copy("from a widget");
+    termrock::core::edit::clipboard::copy("from a widget");
     assert_eq!(
         clipboard::take_output(),
         [clipboard::osc52("from a widget")]
     );
     drop(hook);
-    junie_tui::core::edit::clipboard::copy("after the guard");
+    termrock::core::edit::clipboard::copy("after the guard");
     assert!(
         clipboard::take_output().is_empty(),
         "a dropped hook delivers nothing"
@@ -2180,7 +2177,7 @@ fn reach_cases() -> [Case<Rig>; 2] {
 mod reach_macro {
     use super::*;
 
-    junie_tui::reach_tests!("scenario", Rig, reach_cases();
+    termrock::reach_tests!("scenario", Rig, reach_cases();
         calm = "calm",
         layered = "layered",
     );
@@ -2286,7 +2283,7 @@ fn catalog_shell_reach_probe() {
 
     // Text a widget could not fit counts as reached once it is revealable.
     let _ = paint(Rect::new(0, 0, 20, 2), |_, _, ctx| {
-        junie_tui::ui::reveal::truncated(
+        termrock::ui::reveal::truncated(
             ctx,
             None,
             WidgetId::of("scenario.reach.cell"),
@@ -2305,7 +2302,7 @@ fn catalog_shell_reach_probe() {
 
 #[test]
 fn catalog_shell_clock_moments_and_wall_clock() {
-    use junie_tui::clock::{Clock, WallClock, step_wall};
+    use termrock::clock::{Clock, WallClock, step_wall};
     assert_eq!(Moment::ZERO.as_millis(), 0);
     let t = Moment::from_millis(1_500);
     assert_eq!(t.as_millis(), 1_500);
@@ -2390,7 +2387,7 @@ fn catalog_shell_clock_moments_and_wall_clock() {
 
 #[test]
 fn catalog_shell_sim_clock_and_stepping() {
-    use junie_tui::clock::{Clock, SimClock, run_step};
+    use termrock::clock::{Clock, SimClock, run_step};
     // 2023-11-14 22:13:20 UTC, a Tuesday.
     let epoch = 1_700_000_000;
     let mut sim = SimClock::new(epoch, 0);
@@ -2542,8 +2539,8 @@ fn catalog_shell_motion_resolution() {
 #[test]
 fn catalog_shell_cli_arguments() {
     use clap::{Parser, ValueEnum};
-    use junie_tui::cli::{ColorArg, CommonArgs, GlyphsArg, motion_help};
-    use junie_tui::theme::{Charset, ColorLevel};
+    use termrock::cli::{ColorArg, CommonArgs, GlyphsArg, motion_help};
+    use termrock::theme::{Charset, ColorLevel};
 
     // Each value and its aliases, and what it turns into.
     for (name, arg, level) in [
@@ -2616,14 +2613,14 @@ fn catalog_shell_cli_arguments() {
         #[command(flatten)]
         common: CommonArgs,
     }
-    let parsed: Lenient = junie_tui::cli::parse("After help text".to_owned());
+    let parsed: Lenient = termrock::cli::parse("After help text".to_owned());
     assert_eq!(parsed.common, CommonArgs::default());
 }
 
 #[test]
 fn catalog_shell_docs_pages() {
-    use junie_tui::core::list::NavProfile;
-    use junie_tui::docs::{
+    use termrock::core::list::NavProfile;
+    use termrock::docs::{
         Documented, Knob, KnobLayer, MouseRow, StateHints, WidgetDoc, documented, files, index,
         page, widget,
     };
@@ -2773,7 +2770,7 @@ fn catalog_shell_docs_pages() {
 
 #[test]
 fn catalog_shell_capability_table() {
-    use junie_tui::catalog::{CAPABILITIES, CapKind, Capability, MEMBERS, find};
+    use termrock::catalog::{CAPABILITIES, CapKind, Capability, MEMBERS, find};
 
     for (kind, name) in [
         (CapKind::Type, "type"),
@@ -2903,8 +2900,8 @@ fn assert_child_done(name: &str, output: &std::process::Output) {
 #[cfg(unix)]
 #[test]
 fn catalog_shell_job_control_cycle() {
-    use junie_tui::runtime::job_control::{self, JobControlGuard};
     use std::os::unix::process::CommandExt;
+    use termrock::runtime::job_control::{self, JobControlGuard};
     const NAME: &str = "catalog_shell_job_control_cycle";
 
     if is_child(NAME) {
@@ -2957,9 +2954,9 @@ fn catalog_shell_job_control_cycle() {
 #[cfg(unix)]
 #[test]
 fn catalog_shell_terminal_session_without_a_terminal() {
-    use junie_tui::core::keyboard::KeyboardProtocol;
-    use junie_tui::runtime::{self, TerminalSession, drain_pending_input, set_focus_click_guard};
     use std::os::unix::process::CommandExt;
+    use termrock::core::keyboard::KeyboardProtocol;
+    use termrock::runtime::{self, TerminalSession, drain_pending_input, set_focus_click_guard};
     const NAME: &str = "catalog_shell_terminal_session_without_a_terminal";
 
     struct Idle;
@@ -2994,7 +2991,7 @@ fn catalog_shell_terminal_session_without_a_terminal() {
         );
         set_focus_click_guard(Duration::from_millis(50));
         assert!(runtime::run(&mut Idle).is_err());
-        assert!(junie_tui::shell::run(&mut Idle).is_err());
+        assert!(termrock::shell::run(&mut Idle).is_err());
         println!("{CHILD_DONE}");
         return;
     }

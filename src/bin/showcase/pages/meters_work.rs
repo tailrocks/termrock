@@ -8,9 +8,9 @@
 //! snapshots), next to the live parts that do (this frame's own work and the
 //! `record_work!` probe).
 
-use junie_tui::metrics::{ENABLED, METRIC_COUNT, Metric, WorkDelta, WorkSnapshot};
-use junie_tui::theme::Tone;
-use junie_tui::widgets::props::Prop;
+use termrock::metrics::{ENABLED, METRIC_COUNT, Metric, WorkDelta, WorkSnapshot};
+use termrock::theme::Tone;
+use termrock::widgets::props::Prop;
 
 /// Rows the card paints; a card is always this tall.
 pub const ROWS: u16 = 12;
@@ -25,7 +25,7 @@ impl Frame {
     pub fn begin() -> Self {
         Self {
             #[cfg(feature = "work-metrics")]
-            start: junie_tui::metrics::snapshot(),
+            start: termrock::metrics::snapshot(),
         }
     }
 
@@ -33,7 +33,7 @@ impl Frame {
     pub fn delta(&self) -> Option<WorkDelta> {
         #[cfg(feature = "work-metrics")]
         {
-            junie_tui::metrics::snapshot().delta(self.start).ok()
+            termrock::metrics::snapshot().delta(self.start).ok()
         }
         #[cfg(not(feature = "work-metrics"))]
         {
@@ -43,7 +43,7 @@ impl Frame {
 }
 
 fn probe_site() {
-    junie_tui::record_work!(SegmentedLines, 3usize);
+    termrock::record_work!(SegmentedLines, 3usize);
 }
 
 /// Runs one `record_work!` site and returns what it counted, or `None` when
@@ -51,7 +51,7 @@ fn probe_site() {
 pub fn probe() -> Option<u64> {
     #[cfg(feature = "work-metrics")]
     {
-        let ((), delta) = junie_tui::metrics::measure(probe_site);
+        let ((), delta) = termrock::metrics::measure(probe_site);
         Some(delta.get(Metric::SegmentedLines))
     }
     #[cfg(not(feature = "work-metrics"))]

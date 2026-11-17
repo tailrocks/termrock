@@ -6,20 +6,20 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, CxExt, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::theme::Tone;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::StackChild;
-use junie_tui::ui::measure::Measure;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::button::{Button, ButtonRow, RowOverflow};
-use junie_tui::widgets::meter_list::{MeterList, MeterRow};
-use junie_tui::widgets::notice::Notice;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::progress::{Meter, MeterTone, MeterVisual};
-use junie_tui::widgets::props::{self, Prop, PropsAction, PropsList};
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::pointer::MouseTarget;
+use termrock::theme::Tone;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::StackChild;
+use termrock::ui::measure::Measure;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::button::{Button, ButtonRow, RowOverflow};
+use termrock::widgets::meter_list::{MeterList, MeterRow};
+use termrock::widgets::notice::Notice;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::progress::{Meter, MeterTone, MeterVisual};
+use termrock::widgets::props::{self, Prop, PropsAction, PropsList};
 
 const ID: WidgetId = WidgetId::of("readonlyreport");
 const FACTS: WidgetId = ID.sub("facts");
@@ -252,7 +252,7 @@ impl ReadOnlyReportPage {
         }
     }
 
-    fn children(&self, width: u16, t: &junie_tui::theme::Theme) -> Vec<StackChild> {
+    fn children(&self, width: u16, t: &termrock::theme::Theme) -> Vec<StackChild> {
         let notices = self.notices();
         let inner_w = width.saturating_sub(4);
         let notice_h: u16 = notices
@@ -455,7 +455,7 @@ impl Page for ReadOnlyReportPage {
                     }
                 }
                 if let Some(r) = self.facts.route(ev) {
-                    if ev.is(junie_tui::core::intent::Phase::Click) {
+                    if ev.is(termrock::core::intent::Phase::Click) {
                         cx.focus.focus(FACTS);
                     }
                     let (o, actions) = r.into_parts();

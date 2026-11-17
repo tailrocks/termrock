@@ -1,37 +1,37 @@
 use crate::screens::Holla;
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::hit::Axis;
-use junie_tui::core::id::{ItemKey, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::core::scroll::ScrollState;
-use junie_tui::core::selection::ClickPolicy;
-use junie_tui::shell::Page as ShellPage;
-use junie_tui::theme::Tone;
-use junie_tui::ui::ctx::{RenderCtx, fill, legible_on_fill};
-use junie_tui::ui::master_detail::MasterDetail;
-use junie_tui::ui::text::{fit, fit_right, truncate, truncate_middle, width};
-use junie_tui::widgets::empty::{self, EmptyState};
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::menu::{ContextMenu, MenuItem, Placement};
-use junie_tui::widgets::option_list::Item;
-use junie_tui::widgets::page_header::Heading;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::picker::{Picker, PickerStatus};
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::statusbar::StatusItem;
-use junie_tui::widgets::viewport::{Mark, Span, TextViewport, ViewportAction};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::hit::Axis;
+use termrock::core::id::{ItemKey, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::core::scroll::ScrollState;
+use termrock::core::selection::ClickPolicy;
+use termrock::shell::Page as ShellPage;
+use termrock::theme::Tone;
+use termrock::ui::ctx::{RenderCtx, fill, legible_on_fill};
+use termrock::ui::master_detail::MasterDetail;
+use termrock::ui::text::{fit, fit_right, truncate, truncate_middle, width};
+use termrock::widgets::empty::{self, EmptyState};
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::menu::{ContextMenu, MenuItem, Placement};
+use termrock::widgets::option_list::Item;
+use termrock::widgets::page_header::Heading;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::picker::{Picker, PickerStatus};
+use termrock::widgets::scrollbar;
+use termrock::widgets::statusbar::StatusItem;
+use termrock::widgets::viewport::{Mark, Span, TextViewport, ViewportAction};
 
 use crate::domain::exec::Command;
 use crate::screens::{Cx, Go, ModalResult, Screen, StatusBits, scroll_drag, scroll_press};
 use crate::sim::fs::{FindHit, Fs, NodeKind, Preview};
 use crate::sim::world::{SourceState, World};
-use junie_tui::ui::layer::LayerTag;
-use junie_tui::ui::text::plural;
+use termrock::ui::layer::LayerTag;
+use termrock::ui::text::plural;
 
 pub const LIST: WidgetId = WidgetId::of("files.list");
 pub const PREVIEW: WidgetId = WidgetId::of("files.preview");
@@ -348,8 +348,8 @@ impl FilesPage {
                     }
                     m.push(format!(
                         "{} of {}",
-                        junie_tui::ui::text::bytes(bytes_shown as u64),
-                        junie_tui::ui::text::bytes(total_bytes)
+                        termrock::ui::text::bytes(bytes_shown as u64),
+                        termrock::ui::text::bytes(total_bytes)
                     ));
                     (crate::sim::fs::sanitize(&short), m.join(" · "), lines, None)
                 }
@@ -396,7 +396,7 @@ impl FilesPage {
             return;
         }
         for (i, l) in self.preview_lines.iter().enumerate() {
-            for r in junie_tui::ui::text::find_ranges(l, &q, false) {
+            for r in termrock::ui::text::find_ranges(l, &q, false) {
                 self.find_matches.push((i, r));
             }
         }
@@ -759,7 +759,7 @@ impl FilesPage {
                         &if e.is_dir {
                             "–".to_owned()
                         } else {
-                            junie_tui::ui::text::bytes(e.size)
+                            termrock::ui::text::bytes(e.size)
                         },
                         9,
                     ),
@@ -785,7 +785,7 @@ impl FilesPage {
                 buf.set_string(
                     x,
                     y,
-                    junie_tui::ui::reveal::cut(Rect::new(x, y, (avail) as u16, 1), &tail),
+                    termrock::ui::reveal::cut(Rect::new(x, y, (avail) as u16, 1), &tail),
                     plain.fg(if e.error.is_some() {
                         t.error
                     } else {
@@ -995,7 +995,7 @@ impl FilesPage {
                 buf.set_string(
                     inner.x,
                     inner.y + i as u16,
-                    junie_tui::ui::reveal::cut(
+                    termrock::ui::reveal::cut(
                         Rect::new(inner.x, inner.y + i as u16, inner.width, 1),
                         l,
                     ),
@@ -1561,7 +1561,7 @@ impl ShellPage<Holla> for FilesPage {
                 buf.set_string(
                     area.x + 1,
                     area.y,
-                    junie_tui::ui::reveal::cut(
+                    termrock::ui::reveal::cut(
                         Rect::new(area.x + 1, area.y, area.width.saturating_sub(2), 1),
                         &title,
                     ),
@@ -1582,7 +1582,7 @@ impl ShellPage<Holla> for FilesPage {
                 buf.set_string(
                     area.x + 1,
                     area.y + 1,
-                    junie_tui::ui::reveal::cut(
+                    termrock::ui::reveal::cut(
                         Rect::new(area.x + 1, area.y + 1, area.width.saturating_sub(2), 1),
                         &line,
                     ),
@@ -1593,7 +1593,7 @@ impl ShellPage<Holla> for FilesPage {
                 let (n, done) = self.indexed(w);
                 let query = Rect::new(area.x, area.y, area.width, 1);
                 let focused = ctx.interaction.focused(LIST);
-                let fs = t.field_style(junie_tui::ui::ctx::VisualState {
+                let fs = t.field_style(termrock::ui::ctx::VisualState {
                     focused,
                     editing: focused,
                     ..Default::default()
@@ -1603,12 +1603,12 @@ impl ShellPage<Holla> for FilesPage {
                 buf.set_string(
                     query.x,
                     query.y,
-                    t.gutter_symbol(junie_tui::ui::ctx::VisualState {
+                    t.gutter_symbol(termrock::ui::ctx::VisualState {
                         focused,
                         ..Default::default()
                     }),
                     t.gutter(
-                        junie_tui::ui::ctx::VisualState {
+                        termrock::ui::ctx::VisualState {
                             focused,
                             ..Default::default()
                         },
@@ -1631,7 +1631,7 @@ impl ShellPage<Holla> for FilesPage {
                     buf.set_string(
                         query.x + 2,
                         query.y,
-                        junie_tui::ui::reveal::cut(
+                        termrock::ui::reveal::cut(
                             Rect::new(query.x + 2, query.y, (text_w) as u16, 1),
                             "Find files under home…",
                         ),
@@ -1641,7 +1641,7 @@ impl ShellPage<Holla> for FilesPage {
                     buf.set_string(
                         query.x + 2,
                         query.y,
-                        junie_tui::ui::reveal::cut(
+                        termrock::ui::reveal::cut(
                             Rect::new(query.x + 2, query.y, (text_w) as u16, 1),
                             &self.query,
                         ),
@@ -1711,7 +1711,7 @@ impl ShellPage<Holla> for FilesPage {
                 hint("Enter", "Open / preview"),
                 hint("←", "Parent"),
                 hint("g", "Go to path"),
-                junie_tui::widgets::keyhint::toggle_hint(
+                termrock::widgets::keyhint::toggle_hint(
                     "Ctrl+H",
                     self.show_hidden,
                     "Hide hidden",

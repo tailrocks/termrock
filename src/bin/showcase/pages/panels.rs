@@ -5,19 +5,19 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::{Part, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::{Actions, KeyBinding, NavKeys, hint_key};
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::core::scroll::{HScroll, ScrollbarVisibility, TrackClick};
-use junie_tui::theme::Theme;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::StackChild;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::list::{ListBox, ListItem, SelectMode};
-use junie_tui::widgets::panel::{CardHeading, Panel, PanelCmd, PanelFocus, ScrollPanel};
-use junie_tui::widgets::scrollbar;
+use termrock::core::event::Outcome;
+use termrock::core::id::{Part, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::keymap::{Actions, KeyBinding, NavKeys, hint_key};
+use termrock::core::pointer::MouseTarget;
+use termrock::core::scroll::{HScroll, ScrollbarVisibility, TrackClick};
+use termrock::theme::Theme;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::StackChild;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::list::{ListBox, ListItem, SelectMode};
+use termrock::widgets::panel::{CardHeading, Panel, PanelCmd, PanelFocus, ScrollPanel};
+use termrock::widgets::scrollbar;
 
 const ID: WidgetId = WidgetId::of("panels");
 
@@ -228,7 +228,7 @@ impl PanelsPage {
         let titled = self.card(Some("Titled card"));
         let untitled = self.card(None);
         let nested = self.card(Some("Nested"));
-        let lines = |text: &str, w: usize| junie_tui::ui::text::wrap(text, w.max(1)).len() as u16;
+        let lines = |text: &str, w: usize| termrock::ui::text::wrap(text, w.max(1)).len() as u16;
 
         let nw = iw(&nested) as u16;
         let body = if Self::note_beside(nw) {
@@ -268,7 +268,7 @@ impl PanelsPage {
         let panel = self.card(Some("Titled card")).meta("surface");
         let bg = panel.bg(t);
         if let Some(inner) = lrows.slot(0).and_then(|r| panel.try_render(r, buf, t)) {
-            for (i, line) in junie_tui::ui::text::wrap(TITLED, inner.width as usize)
+            for (i, line) in termrock::ui::text::wrap(TITLED, inner.width as usize)
                 .iter()
                 .enumerate()
             {
@@ -281,7 +281,7 @@ impl PanelsPage {
         let panel = self.card(None);
         let bg = panel.bg(t);
         if let Some(inner) = lrows.slot(1).and_then(|r| panel.try_render(r, buf, t)) {
-            for (i, line) in junie_tui::ui::text::wrap(UNTITLED, inner.width as usize)
+            for (i, line) in termrock::ui::text::wrap(UNTITLED, inner.width as usize)
                 .iter()
                 .enumerate()
             {
@@ -323,7 +323,7 @@ impl PanelsPage {
         } else {
             (inner.x, inner.y + 5)
         };
-        for (i, line) in junie_tui::ui::text::wrap(NESTED_NOTE, (inner.right() - note_x) as usize)
+        for (i, line) in termrock::ui::text::wrap(NESTED_NOTE, (inner.right() - note_x) as usize)
             .iter()
             .enumerate()
         {

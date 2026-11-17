@@ -6,26 +6,26 @@ use crate::feed::{Feed, FeedLine};
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::{External, Outcome};
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::runtime::{
+use termrock::core::event::{External, Outcome};
+use termrock::core::id::WidgetId;
+use termrock::core::pointer::MouseTarget;
+use termrock::runtime::{
     ExternalPolicy, ExternalReceiver, ExternalSender, bounded_external_channel,
 };
-use junie_tui::theme::Tone;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::measure::Measure;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::text::find_ranges;
-use junie_tui::widgets::button::{Button, row_layout};
-use junie_tui::widgets::chips::{Chip, ChipAction, ChipBar};
-use junie_tui::widgets::notice::Notice;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::progress::spinner_frame;
-use junie_tui::widgets::props::{self, Prop};
-use junie_tui::widgets::segments::{self, Segment};
-use junie_tui::widgets::steps::{Step, StepRail, StepState};
-use junie_tui::widgets::viewport::{Line, Mark, Span, TextViewport, ViewportAction};
+use termrock::theme::Tone;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::measure::Measure;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::text::find_ranges;
+use termrock::widgets::button::{Button, row_layout};
+use termrock::widgets::chips::{Chip, ChipAction, ChipBar};
+use termrock::widgets::notice::Notice;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::progress::spinner_frame;
+use termrock::widgets::props::{self, Prop};
+use termrock::widgets::segments::{self, Segment};
+use termrock::widgets::steps::{Step, StepRail, StepState};
+use termrock::widgets::viewport::{Line, Mark, Span, TextViewport, ViewportAction};
 
 const ID: WidgetId = WidgetId::of("activity");
 

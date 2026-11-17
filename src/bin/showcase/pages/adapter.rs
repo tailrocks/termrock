@@ -2,15 +2,15 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 
 use super::{Cx, Go, LayerRes, Page, PageEvent};
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::focus::FocusChange;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::shell::{self, PageTypes};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layer::LayerTag;
-use junie_tui::ui::leave::Stakes;
-use junie_tui::widgets::keyhint::{Hint, hint};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::focus::FocusChange;
+use termrock::core::id::WidgetId;
+use termrock::core::pointer::PointerEvent;
+use termrock::shell::{self, PageTypes};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layer::LayerTag;
+use termrock::ui::leave::Stakes;
+use termrock::widgets::keyhint::{Hint, hint};
 
 pub struct Showcase;
 

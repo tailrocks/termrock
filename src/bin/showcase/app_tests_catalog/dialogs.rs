@@ -5,41 +5,41 @@
 //! `ScenarioId` variant from the `lane:dialogs` block in `../coverage.rs`. Edit only
 //! this file and `../coverage/lane_dialogs.rs`.
 
-use junie_tui::core::edit::EditEntry;
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::focus::{Focus, FocusFallback, FocusRing};
-use junie_tui::core::hints::{HasHints, HintCx};
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::{Part, PartRef, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::{Actions, KeyBinding, NavKeys};
-use junie_tui::core::pointer::{PointerConfig, PointerEvent, PointerState};
-use junie_tui::theme::{ColorLevel, StatusKind, Strings, Theme, Tone};
-use junie_tui::ui::ctx::{Backdrop, Interaction, RenderCtx};
-use junie_tui::ui::leave::{
-    KeyContext, Leave, LeaveGuard, LeaveKey, QuitKeys, Resolved, Stakes, discard_dialog,
-    letters_allowed, running_dialog, unsaved_dialog,
-};
-#[allow(deprecated)]
-use junie_tui::ui::modal::FramePlacement;
-use junie_tui::ui::modal::{self, Dismissal, Frame, Modal, ModalStack, modal_frame};
-use junie_tui::ui::popup::{Dismiss, Place, Placement, RefuseFeedback};
-use junie_tui::widgets::button::{Button, ButtonRow, RowAlign};
-use junie_tui::widgets::choice::{Checkbox, RadioGroup};
-use junie_tui::widgets::dialog::{
-    AckEnter, AckInput, Dialog, DialogBody, DialogCmd, DialogResult, OUTER_MARGIN, body_bounds,
-};
-use junie_tui::widgets::form_dialog::{
-    FieldValue, FormAction, FormDialog, FormField, FormFieldKind, FormValues,
-};
-use junie_tui::widgets::icon_button::IconButton;
-use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::props::Prop;
-use junie_tui::widgets::select::Select;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Margin, Position, Rect};
 use ratatui::style::{Color, Modifier, Style};
+use termrock::core::edit::EditEntry;
+use termrock::core::event::{Key, Outcome};
+use termrock::core::focus::{Focus, FocusFallback, FocusRing};
+use termrock::core::hints::{HasHints, HintCx};
+use termrock::core::hit::HitRegistry;
+use termrock::core::id::{Part, PartRef, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::keymap::{Actions, KeyBinding, NavKeys};
+use termrock::core::pointer::{PointerConfig, PointerEvent, PointerState};
+use termrock::theme::{ColorLevel, StatusKind, Strings, Theme, Tone};
+use termrock::ui::ctx::{Backdrop, Interaction, RenderCtx};
+use termrock::ui::leave::{
+    KeyContext, Leave, LeaveGuard, LeaveKey, QuitKeys, Resolved, Stakes, discard_dialog,
+    letters_allowed, running_dialog, unsaved_dialog,
+};
+#[allow(deprecated)]
+use termrock::ui::modal::FramePlacement;
+use termrock::ui::modal::{self, Dismissal, Frame, Modal, ModalStack, modal_frame};
+use termrock::ui::popup::{Dismiss, Place, Placement, RefuseFeedback};
+use termrock::widgets::button::{Button, ButtonRow, RowAlign};
+use termrock::widgets::choice::{Checkbox, RadioGroup};
+use termrock::widgets::dialog::{
+    AckEnter, AckInput, Dialog, DialogBody, DialogCmd, DialogResult, OUTER_MARGIN, body_bounds,
+};
+use termrock::widgets::form_dialog::{
+    FieldValue, FormAction, FormDialog, FormField, FormFieldKind, FormValues,
+};
+use termrock::widgets::icon_button::IconButton;
+use termrock::widgets::input::TextInput;
+use termrock::widgets::props::Prop;
+use termrock::widgets::select::Select;
 
 use super::{ScenarioCase, key, text_of};
 use crate::coverage::ScenarioId;
@@ -532,14 +532,14 @@ fn modal_frame_chrome() {
         "no dim without a backdrop"
     );
     assert!(!bare.hits.regions().iter().any(|r| r.id == modal::BACKDROP));
-    let full = render(Frame::new(40, 10).dim(junie_tui::ui::ctx::Backdrop::FULL));
+    let full = render(Frame::new(40, 10).dim(termrock::ui::ctx::Backdrop::FULL));
     assert_ne!(
         full.buf[(0, screen.bottom() - 1)].style().bg,
         seed_style().bg
     );
     let held = render(
         Frame::new(40, 10).dim(
-            junie_tui::ui::ctx::Backdrop::DEFAULT
+            termrock::ui::ctx::Backdrop::DEFAULT
                 .keep_top(2)
                 .keep_bottom(3),
         ),
@@ -585,7 +585,7 @@ fn modal_frame_chrome() {
         text_of(&glyph.buf).contains('Q'),
         "a custom close glyph is drawn"
     );
-    let borrowed = junie_tui::widgets::info_dialog::InfoDialog::new(
+    let borrowed = termrock::widgets::info_dialog::InfoDialog::new(
         WidgetId::of("scenario.frame.info"),
         "Server",
         vec![],
@@ -604,7 +604,7 @@ fn modal_frame_chrome() {
             .iter()
             .any(|r| r.id == modal::BACKDROP)
     );
-    let nothing = junie_tui::widgets::info_dialog::InfoDialog::new(
+    let nothing = termrock::widgets::info_dialog::InfoDialog::new(
         WidgetId::of("scenario.frame.info"),
         "Server",
         vec![],
@@ -703,9 +703,9 @@ fn modal_frame_chrome() {
 }
 
 fn render_ctx_registration() {
-    use junie_tui::core::hit::Axis;
-    use junie_tui::core::shape::PointerShape;
-    use junie_tui::ui::ctx::{Backdrop, fill, legible_on_fill};
+    use termrock::core::hit::Axis;
+    use termrock::core::shape::PointerShape;
+    use termrock::ui::ctx::{Backdrop, fill, legible_on_fill};
 
     let theme = Theme::for_level(ColorLevel::TrueColor);
     let screen = Rect::new(0, 0, 40, 10);
@@ -1011,8 +1011,8 @@ fn rows_of(buf: &Buffer) -> Vec<String> {
 }
 
 fn interaction_visual_state() {
-    use junie_tui::theme::Kind;
-    use junie_tui::ui::ctx::{FocusVisible, VisualState};
+    use termrock::theme::Kind;
+    use termrock::ui::ctx::{FocusVisible, VisualState};
 
     let theme = Theme::for_level(ColorLevel::TrueColor);
     let (a, b, c, container) = (
@@ -1286,7 +1286,7 @@ fn dialog_prompt_editing() {
         "a clean prompt dismisses"
     );
 
-    let change = junie_tui::core::focus::FocusChange {
+    let change = termrock::core::focus::FocusChange {
         from: id.sub("name"),
         to: None,
     };
@@ -1296,7 +1296,7 @@ fn dialog_prompt_editing() {
         "blur commits the edit"
     );
     assert!(!dialog.is_editing());
-    let elsewhere = junie_tui::core::focus::FocusChange {
+    let elsewhere = termrock::core::focus::FocusChange {
         from: id.sub("other"),
         to: None,
     };
@@ -1503,7 +1503,7 @@ fn dialog_facts_ack() {
     );
     assert_eq!(
         destructive.actions[1].kind,
-        junie_tui::theme::ButtonKind::Danger
+        termrock::theme::ButtonKind::Danger
     );
     let danger_cancel = |guard: bool| {
         Dialog::confirm(id, "Discard", "Lose edits?", "Keep")
@@ -1769,7 +1769,7 @@ fn dialog_action_model() {
 }
 
 fn dialog_pointer_input() {
-    use junie_tui::widgets::scrollbar;
+    use termrock::widgets::scrollbar;
 
     let id = WidgetId::of("scenario.dialog.pointer");
     let screen = Rect::new(0, 0, 80, 24);
@@ -1842,7 +1842,7 @@ fn dialog_pointer_input() {
     let wheel = PointerEvent::wheel_on(
         &shown.hits,
         id,
-        junie_tui::core::hit::Axis::Vertical,
+        termrock::core::hit::Axis::Vertical,
         1,
         Position::new(40, 12),
         KeyModifiers::NONE,
@@ -1881,7 +1881,7 @@ fn dialog_pointer_input() {
     let wheel = PointerEvent::wheel_on(
         &shown.hits,
         id,
-        junie_tui::core::hit::Axis::Vertical,
+        termrock::core::hit::Axis::Vertical,
         3,
         Position::new(40, 10),
         KeyModifiers::NONE,
@@ -2164,7 +2164,7 @@ fn form_dialog_input() {
     let hints = HasHints::hints(&rig.form, &HintCx::new(Some(id.sub("name"))));
     assert_eq!(
         hints,
-        junie_tui::widgets::keyhint::EDIT_FIELD.to_vec(),
+        termrock::widgets::keyhint::EDIT_FIELD.to_vec(),
         "an edit shows the edit hints"
     );
     rig.press(id.sub("name"), KeyCode::Enter);
@@ -2203,7 +2203,7 @@ fn form_dialog_input() {
     assert_eq!(rig.take(), [FormAction::Cancel]);
     rig.press(id.sub("save"), KeyCode::Enter);
     assert_eq!(rig.take(), [FormAction::Save], "a valid form saves");
-    rig.form.on_blur(junie_tui::core::focus::FocusChange {
+    rig.form.on_blur(termrock::core::focus::FocusChange {
         from: id.sub("name"),
         to: Some(id.sub("save")),
     });
@@ -2350,7 +2350,7 @@ fn form_dialog_input() {
     let wheel = PointerEvent::wheel_on(
         &routed.shown.hits,
         id.sub("name"),
-        junie_tui::core::hit::Axis::Vertical,
+        termrock::core::hit::Axis::Vertical,
         1,
         Position::new(50, 20),
         KeyModifiers::NONE,
@@ -2407,7 +2407,7 @@ fn form_dialog_input() {
 
     let mut blur = FormRig::new(make());
     blur.press(id.sub("name"), KeyCode::Char('Z'));
-    let away = junie_tui::core::focus::FocusChange {
+    let away = termrock::core::focus::FocusChange {
         from: id.sub("name"),
         to: Some(id.sub("kind")),
     };
@@ -2419,7 +2419,7 @@ fn form_dialog_input() {
     assert_eq!(blur.take(), [FormAction::Changed("name".into())]);
     assert_eq!(blur.form.text("name"), "Z");
     assert_eq!(
-        blur.form.on_blur(junie_tui::core::focus::FocusChange {
+        blur.form.on_blur(termrock::core::focus::FocusChange {
             from: id.sub("live"),
             to: None
         }),
@@ -2451,9 +2451,9 @@ fn form_dialog_input() {
 }
 
 fn info_dialog_flow() {
-    use junie_tui::core::keymap::KeyBinding as Bind;
-    use junie_tui::widgets::info_dialog::{InfoCmd, InfoDialog, InfoResult};
-    use junie_tui::widgets::scrollbar;
+    use termrock::core::keymap::KeyBinding as Bind;
+    use termrock::widgets::info_dialog::{InfoCmd, InfoDialog, InfoResult};
+    use termrock::widgets::scrollbar;
 
     let id = WidgetId::of("scenario.info");
     let screen = Rect::new(0, 0, 100, 40);
@@ -2662,7 +2662,7 @@ fn info_dialog_flow() {
     let wheel = PointerEvent::wheel_on(
         &shown.hits,
         id,
-        junie_tui::core::hit::Axis::Vertical,
+        termrock::core::hit::Axis::Vertical,
         2,
         Position::new(50, 20),
         KeyModifiers::NONE,
@@ -2676,7 +2676,7 @@ fn info_dialog_flow() {
 }
 
 fn choice_dialog_flow() {
-    use junie_tui::widgets::choice_dialog::ChoiceDialog;
+    use termrock::widgets::choice_dialog::ChoiceDialog;
 
     let id = WidgetId::of("scenario.choice");
     let screen = Rect::new(0, 0, 100, 40);
@@ -2900,7 +2900,7 @@ fn choice_dialog_flow() {
     let wheel = PointerEvent::wheel_on(
         &shown.hits,
         id.sub("radio"),
-        junie_tui::core::hit::Axis::Vertical,
+        termrock::core::hit::Axis::Vertical,
         1,
         Position::new(50, 20),
         KeyModifiers::NONE,
@@ -2934,18 +2934,18 @@ fn choice_dialog_flow() {
 }
 
 fn layer_results_by_widget() {
-    use junie_tui::core::intent::DismissReason;
-    use junie_tui::ui::layer::{
+    use termrock::core::intent::DismissReason;
+    use termrock::ui::layer::{
         Dismissed, Layer, LayerCx, LayerEntry, LayerOut, LayerPointer, LayerTag, ShellLayers,
         Taken, dismiss,
     };
-    use junie_tui::ui::layers::LayerResult;
-    use junie_tui::widgets::choice_dialog::ChoiceDialog;
-    use junie_tui::widgets::file_browser::{FileBrowser, FileBrowserResult, MemorySource};
-    use junie_tui::widgets::help::HelpOverlay;
-    use junie_tui::widgets::info_dialog::{InfoDialog, InfoResult};
-    use junie_tui::widgets::menu::{ContextMenu, MenuAction, MenuItem};
-    use junie_tui::widgets::picker::{Picker, PickerAction};
+    use termrock::ui::layers::LayerResult;
+    use termrock::widgets::choice_dialog::ChoiceDialog;
+    use termrock::widgets::file_browser::{FileBrowser, FileBrowserResult, MemorySource};
+    use termrock::widgets::help::HelpOverlay;
+    use termrock::widgets::info_dialog::{InfoDialog, InfoResult};
+    use termrock::widgets::menu::{ContextMenu, MenuAction, MenuItem};
+    use termrock::widgets::picker::{Picker, PickerAction};
 
     let id = WidgetId::of("scenario.layers");
     let before = WidgetId::of("scenario.layers.before");
@@ -3157,7 +3157,7 @@ fn layer_results_by_widget() {
             .is_some()
     );
     assert_eq!(
-        layers.on_blur(junie_tui::core::focus::FocusChange {
+        layers.on_blur(termrock::core::focus::FocusChange {
             from: theme_focus("elsewhere"),
             to: None
         }),
@@ -3317,8 +3317,8 @@ fn layer_results_by_widget() {
 }
 
 fn layer_spec_policies() {
-    use junie_tui::core::intent::DismissReason;
-    use junie_tui::ui::layer::{
+    use termrock::core::intent::DismissReason;
+    use termrock::ui::layer::{
         Dismissed, Layer, LayerCx, LayerKind, LayerOut, LayerPointer, LayerSpec, LayerTag, Overlay,
         ShellLayers, Taken,
     };
@@ -3484,7 +3484,7 @@ fn layer_spec_policies() {
         );
         assert_eq!(
             top.layer
-                .on_blur(junie_tui::core::focus::FocusChange { from: a, to: None }),
+                .on_blur(termrock::core::focus::FocusChange { from: a, to: None }),
             Outcome::Ignored
         );
         assert_eq!(top.layer.on_tick(&()), Outcome::Ignored);
@@ -3545,7 +3545,7 @@ fn layer_spec_policies() {
     let wheel = PointerEvent::wheel_on(
         &hits,
         a,
-        junie_tui::core::hit::Axis::Vertical,
+        termrock::core::hit::Axis::Vertical,
         1,
         at,
         KeyModifiers::NONE,
@@ -3554,7 +3554,7 @@ fn layer_spec_policies() {
     let wheel_h = PointerEvent::wheel_on(
         &hits,
         a,
-        junie_tui::core::hit::Axis::Horizontal,
+        termrock::core::hit::Axis::Horizontal,
         1,
         at,
         KeyModifiers::NONE,

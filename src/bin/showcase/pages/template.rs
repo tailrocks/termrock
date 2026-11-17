@@ -3,15 +3,15 @@ use ratatui::layout::{Rect, Size};
 
 use super::{Cx, CxExt, Hint, PageEvent};
 use crate::options::{Group, Opt, OptionsView};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::measure::Measure;
-use junie_tui::ui::scroll_view::{ScrollFrame, ScrollView};
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::empty::{self, EmptyState};
-use junie_tui::widgets::tabs::Tabs;
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::measure::Measure;
+use termrock::ui::scroll_view::{ScrollFrame, ScrollView};
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::button::Button;
+use termrock::widgets::empty::{self, EmptyState};
+use termrock::widgets::tabs::Tabs;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Section {
@@ -144,7 +144,7 @@ impl Template {
 
                 let legend = focus_legend(self.grid.mark(ctx.theme));
                 let toggle = (self.compare.width() + 3)
-                    .saturating_add(junie_tui::ui::text::width(&legend) as u16);
+                    .saturating_add(termrock::ui::text::width(&legend) as u16);
                 Size::new(grid.width.max(toggle), rows.saturating_add(2))
             }
         }
@@ -184,7 +184,7 @@ impl Template {
         }
     }
 
-    pub fn on_unused_key(&mut self, key: &junie_tui::core::event::Key) -> Option<Outcome> {
+    pub fn on_unused_key(&mut self, key: &termrock::core::event::Key) -> Option<Outcome> {
         self.view.on_key(key)
     }
 
@@ -194,7 +194,7 @@ impl Template {
         self.tabs.render(strip, buf, ctx, t.canvas);
         if area.width >= WIDE {
             let caption = self.section().caption();
-            let w = junie_tui::ui::text::width(caption) as u16;
+            let w = termrock::ui::text::width(caption) as u16;
             let end = self
                 .tabs
                 .areas
@@ -238,7 +238,7 @@ impl Template {
         let x = area.x + bw + 3;
         let room = area.right().saturating_sub(x) as usize;
         let legend = focus_legend(self.grid.mark(t));
-        if area.width >= WIDE && room >= junie_tui::ui::text::width(&legend) {
+        if area.width >= WIDE && room >= termrock::ui::text::width(&legend) {
             buf.set_string(x, area.y, &legend, t.faint().bg(t.canvas));
         }
         let top = area.y.saturating_add(2).min(area.bottom());
@@ -316,8 +316,8 @@ impl Template {
                 None
             }
             PageEvent::Pointer(p) => {
-                use junie_tui::core::intent::Phase;
-                use junie_tui::core::pointer::MouseTarget;
+                use termrock::core::intent::Phase;
+                use termrock::core::pointer::MouseTarget;
                 if let Some(r) = self.tabs.route(p) {
                     if p.is(Phase::Click) {
                         cx.focus.focus(self.tabs.id);
