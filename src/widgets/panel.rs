@@ -572,6 +572,7 @@ fn copy_source(lines: &[String], a: SourcePos, b: SourcePos) -> Option<String> {
     }
     let first = lines.get(a.line)?;
     let last = lines.get(b.line)?;
+    crate::record_work!(SourceRowsRead, b.line - a.line + 1);
     if !first.is_char_boundary(a.byte) || !last.is_char_boundary(b.byte) {
         return None;
     }

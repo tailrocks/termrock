@@ -16,6 +16,40 @@ Build success demonstrates compilation for the selected workspace and configurat
 
 Future proposals remain deferred until a consumer and acceptance contract are identified. Upstream work remains an external dependency until released, pinned where appropriate, and verified in this repository. Do not silently broaden supported platforms, host operations, or interaction abstractions without isolated evidence.
 
+## 2026-11-18: A render that changes widget state may take a third paint pass (#17, #176)
+
+Context: #17 asks for at most two paint passes per draw, with an unstable
+second pass reported through `render_pending`. #176 then found that
+`TextInput`, `TextArea` and `CodeEditor` start their focus edit inside their own
+`render`, after widgets drawn earlier in the frame (a page footer under a modal)
+already read the old state. The shell's second pass is the first pass that
+paints the newly focused field: focus is only assigned by upkeep after pass
+one, so the edit starts while pass two paints and the widgets drawn before it
+in pass two still show the old state. #176 offered two fixes: move the
+transition out of render, or add a render-time "state changed after it was
+read" signal. The signal route shipped (79147b6ea, `RenderCtx::note_render_mutation`,
+`MUTATION_PASSES` in `src/shell/app.rs`).
+
+Decision: keep `RENDER_PASSES = 2` for every frame whose settlement is a focus,
+hover or blur change. A frame in which a widget reports that it changed its own
+state during render gets one more pass (`MUTATION_PASSES = 3`). Two passes
+cannot meet #176's acceptance ("a library regression test in which a widget's
+render changes edit state must produce a settled frame through the real
+`Shell::render` path"), because the mutation first happens in pass two. Moving
+the transition into upkeep would remove the third pass but changes when every
+text widget starts editing and who may observe `editing`; that migration is
+larger than the defect and is not planned. The bound stays: a widget that
+mutates on every render stops after the third pass, the frame stays pending
+and `Application::take_render_invalidated` returns it once, so the runtime
+draws again on its next fair turn instead of looping.
+
+Pinned by `tests/regressions/focus_edit.rs`: the three focus-edit cases draw
+exactly three times and settle; stable frames draw once;
+`a_widget_that_mutates_on_every_render_stops_at_the_bound_and_stays_pending`
+shows the stop at three draws with `render_pending` set and consumed once.
+`shell_unstable_second_pass_requests_next_turn` in `tests/shell.rs` keeps the
+two-pass bound for focus oscillation.
+
 ## 2026-11-17: Remove public items nothing produces or consumes (#353)
 
 Context: the #14 declared-API burn-down found public items with no producer

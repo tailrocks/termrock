@@ -29,8 +29,19 @@ pub fn run(app: &mut impl Application) -> std::io::Result<()> {
     if let Some(delay) = start_delay() {
         std::thread::sleep(delay);
     }
-    let _ = crate::runtime::drain_pending_input_bounded(app.raw_input_policy().event_limit());
+    discard_startup_input(app, crate::runtime::drain_pending_input_bounded)?;
     crate::runtime::run(app)
+}
+
+/// Discards input queued before the app started, at most the app's raw-input
+/// event limit. A drain failure means the terminal cannot be read or its raw
+/// mode cannot be switched, so the session could not run either: the error is
+/// returned instead of being dropped and surfacing later as a vaguer failure.
+fn discard_startup_input(
+    app: &impl Application,
+    drain: impl FnOnce(usize) -> std::io::Result<usize>,
+) -> std::io::Result<()> {
+    drain(app.raw_input_policy().event_limit()).map(drop)
 }
 
 fn start_delay() -> Option<std::time::Duration> {
@@ -39,4 +50,60 @@ fn start_delay() -> Option<std::time::Duration> {
         .parse()
         .ok()
         .map(std::time::Duration::from_millis)
+}
+
+#[cfg(test)]
+mod startup_tests {
+    use std::cell::Cell;
+
+    use ratatui::Frame;
+
+    use super::discard_startup_input;
+    use crate::core::event::{Input, Outcome};
+    use crate::runtime::{Application, RawInputPolicy};
+
+    struct Limited(usize);
+
+    impl Application for Limited {
+        fn handle(&mut self, _input: Input) -> Outcome {
+            Outcome::Ignored
+        }
+
+        fn render(&mut self, _frame: &mut Frame) {}
+
+        fn should_quit(&self) -> bool {
+            false
+        }
+
+        fn tick_interval(&self) -> std::time::Duration {
+            std::time::Duration::from_millis(100)
+        }
+
+        fn raw_input_policy(&self) -> RawInputPolicy {
+            RawInputPolicy {
+                max_events: self.0,
+                ..RawInputPolicy::default()
+            }
+        }
+    }
+
+    #[test]
+    fn startup_drain_is_bounded_by_the_apps_raw_input_limit() {
+        let asked = Cell::new(None);
+        let result = discard_startup_input(&Limited(7), |limit| {
+            asked.set(Some(limit));
+            Ok(3)
+        });
+        assert!(result.is_ok());
+        assert_eq!(asked.get(), Some(7));
+    }
+
+    #[test]
+    fn startup_drain_failure_is_returned_not_dropped() {
+        let error = discard_startup_input(&Limited(7), |_| {
+            Err(std::io::Error::other("terminal unreadable"))
+        })
+        .expect_err("a failed startup drain is reported");
+        assert_eq!(error.to_string(), "terminal unreadable");
+    }
 }

@@ -1,6 +1,7 @@
 //! Guards the `[workflow].default_branch` source setting that generated CI
 //! push filters and follow-up `head_branch` predicates are derived from.
-//! The check is pure Rust over config text; no subprocess and no network.
+//! The check is pure Rust over config text, parsed with the `toml` crate; no
+//! subprocess and no network.
 
 use std::fmt;
 
@@ -45,74 +46,31 @@ fn check_default_branch(config_text: &str, expected: &str) -> Result<(), Default
     }
 }
 
-/// Reads `default_branch` from the `[workflow]` table. Only the keys this
-/// check needs are read; other TOML syntax is skipped, not validated.
+/// Reads `default_branch` from the `[workflow]` table of a parsed TOML
+/// document, so quoting, escapes, duplicate keys and table shapes are decided
+/// by the TOML parser rather than by this test.
 fn workflow_default_branch(config_text: &str) -> Result<String, DefaultBranchError> {
-    let mut in_workflow = false;
-    let mut found_table = false;
-    let mut configured: Option<String> = None;
-
-    for raw in config_text.lines() {
-        let line = raw.trim();
-        if line.is_empty() || line.starts_with('#') {
-            continue;
-        }
-        if let Some(header) = line.strip_prefix('[') {
-            // `[[workflow]]` (array of tables) yields `[workflow` here and never matches.
-            let name = header.split(']').next().unwrap_or_default().trim();
-            in_workflow = name == "workflow";
-            found_table |= in_workflow;
-            continue;
-        }
-        if !in_workflow {
-            continue;
-        }
-        let Some((key, value)) = line.split_once('=') else {
-            continue;
-        };
-        if key.trim() != "default_branch" {
-            continue;
-        }
-        if configured.is_some() {
-            return Err(DefaultBranchError::Invalid(
-                "workflow.default_branch is defined more than once".to_owned(),
-            ));
-        }
-        let branch = parse_string(value.trim()).ok_or_else(|| {
+    let document: toml::Table = config_text.parse().map_err(|error| {
+        DefaultBranchError::Invalid(format!("config is not valid TOML: {error}"))
+    })?;
+    let workflow = document
+        .get("workflow")
+        .and_then(toml::Value::as_table)
+        .ok_or_else(|| {
+            DefaultBranchError::Invalid("workflow must be a [workflow] table".to_owned())
+        })?;
+    let value = workflow.get("default_branch").ok_or_else(|| {
+        DefaultBranchError::Invalid("[workflow] is missing default_branch".to_owned())
+    })?;
+    value
+        .as_str()
+        .filter(|branch| !branch.is_empty())
+        .map(str::to_owned)
+        .ok_or_else(|| {
             DefaultBranchError::Invalid(
                 "workflow.default_branch must be a nonempty string".to_owned(),
             )
-        })?;
-        configured = Some(branch.to_owned());
-    }
-
-    if !found_table {
-        return Err(DefaultBranchError::Invalid(
-            "workflow must be a [workflow] table".to_owned(),
-        ));
-    }
-    configured.ok_or_else(|| {
-        DefaultBranchError::Invalid("[workflow] is missing default_branch".to_owned())
-    })
-}
-
-/// Accepts one single-line TOML string with an optional trailing comment.
-fn parse_string(text: &str) -> Option<&str> {
-    let quote = text.chars().next()?;
-    if quote != '"' && quote != '\'' {
-        return None;
-    }
-    let rest = &text[1..];
-    let end = rest.find(quote)?;
-    let content = &rest[..end];
-    let tail = rest[end + 1..].trim();
-    if !(tail.is_empty() || tail.starts_with('#')) {
-        return None;
-    }
-    if content.is_empty() || content.contains('\\') {
-        return None;
-    }
-    Some(content)
+        })
 }
 
 #[test]
@@ -141,6 +99,16 @@ fn default_branch_rejects_stale_source() {
 fn default_branch_supports_fork_name() {
     let config = "[workflow]\ndefault_branch = 'trunk' # fork default\n";
     assert_eq!(check_default_branch(config, "trunk"), Ok(()));
+}
+
+#[test]
+fn default_branch_reads_escapes_and_inline_tables_like_toml_does() {
+    let escaped = "[workflow]\ndefault_branch = \"ma\\u0069n\"\n";
+    assert_eq!(check_default_branch(escaped, "main"), Ok(()));
+    let inline = "workflow = { default_branch = \"main\" }\n";
+    assert_eq!(check_default_branch(inline, "main"), Ok(()));
+    let dotted = "workflow.default_branch = \"main\"\n";
+    assert_eq!(check_default_branch(dotted, "main"), Ok(()));
 }
 
 #[test]

@@ -1356,6 +1356,68 @@ fn disk_page_stops_animating_on_the_tick_that_publishes_the_cache() {
     assert!(!app.top().expect("page").animating(&app.world));
 }
 
+/// The scan status the page draws and the cache the world publishes agree at
+/// every step of the real App order: the world ticks (and finishes or
+/// publishes the scan), then the page ticks, then the messages are delivered.
+#[test]
+fn disk_completion_status_matches_published_cache() {
+    let mut app = App::launch(
+        Scenario::DiskCleanup,
+        Motion::Full,
+        0,
+        Theme::junie(),
+        false,
+    );
+    app.world.clock.running = true;
+    app.world.disk.scan_ticks = 1;
+    app.world.fs.dir("/work/big", 1);
+    for i in 0..4096 {
+        app.world.fs.file(&format!("/work/big/f{i:05}"), 4096, 1);
+    }
+    app.world.start_scan("/work/big");
+    assert_eq!(app.world.scan.as_ref().expect("scan").order.len(), 4097);
+    app.push_page(Page::Disk {
+        path: "/work/big".into(),
+    });
+
+    tick(&mut app, 1);
+    let scanning = drawn_text(&mut app);
+    assert!(
+        !app.world.scan.as_ref().expect("scan").completed(),
+        "one entry is still unrevealed after the first batch"
+    );
+    assert_eq!(app.world.persisted.sizes, None, "no cache while scanning");
+    assert!(
+        !scanning.contains("scan complete"),
+        "the status must not claim completion before the cache exists:\n{scanning}"
+    );
+    assert!(
+        !scanning.contains("live \u{b7} complete"),
+        "the freshness text must not read complete before the cache exists:\n{scanning}"
+    );
+
+    tick(&mut app, 1);
+    let sizes = app
+        .world
+        .persisted
+        .sizes
+        .as_deref()
+        .expect("the completing tick publishes the cache");
+    assert!(
+        sizes.contains("/work/big"),
+        "the published cache holds the scanned tree's sizes: {sizes}"
+    );
+    let done = drawn_text(&mut app);
+    assert!(
+        done.contains("scan complete") && done.contains("4096 entries"),
+        "the status reads complete once the cache is published:\n{done}"
+    );
+    assert!(
+        done.contains("live \u{b7} complete"),
+        "the freshness text reads complete once the cache is published:\n{done}"
+    );
+}
+
 const FINAL_NAME: &str = "zz-final-hit.txt";
 const FINAL_QUERY: &str = "zz-final-hit";
 

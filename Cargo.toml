@@ -66,6 +66,7 @@ libc = "0.2"
 
 [dev-dependencies]
 syn = { version = "3.0.9", features = ["full", "visit"] }
+toml = "1.2.1"
 
 tui-test = { workspace = true }
 

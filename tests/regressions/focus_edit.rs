@@ -167,3 +167,35 @@ fn text_area_focus_edit_is_visible_to_widgets_drawn_before_it() {
 fn code_editor_focus_edit_is_visible_to_widgets_drawn_before_it() {
     assert_frame_matches_settled_state(Field::Code(Box::new(CodeEditor::new(FIELD, "let x = 1;"))));
 }
+
+/// A widget rebuilt on every draw starts its focus edit on every draw, so the
+/// frame can never settle. The shell must stop at its bound and hand the
+/// unfinished work to the runtime instead of looping.
+#[test]
+fn a_widget_that_mutates_on_every_render_stops_at_the_bound_and_stays_pending() {
+    let draws = Rc::new(RefCell::new(0_u32));
+    let counted = Rc::clone(&draws);
+    let mut host = Host::painting(move |buf, ctx| {
+        *counted.borrow_mut() += 1;
+        let mut fresh = TextInput::new(FIELD, "Name");
+        fresh.render(Rect::new(0, 1, 30, 3), buf, ctx, ctx.theme.canvas);
+        ctx.focus_stop(NEXT);
+    });
+    let mut terminal = Terminal::new(TestBackend::new(72, 20)).expect("test terminal");
+
+    frame(&mut host, &mut terminal);
+
+    assert_eq!(
+        *draws.borrow(),
+        3,
+        "focus arrives after pass one, the rebuilt field starts editing in pass two and again in pass three, and the frame stops there"
+    );
+    assert!(
+        Application::take_render_invalidated(&mut host),
+        "the unsettled frame asks the runtime for another turn"
+    );
+    assert!(
+        !Application::take_render_invalidated(&mut host),
+        "the request is consumed once"
+    );
+}
