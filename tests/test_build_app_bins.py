@@ -27,7 +27,7 @@ class BuildAppBinsTests(unittest.TestCase):
         cargo.write_text(f"#!/bin/sh\necho \"$@\" >> '{self.built}'\n")
         cargo.chmod(cargo.stat().st_mode | stat.S_IEXEC)
 
-    def run_script(self, nextest_args=None, **extra):
+    def run_script(self, nextest_args=None, parent_args=None, **extra):
         environment = {
             key: value
             for key, value in os.environ.items()
@@ -41,8 +41,11 @@ class BuildAppBinsTests(unittest.TestCase):
         if nextest_args is not None:
             environment["TCB_NEXTEST_ARGS"] = nextest_args
         environment.update(extra)
+        command = ["sh", str(SCRIPT)]
+        if parent_args is not None:
+            command = ["sh", "-c", f'sh "{SCRIPT}"; :', "cargo-nextest", *parent_args]
         result = subprocess.run(
-            ["sh", str(SCRIPT)],
+            command,
             env=environment,
             capture_output=True,
             text=True,
@@ -117,6 +120,20 @@ class BuildAppBinsTests(unittest.TestCase):
         self.env_file.write_text("")
         self.run_script("nextest run", TCB_APP_FEATURES="work-metrics")
         self.assert_build("--features work-metrics", "app-bins-work-metrics")
+
+    def test_the_features_come_from_the_parent_process_command_line(self):
+        # No TCB_NEXTEST_ARGS: the script reads `ps` for its parent, as under
+        # nextest. The wrapper shell stays alive because of the trailing `:`.
+        for parent_args, features, directory in [
+            (["nextest", "run", "--all-features"], "--all-features", "app-bins-all-features"),
+            (["nextest", "run", "-F", "work-metrics"], "--features work-metrics", "app-bins-work-metrics"),
+            (["nextest", "run", "--workspace"], "", "app-bins"),
+        ]:
+            with self.subTest(parent_args=parent_args):
+                self.built.unlink(missing_ok=True)
+                self.env_file.write_text("")
+                self.run_script(parent_args=parent_args)
+                self.assert_build(features, directory)
 
     def test_binaries_the_caller_exported_are_used_and_not_rebuilt(self):
         paths = {f"TERMROCK_TEST_{name.upper()}": f"/prebuilt/{name}" for name in NAMES}
