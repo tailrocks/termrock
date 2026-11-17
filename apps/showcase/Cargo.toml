@@ -14,10 +14,11 @@ path = "../../src/bin/showcase/main.rs"
 
 [features]
 default = []
-work-metrics = ["junie-tui/work-metrics"]
+work-metrics = ["junie-tui/work-metrics", "termrock/work-metrics"]
 
 [dependencies]
 junie-tui = { path = "../..", default-features = false, features = ["cli", "terminal"] }
+termrock = { path = "../../crates/termrock", default-features = false, features = ["cli", "terminal"] }
 clap = { workspace = true }
 ratatui = { workspace = true }
 

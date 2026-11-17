@@ -89,25 +89,25 @@ pub struct ScenarioCase {
 
 #[path = "app_tests_catalog/collections.rs"]
 mod lane_collections;
-#[path = "app_tests_catalog/dialogs.rs"]
+#[path = "../../../apps/showcase/src/app_tests_catalog/dialogs.rs"]
 mod lane_dialogs;
-#[path = "app_tests_catalog/fields.rs"]
+#[path = "../../../apps/showcase/src/app_tests_catalog/fields.rs"]
 mod lane_fields;
-#[path = "app_tests_catalog/gridtable.rs"]
+#[path = "../../../apps/showcase/src/app_tests_catalog/gridtable.rs"]
 mod lane_gridtable;
 #[path = "app_tests_catalog/layout.rs"]
 mod lane_layout;
-#[path = "app_tests_catalog/menus.rs"]
+#[path = "../../../apps/showcase/src/app_tests_catalog/menus.rs"]
 mod lane_menus;
 #[path = "app_tests_catalog/pickers.rs"]
 mod lane_pickers;
-#[path = "app_tests_catalog/routing.rs"]
+#[path = "../../../apps/showcase/src/app_tests_catalog/routing.rs"]
 mod lane_routing;
 #[path = "app_tests_catalog/scroll.rs"]
 mod lane_scroll;
-#[path = "app_tests_catalog/shell.rs"]
+#[path = "../../../apps/showcase/src/app_tests_catalog/shell.rs"]
 mod lane_shell;
-#[path = "app_tests_catalog/state.rs"]
+#[path = "../../../apps/showcase/src/app_tests_catalog/state.rs"]
 mod lane_state;
 #[path = "app_tests_catalog/theme.rs"]
 mod lane_theme;

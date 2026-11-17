@@ -960,6 +960,7 @@ dependencies = [
  "junie-tui",
  "ratatui",
  "serde_json",
+ "termrock",
  "tuiscotti",
  "tuiscotti-tui-test",
  "unicode-segmentation",
@@ -2175,6 +2176,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.9",
  "syn 3.0.9",
+ "termrock",
 ]
 
 [[package]]

@@ -152,7 +152,12 @@ impl Sources {
             std::fs::read_to_string(root().join(path))
                 .unwrap_or_else(|e| panic!("read {path}: {e}"))
         };
-        let showcase = SourceTree::from_dir(root(), "src/bin/showcase");
+        let mut showcase = SourceTree::from_dir(root(), "src/bin/showcase");
+        // While the Showcase sources move in steps, some of them already sit in
+        // the package directory; the step that moves the last one deletes this.
+        showcase
+            .files
+            .extend(SourceTree::from_dir(root(), "apps/showcase/src").files);
         let dir_files = |dir: &str, ext: &str| -> Vec<(String, String)> {
             let mut paths: Vec<PathBuf> = std::fs::read_dir(root().join(dir))
                 .map(|d| d.flatten().map(|e| e.path()).collect())
@@ -179,7 +184,12 @@ impl Sources {
             coverage: read("src/bin/showcase/coverage.rs"),
             coverage_lanes: dir_files("src/bin/showcase/coverage", "rs"),
             cases: read("src/bin/showcase/app_tests_catalog.rs"),
-            case_lanes: dir_files("src/bin/showcase/app_tests_catalog", "rs"),
+            case_lanes: {
+                let mut lanes = dir_files("src/bin/showcase/app_tests_catalog", "rs");
+                lanes.extend(dir_files("apps/showcase/src/app_tests_catalog", "rs"));
+                lanes.sort();
+                lanes
+            },
             app: read("src/bin/showcase/app.rs"),
             showcase: showcase
                 .files
@@ -316,11 +326,16 @@ fn lane_wiring_errors(s: &Sources) -> Vec<String> {
     }
     for (file, _) in &s.case_lanes {
         let stem = file.trim_end_matches(".rs");
+        // A lane file that has already moved is named through a temporary path
+        // shim; the step that moves the last one removes this alternative.
+        let moved = format!(
+            "#[path = \"../../../apps/showcase/src/app_tests_catalog/{file}\"]\nmod lane_{stem};"
+        );
         for needle in [
             format!("#[path = \"app_tests_catalog/{file}\"]\nmod lane_{stem};"),
             format!("lane_{stem}::CASES"),
         ] {
-            if !s.cases.contains(&needle) {
+            if !s.cases.contains(&needle) && !s.cases.contains(&moved) {
                 errors.push(format!(
                     "scenario file app_tests_catalog/{file} is not wired into app_tests_catalog.rs (missing `{needle}`)"
                 ));
