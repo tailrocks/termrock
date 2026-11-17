@@ -98,6 +98,11 @@ workspaces, Docker, OpenShell, Codex).
   flushed by `RenderCtx::flush_overlays` and `begin_modal`). It must never
   depend on draw order inside a page. Modals dim through
   `RenderCtx::modal_backdrop`.
+- Dependencies point down the layers in `docs/layering.toml`
+  (foundations, runtime, components, facade). A change that adds an upward
+  dependency fails the `layering` regression test: fix the design (move the
+  item down or invert the dependency) and never extend
+  `tests/regressions/layering-allowlist.tsv`, which may only shrink.
 - Interfaces are shared and composable. Widgets implement the same core
   traits (rendering, focus, keyboard, mouse, scrolling, selection, hints,
   context menus), so containers and apps compose them without glue code.
