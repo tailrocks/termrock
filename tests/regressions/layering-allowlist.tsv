@@ -8,11 +8,6 @@
 #
 # Owners: the core and theme rows are removed by #441, the ui and widgets rows
 # and the ui::layers test rows by #442, and the two test_alloc rows by #449.
-production	src/ui/context.rs	widgets::grid
-production	src/ui/context.rs	widgets::list
-production	src/ui/context.rs	widgets::table
-production	src/ui/context.rs	widgets::tabs
-production	src/ui/context.rs	widgets::tree
 production	src/ui/layer.rs	widgets::choice_dialog
 production	src/ui/layer.rs	widgets::dialog
 production	src/ui/layer.rs	widgets::form_dialog

@@ -2780,6 +2780,8 @@ impl DataTable {
 use crate::core::hints::{
     Binding, Bindings, HasHints, HintCx, actions_bindings, nav_bindings, nav_hints,
 };
+use crate::core::pointer::PointerEvent;
+use crate::ui::context::{ContextAnchor, ContextRequest, ContextSource, row_rect};
 use crate::widgets::keyhint::Hint;
 use ratatui::style::Style;
 
@@ -3193,6 +3195,55 @@ impl Bindings for DataTable {
         v.push(Binding::group("Enter", "Activate"));
         v.extend(actions_bindings(&self.keymap));
         v
+    }
+}
+
+impl ContextSource for DataTable {
+    type Target = (usize, usize);
+    fn context_target(&self, ev: &PointerEvent) -> Option<(usize, usize)> {
+        if !ev.on(self.id) {
+            return None;
+        }
+        if let Some(r) = ev.index_of(Part::ROW) {
+            return Some((r, self.cursor_col));
+        }
+        let r = ev.index_of(Part::CELL)?;
+        Some((r, self.column_at(ev.pos().x).unwrap_or(self.cursor_col)))
+    }
+
+    fn context_select(&mut self, (row, col): (usize, usize)) {
+        if let Some(r) = Navigable::cursor(self).select(row, self).index() {
+            self.cursor_row = r;
+            if self.cell_nav && col < self.columns().len() {
+                self.cursor_col = col;
+            }
+            self.context_selection(r);
+        }
+    }
+    fn context_cursor(&self) -> Option<ContextRequest<(usize, usize)>> {
+        (self.cursor_row < self.rows().len()).then(|| {
+            let id = if self.cell_nav {
+                self.cell_id(self.cursor_row, self.cursor_col)
+            } else {
+                self.row_id(self.cursor_row)
+            };
+            ContextRequest {
+                target: (self.cursor_row, self.cursor_col),
+                anchor: ContextAnchor::Control {
+                    id,
+
+                    fallback: row_rect(
+                        Rect {
+                            y: self.area.y.saturating_add(1),
+                            height: self.area.height.saturating_sub(1),
+                            ..self.area
+                        },
+                        self.cursor_row,
+                        self.scroll.offset,
+                    ),
+                },
+            }
+        })
     }
 }
 

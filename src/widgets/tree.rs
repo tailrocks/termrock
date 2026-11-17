@@ -15,10 +15,12 @@ use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup, una
 use crate::core::list::{
     Cursor, KeyStep, KeyedRowSource, Moved, Navigable, RowSource, SourceStamp,
 };
+use crate::core::pointer::PointerEvent;
 use crate::core::response::Response;
 use crate::core::scroll::{ScrollPane, Scrollable};
 use crate::core::selection::ClickPolicy;
 use crate::theme::Tone;
+use crate::ui::context::{ContextAnchor, ContextRequest, ContextSource, row_rect};
 use crate::ui::ctx::RenderCtx;
 use crate::ui::list_core::ListCore;
 use crate::ui::row::{MarkKind, RowLook, RowUi};
@@ -307,6 +309,28 @@ impl Bindings for TreeView {
         v.push(Binding::group("Enter", "Activate"));
         v.extend(actions_bindings(&self.keymap));
         v
+    }
+}
+
+impl ContextSource for TreeView {
+    type Target = usize;
+    fn context_target(&self, ev: &PointerEvent) -> Option<usize> {
+        self.row_at(ev)
+    }
+    fn context_select(&mut self, row: usize) {
+        if let Some(i) = Navigable::cursor(self).select(row, self).index() {
+            self.cursor = i;
+        }
+    }
+    fn context_cursor(&self) -> Option<ContextRequest<usize>> {
+        self.cursor_path()?;
+        Some(ContextRequest {
+            target: self.cursor,
+            anchor: ContextAnchor::Control {
+                id: self.row_id(self.cursor),
+                fallback: row_rect(self.area, self.cursor, self.scroll.offset),
+            },
+        })
     }
 }
 

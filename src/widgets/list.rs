@@ -16,11 +16,13 @@ use crate::core::keymap::{
 use crate::core::list::{
     Cursor, KeyStep, KeyedRowSource, Moved, Navigable, RowSource, TypeAheadPrecedence,
 };
+use crate::core::pointer::PointerEvent;
 use crate::core::refusal::{Control, Reason};
 use crate::core::response::Response;
 use crate::core::scroll::{ScrollPane, Scrollable};
 use crate::core::selection::{ClickPolicy, RowSelection, SelectGesture};
 use crate::theme::Tone;
+use crate::ui::context::{ContextAnchor, ContextRequest, ContextSource, row_rect};
 use crate::ui::ctx::{RenderCtx, fill};
 use crate::ui::list_core::ListCore;
 use crate::ui::reveal::{Reveal, RevealLine};
@@ -1125,5 +1127,26 @@ impl Bindings for ListBox {
             v.extend(actions_bindings(&self.keymap));
         }
         v
+    }
+}
+
+impl ContextSource for ListBox {
+    type Target = usize;
+    fn context_target(&self, ev: &PointerEvent) -> Option<usize> {
+        ev.on(self.id).then(|| ev.index_of(Part::ROW))?
+    }
+    fn context_select(&mut self, row: usize) {
+        if let Some(i) = Navigable::cursor(self).select(row, self).index() {
+            self.cursor = i;
+        }
+    }
+    fn context_cursor(&self) -> Option<ContextRequest<usize>> {
+        (self.cursor < self.items.len()).then(|| ContextRequest {
+            target: self.cursor,
+            anchor: ContextAnchor::Control {
+                id: self.row_id(self.cursor),
+                fallback: row_rect(self.area, self.cursor, self.scroll.offset),
+            },
+        })
     }
 }
