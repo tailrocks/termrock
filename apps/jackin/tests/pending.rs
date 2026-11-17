@@ -296,6 +296,55 @@ fn validate_leaves_the_form_pending_until_the_backend_answers() {
 }
 
 #[test]
+fn stale_reply_does_not_notify_open_form() {
+    let (mut app, backend) = held(Scenario::AccountsMixed);
+    press(&mut app, PLAIN_KEY);
+    click_text(&mut app, "Validate");
+    let ticket = backend.check_ticket();
+    let waiting = |app: &mut App| {
+        let shown = screen(app);
+        for label in ["material", "identity", "quota"] {
+            assert!(shown.contains(&format!("… {label}")), "{label}:\n{shown}");
+        }
+    };
+    waiting(&mut app);
+    assert_eq!(status(&app), "Validating the source…");
+
+    let stale = hold_roster_refresh(&mut app);
+    let current = hold_roster_refresh(&mut app);
+    assert_ne!(stale, current);
+    let snapshot = jackin_console::sim::snapshot(&app.world);
+    assert_eq!(
+        app.deliver(&Msg::Refreshed {
+            ticket: stale,
+            result: Ok(Box::new(snapshot)),
+        }),
+        Outcome::Ignored,
+        "the world rejects the reply of a retired request"
+    );
+    waiting(&mut app);
+    assert_eq!(status(&app), "Validating the source…");
+
+    let outcome = key_outcome(&app);
+    app.deliver(&checked(ticket + 1, outcome));
+    waiting(&mut app);
+    click_text(&mut app, "Validate");
+    assert_eq!(
+        backend.checks().len(),
+        1,
+        "the form still holds its check: Validate is not asked twice"
+    );
+
+    let outcome = key_outcome(&app);
+    app.deliver(&checked(ticket, outcome));
+    let done = screen(&mut app);
+    assert!(
+        done.contains(&format!("✓ material   File found at {SPARE_CANARY}")),
+        "the reply the form waited for still lands:\n{done}"
+    );
+}
+
+#[test]
 fn a_failed_check_shows_the_reply_error_in_the_form() {
     let (mut app, backend) = held(Scenario::AccountsMixed);
     press(&mut app, PLAIN_KEY);
