@@ -134,6 +134,18 @@ pub enum ScenarioId {
     DataShapeErrors,
     TextBufferGeometry,
     // lane:shell begin: this lane adds its ScenarioId variants between these two lines only
+    ShellStatusLine,
+    ShellCxRequests,
+    ShellRouterStack,
+    ShellChromeMenus,
+    ShellFooterHints,
+    ShellKeyRouting,
+    ShellHostLoop,
+    ShellPageHelpers,
+    ShellClipboardCopy,
+    ShellMotionPolicy,
+    RuntimeInputPump,
+    RuntimeExternalChannel,
     // lane:shell end
     // lane:theme begin: this lane adds its ScenarioId variants between these two lines only
     ThemeColorLevels,

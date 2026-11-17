@@ -237,3 +237,147 @@ fn nested_session_entry_leaves_the_live_terminal_untouched() {
     app.key("enter");
     await_exit(&app);
 }
+
+#[test]
+fn a_session_gives_the_terminal_back_and_takes_it_again_through_its_own_calls() {
+    if std::env::var(SESSION_CHILD).as_deref() == Ok("release") {
+        let mut session = TerminalSession::enter().expect("enter session");
+        session
+            .terminal()
+            .draw(|frame| {
+                frame.render_widget(
+                    Paragraph::new("session active, press Enter to release"),
+                    frame.area(),
+                )
+            })
+            .expect("draw through the session's terminal");
+        await_enter();
+        session.try_leave().expect("try_leave");
+        say(&format!("released: raw={}", raw()));
+        // The host owns the terminal now; a second leave must not undo that.
+        enable_raw_mode().expect("host raw mode");
+        session.leave();
+        say(&format!("left twice: raw={}", raw()));
+        await_enter();
+        let (cols, rows) = session.suspend().expect("suspend and resume");
+        session
+            .terminal()
+            .draw(|frame| {
+                frame.render_widget(
+                    Paragraph::new(format!("resumed: size={cols}x{rows} raw={}", raw())),
+                    frame.area(),
+                )
+            })
+            .expect("draw after the resume");
+        await_enter();
+        return;
+    }
+    let app = launch_session_child(
+        "lifecycle-release-resume",
+        "lifecycle::a_session_gives_the_terminal_back_and_takes_it_again_through_its_own_calls",
+        "release",
+    );
+    app.wait_text("session active, press Enter to release");
+    app.key("enter");
+    app.wait_text("released: raw=false");
+    app.wait_text("left twice: raw=true");
+    app.key("enter");
+    app.wait_text("resumed: size=80x24 raw=true");
+    app.key("enter");
+    await_exit(&app);
+}
+
+/// How long the event loop sleeps when nothing else wakes it, and so the
+/// longest an external message can wait: the receiver's own latency.
+struct LatencyProbe {
+    start: std::time::Instant,
+    receiver: junie_tui::runtime::ExternalReceiver,
+    delivered_ms: Option<u128>,
+}
+
+impl junie_tui::runtime::Application for LatencyProbe {
+    fn handle(&mut self, input: junie_tui::core::event::Input) -> junie_tui::core::event::Outcome {
+        if matches!(input, junie_tui::core::event::Input::External(_)) {
+            self.delivered_ms = Some(self.start.elapsed().as_millis());
+        }
+        junie_tui::core::event::Outcome::Changed
+    }
+
+    fn render(&mut self, frame: &mut ratatui::Frame) {
+        frame.render_widget(Paragraph::new("waiting for a message"), frame.area());
+    }
+
+    fn should_quit(&self) -> bool {
+        self.delivered_ms.is_some()
+    }
+
+    // Far longer than any latency under test, so only the latency wakes the loop.
+    fn tick_interval(&self) -> std::time::Duration {
+        std::time::Duration::from_secs(60)
+    }
+
+    fn external(&self) -> Option<&junie_tui::runtime::ExternalReceiver> {
+        Some(&self.receiver)
+    }
+}
+
+fn delivery_ms(latency_ms: &str) -> u128 {
+    let app = launch_session_child(
+        "lifecycle-external-latency",
+        "lifecycle::an_external_message_waits_for_the_receivers_latency",
+        &format!("latency:{latency_ms}"),
+    );
+    let screen = app.wait_text("delivered after");
+    let shown = text(&screen);
+    let ms = shown
+        .split("delivered after ")
+        .nth(1)
+        .and_then(|rest| rest.split(" ms").next())
+        .and_then(|n| n.trim().parse().ok())
+        .unwrap_or_else(|| panic!("no delivery time on the screen:\n{shown}"));
+    app.key("enter");
+    await_exit(&app);
+    ms
+}
+
+#[test]
+fn an_external_message_waits_for_the_receivers_latency() {
+    if let Some(ms) = std::env::var(SESSION_CHILD)
+        .ok()
+        .and_then(|mode| mode.strip_prefix("latency:").map(str::to_owned))
+    {
+        let (tx, receiver) = junie_tui::runtime::external_channel();
+        let receiver = receiver.latency(std::time::Duration::from_millis(
+            ms.parse().expect("latency in ms"),
+        ));
+        let mut app = LatencyProbe {
+            start: std::time::Instant::now(),
+            receiver,
+            delivered_ms: None,
+        };
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            tx.send(1_u8);
+        });
+        junie_tui::runtime::run(&mut app).expect("the event loop runs");
+        say(&format!(
+            "delivered after {} ms",
+            app.delivered_ms.expect("a message arrived")
+        ));
+        // The session is gone, so the terminal is back in line mode.
+        std::io::stdin()
+            .read_line(&mut String::new())
+            .expect("read the line");
+        return;
+    }
+    // The message is sent 100 ms in. A long latency leaves it queued until the
+    // next wake-up, so it cannot arrive before 1000 ms. Only lower bounds are
+    // asserted: an upper bound on the short latency would fail on a loaded host.
+    let quick = delivery_ms("10");
+    let slow = delivery_ms("1500");
+    assert!(
+        quick >= 100,
+        "a 10 ms latency delivered after {quick} ms, before the send"
+    );
+    assert!(slow >= 1_000, "a 1500 ms latency delivered after {slow} ms");
+}
