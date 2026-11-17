@@ -274,18 +274,32 @@ pub fn bounded_external_channel(
     )
 }
 
+/// What one [`pump_external`] turn did.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-struct ExternalTurn {
-    changed: bool,
-    exhausted: bool,
+pub struct ExternalTurn {
+    /// At least one handled message returned [`Outcome::Changed`].
+    pub changed: bool,
+    /// The count or time bound stopped the turn, so more messages may be
+    /// queued. The runtime schedules the next turn without waiting for input.
+    /// False when the queue ran dry or the application asked to quit.
+    pub exhausted: bool,
 }
 
-/// Hands the application one bounded group of queued external messages.
+/// Hands the application one bounded group of queued external messages: the
+/// runtime's per-turn budget, exposed so an example or test can run it
+/// without a terminal.
 ///
-/// The receiver is read again before every message, so a handler may replace
-/// or remove it. `exhausted` means the bound stopped the turn and more work
-/// may be queued, so the caller schedules another turn without waiting.
-fn pump_external(
+/// The turn handles at most `policy.max_messages` messages (a zero count is
+/// one) and stops early once `elapsed()` reaches `policy.max_duration`.
+/// `elapsed` reports the time since the turn began; the runtime passes a
+/// reading of a real clock and a test passes a fake one. The bound is checked
+/// between messages, and the first message is always handled when one is
+/// queued.
+///
+/// The receiver is read again before every message through
+/// [`Application::external`], so a handler may replace or remove it. The turn
+/// ends at once when [`Application::should_quit`] is true.
+pub fn pump_external(
     app: &mut impl Application,
     policy: ExternalPolicy,
     elapsed: impl Fn() -> Duration,
