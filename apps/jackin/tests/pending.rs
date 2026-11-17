@@ -328,6 +328,11 @@ fn stale_reply_does_not_notify_open_form() {
     let outcome = key_outcome(&app);
     app.deliver(&checked(ticket + 1, outcome));
     waiting(&mut app);
+    assert_eq!(
+        status(&app),
+        "Validating the source…",
+        "a reply the form did not ask for does not end the form's progress"
+    );
     click_text(&mut app, "Validate");
     assert_eq!(
         backend.checks().len(),
