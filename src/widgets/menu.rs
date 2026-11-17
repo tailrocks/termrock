@@ -9,9 +9,11 @@ use crate::core::hit::{Axis, ReleaseFrom};
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::core::keymap::{Nav, NavKeys, unassigned_chord};
 use crate::core::list::{Cursor, Moved, Navigable, RowFn, RowSource};
+use crate::core::response::Response;
 use crate::core::scroll::Scrollable;
 use crate::theme::{CursorStyle, Kind, Plane};
 use crate::ui::ctx::{RenderCtx, fill};
+use crate::ui::layer::{DismissReason, LayerSpec, Overlay};
 use crate::ui::popup::{Dismiss, Place, backdrop_id, place_with};
 use crate::ui::specimen::{Specimen, SpecimenState};
 use crate::ui::text::{truncate, width};
@@ -1457,5 +1459,34 @@ impl Specimen for ContextMenu {
         }
         m.render(area, buf, ctx);
         ctx.flush_overlays(buf);
+    }
+}
+
+impl Overlay for ContextMenu {
+    type Action = MenuAction;
+    fn dismiss(&self) -> Dismiss {
+        self.list.dismiss
+    }
+    fn spec(&self) -> LayerSpec {
+        LayerSpec::popover(self.list.dismiss)
+            .initial_focus(self.id)
+            .hides_page_focus(self.hides_page_focus())
+    }
+    fn on_dismiss(&mut self, _: DismissReason) -> Response<MenuAction> {
+        Response::emit(MenuAction::Dismissed)
+    }
+}
+
+impl Overlay for MenuBar {
+    type Action = MenuBarAction;
+    fn dismiss(&self) -> Dismiss {
+        self.dismiss
+    }
+    fn spec(&self) -> LayerSpec {
+        LayerSpec::popover(self.dismiss).hides_page_focus(self.hides_page_focus())
+    }
+    fn on_dismiss(&mut self, _: DismissReason) -> Response<MenuBarAction> {
+        self.close();
+        Response::emit(MenuBarAction::Closed)
     }
 }

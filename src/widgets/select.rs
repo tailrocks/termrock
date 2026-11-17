@@ -9,9 +9,11 @@ use crate::core::id::{Part, WidgetId};
 use crate::core::keymap::{Nav, NavKeys, unassigned_chord};
 use crate::core::list::{Cursor, KeyStep, Moved, Navigable, RowSource};
 use crate::core::refusal::{Control, Reason};
+use crate::core::response::Response;
 use crate::core::scroll::{Scrollable, TrackClick};
 use crate::theme::CursorStyle;
 use crate::ui::ctx::{RenderCtx, fill};
+use crate::ui::layer::{DismissReason, LayerSpec, Overlay};
 use crate::ui::popup::{Dismiss, Placement, backdrop_id, place_with, surface_for};
 use crate::widgets::keyhint::{Hint, hint};
 use crate::widgets::option_list::OptionList;
@@ -897,5 +899,18 @@ impl Bindings for Select {
         v.extend(nav_bindings(&self.list.nav, self.list.type_ahead));
         v.push(Binding::group("Esc", "Close"));
         v
+    }
+}
+
+impl Overlay for Select {
+    type Action = SelectAction;
+    fn dismiss(&self) -> Dismiss {
+        self.list.dismiss
+    }
+    fn spec(&self) -> LayerSpec {
+        LayerSpec::popover(self.list.dismiss)
+    }
+    fn on_dismiss(&mut self, _: DismissReason) -> Response<SelectAction> {
+        self.close().into()
     }
 }

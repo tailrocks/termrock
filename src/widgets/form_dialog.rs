@@ -4,12 +4,16 @@ use crate::core::hints::{HasHints, HintCx};
 use crate::core::id::WidgetId;
 use crate::core::intent::DismissReason;
 use crate::core::keymap::{Nav, NavKeys};
+use crate::core::response::Response;
 use crate::core::scroll::{ScrollPane, Scrollable};
 use crate::theme::{Strings, Tone};
 use crate::ui::ctx::RenderCtx;
+use crate::ui::layer::{LayerSpec, Overlay};
+use crate::ui::popup::Dismiss;
 use crate::ui::text::truncate;
 use crate::widgets::button::{Button, row_layout_right, row_lines};
 use crate::widgets::choice::{Checkbox, RadioGroup};
+use crate::widgets::icon_button::IconButton;
 use crate::widgets::input::{InputAction, TextInput};
 use crate::widgets::keyhint::Hint;
 use crate::widgets::scrollbar;
@@ -1184,6 +1188,23 @@ impl FormDialog {
                 .into(),
             _ => Response::ignored(),
         }
+    }
+}
+
+impl Overlay for FormDialog {
+    type Action = FormAction;
+    fn dismiss(&self) -> Dismiss {
+        self.dismiss
+    }
+    fn spec(&self) -> LayerSpec {
+        LayerSpec::modal(self.dismiss).initial_focus(self.initial_focus())
+    }
+    fn on_dismiss(&mut self, _: DismissReason) -> Response<FormAction> {
+        self.events.push(FormAction::Cancel);
+        Response::emit(FormAction::Cancel)
+    }
+    fn close_button(&self) -> Option<&IconButton> {
+        Some(&self.close_button)
     }
 }
 

@@ -11,10 +11,12 @@ use crate::core::response::Response;
 use crate::core::scroll::{HScroll, ScrollPane, ScrollState, Scrollable};
 use crate::theme::{ButtonKind, StatusKind, Strings};
 use crate::ui::ctx::{Backdrop, RenderCtx, fill};
+use crate::ui::layer::{DismissReason, LayerSpec, Overlay};
 pub use crate::ui::modal::{OUTER_MARGIN, body_bounds};
 use crate::ui::popup::{Dismiss, Place, Placement, place_with};
 use crate::ui::specimen::{Specimen, SpecimenState};
 use crate::widgets::button::{Button, ButtonRow, RowAlign, RowOverflow};
+use crate::widgets::icon_button::IconButton;
 use crate::widgets::input::{InputAction, TextInput};
 use crate::widgets::keyhint::{Hint, hint};
 use crate::widgets::panel::Panel;
@@ -1454,5 +1456,24 @@ fn dialog_field(d: &Dialog) -> Option<WidgetId> {
         DialogBody::Input(i) => Some(i.id),
         DialogBody::Facts { ack: Some(a), .. } => Some(a.input.id),
         _ => None,
+    }
+}
+
+impl Overlay for Dialog {
+    type Action = DialogResult;
+
+    fn dismiss(&self) -> Dismiss {
+        self.dismiss_in_force()
+    }
+    fn spec(&self) -> LayerSpec {
+        LayerSpec::modal(Overlay::dismiss(self)).initial_focus(self.initial_focus)
+    }
+
+    fn on_dismiss(&mut self, _: DismissReason) -> Response<DialogResult> {
+        let _ = self.dismissed();
+        Response::emit(self.result.unwrap_or(DialogResult::Cancelled))
+    }
+    fn close_button(&self) -> Option<&IconButton> {
+        Some(&self.close_button)
     }
 }

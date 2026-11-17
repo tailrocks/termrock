@@ -13,6 +13,7 @@ use crate::core::keymap::{
     Actions, KeyBinding, KeyMap, KeyboardCapabilities, Nav, NavKeys, deliverable_binding_for_with,
 };
 use crate::core::list::{Cursor, KeyStep, Navigable, RowSource};
+use crate::core::response::Response;
 use crate::theme::CursorStyle;
 use crate::ui::column_solver::{Col, solve};
 use crate::ui::ctx::{Backdrop, RenderCtx, fill};
@@ -20,7 +21,8 @@ use crate::ui::edit_menu::{
     EditCaps, EditMenu, EditMenuHost, edit_menu_key, edit_menu_pointer, edit_menu_route,
     point_field,
 };
-use crate::ui::popup::{Placement, place_with};
+use crate::ui::layer::{DismissReason, LayerSpec, Overlay};
+use crate::ui::popup::{Dismiss, Placement, place_with};
 use crate::ui::specimen::{Specimen, SpecimenState};
 use crate::ui::text::{TextClip, paint_graphemes, truncate, wider_than, width};
 use crate::widgets::edit::EditField;
@@ -1601,6 +1603,19 @@ fn picker_sample(p: &Picker, state: SpecimenState) -> Picker {
         _ => {}
     }
     p
+}
+
+impl Overlay for Picker {
+    type Action = PickerAction;
+    fn dismiss(&self) -> Dismiss {
+        self.list().dismiss
+    }
+    fn spec(&self) -> LayerSpec {
+        LayerSpec::modal(self.list().dismiss).initial_focus(self.id)
+    }
+    fn on_dismiss(&mut self, _: DismissReason) -> Response<PickerAction> {
+        Response::emit(PickerAction::Cancelled)
+    }
 }
 
 #[cfg(test)]

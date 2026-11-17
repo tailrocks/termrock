@@ -7,12 +7,15 @@ use crate::core::event::{Key, Outcome};
 use crate::core::hints::{HasHints, HintCx};
 use crate::core::id::WidgetId;
 use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
+use crate::core::response::Response;
 use crate::core::scroll::{ScrollPane, Scrollable};
 use crate::ui::ctx::RenderCtx;
+use crate::ui::layer::{DismissReason, LayerSpec, Overlay};
 use crate::ui::modal::Frame;
-use crate::ui::popup::Placement;
+use crate::ui::popup::{Dismiss, Placement};
 use crate::ui::text::{truncate, width};
 use crate::widgets::button::Button;
+use crate::widgets::icon_button::IconButton;
 use crate::widgets::keyhint::Hint;
 use crate::widgets::scrollbar;
 
@@ -455,6 +458,24 @@ impl crate::core::pointer::MouseTarget for HelpOverlay {
             return self.on_click(ev.id).into();
         }
         Response::ignored()
+    }
+}
+
+impl Overlay for HelpOverlay {
+    type Action = ();
+    fn dismiss(&self) -> Dismiss {
+        self.dismiss
+    }
+
+    fn spec(&self) -> LayerSpec {
+        LayerSpec::modal(self.dismiss).initial_focus(self.done.id)
+    }
+    fn on_dismiss(&mut self, _: DismissReason) -> Response<()> {
+        self.closed = true;
+        Response::changed()
+    }
+    fn close_button(&self) -> Option<&IconButton> {
+        Some(&self.close_button)
     }
 }
 

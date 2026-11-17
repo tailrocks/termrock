@@ -12,12 +12,6 @@ production	src/core/hints.rs	widgets::keyhint
 production	src/core/selection.rs	theme
 production	src/theme.rs	ui::ctx
 production	src/theme.rs	widgets::panel
-production	src/ui/layer.rs	widgets::choice_dialog
-production	src/ui/layer.rs	widgets::dialog
-production	src/ui/layer.rs	widgets::form_dialog
-production	src/ui/layer.rs	widgets::help
-production	src/ui/layer.rs	widgets::info_dialog
-production	src/ui/layer.rs	widgets::select
 test	src/ui/layer.rs	ui::layers
 test	src/widgets/code/tests.rs	test_alloc
 test	src/widgets/picker.rs	ui::layers
