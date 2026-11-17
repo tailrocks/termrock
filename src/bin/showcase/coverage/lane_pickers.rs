@@ -1,11 +1,10 @@
 // Lane `pickers` of the #14 burn-down: this lane's proofs and exceptions.
 //
-// Edit only this file, `../app_tests_catalog/pickers.rs`, `../coverage_debt/pickers.txt`
+// Edit only this file, `../app_tests_catalog/pickers.rs`,
 // and the `lane:pickers` block of `ScenarioId` in `../coverage.rs`. One record per
 // line keeps a restack mechanical. A record is also a claim the gate checks:
 // a proof names scenarios that really exercise the API, an exception names a
-// live `#[test]` that uses it. Delete the API's line from the debt file in the
-// same commit.
+// live `#[test]` that uses it.
 
 use super::{CapabilityException, CapabilityProof, ScenarioId};
 use crate::app::PageId;

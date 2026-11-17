@@ -3,7 +3,7 @@
 //! Each scenario builds real components, sends real input, reads typed
 //! outcomes and renders to a `Buffer`. Register one `ScenarioCase` per
 //! `ScenarioId` variant from the `lane:gridtable` block in `../coverage.rs`. Edit only
-//! this file, `../coverage/lane_gridtable.rs` and `../coverage_debt/gridtable.txt`.
+//! this file and `../coverage/lane_gridtable.rs`.
 
 use junie_tui::core::event::{ClientPlatform, Key, Outcome};
 use junie_tui::core::focus::BlurAction;
