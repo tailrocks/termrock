@@ -7,7 +7,7 @@ use crate::core::event::{Key, Outcome};
 use crate::core::hit::Axis;
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::core::keymap::unassigned_chord;
-use crate::core::keymap::{Actions, KeyBinding, KeyMap, NavKeys, lookup};
+use crate::core::keymap::{Actions, KeyBinding, KeyMap, NavKeys, hint_key, lookup};
 use crate::core::list::{Cursor, Navigable, RowFn, RowSource};
 use crate::theme::{ButtonKind, Kind};
 use crate::ui::context::ContextConfig;
@@ -269,6 +269,20 @@ impl ChipBar {
         self.add_label = label;
         self.invalidate_chips();
         true
+    }
+
+    /// The key that runs `cmd`, as a hint or help row would show it. `None`
+    /// when no key the terminal delivers is bound to `cmd`, or when the bar
+    /// does not offer the action: [`ChipCmd::Add`] without an add label and
+    /// [`ChipCmd::Lead`] without a lead label. Those are the same two checks
+    /// [`ChipBar::on_key`] makes, so a hint never advertises a dead key.
+    pub fn key_hint(&self, cmd: ChipCmd) -> Option<&'static str> {
+        let offered = match cmd {
+            ChipCmd::Add => self.add_label.is_some(),
+            ChipCmd::Lead => self.lead.is_some(),
+            ChipCmd::Remove | ChipCmd::ClearAll | ChipCmd::ShowHidden => true,
+        };
+        offered.then(|| hint_key(&self.keymap, cmd)).flatten()
     }
 
     pub fn lead(&self) -> Option<&str> {

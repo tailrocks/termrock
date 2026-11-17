@@ -31,7 +31,7 @@ use termrock::theme::{ColorLevel, SyntaxTone, Theme, Tone};
 use termrock::ui::ctx::{Interaction, RenderCtx};
 use termrock::ui::layout::{Split, SplitDir};
 use termrock::ui::popup::{Dismiss, Placement};
-use termrock::widgets::chips::{Chip, ChipAction, ChipBar};
+use termrock::widgets::chips::{Chip, ChipAction, ChipBar, ChipCmd};
 use termrock::widgets::choice::Checkbox;
 use termrock::widgets::choice_dialog::ChoiceDialog;
 use termrock::widgets::code::{CodeEditor, Diagnostic, Highlighter, Segmenter, Severity};
@@ -2801,8 +2801,14 @@ fn chip_bar_editing() {
     assert!(!text.contains("+ Add filter"));
     let (_, action) = bar.on_key(&key(KeyCode::Char('+')));
     assert_eq!(action, Some(ChipAction::Add));
+    assert_eq!(
+        bar.key_hint(ChipCmd::Add),
+        Some("+"),
+        "the hint names the key"
+    );
 
     assert!(bar.set_add_label(None));
+    assert_eq!(bar.key_hint(ChipCmd::Add), None, "no add label, no hint");
     let text = text_of(&draw(&mut bar));
     assert!(!text.contains("+ New"), "the add action is gone:\n{text}");
     let (_, action) = bar.on_key(&key(KeyCode::Char('+')));

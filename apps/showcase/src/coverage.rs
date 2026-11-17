@@ -2324,6 +2324,7 @@ CapabilityProof { api: "ui::scroll_view::VisibleWindow::project_content_rect", r
     CapabilityProof { api: "widgets::chips::ChipBar::add_label", route: PageId::Chips, scenarios: &[ScenarioId::ChipBarEditing], feature: None },
     CapabilityProof { api: "widgets::chips::ChipBar::chips", route: PageId::Chips, scenarios: &[ScenarioId::ChipBarEditing], feature: None },
     CapabilityProof { api: "widgets::chips::ChipBar::insert_chip", route: PageId::Chips, scenarios: &[ScenarioId::ChipBarEditing], feature: None },
+    CapabilityProof { api: "widgets::chips::ChipBar::key_hint", route: PageId::Chips, scenarios: &[ScenarioId::ChipBarEditing], feature: None },
     CapabilityProof { api: "widgets::chips::ChipBar::lead", route: PageId::Chips, scenarios: &[ScenarioId::ChipBarEditing], feature: None },
     CapabilityProof { api: "widgets::chips::ChipBar::remove_chip", route: PageId::Chips, scenarios: &[ScenarioId::ChipBarEditing], feature: None },
     CapabilityProof { api: "widgets::chips::ChipBar::set_add_label", route: PageId::Chips, scenarios: &[ScenarioId::ChipBarEditing], feature: None },
