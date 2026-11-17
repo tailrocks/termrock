@@ -43,6 +43,24 @@ The applications are separate packages that import only the facade:
 `cargo run -p termrock-showcase`, `-p termrock-tablepro`, `-p termrock-holla`
 and `cargo run -p jackin-console --features demo --bin jackin-preview`.
 
+## Examples
+
+Six small programs in [`crates/termrock/examples`](crates/termrock/examples).
+Each imports only `termrock::`, runs headless against a ratatui `TestBackend`
+with scripted events, prints the screen and its outcome, and exits. Each file
+also carries a `#[test]` for the outcome it shows
+(`cargo nextest run -p termrock --examples`). None needs the `cli` or
+`terminal` feature.
+
+| Example | Shows | Run |
+| --- | --- | --- |
+| [`validated_input`](crates/termrock/examples/validated_input.rs) | A refused value does not replace the saved one; the error clears on a valid value. | `cargo run -p termrock --example validated_input` |
+| [`keyed_list`](crates/termrock/examples/keyed_list.rs) | A list borrowed from the host's keyed rows keeps its cursor on its record when the rows are reordered. | `cargo run -p termrock --example keyed_list` |
+| [`grid_effects`](crates/termrock/examples/grid_effects.rs) | A grid edit arrives as typed actions in order: save the cell, then leave the grid. | `cargo run -p termrock --example grid_effects` |
+| [`nested_scroll`](crates/termrock/examples/nested_scroll.rs) | The inner scroll view consumes a key before the outer one, which gets what the inner cannot use. | `cargo run -p termrock --example nested_scroll` |
+| [`modal_focus`](crates/termrock/examples/modal_focus.rs) | A modal gets keys before the page, the page leaves the focus ring, and closing restores focus. | `cargo run -p termrock --example modal_focus` |
+| [`bounded_messages`](crates/termrock/examples/bounded_messages.rs) | External messages beyond the per-turn budget wait in a bounded queue; a full queue returns the message to the producer. | `cargo run -p termrock --example bounded_messages` |
+
 ## Generated-workflow snapshot bounds
 
 The generated-workflow guard accepts recursive Git tree listings up to 8 MiB and 8,192 entries, with a 16 MiB maximum per blob and a 512 MiB maximum total of materialized blob occurrences. The measured baseline HEAD contains 608 blobs totaling 191,075,553 raw Git blob bytes; its largest blob is 1,876,744 bytes. The limits apply to raw blob bytes, count repeated object IDs and symlink targets once per tree entry, and leave room above that measured snapshot. Future or historical snapshots beyond these limits are rejected.
