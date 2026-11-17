@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use junie_tui::ui::layout::SplitDir;
+use termrock::ui::layout::SplitDir;
 
 use crate::domain::agent::Agent;
 use crate::domain::instance::InstanceId;

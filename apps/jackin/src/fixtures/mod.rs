@@ -31,7 +31,7 @@ use crate::world::{
     DaemonHealth, FsEntry, GithubRepo, GlobalConfig, TrustKind, TrustRow, World, WorldParts,
     refresh_snapshots,
 };
-use junie_tui::ui::layout::SplitDir;
+use termrock::ui::layout::SplitDir;
 
 pub mod scenario;
 pub mod surfaces;
@@ -1469,8 +1469,8 @@ fn scripted(request: &PaneRequest) -> impl FnOnce(PaneSpawn) -> Box<dyn PaneBody
     |spawn| Box::new(ScriptPane::new(request, &spawn, SimScripts::shared()).booted())
 }
 
-fn settlement_history() -> Vec<junie_tui::widgets::viewport::Line> {
-    let mut history: Vec<junie_tui::widgets::viewport::Line> = vec![];
+fn settlement_history() -> Vec<termrock::widgets::viewport::Line> {
+    let mut history: Vec<termrock::widgets::viewport::Line> = vec![];
     for n in 0..1_960u32 {
         let status = match n % 7 {
             0 => "retrying attempt=2",
@@ -1479,23 +1479,23 @@ fn settlement_history() -> Vec<junie_tui::widgets::viewport::Line> {
         };
         let items = 9 + (n * 37) % 50;
         let l = if n % 60 == 0 {
-            vec![junie_tui::widgets::viewport::Span::muted(format!(
+            vec![termrock::widgets::viewport::Span::muted(format!(
                 "==== settlement.batch.2026-09-03T{:02}:{:02}Z ====",
                 9 + n / 360,
                 (n / 6) % 60
             ))]
         } else if n % 23 == 0 {
-            vec![junie_tui::widgets::viewport::Span::new(
+            vec![termrock::widgets::viewport::Span::new(
                 format!("warn: batch {} backoff 500 ms", 4000 + n),
-                junie_tui::theme::Tone::Warning,
+                termrock::theme::Tone::Warning,
             )]
         } else if n % 97 == 0 {
-            vec![junie_tui::widgets::viewport::Span::new(
+            vec![termrock::widgets::viewport::Span::new(
                 format!("error: batch {} gave up after 3 attempts", 4000 + n),
-                junie_tui::theme::Tone::Error,
+                termrock::theme::Tone::Error,
             )]
         } else {
-            vec![junie_tui::widgets::viewport::Span::plain(format!(
+            vec![termrock::widgets::viewport::Span::plain(format!(
                 "batch {}  {:>2} items   status={status}",
                 4000 + n,
                 items

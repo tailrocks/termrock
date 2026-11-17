@@ -4,7 +4,7 @@
 
 use std::sync::Arc;
 
-use junie_tui::terminal::{
+use termrock::terminal::{
     ReplayTiming, SessionClipboardContext, SessionClipboardDecision, SessionClipboardRefusal,
     SessionCommand, SessionConfig, SessionDetach, SessionEnd, SessionEvent, SessionHostPolicy,
     SessionLease, SessionLink, SessionSent, SessionSize, SessionSource, SessionStatus,

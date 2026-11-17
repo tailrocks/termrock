@@ -27,8 +27,8 @@ use crate::domain::workspace::{
     EnvVar, Mount, RoleEntry, RoleName, Usability, Workspace, WorkspaceId,
 };
 use crate::panes::{Daemon, PaneId, PanePolicy};
-use junie_tui::clock::SimClock;
-use junie_tui::shell::JobKey;
+use termrock::clock::SimClock;
+use termrock::shell::JobKey;
 
 mod projection;
 
@@ -40,7 +40,7 @@ pub use projection::{
 pub const REFRESH_TIMEOUT_SECS: i64 = 30;
 
 pub mod job {
-    use junie_tui::shell::JobKey;
+    use termrock::shell::JobKey;
     pub const WORKSPACE_SAVE: JobKey = JobKey::new("workspace.save");
     pub const SETTINGS_SAVE: JobKey = JobKey::new("settings.save");
     pub const ROLE_LOAD: JobKey = JobKey::new("role.load");
@@ -1149,8 +1149,8 @@ impl World {
         started
     }
 
-    pub fn about_props(&self) -> Vec<junie_tui::widgets::props::Prop> {
-        use junie_tui::widgets::props::Prop;
+    pub fn about_props(&self) -> Vec<termrock::widgets::props::Prop> {
+        use termrock::widgets::props::Prop;
         self.surfaces
             .about
             .iter()
@@ -1408,7 +1408,7 @@ impl World {
         let roster = self.roster();
         let mut panes_changed = Vec::new();
         for (id, d) in self.daemons.iter_mut() {
-            junie_tui::record_work!(SchedulingRecordsVisited, 1usize);
+            termrock::record_work!(SchedulingRecordsVisited, 1usize);
             self.projection.work.count_running_lookup();
             if !roster.is_running(id) {
                 continue;

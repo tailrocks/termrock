@@ -5,8 +5,8 @@
 //! [`Moment`] and turned into text at draw, so the clock never invalidates a
 //! projection.
 
-use junie_tui::ui::text::{DurationStyle, duration};
-use junie_tui::widgets::progress::spinner_frame;
+use termrock::ui::text::{DurationStyle, duration};
+use termrock::widgets::progress::spinner_frame;
 
 use crate::world::World;
 

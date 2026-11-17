@@ -1,17 +1,17 @@
-use junie_tui::core::event::{Key, Outcome};
+use termrock::core::event::{Key, Outcome};
 
-use junie_tui::core::hit::Axis;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layer::{DismissReason, Layer, LayerCx, LayerOut, LayerSpec};
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::option_list::Item;
-use junie_tui::widgets::picker::{Picker, PickerAction, PickerStatus};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
+use termrock::core::hit::Axis;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layer::{DismissReason, Layer, LayerCx, LayerOut, LayerSpec};
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::option_list::Item;
+use termrock::widgets::picker::{Picker, PickerAction, PickerStatus};
 
 use crate::backend::{FieldKind, OnePassword, OpError, OpListing, OpScope, Ticket};
 use crate::domain::account::AccountId;
@@ -22,11 +22,11 @@ use crate::world::{AgentOffer, World};
 
 use super::ModalResult;
 use crate::domain::docker::DockerRiskText;
-use junie_tui::theme::StatusKind;
-use junie_tui::ui::text::plural;
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::dialog::Dialog;
-use junie_tui::widgets::props::Prop;
+use termrock::theme::StatusKind;
+use termrock::ui::text::plural;
+use termrock::widgets::button::Button;
+use termrock::widgets::dialog::Dialog;
+use termrock::widgets::props::Prop;
 
 pub fn unsaved_dialog(id: WidgetId, changes: usize) -> Dialog {
     Dialog::confirm(
@@ -159,8 +159,8 @@ pub fn docker_risk_dialog(
     d
 }
 
-use junie_tui::widgets::file_browser::{Choose, FileCmd, UrlEntry};
-pub use junie_tui::widgets::file_browser::{FileBrowser, FileBrowserResult as BrowserResult};
+use termrock::widgets::file_browser::{Choose, FileCmd, UrlEntry};
+pub use termrock::widgets::file_browser::{FileBrowser, FileBrowserResult as BrowserResult};
 
 fn plain_token(text: &str) -> bool {
     !text.is_empty()
@@ -259,11 +259,11 @@ pub fn file_browser(
     b
 }
 
-pub use junie_tui::widgets::choice_dialog::ChoiceDialog;
-pub use junie_tui::widgets::form_dialog::{
+pub use termrock::widgets::choice_dialog::ChoiceDialog;
+pub use termrock::widgets::form_dialog::{
     FieldValue, FormAction, FormDialog, FormField, FormFieldKind as FieldKindW, FormValues,
 };
-pub use junie_tui::widgets::info_dialog::{InfoDialog, InfoResult};
+pub use termrock::widgets::info_dialog::{InfoDialog, InfoResult};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OpStep {
@@ -274,7 +274,7 @@ pub enum OpStep {
 }
 
 pub struct OpFlow {
-    pub dismiss: junie_tui::ui::popup::Dismiss,
+    pub dismiss: termrock::ui::popup::Dismiss,
     pub step: OpStep,
     pub account: Option<String>,
     pub vault: Option<(String, String)>,
@@ -296,7 +296,7 @@ pub struct OpFlow {
 impl OpFlow {
     pub fn new(id: WidgetId, op: &dyn OnePassword) -> Self {
         let mut f = Self {
-            dismiss: junie_tui::ui::popup::Dismiss::LIGHT,
+            dismiss: termrock::ui::popup::Dismiss::LIGHT,
             step: OpStep::Account,
             account: None,
             vault: None,
@@ -728,4 +728,4 @@ impl Layer<ModalResult, World> for OpFlow {
     }
 }
 
-pub use junie_tui::widgets::help::HelpOverlay;
+pub use termrock::widgets::help::HelpOverlay;
