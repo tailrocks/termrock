@@ -17,10 +17,18 @@ root.
 | Lint, product shape | `cargo clippy --locked -p jackin-console --all-targets --no-default-features --features product -- -D warnings` |
 | Format check | `cargo fmt --all --check` |
 
-The workspace default members are `junie-tui` and `jackin-console`
-(`apps/jackin`), so these commands cover both crates. The `functional`
-profile selects the `functional` target of each, the root journeys and
-the jackin journeys.
+The workspace default members are `junie-tui`, `termrock`, the four app
+packages (`apps/holla`, `apps/jackin`, `apps/showcase`, `apps/tablepro`) and
+`functional-cross`, so these commands cover all of them. The `functional`
+profile selects the `functional` target of `junie-tui`, `jackin-console` and
+`functional-cross`. To run the root journeys against freshly built candidates,
+use `python3 scripts/run_functional.py` (see
+[functional testing](functional-testing.md)).
+
+The independent consumer fixtures under `tests/consumers/` are separate
+workspaces, so no workspace command covers them. Run
+`bash scripts/check-consumers.sh` to build and run all four, each in its own
+Cargo invocation and target directory.
 
 `jackin-console` has the feature `demo`, off by default. Without it the
 `fixtures` and `sim` modules, the `jackin-preview` binary and the

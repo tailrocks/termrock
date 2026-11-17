@@ -3,9 +3,9 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/h02_reload/` and each checkpoint's dots become underscores.
 //!
-//! `Go::Reload` (`src/bin/holla/app.rs`) re-parses the same simulated file and
+//! `Go::Reload` (`apps/holla/src/app.rs`) re-parses the same simulated file and
 //! has no error path. `TrustStore::save_failure` is only read from `approve`
-//! (`src/bin/holla/domain/custom.rs`), and this scenario never sets it. The
+//! (`apps/holla/src/domain/custom.rs`), and this scenario never sets it. The
 //! drawn re-read is the status line. The action ids do not change, and nothing
 //! starts. The header age is `ago(now - 1s)`, so it stays `1 s ago` without
 //! `--frame`.

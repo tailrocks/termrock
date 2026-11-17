@@ -7,7 +7,7 @@
 //!
 //! Showcase `with_motion` starts `tick` at `frame`. While paused, startup
 //! runs each page `on_tick` `frame` times, and `on_tick` returns before the
-//! tick increments (`src/bin/showcase/app.rs`). The tick increments only
+//! tick increments (`apps/showcase/src/app.rs`). The tick increments only
 //! when the page is animating and `motion.animates()`.
 //!
 //! The Status & hints playground paints `render_spinner` and a progress bar

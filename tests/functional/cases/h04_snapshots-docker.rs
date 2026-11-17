@@ -8,8 +8,8 @@
 //! requires the status-bar size from that paint.
 //!
 //! `docker-cleanup` starts with the query `docker clean` selected
-//! (`App::start` in `src/bin/holla/app.rs`). Esc clears a selection before it
-//! clears the text (`FinderPage` in `src/bin/holla/screens/finder.rs`).
+//! (`App::start` in `apps/holla/src/app.rs`). Esc clears a selection before it
+//! clears the text (`FinderPage` in `apps/holla/src/screens/finder.rs`).
 
 use tui_test::TerminalSnapshot;
 

@@ -17,7 +17,7 @@
 //! ticks (`World::tick`, `TICK_MS`), and the cancel, the spinner glyph and the
 //! status lifetime follow that clock, so wall time under load cannot move the
 //! frozen two-entry banner. `scan_ticks` is 48 for `parity-disk-scan`
-//! (`src/bin/holla/domain/parity.rs`), so one 48-tick step completes a scan.
+//! (`apps/holla/src/domain/parity.rs`), so one 48-tick step completes a scan.
 
 use std::path::PathBuf;
 use tui_test::TerminalSnapshot;

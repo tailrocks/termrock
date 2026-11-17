@@ -4,12 +4,12 @@
 //! `pre_refactor/h04_actions/` and each checkpoint's dots become underscores.
 //!
 //! The shots are the git Push confirmation. A live activity redraws a spinner
-//! every 80 ms (`App::animating`, `TICK_MS` in `src/bin/holla/sim/world.rs`),
+//! every 80 ms (`App::animating`, `TICK_MS` in `apps/holla/src/sim/world.rs`),
 //! so the frame is taken before Run. Cancel is Esc: `Dismiss::LIGHT` closes
-//! `open_confirm_one` without `execute_item` (`src/bin/holla/app.rs`).
+//! `open_confirm_one` without `execute_item` (`apps/holla/src/app.rs`).
 //!
 //! The Push confirmation preview prints `live · N s ago`, where N counts
-//! simulated ticks (`Freshness::Live` in `src/bin/holla/domain/action.rs`). On
+//! simulated ticks (`Freshness::Live` in `apps/holla/src/domain/action.rs`). On
 //! wall ticks a loaded run reaches `1 s ago` before the frame is stored, so the
 //! git Push journey launches on the test clock and steps it to run the command.
 

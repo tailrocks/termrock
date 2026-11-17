@@ -3,7 +3,7 @@
 //! Tuiscotti ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/h06_quit/`. The shot is the open cleanup dialog, before
 //! Stay, once the page title is `Cleanup report`. A live activity cannot
-//! be that shot: `strip_items` and `draw_status` in `src/bin/holla/app.rs`
+//! be that shot: `strip_items` and `draw_status` in `apps/holla/src/app.rs`
 //! keep a spinner on the tab and the status bar, and that frame never
 //! holds still.
 //!
