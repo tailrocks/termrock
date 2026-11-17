@@ -3389,6 +3389,30 @@ fn refresh_revision_retirement_preserves_newer_ticket() {
 }
 
 #[test]
+fn a_stale_reply_does_not_re_post_the_durability_warning() {
+    let (mut app, stale, snapshot) = roster_out(Scenario::Returning);
+    let newer = hold_roster_refresh(&mut app);
+    assert_ne!(stale, newer);
+    app.world
+        .note_committed_save_warning(SaveWarning::DirectorySync);
+    app.shell
+        .status
+        .set("Opened Spare", termrock::theme::Tone::Secondary);
+    assert_eq!(status(&app), "Opened Spare");
+
+    assert_eq!(
+        app.deliver(&roster_answer(stale, snapshot)),
+        Outcome::Ignored,
+        "the reply of a retired request is not news"
+    );
+    assert_eq!(
+        status(&app),
+        "Opened Spare",
+        "a reply the world rejects must not touch the status line"
+    );
+}
+
+#[test]
 fn duplicate_current_refresh_is_stale() {
     let (mut app, ticket, snapshot) = roster_out(Scenario::Returning);
     let mut shrunk = snapshot.clone();

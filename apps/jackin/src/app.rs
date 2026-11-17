@@ -733,10 +733,10 @@ impl App {
             _ => false,
         };
         let absorbed = self.world.absorb(m);
-        self.show_committed_save_warning();
         if absorbed == Absorbed::Stale {
             return Outcome::Ignored;
         }
+        self.show_committed_save_warning();
         self.tell_forms_of_reply(m);
         let validation = matches!(m, Msg::AccountValidated { .. });
         let mut ended = !validation

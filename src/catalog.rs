@@ -2270,6 +2270,7 @@ pub static CAPABILITIES: &[Capability] = &[
     Capability::function("widgets::chips::ChipBar::update_chip"),
     Capability::function("widgets::chips::ChipBar::add_label"),
     Capability::function("widgets::chips::ChipBar::set_add_label"),
+    Capability::function("widgets::chips::ChipBar::key_hint"),
     Capability::function("widgets::chips::ChipBar::lead"),
     Capability::function("widgets::chips::ChipBar::set_lead"),
     Capability::ty("widgets::choice::CheckHit"),

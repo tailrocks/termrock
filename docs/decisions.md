@@ -115,3 +115,67 @@ Migration: see "Breaking changes in v0.1 and migration" in
 [the API contract](api-contract.md). A host that needs one of these ideas again
 adds it with a producer and a test through a real route in the same change,
 which is the bar the removed items did not meet.
+
+## 2026-11-18: Hiding a dirty FormDialog input follows its blur policy (#87)
+
+Context: #87 selected the contract that hiding a field ends its transient
+interaction, "Input ends editing while retaining current text as programmatic
+state (no implicit parse/commit/Changed)". PR #185 shipped that. Train fix
+`e005e7c77` (the paint-form train, #262, a codex review finding) then changed
+it: hiding a dirty input now ends the edit through `TextInput::on_blur`.
+`BlurAction::Cancel` reverts to the committed text and reports nothing;
+`Commit` and `Keep` retain the typed text and the form reports
+`FormAction::Changed` once. The independent audit of main `fb5c9ed63` flagged
+the difference from #87's text, and no record explained it.
+
+Decision: keep the shipped behaviour. The first contract was wrong for two
+reasons the review found:
+
+- It ignored the input's own `BlurAction`. A `Cancel` input promises that
+  uncommitted text never survives losing the edit. Adopting the typed text as
+  the new baseline on hide broke that promise for the one blur path (hiding)
+  that no user gesture visibly triggers.
+- It changed the values in `FormValues` with no event. A consumer that
+  tracks `Changed` (the dirty mark, the quit guard, Jackin's `form_changed`
+  hook that drops a pending validation) never learned that the retained text
+  was the user's edit, so the form held text its consumer had not been told
+  about.
+
+The rest of #87 is unchanged: hiding adds no step of its own beyond the
+input's blur (a `Commit` blur runs the input's validator, as any blur does),
+hidden values stay in `FormValues`, reveal restores
+value and configuration but never an editing session, and a Select closes and
+cancels its capture. Hiding an already hidden field reports nothing a second
+time.
+
+Pinned by `form_hiding_a_dirty_input_follows_its_blur_policy` in
+`src/widgets/form_dialog/tests.rs` (`Commit`, `Keep` and `Cancel`). The
+contract is documented on `FormDialog::set_visible`. Consumers: Jackin's
+Accounts and Config forms and Showcase's connection form call `set_visible`
+when a source, kind or driver field changes, so the input being hidden is not
+mid-edit there. Their tests pass unchanged.
+
+## 2026-11-18: Showcase keeps its own quoting helper (#181)
+
+Context: #181 asked for one shared identifier-quoting helper owned by
+TablePro's SQL mapping. Showcase and TablePro are separate binaries with no
+shared module, and the library stays SQL-free, so the acceptance line cannot
+be met literally. The scope note on #181 (from the review of PR #193) records
+the split.
+
+Decision: TablePro keeps `quote_ident` and `table_ident` in
+`apps/tablepro/src/model.rs`, which the DDL view reuses. Showcase keeps a
+3-line demo helper in `apps/showcase/src/pages/grid.rs`. Both double an
+embedded quote the same way, and both have tests for it. The helper is not
+moved into the library because the library holds no SQL concept, and it is
+not shared between the apps because that would make one demo depend on the
+other's binary. Revisit only if the library gains a SQL-neutral
+identifier-quoting capability with a consumer in each app.
+
+TablePro's filter SQL (`apps/tablepro/src/sql.rs`) keeps one policy of its
+own: plain lowercase names print bare so a previewed filter reads as typed.
+Review found that its reserved-word list was incomplete (a column named
+`current_date`, `fetch` or `natural` printed bare and no longer meant the
+column). It now lists every PostgreSQL reserved word and quotes through
+`model::quote_ident`, so TablePro has one place that doubles an embedded
+quote. Pinned by `issue181_every_postgres_reserved_word_is_quoted_in_filter_sql`.

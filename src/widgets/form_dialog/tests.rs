@@ -437,6 +437,22 @@ fn form_hiding_a_dirty_input_follows_its_blur_policy() {
 }
 
 #[test]
+fn form_hiding_a_dirty_keep_input_retains_the_edit_and_reports_it() {
+    let mut form = source_form();
+    match &mut form.field_mut("secret").expect("field").kind {
+        FormFieldKind::Input(i) => i.blur_action = BlurAction::Keep,
+        _ => panic!("not an input"),
+    }
+    let mut rig = Rig::with(form);
+    type_into_secret(&mut rig, "x");
+    rig.form.set_visible("secret", false);
+    assert_eq!(rig.input("secret").text(), "x", "keep retains the edit");
+    assert!(!rig.input("secret").editing);
+    assert_eq!(rig.form.events, vec![FormAction::Changed("secret".into())]);
+    assert_eq!(rig.form.text("secret"), "x", "the hidden value is kept");
+}
+
+#[test]
 fn form_hidden_select_closes_and_ignores_release() {
     let mut rig = Rig::with(source_form());
     rig.open_driver();

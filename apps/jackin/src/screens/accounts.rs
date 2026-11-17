@@ -3130,6 +3130,18 @@ impl Screen for AccountsScreen {
         }
     }
 
+    /// A source check that is not the one the form waits for leaves the
+    /// form's "Validating the source…" progress running.
+    fn job_continues(&self, m: &Msg) -> bool {
+        let Msg::SourceChecked { ticket, .. } = m else {
+            return false;
+        };
+        self.form
+            .as_ref()
+            .and_then(|ctx| ctx.check.as_ref())
+            .is_some_and(|check| check.ticket != *ticket)
+    }
+
     fn strip_right(&self, w: &World) -> Vec<Segment> {
         let n = w
             .accounts

@@ -952,12 +952,13 @@ impl TableTab {
                 vec![hint("←→", "Switch"), hint("Ctrl+D", "Data / Structure")]
             }
             Some(f) if f == self.chips.id => {
-                let km = &self.chips.keymap;
                 let mut h = vec![hint("Enter", "Edit filter"), hint("Space", "Enable")];
-                h.extend(hint_key(km, ChipCmd::Remove).map(|k| hint(k, "Remove")));
-                if self.chips.add_label().is_some() {
-                    h.extend(hint_key(km, ChipCmd::Add).map(|k| hint(k, "Add")));
-                }
+                h.extend(
+                    self.chips
+                        .key_hint(ChipCmd::Remove)
+                        .map(|k| hint(k, "Remove")),
+                );
+                h.extend(self.chips.key_hint(ChipCmd::Add).map(|k| hint(k, "Add")));
                 h
             }
             Some(f) if f == self.structure_tabs.id => {
