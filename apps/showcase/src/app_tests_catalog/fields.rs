@@ -22,7 +22,8 @@ use termrock::ui::ctx::FocusVisible;
 use termrock::ui::tooltip::Tip;
 use termrock::widgets::action_row::ActionRow;
 use termrock::widgets::button::{
-    Button, ButtonRow, MORE_LABEL, RowAlign, RowOverflow, row_layout, row_layout_right, row_lines,
+    Button, ButtonRow, MORE_LABEL, RowAlign, RowLayout, RowOverflow, row_layout, row_layout_right,
+    row_lines,
 };
 use termrock::widgets::choice::{CheckHit, RadioGroup, Toggle};
 use termrock::widgets::code::{CodeCmd, CodeEditor as Editor, EditorAction};
@@ -274,7 +275,7 @@ fn fields_button_row_layout() {
     assert_eq!(start.align, RowAlign::Start);
     assert_eq!(start.overflow, RowOverflow::More);
     assert_eq!(start.gap, None);
-    let natural = start.layout(area, &buttons, &theme);
+    let natural: RowLayout = start.layout(area, &buttons, &theme);
     assert!(natural.more.is_none() && natural.hidden.is_empty());
     let gap = theme.spacing.button_gap;
     assert_eq!(natural.rects[1].unwrap().x, 7 + gap);
@@ -2279,6 +2280,16 @@ fn fields_text_area_editing() {
         )
     );
 
+    // A host that ends the session itself calls `commit`: the field stops
+    // editing and drops its selection, and keeps what was typed.
+    let mut hosted = base("te.host");
+    hosted.begin_edit();
+    hosted.field.buffer.select_all();
+    assert!(hosted.field.buffer.has_selection());
+    hosted.commit();
+    assert!(!hosted.editing && !hosted.field.buffer.has_selection());
+    assert_eq!(hosted.field.text(), "one\ntwo\nthree\nfour\nfive");
+
     // Disabled fields ignore keys and pastes.
     let mut off = base("te.off").disabled(true);
     assert_eq!(off.on_key(&key(KeyCode::Enter)), (Outcome::Ignored, None));
@@ -2421,6 +2432,9 @@ fn script_editor(name: &str) -> Editor {
 
 fn fields_code_editor_keys() {
     // Idle keys: block navigation and the vim-style entry keys.
+    bound(KeyBinding::char('{'), CodeCmd::PrevBlock);
+    bound(KeyBinding::char('}'), CodeCmd::NextBlock);
+    bound(KeyBinding::char('a'), CodeCmd::Append);
     let mut editor = script_editor("ce.nav");
     assert_eq!(editor.blocks(), vec![0..10, 12..21, 23..33]);
     assert_eq!(editor.current_block(), Some(0..10));
@@ -2654,6 +2668,9 @@ fn fields_code_editor_find() {
     assert!(editor.find_state().is_none());
 
     // `/` opens the find bar, typing fills it and jumps to the match.
+    bound(KeyBinding::char('/'), CodeCmd::Find);
+    bound(KeyBinding::char('n'), CodeCmd::NextMatch);
+    bound(KeyBinding::char('N'), CodeCmd::PrevMatch);
     assert_eq!(
         editor.on_key(&key(KeyCode::Char('/'))),
         (Outcome::Changed, None)

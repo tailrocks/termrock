@@ -47,7 +47,7 @@ use termrock::widgets::tree::{
     BranchAction, FlatRow, Path, TreeAction, TreeCmd, TreeNode, TreeView,
 };
 
-use super::{ScenarioCase, key, text_of};
+use super::{ScenarioCase, bound, key, text_of};
 use crate::coverage::ScenarioId;
 
 #[rustfmt::skip]
@@ -552,6 +552,7 @@ fn tabs_overflow() {
     assert!(index >= 2 && index == tabs.active && !tabs.menu_open());
 
     let _ = draw_tabs(&mut tabs, 34, Interaction::default());
+    bound(KeyBinding::key(KeyCode::Down), TabCmd::ShowHidden);
     assert_eq!(tabs.on_key(&key(KeyCode::Down)).0, Outcome::Changed);
     assert!(
         tabs.menu_open(),
@@ -2219,6 +2220,10 @@ fn file_browser_choose() {
         Outcome::Changed
     );
     assert_eq!(dirs.list.cursor, 1);
+    bound(KeyBinding::key(KeyCode::Enter), FileCmd::Open);
+    bound(KeyBinding::key(KeyCode::Left), FileCmd::Parent);
+    bound(KeyBinding::char('.'), FileCmd::ToggleHidden);
+    bound(KeyBinding::char(' '), FileCmd::Choose);
     assert_eq!(
         pressed(&mut dirs, &mut focus, key(KeyCode::Enter)),
         Outcome::Changed
@@ -2380,6 +2385,7 @@ fn file_browser_fields() {
         code: KeyCode::Char(c),
         mods: KeyModifiers::CONTROL,
     };
+    bound(KeyBinding::ctrl('f'), FileCmd::Filter);
     assert_eq!(b.on_key(&ctrl('f'), &mut focus, ring), Outcome::Changed);
     let filter_id = b.filter.as_ref().expect("filter").id;
     assert_eq!(focus.current(), Some(filter_id));
@@ -2412,6 +2418,7 @@ fn file_browser_fields() {
     let mut go = browser("Go").choose(Choose::Any);
     let mut focus = Focus::default();
     focus.focus(go.list.id);
+    bound(KeyBinding::char('/'), FileCmd::GoTo);
     assert_eq!(go.on_key(&ch('/'), &mut focus, ring), Outcome::Changed);
     assert_eq!(focus.current(), Some(go.path.id));
     assert!(go.is_editing());

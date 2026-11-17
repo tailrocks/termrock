@@ -13,9 +13,13 @@ mod api_inventory;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
+#[path = "../tests/support/scenario_reach.rs"]
+mod scenario_reach;
+
 use api_inventory::{
     ApiKind, Expansion, Inventory, MATRIX, Record, SourceTree, TestFn, Value, build, idents,
 };
+use scenario_reach::FnIndex;
 use syn::visit::Visit;
 
 const EXPANSIONS: &[Expansion] = &[
@@ -251,6 +255,77 @@ fn names_api(test: &TestFn, id: &str, inv: &Inventory) -> bool {
         })
 }
 
+/// Enums whose variants a scenario meets all at once, through a const that the
+/// same macro builds from the one variant list (`Metric::ALL`), so naming the
+/// const exercises every variant it generated.
+const VARIANT_SETS: &[(&str, &str)] = &[("metrics::Metric", "ALL")];
+
+/// Why the identifiers a scenario reaches do not show API `id`, or `None` when
+/// they do. A member (method, variant, const, free fn, macro) must appear by
+/// name; its owning type need not, because a scenario often calls a method on a
+/// value that something else returned. A variant needs its enum beside it. A type is shown by its own name or by any of its methods,
+/// variants, consts or trait items, since a scenario meets most types only
+/// through what returns them. Fields and trait items inherit their owner and
+/// never reach here as an API of their own. This is an identifier check, not behavioral proof.
+fn unexercised(
+    id: &str,
+    kind: ApiKind,
+    exports: &BTreeMap<&str, ApiKind>,
+    inv: &Inventory,
+    tokens: &BTreeSet<String>,
+) -> Option<String> {
+    let last = |id: &str| {
+        id.rsplit("::")
+            .next()
+            .unwrap_or(id)
+            .trim_end_matches('!')
+            .to_owned()
+    };
+    if kind == ApiKind::Type {
+        let own = last(id);
+        let prefix = format!("{id}::");
+        let shown = tokens.contains(&own)
+            || exports
+                .iter()
+                .filter(|(member, kind)| {
+                    member.starts_with(&prefix)
+                        && (!inherits(**kind) || **kind == ApiKind::TraitItem)
+                })
+                .any(|(member, _)| tokens.contains(&last(member)));
+        return (!shown).then(|| {
+            format!("neither the type `{own}` nor any of its methods, variants, consts or trait items appears")
+        });
+    }
+    let (_, member) = owner_and_member(id, inv);
+    let member = member.trim_end_matches('!');
+    if kind == ApiKind::Variant
+        && let Some((enum_id, _)) = id.rsplit_once("::")
+    {
+        // A bare `Open` is as likely to be another type's `Open`, so a variant
+        // is shown by its `Enum::Variant` path, or by its own name beside its
+        // enum's (a `use Enum::{Variant}` import).
+        let enum_name = last(enum_id);
+        let qualified = format!("{enum_name}::{member}");
+        let shown =
+            tokens.contains(&qualified) || (tokens.contains(member) && tokens.contains(&enum_name));
+        return (!shown).then(|| format!("`{qualified}` never appears"));
+    }
+    if tokens.contains(member) {
+        return None;
+    }
+    if kind == ApiKind::Expansion
+        && let Some((enum_id, _)) = id.rsplit_once("::")
+        && let Some((_, set)) = VARIANT_SETS
+            .iter()
+            .find(|(set_enum, _)| *set_enum == enum_id)
+        && tokens.contains(*set)
+        && tokens.contains(last(enum_id).as_str())
+    {
+        return None;
+    }
+    Some(format!("`{member}` never appears"))
+}
+
 fn mention_needed(id: &str, inv: &Inventory) -> String {
     let (owner, member) = owner_and_member(id, inv);
     let member = member.trim_end_matches('!');
@@ -407,6 +482,20 @@ fn validate(rows: &[(&'static str, Inventory)], s: &Sources) -> (Vec<String>, Re
         }
     }
     report.scenarios = registered.len();
+    let index = FnIndex::from_sources(
+        s.case_sources(),
+        s.showcase
+            .iter()
+            .map(|(path, text)| (path.as_str(), text.as_str())),
+    );
+    let reach: BTreeMap<String, BTreeSet<String>> = cases
+        .iter()
+        .filter_map(|case| {
+            let id = case.get("id").and_then(Value::leaf)?;
+            let run = case.get("run").and_then(Value::leaf)?;
+            Some((id.to_owned(), index.reach(run)))
+        })
+        .collect();
 
     let mut proofs: BTreeMap<String, &Record> = BTreeMap::new();
     let proof_records = s.records("CapabilityProof");
@@ -432,14 +521,27 @@ fn validate(rows: &[(&'static str, Inventory)], s: &Sources) -> (Vec<String>, Re
         if listed.is_empty() {
             errors.push(format!("proof for {api} has no scenarios"));
         }
-        for scenario in listed {
-            if !scenario_ids.contains(scenario) {
+        for scenario in &listed {
+            if !scenario_ids.contains(*scenario) {
                 errors.push(format!("proof for {api} names unknown scenario {scenario}"));
-            } else if !registered.contains(scenario) {
+            } else if !registered.contains(*scenario) {
                 errors.push(format!(
                     "proof for {api} names scenario {scenario}, which has no callable case"
                 ));
             }
+        }
+        let reached: BTreeSet<String> = listed
+            .iter()
+            .filter_map(|scenario| reach.get(*scenario))
+            .flatten()
+            .cloned()
+            .collect();
+        if let Some(kind) = exports.get(api)
+            && let Some(why) = unexercised(api, *kind, &exports, superset, &reached)
+        {
+            errors.push(format!(
+                "proof for {api} names scenarios {listed:?} that never exercise it: {why}"
+            ));
         }
         if let Some(Value::Some(feature)) = record.get("feature")
             && let Some(feature) = feature.str()
@@ -1299,6 +1401,11 @@ fn catalog_accepts_a_proof_recorded_in_a_lane_file() {
         "API has no disposition: clock::undeclared_probe",
     );
     lane_file(&mut s, "lane_shell.rs").push_str(&lane_proof("clock::undeclared_probe"));
+    s.cases = replaced(
+        &s.cases,
+        "fn narrow_layout() {",
+        "fn narrow_layout() {\n    undeclared_probe();",
+    );
     let errors = check(&s);
     assert!(errors.is_empty(), "{}", errors.join("\n"));
 }
@@ -1351,5 +1458,124 @@ fn catalog_rejects_an_unwired_lane_file() {
     expect_error(
         &check(&s),
         "scenario file app_tests_catalog/probe.rs is not wired",
+    );
+}
+
+const TYPE_PROBE: &str = "\npub struct ProbeKind;\nimpl ProbeKind { pub fn ping(&self) {} }\npub enum ProbeEnum { Open, Close }\n";
+
+/// The errors of a tree where clock.rs declares the probe APIs, a lane file
+/// proves `apis` through `NarrowLayout`, and that scenario's fn runs `body`
+/// beside the extra items `items`.
+fn probe_errors(apis: &[&str], body: &str, items: &str) -> Vec<String> {
+    let mut s = Sources::load();
+    with_probe(&mut s);
+    s.tree
+        .files
+        .get_mut(&std::path::PathBuf::from("src/clock.rs"))
+        .expect("clock.rs")
+        .push_str(TYPE_PROBE);
+    s.catalog = replaced(
+        &s.catalog,
+        "static MEMBERS: &[Capability] = &[",
+        "static MEMBERS: &[Capability] = &[\n    Capability::ty(\"clock::ProbeKind\"),\n    Capability::function(\"clock::ProbeKind::ping\"),\n    Capability::ty(\"clock::ProbeEnum\"),\n    Capability::variant(\"clock::ProbeEnum::Open\"),\n    Capability::variant(\"clock::ProbeEnum::Close\"),",
+    );
+    for api in apis {
+        lane_file(&mut s, "lane_shell.rs").push_str(&lane_proof(api));
+    }
+    s.cases = replaced(
+        &s.cases,
+        "fn narrow_layout() {",
+        &format!("fn narrow_layout() {{\n{body}"),
+    );
+    s.cases.push_str(items);
+    check(&s)
+}
+
+fn unexercised_errors(errors: &[String]) -> Vec<&String> {
+    errors
+        .iter()
+        .filter(|e| e.contains("never exercise it"))
+        .collect()
+}
+
+#[test]
+fn catalog_rejects_a_proof_whose_scenario_never_uses_the_api() {
+    let errors = probe_errors(&["clock::undeclared_probe"], "", "");
+    expect_error(
+        &errors,
+        "proof for clock::undeclared_probe names scenarios [\"NarrowLayout\"] that never exercise it: `undeclared_probe` never appears",
+    );
+}
+
+#[test]
+fn catalog_accepts_a_proof_whose_scenario_calls_the_api() {
+    let errors = probe_errors(&["clock::undeclared_probe"], "undeclared_probe();", "");
+    assert!(unexercised_errors(&errors).is_empty(), "{errors:#?}");
+}
+
+#[test]
+fn catalog_accepts_a_proof_the_scenario_reaches_through_a_helper() {
+    let items = "\nfn narrow_helper() { undeclared_probe(); }\n";
+    let errors = probe_errors(&["clock::undeclared_probe"], "narrow_helper();", items);
+    assert!(unexercised_errors(&errors).is_empty(), "{errors:#?}");
+    let errors = probe_errors(&["clock::undeclared_probe"], "", items);
+    expect_error(&errors, "`undeclared_probe` never appears");
+}
+
+#[test]
+fn catalog_a_string_or_comment_is_not_a_use_of_the_api() {
+    let body = "// undeclared_probe();\n    let _ = \"undeclared_probe\";";
+    let errors = probe_errors(&["clock::undeclared_probe"], body, "");
+    expect_error(&errors, "`undeclared_probe` never appears");
+}
+
+#[test]
+fn catalog_a_type_is_shown_by_its_name_or_by_one_of_its_members() {
+    let by_name = probe_errors(&["clock::ProbeKind"], "let _ = ProbeKind;", "");
+    assert!(unexercised_errors(&by_name).is_empty(), "{by_name:#?}");
+    let by_method = probe_errors(&["clock::ProbeKind"], "value().ping();", "");
+    assert!(unexercised_errors(&by_method).is_empty(), "{by_method:#?}");
+    let neither = probe_errors(&["clock::ProbeKind"], "let _ = other();", "");
+    expect_error(&neither, "neither the type `ProbeKind` nor any of its");
+}
+
+#[test]
+fn catalog_a_method_is_shown_by_its_name_alone() {
+    let named = probe_errors(&["clock::ProbeKind::ping"], "value().ping();", "");
+    assert!(unexercised_errors(&named).is_empty(), "{named:#?}");
+    let type_only = probe_errors(&["clock::ProbeKind::ping"], "let _ = ProbeKind;", "");
+    expect_error(&type_only, "`ping` never appears");
+}
+
+#[test]
+fn catalog_a_variant_needs_its_enum_beside_its_name() {
+    let api = ["clock::ProbeEnum::Open"];
+    let path = probe_errors(&api, "let _ = ProbeEnum::Open;", "");
+    assert!(unexercised_errors(&path).is_empty(), "{path:#?}");
+    let renamed = probe_errors(
+        &api,
+        "use crate::ProbeEnum as Pe;\n    let _ = Pe::Open;",
+        "",
+    );
+    assert!(unexercised_errors(&renamed).is_empty(), "{renamed:#?}");
+    let imported = probe_errors(
+        &api,
+        "use crate::ProbeEnum::Open;\n    let _ = (Open, ProbeEnum::Close);",
+        "",
+    );
+    assert!(unexercised_errors(&imported).is_empty(), "{imported:#?}");
+    let bare = probe_errors(&api, "let _ = Open;", "");
+    expect_error(&bare, "`ProbeEnum::Open` never appears");
+    let other_enum = probe_errors(&api, "let _ = Other::Open;", "");
+    expect_error(&other_enum, "`ProbeEnum::Open` never appears");
+}
+
+#[test]
+fn catalog_keyed_remove_proof_needs_a_scenario_that_calls_remove() {
+    let mut s = Sources::load();
+    s.cases = s.cases.replace("store.remove(", "store.discard(");
+    expect_error(
+        &check(&s),
+        "proof for core::keyed::KeyedVec::remove names scenarios [\"KeyedStoreIdentity\"] that never exercise it",
     );
 }
