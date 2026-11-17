@@ -34,15 +34,18 @@ use termrock::ui::popup::{Dismiss, Placement};
 use termrock::widgets::chips::{Chip, ChipAction, ChipBar, ChipCmd};
 use termrock::widgets::choice::Checkbox;
 use termrock::widgets::choice_dialog::ChoiceDialog;
-use termrock::widgets::code::{CodeEditor, Diagnostic, Highlighter, Segmenter, Severity};
+use termrock::widgets::code::{
+    CodeEditor, Diagnostic, FindState, Highlighter, Segmenter, Severity,
+};
 use termrock::widgets::completion::Completion;
 use termrock::widgets::dialog::{Dialog, DialogResult};
 use termrock::widgets::edit::{EditField, Validator};
 use termrock::widgets::form_dialog::{FormAction, FormDialog, FormField};
 use termrock::widgets::grid::{
-    CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, FinishEdit, GridAction,
-    GridCommitFailure, GridDataError, GridEditError, GridKeyError, GridRows, GridUndoKind,
-    RowTotal,
+    CellChange, CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, DeletedRow, FinishEdit,
+    GridAction, GridChangeSet, GridCommitError, GridCommitFailure, GridCommitToken, GridDataError,
+    GridEditError, GridKeyError, GridRevision, GridRows, GridUndo, GridUndoKind, InsertedRow,
+    PendingChanges, RowTotal, UpdatedRow,
 };
 use termrock::widgets::info_dialog::InfoDialog;
 use termrock::widgets::input::{TextInput, TextInput as FinderQuery};
@@ -55,7 +58,7 @@ use termrock::widgets::nav_list::{NavItem, NavList};
 use termrock::widgets::option_editor::{
     ChoiceEditor, ColumnEditor, EditorConfig, OptionItem, Options,
 };
-use termrock::widgets::option_list::Item;
+use termrock::widgets::option_list::{Item, OptionList, PopupRow, PopupSnapshot};
 use termrock::widgets::panel::ScrollPanel;
 use termrock::widgets::picker::{Picker, PickerAction, PickerItemsError, VisibleKey};
 use termrock::widgets::props::Prop;
@@ -183,6 +186,17 @@ pub const CASES: &[ScenarioCase] = &[
     ScenarioCase { id: ScenarioId::DataShapeErrors, run: data_shape_errors },
     ScenarioCase { id: ScenarioId::TextBufferGeometry, run: text_buffer_geometry },
 ];
+
+/// The default keymap sends `binding` to `cmd`, so the key a scenario presses
+/// is the command it claims to exercise.
+fn bound<C: termrock::core::keymap::Actions + PartialEq>(binding: KeyBinding, cmd: C) {
+    assert!(
+        C::default_keymap()
+            .iter()
+            .any(|(b, c)| *b == binding && *c == cmd),
+        "the default keymap binds {binding:?} to the command under test"
+    );
+}
 
 fn key(code: KeyCode) -> Key {
     Key {
@@ -745,25 +759,25 @@ fn grid_change_capture() {
     let deleted = grid.row_key(1).expect("row 1 has a key");
     let inserted = grid.row_key(3).expect("the new row has a key");
 
-    let pending = grid.pending();
+    let pending: &PendingChanges = grid.pending();
     assert_eq!(pending.cells().count(), 1);
     assert_eq!(pending.deleted().collect::<Vec<_>>(), vec![deleted]);
     assert_eq!(pending.inserted().collect::<Vec<_>>(), vec![inserted]);
     assert!(pending.is_deleted(deleted) && !pending.is_inserted(deleted));
     assert!(pending.is_inserted(inserted) && !pending.is_deleted(inserted));
 
-    let snapshot = grid.snapshot_changes();
+    let snapshot: GridChangeSet = grid.snapshot_changes();
     assert_eq!(snapshot.counts(), (1, 1, 1));
-    let updated = &snapshot.updated()[0];
+    let updated: &UpdatedRow = &snapshot.updated()[0];
     assert_eq!(Some(updated.key()), grid.row_key(0));
     assert_eq!(updated.before()[GRID_SEATS], CellValue::Int(3));
-    let change = &updated.cells()[0];
+    let change: &CellChange = &updated.cells()[0];
     assert_eq!(grid.columns()[change.column()].name, "seats");
     assert_eq!(change.after(), &CellValue::Int(40));
-    let insert = &snapshot.inserted()[0];
+    let insert: &InsertedRow = &snapshot.inserted()[0];
     assert_eq!(insert.key(), inserted);
     assert_eq!(insert.values().len(), grid.columns().len());
-    let delete = &snapshot.deleted()[0];
+    let delete: &DeletedRow = &snapshot.deleted()[0];
     assert_eq!(delete.before()[GRID_NAME], CellValue::Text("row1".into()));
 
     grid.record_cell(2, GRID_SEATS, CellValue::Int(9))
@@ -782,8 +796,14 @@ fn grid_submission_lock() {
     assert!(!grid.submission_pending());
 
     let snapshot = grid.snapshot_changes();
-    let token = grid.begin_submission(snapshot.clone()).expect("locks");
+    let token: GridCommitToken = grid.begin_submission(snapshot.clone()).expect("locks");
     assert!(grid.submission_pending());
+    assert_eq!(
+        token.revision(),
+        grid.revision(),
+        "the token names the draft it locked"
+    );
+    assert_eq!(token.origin(), grid.instance_id());
     assert_eq!(
         grid.record_cell(1, GRID_SEATS, CellValue::Int(5)),
         Err(GridEditError::Busy),
@@ -791,11 +811,23 @@ fn grid_submission_lock() {
     );
     grid.cancel_submission(token).expect("the lock's own token");
     assert!(!grid.submission_pending());
+    assert_eq!(
+        grid.cancel_submission(token),
+        Err(GridCommitError::StaleToken),
+        "a spent token unlocks nothing"
+    );
     assert_eq!(grid.pending().total(), 1, "a cancel keeps the draft");
 
+    let spent = token;
     let token = grid
         .begin_submission(snapshot.clone())
         .expect("locks again");
+    assert_eq!(
+        grid.cancel_submission(spent),
+        Err(GridCommitError::StaleToken),
+        "an earlier lock's token does not unlock the current one"
+    );
+    assert!(grid.submission_pending());
     let refused = GridCommitFailure {
         key: grid.row_key(0),
         message: "seats above the plan limit".into(),
@@ -824,7 +856,7 @@ fn grid_source_identity() {
     assert_eq!(grid.source_index(key(30)), Some(2));
     assert_eq!(grid.source_index(key(99)), None);
 
-    let revision = grid.revision();
+    let revision: GridRevision = grid.revision();
     assert_eq!(
         grid.try_set_rows_keyed(grid_rows(3), vec![key(1), key(1), key(2)]),
         Err(GridDataError::Key(GridKeyError::DuplicateKey(key(1))))
@@ -905,6 +937,7 @@ fn grid_undo_kinds() {
 
     let mut seen = Vec::new();
     while let Some(GridAction::Undone(undone)) = grid_action(&mut grid, KeyCode::Char('u')) {
+        let undone: GridUndo = undone;
         seen.push(undone.kind);
         match undone.kind {
             GridUndoKind::DeleteMark => assert_eq!(undone.key, marked),
@@ -951,10 +984,10 @@ fn completion_popup_snapshot() {
     let buf = paint(area, |area, buf, ctx| {
         completion.render(area, buf, ctx);
         let inner = Rect::new(30, 8, 20, 4);
-        let snapshot = completion
-            .list
-            .snapshot(inner, completion.items(), |i| format!("row{i}"));
-        let rows = snapshot.rows();
+        let list: &OptionList = &completion.list;
+        let snapshot: PopupSnapshot<String> =
+            list.snapshot(inner, completion.items(), |i| format!("row{i}"));
+        let rows: &[PopupRow<String>] = snapshot.rows();
         assert_eq!(rows.len(), 4, "the snapshot holds only the visible rows");
         assert!(rows.iter().all(|row| row.enabled && !row.checked));
         assert_eq!(rows[0].payload, "row0");
@@ -3141,6 +3174,54 @@ fn keyed_store_identity() {
         store.key_at(0).expect("row 0")
     );
     assert_eq!(RowSource::label(&store, 0), "bravo");
+
+    // Removing a record hands it back, shifts the rows behind it up one place
+    // and leaves every other record's identity, selection and expansion alone.
+    state.set_cursor(c);
+    assert_eq!((state.cursor(), state.cursor_view()), (Some(c), Some(1)));
+    let before_remove = store.stamp();
+    assert_eq!(
+        store.remove(k("zzz")),
+        None,
+        "a missing key removes nothing"
+    );
+    assert_eq!(store.stamp(), before_remove, "and keeps the stamp");
+    let gone = store.remove(b).expect("b is held");
+    assert_eq!(gone.title, "bravo");
+    assert_eq!(store.len(), 2);
+    assert!(store.get(b).is_none() && store.position(b).is_none());
+    assert_eq!(
+        store.iter().map(|(key, _)| key).collect::<Vec<_>>(),
+        vec![c, a],
+        "the rows behind it keep their order"
+    );
+    assert_eq!((store.position(c), store.position(a)), (Some(0), Some(1)));
+    let after_remove = store.stamp();
+    assert_eq!(
+        (after_remove.data, after_remove.view),
+        (before_remove.data + 1, before_remove.view + 1),
+        "a removal moves both revisions"
+    );
+    assert_eq!(after_remove.instance, before_remove.instance);
+    let removed = state.reconcile(&store).expect("valid");
+    assert!(removed.data_changed && removed.view_changed);
+    assert!(
+        !removed.cursor_changed,
+        "the cursor follows its record, not its index"
+    );
+    assert_eq!((state.cursor(), state.cursor_view()), (Some(c), Some(0)));
+    assert_eq!(state.visible_len(), 2);
+    assert!(state.is_selected(c) && state.is_expanded(a));
+
+    // Removing the cursor's own record drops it from the selection and anchor,
+    // and the cursor settles on the nearest row that is left.
+    let gone = store.remove(c).expect("c is held");
+    assert!(gone.title.starts_with("charlie"));
+    let removed = state.reconcile(&store).expect("valid");
+    assert!(removed.cursor_changed);
+    assert!(!state.is_selected(c) && state.anchor().is_none());
+    assert_eq!(state.cursor(), Some(a));
+    assert!(state.is_expanded(a), "an unrelated expansion survives");
 }
 
 struct Shown {
@@ -4016,7 +4097,7 @@ fn code_editor_diagnostics_find() {
 
     assert!(editor.find_state().is_none(), "find starts closed");
     editor.set_find_query("delay");
-    let find = editor.find_state().expect("a query opens the find bar");
+    let find: &FindState = editor.find_state().expect("a query opens the find bar");
     assert_eq!(find.needle.text(), "delay");
     assert_eq!(find.matches.len(), 3);
     assert_eq!(find.current, 0);
@@ -4544,16 +4625,21 @@ fn document_workspace_lifecycle() {
 /// the program needs, the attach, the replay window that follows it, the
 /// program's title, bell and clipboard request, and what the host reads back.
 fn session_attach_replay() {
-    use crate::pages::terminal_session::{DemoFault, Script, controller};
+    use crate::pages::terminal_session::{DemoFault, Script, controller, host_policy};
     use termrock::terminal::{
-        SessionClipboardRefusal, SessionConfig, SessionEffect, SessionLease, SessionStatus,
+        SessionClipboardContext, SessionClipboardDecision, SessionClipboardRefusal, SessionConfig,
+        SessionEffect, SessionFault, SessionLease, SessionSize, SessionStatus,
     };
+
+    /// A host's fault type must satisfy the controller's `SessionFault` bound.
+    fn is_fault<F: SessionFault>() {}
+    is_fault::<DemoFault>();
 
     let (mut session, commands) = controller(Script::Owner, 64 * 1024);
     assert_eq!(session.status(), &SessionStatus::<DemoFault>::Pending);
     assert!(!session.live() && !session.has_output() && session.title().is_none());
 
-    let min = SessionConfig::MINIMUM;
+    let min: SessionSize = SessionConfig::MINIMUM;
     session.sync_size(Rect::new(0, 0, min.cols - 3, min.rows - 1));
     assert!(session.too_small(), "below the minimum the session waits");
     assert_eq!(session.status(), &SessionStatus::Pending);
@@ -4614,6 +4700,23 @@ fn session_attach_replay() {
         "deny by default"
     );
     assert!(session.take_effects().is_empty(), "effects are read once");
+
+    // The same policy, asked directly with the context the session builds.
+    let asked = SessionClipboardContext {
+        owner: true,
+        focused: true,
+        last_gesture_ms: Some(1_900),
+        now_ms: 2_000,
+    };
+    assert_eq!(
+        host_policy(true).clipboard(asked, "c;copied"),
+        SessionClipboardDecision::Copy("copied".to_owned())
+    );
+    assert_eq!(
+        host_policy(true).clipboard(asked, "c;?"),
+        SessionClipboardDecision::Refuse(SessionClipboardRefusal::Read),
+        "a read request is never answered"
+    );
 
     let (mut small, _) = controller(Script::Owner, 64 * 1024);
     small.set_config(SessionConfig {

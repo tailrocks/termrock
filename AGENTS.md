@@ -164,7 +164,22 @@ workspaces, Docker, OpenShell, Codex).
   disposition (fields, trait items and trait impls inherit their owner), so
   extend the owning scenario to exercise the new field. Layer 2 is
   behavior: a `CapabilityProof` names callable scenarios, and `apps/showcase/src/app_tests_catalog.rs` runs each scenario
-  against real components (`catalog_scenarios_execute`). Layer 3 is the
+  against real components (`catalog_scenarios_execute`). The source gate also
+  holds a proof to its scenarios: the API's member name (a type, trait or
+  variant needs its own name, one of its methods, variants or trait items, or
+  for a variant `Enum::Variant`) must be an identifier in a named scenario's
+  body or in a fn, const or `impl` it reaches in the Showcase crate by call,
+  `use` line or path (`tests/support/scenario_reach.rs`). A method or const
+  whose name another exported type also uses (`new`, `len`, `key`, `render`)
+  needs its owner type named in the scenario too, for example in a type
+  annotation on the value it returns, because any other type's call would
+  satisfy the bare name. Strings and comments
+  do not count, and the check is still identifier matching, not behavioral
+  proof. The one explicit exception is `VARIANT_SETS` in
+  `src/catalog_contract.rs` (`Metric::ALL` stands for the variants it lists).
+  A proof whose scenario never calls its API fails the gate: add the call to
+  the scenario with an assertion, re-point the proof, or make it a `Nonvisual`
+  exception with a real regression test. Layer 3 is the
   tuiscotti journeys in `tests/functional`. Name matching is never behavioral
   proof. Run `cargo nextest run -p junie-tui -p termrock-showcase
   --all-features --no-tests fail -E 'test(catalog_)'` (the source gate is in
