@@ -22,9 +22,9 @@ clap = { workspace = true }
 ratatui = { workspace = true }
 
 [dev-dependencies]
-syn = { version = "3.0.9", features = ["full", "visit"] }
+syn = { version = "=3.0.9", features = ["full", "visit"] }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
 
 [target.'cfg(unix)'.dev-dependencies]
-libc = "0.2"
+libc = "=0.2.191"
