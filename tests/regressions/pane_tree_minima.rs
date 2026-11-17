@@ -1,4 +1,4 @@
-use junie_tui::core::event::Outcome;
+use junie_tui::core::event::{MouseKind, Outcome};
 use junie_tui::core::id::WidgetId;
 use junie_tui::ui::layout::{Split, SplitDir};
 use junie_tui::ui::pane_tree::{Direction, Frames, PaneId, PaneNode, PaneRefusal, PaneTree};
@@ -92,6 +92,40 @@ fn pane_pointer_respects_outer_leaf_minimum() {
                 "{dir:?}: the pointer and the keyboard stop at the same boundary"
             );
         }
+    }
+}
+
+#[test]
+fn pane_pointer_drag_at_the_minimum_reports_changed_once_then_consumed() {
+    let min = (12, 3);
+    for dir in [SplitDir::Horizontal, SplitDir::Vertical] {
+        let mut rig = Rig::new(two(dir, min), Rect::new(0, 0, 80, 20));
+        let from = rig.handle_origin(0);
+        let far = match dir {
+            SplitDir::Horizontal => Position::new(0, from.y),
+            SplitDir::Vertical => Position::new(from.x, 0),
+        };
+        rig.mouse(MouseKind::Down, from);
+
+        assert_eq!(
+            rig.mouse(MouseKind::Drag, far),
+            Outcome::Changed,
+            "{dir:?}: the first drag to the extreme moves the seam to the minimum"
+        );
+        rig.render();
+        let at_minimum = rig.tree.root.clone();
+        assert_all_at_least(&rig.rects(), min, "the first drag stops at the minimum");
+
+        for again in [far, far] {
+            assert_eq!(
+                rig.mouse(MouseKind::Drag, again),
+                Outcome::Consumed,
+                "{dir:?}: a repeated drag at the minimum is consumed, not a change"
+            );
+            rig.render();
+            assert_eq!(rig.tree.root, at_minimum, "{dir:?}: nothing moved");
+        }
+        rig.mouse(MouseKind::Up, far);
     }
 }
 

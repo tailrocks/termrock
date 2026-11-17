@@ -117,7 +117,7 @@ metrics! {
     /// Characters counted to apply a display line cap.
     LineCharsCounted => "line_chars_counted",
     /// Row payloads retrieved from a source: a `ScrollPanel` line read while
-    /// it wraps or measures its content, and a terminal grid or scrollback row
+    /// it wraps, measures or copies its content, and a terminal grid or scrollback row
     /// read by a `TerminalView` or `TerminalViewport` paint, copy or lookup.
     SourceRowsRead => "source_rows_read",
     /// Bytes handed to a terminal emulator's `feed`, before the feed guard

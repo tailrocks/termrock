@@ -540,6 +540,50 @@ fn issue45_selection_survives_resize_and_append() {
 }
 
 #[test]
+fn issue45_copying_a_tiny_selection_reads_only_the_selected_source_lines() {
+    use crate::core::edit::{TextCmd, clipboard};
+
+    let lines: Vec<String> = (0..10_000)
+        .map(|i| format!("line {i:05} with some words to wrap around the panel"))
+        .collect();
+    let mut panel = ScrollPanel::new(ID, lines).wrap(true);
+    let frame = paint(&mut panel, 20, 12);
+    frame.drag(&mut panel, (0, 4), (3, 4));
+    assert!(
+        panel.source_selection().is_some(),
+        "three cells are selected"
+    );
+
+    let builds = panel.work.wrap_builds.get();
+    let measured = panel.work.width_measurements.get();
+    clipboard::store("");
+    #[cfg(feature = "work-metrics")]
+    let (_, work) = crate::metrics::measure(|| panel.edit_run(TextCmd::Copy));
+    #[cfg(not(feature = "work-metrics"))]
+    let _ = panel.edit_run(TextCmd::Copy);
+
+    let copied = clipboard::text().expect("the selection was copied");
+    assert_eq!(copied.chars().count(), 3, "{copied:?}");
+    assert_eq!(
+        panel.work.wrap_builds.get(),
+        builds,
+        "copying never rebuilds the wrap mapping"
+    );
+    assert_eq!(
+        panel.work.width_measurements.get(),
+        measured,
+        "copying measures no line"
+    );
+    #[cfg(feature = "work-metrics")]
+    assert_eq!(
+        work.get(crate::metrics::Metric::SourceRowsRead),
+        1,
+        "a selection inside one source line reads that line, not the 10k-line source: {:?}",
+        work.nonzero().collect::<Vec<_>>()
+    );
+}
+
+#[test]
 fn issue45_unwrapped_hscroll_and_wrap_toggle() {
     let source = "0123456789日本語abcdef".to_owned();
     let mut panel = ScrollPanel::new(ID, vec![source.clone()]);

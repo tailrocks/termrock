@@ -947,19 +947,120 @@ fn deliver_resume_resize(app: &mut impl Application, sizes: &mut SizeWatch, (w, 
     app.handle(resize);
 }
 
+/// The terminal side of one loop turn: painting a frame and reading the
+/// current size.
+trait TurnTerminal {
+    fn draw(&mut self, app: &mut impl Application, dirty: &mut bool) -> std::io::Result<()>;
+
+    fn size(&self) -> Option<(u16, u16)>;
+}
+
+struct LiveTerminal<'a> {
+    terminal: &'a mut SessionTerminal,
+    suppress_colors: bool,
+}
+
+impl TurnTerminal for LiveTerminal<'_> {
+    fn draw(&mut self, app: &mut impl Application, dirty: &mut bool) -> std::io::Result<()> {
+        draw_frame(self.terminal, app, self.suppress_colors, dirty)
+    }
+
+    fn size(&self) -> Option<(u16, u16)> {
+        terminal_size(self.terminal)
+    }
+}
+
+/// The loop's bookkeeping between turns.
+struct LoopState {
+    pump: InputPump,
+    sizes: SizeWatch,
+    dirty: bool,
+    last_tick: Instant,
+    external_pending: bool,
+    raw_pending: bool,
+}
+
+/// How a loop turn ended.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TurnEnd {
+    Continue,
+    Quit,
+}
+
+/// One loop iteration after the wait: a budgeted read of raw terminal input
+/// with the draws it causes, then the bounded external group, the resize check
+/// and the tick. The event loop runs exactly this body, so the fairness between
+/// a raw-input flood and the other sources is tested through it.
+fn loop_turn(
+    app: &mut impl Application,
+    terminal: &mut impl TurnTerminal,
+    source: &mut impl RawSource,
+    state: &mut LoopState,
+    read_input: bool,
+    hover_redraw: bool,
+    interval: Duration,
+) -> std::io::Result<TurnEnd> {
+    if read_input {
+        let changed = input_turn(
+            app,
+            &mut state.pump,
+            source,
+            &mut state.sizes,
+            &mut state.raw_pending,
+        )?;
+        if app.should_quit() {
+            return Ok(TurnEnd::Quit);
+        }
+        if changed {
+            terminal.draw(app, &mut state.dirty)?;
+            if state.pump.settle(app) {
+                terminal.draw(app, &mut state.dirty)?;
+            }
+        }
+    }
+    if hover_redraw {
+        state.dirty = true;
+    }
+
+    let started = Instant::now();
+    let turn = service_turn(
+        app,
+        &mut state.external_pending,
+        || started.elapsed(),
+        || terminal.size().and_then(|size| state.sizes.check(size)),
+        || {
+            let due = state.last_tick.elapsed() >= interval;
+            if due {
+                state.last_tick = Instant::now();
+            }
+            due
+        },
+    );
+    state.dirty |= turn.changed;
+    if turn.quit {
+        if turn.ticked && state.dirty {
+            terminal.draw(app, &mut state.dirty)?;
+        }
+        return Ok(TurnEnd::Quit);
+    }
+    Ok(TurnEnd::Continue)
+}
+
 fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std::io::Result<()> {
     let suppress_colors = Colored::ansi_color_disabled_memoized();
-    let mut dirty = true;
-    let mut last_tick = Instant::now();
-    let mut pump = InputPump::new(app.coalesce());
+    let mut state = LoopState {
+        pump: InputPump::new(app.coalesce()),
+        sizes: SizeWatch::new(terminal_size(&session.terminal)),
+        dirty: true,
+        last_tick: Instant::now(),
+        external_pending: false,
+        raw_pending: false,
+    };
 
     let mut shapes =
         crate::core::shape::ShapeSync::new(crate::core::shape::ShapeSupport::current());
     let mut hover_due: Option<(u64, Instant)> = None;
     let mut first_poll_delay = first_poll_delay();
-    let mut sizes = SizeWatch::new(terminal_size(&session.terminal));
-    let mut external_pending = false;
-    let mut raw_pending = false;
     loop {
         #[cfg(unix)]
         if job_control::take_request() {
@@ -967,13 +1068,13 @@ fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std:
 
             shapes.forget();
 
-            deliver_resume_resize(app, &mut sizes, size);
-            dirty = true;
+            deliver_resume_resize(app, &mut state.sizes, size);
+            state.dirty = true;
         }
         let terminal = &mut session.terminal;
-        if dirty {
-            dirty = false;
-            draw_frame(terminal, app, suppress_colors, &mut dirty)?;
+        if state.dirty {
+            state.dirty = false;
+            draw_frame(terminal, app, suppress_colors, &mut state.dirty)?;
             if let Some(delay) = first_poll_delay.take() {
                 std::thread::sleep(delay);
             }
@@ -995,7 +1096,7 @@ fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std:
             return Ok(());
         }
         let interval = app.tick_interval();
-        let mut wait = interval.saturating_sub(last_tick.elapsed());
+        let mut wait = interval.saturating_sub(state.last_tick.elapsed());
 
         let now = Instant::now();
         hover_due = match (crate::ui::reveal::hover_wait(), hover_due) {
@@ -1009,49 +1110,26 @@ fn event_loop(session: &mut TerminalSession, app: &mut impl Application) -> std:
         if let Some(external) = app.external() {
             wait = wait.min(external.latency);
         }
-        wait = turn_wait(wait, raw_pending || external_pending || dirty);
-
-        if raw_pending || pump.has_pending() || poll_uninterrupted(wait)? {
-            let changed = input_turn(
-                app,
-                &mut pump,
-                &mut CrosstermSource,
-                &mut sizes,
-                &mut raw_pending,
-            )?;
-            if app.should_quit() {
-                return Ok(());
-            }
-            if changed {
-                draw_frame(terminal, app, suppress_colors, &mut dirty)?;
-                if pump.settle(app) {
-                    draw_frame(terminal, app, suppress_colors, &mut dirty)?;
-                }
-            }
-        }
-        if hover_due.is_some_and(|(_, due)| due <= now + wait) {
-            dirty = true;
-        }
-
-        let started = Instant::now();
-        let turn = service_turn(
-            app,
-            &mut external_pending,
-            || started.elapsed(),
-            || terminal_size(terminal).and_then(|size| sizes.check(size)),
-            || {
-                let due = last_tick.elapsed() >= interval;
-                if due {
-                    last_tick = Instant::now();
-                }
-                due
-            },
+        wait = turn_wait(
+            wait,
+            state.raw_pending || state.external_pending || state.dirty,
         );
-        dirty |= turn.changed;
-        if turn.quit {
-            if turn.ticked && dirty {
-                draw_frame(terminal, app, suppress_colors, &mut dirty)?;
-            }
+
+        let read_input = state.raw_pending || state.pump.has_pending() || poll_uninterrupted(wait)?;
+        let hover_redraw = hover_due.is_some_and(|(_, due)| due <= now + wait);
+        let end = loop_turn(
+            app,
+            &mut LiveTerminal {
+                terminal,
+                suppress_colors,
+            },
+            &mut CrosstermSource,
+            &mut state,
+            read_input,
+            hover_redraw,
+            interval,
+        )?;
+        if end == TurnEnd::Quit {
             return Ok(());
         }
     }
@@ -1773,33 +1851,143 @@ mod raw_input_tests {
         assert_eq!(source.reads, 7);
     }
 
+    /// An application that records which loop hooks reached it, with a raw
+    /// input budget of its own and an external queue.
+    struct Flooded {
+        raw: RawInputPolicy,
+        external: ExternalReceiver,
+        seen: Vec<&'static str>,
+    }
+
+    impl Application for Flooded {
+        fn handle(&mut self, input: Input) -> Outcome {
+            let (name, outcome) = match input {
+                Input::External(_) => ("external", Outcome::Changed),
+                Input::Resize(..) => ("resize", Outcome::Ignored),
+                Input::Tick => ("tick", Outcome::Ignored),
+                Input::Key(_) => ("key", Outcome::Ignored),
+                _ => ("other", Outcome::Ignored),
+            };
+            self.seen.push(name);
+            outcome
+        }
+        fn render(&mut self, _frame: &mut Frame) {}
+        fn should_quit(&self) -> bool {
+            false
+        }
+        fn tick_interval(&self) -> Duration {
+            Duration::from_millis(100)
+        }
+        fn coalesce(&self) -> Coalesce {
+            Coalesce::OFF
+        }
+        fn raw_input_policy(&self) -> RawInputPolicy {
+            self.raw
+        }
+        fn external(&self) -> Option<&ExternalReceiver> {
+            Some(&self.external)
+        }
+    }
+
+    /// A terminal that reports a new size on every look, so every loop turn
+    /// has a resize to deliver.
+    #[derive(Default)]
+    struct Growing {
+        looks: std::cell::Cell<u16>,
+        draws: usize,
+    }
+
+    impl TurnTerminal for Growing {
+        fn draw(&mut self, _app: &mut impl Application, _dirty: &mut bool) -> std::io::Result<()> {
+            self.draws += 1;
+            Ok(())
+        }
+        fn size(&self) -> Option<(u16, u16)> {
+            self.looks.set(self.looks.get() + 1);
+            Some((80 + self.looks.get(), 24))
+        }
+    }
+
     #[test]
     fn raw_input_flood_allows_tick_external_resize() {
+        let (tx, external) = bounded_external_channel(
+            std::num::NonZeroUsize::new(16).expect("nonzero"),
+            ExternalPolicy {
+                max_messages: 1,
+                max_duration: Duration::from_secs(60),
+            },
+        );
+        for n in 0..5_u32 {
+            assert!(tx.send(n));
+        }
+        let mut app = Flooded {
+            raw: policy(16, Duration::from_secs(60)),
+            external,
+            seen: Vec::new(),
+        };
         let mut source = Script::endless(release('r'));
-        let mut turns = Turns::new(policy(16, Duration::from_secs(60)));
-        let mut checks = Vec::new();
+        let mut screen = Growing::default();
+        let mut state = LoopState {
+            pump: InputPump::new(Coalesce::OFF),
+            sizes: SizeWatch::default(),
+            dirty: false,
+            last_tick: Instant::now(),
+            external_pending: false,
+            raw_pending: false,
+        };
+
         for turn in 0..5 {
             let before = source.reads;
-            turns.turn(&mut source).unwrap();
+            let seen_before = app.seen.len();
+            let end = loop_turn(
+                &mut app,
+                &mut screen,
+                &mut source,
+                &mut state,
+                true,
+                false,
+                Duration::ZERO,
+            )
+            .unwrap();
+            assert_eq!(end, TurnEnd::Continue);
             assert_eq!(
                 source.reads - before,
                 16,
-                "turn {turn} read past its budget"
+                "turn {turn} read past its raw budget"
             );
-            assert!(turns.raw_pending);
-            let wait = turn_wait(Duration::from_millis(100), turns.raw_pending);
-            assert_eq!(wait, Duration::ZERO);
-            checks.extend(["external", "resize", "tick"]);
+            assert!(state.raw_pending, "the flood stays pending");
+            assert_eq!(
+                turn_wait(Duration::from_millis(100), state.raw_pending),
+                Duration::ZERO
+            );
+            assert_eq!(
+                app.seen[seen_before..],
+                ["external", "resize", "tick"],
+                "turn {turn}: the flood never starves the other sources, and they run in order"
+            );
         }
-        assert!(turns.app.seen.is_empty());
-        assert_eq!(checks.len(), 15);
-        assert_eq!(checks[..3], ["external", "resize", "tick"]);
+        assert_eq!(
+            app.seen.iter().filter(|s| **s == "key").count(),
+            0,
+            "the flood is all filtered release events"
+        );
+        assert_eq!(screen.draws, 0, "filtered input changes nothing to draw");
+        assert!(state.dirty, "the external messages marked the frame dirty");
 
         let mut drained = Script::new([press('a')]);
-        turns.turn(&mut drained).unwrap();
-        assert!(!turns.raw_pending);
+        loop_turn(
+            &mut app,
+            &mut screen,
+            &mut drained,
+            &mut state,
+            true,
+            false,
+            Duration::ZERO,
+        )
+        .unwrap();
+        assert!(!state.raw_pending);
         assert_eq!(
-            turn_wait(Duration::from_millis(100), turns.raw_pending),
+            turn_wait(Duration::from_millis(100), state.raw_pending),
             Duration::from_millis(100)
         );
     }
