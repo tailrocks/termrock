@@ -25,7 +25,6 @@ production	src/ui/layer.rs	widgets::form_dialog
 production	src/ui/layer.rs	widgets::help
 production	src/ui/layer.rs	widgets::info_dialog
 production	src/ui/layer.rs	widgets::select
-production	src/ui/modal.rs	widgets::dialog
 production	src/ui/specimen.rs	ui::modal
 production	src/ui/specimen.rs	widgets::button
 production	src/ui/specimen.rs	widgets::choice_dialog

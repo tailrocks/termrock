@@ -915,7 +915,7 @@ impl Specimen for crate::ui::modal::Frame<'static> {
     }
 
     fn specimen_height(&self, _state: SpecimenState) -> u16 {
-        let m = crate::widgets::dialog::OUTER_MARGIN;
+        let m = crate::ui::modal::OUTER_MARGIN;
         self.height.max(self.min_height) + 2 * m.vertical + self.top + self.bottom + 2
     }
 

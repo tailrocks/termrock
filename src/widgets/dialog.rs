@@ -11,6 +11,7 @@ use crate::core::response::Response;
 use crate::core::scroll::{HScroll, ScrollPane, ScrollState, Scrollable};
 use crate::theme::{ButtonKind, StatusKind, Strings};
 use crate::ui::ctx::{Backdrop, RenderCtx, fill};
+pub use crate::ui::modal::{OUTER_MARGIN, body_bounds};
 use crate::ui::popup::{Dismiss, Place, Placement, place_with};
 use crate::widgets::button::{Button, ButtonRow, RowAlign, RowOverflow};
 use crate::widgets::input::{InputAction, TextInput};
@@ -131,11 +132,6 @@ impl Actions for DialogCmd {
         vec![]
     }
 }
-
-pub const OUTER_MARGIN: Margin = Margin {
-    horizontal: 3,
-    vertical: 1,
-};
 
 impl HasHints for Dialog {
     fn hints(&self, cx: &HintCx) -> Vec<Hint> {
@@ -1297,14 +1293,6 @@ impl Dialog {
             ctx.hits.register(scrollbar::h_id_for(self.id), htrack);
         }
     }
-}
-
-pub fn body_bounds(screen: Rect, top: u16, bottom: u16) -> Rect {
-    let h = screen.height.saturating_sub(top + bottom);
-    if h == 0 {
-        return screen;
-    }
-    Rect::new(screen.x, screen.y + top, screen.width, h)
 }
 
 fn blit_rows(src: &Buffer, from: u16, dst: &mut Buffer, at: Rect) {
