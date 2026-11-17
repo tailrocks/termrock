@@ -13,11 +13,13 @@ use crate::core::hit::{Axis, PartMap};
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, hint_key, lookup};
 use crate::core::list::{Cursor, KeyStep, Moved, Navigable, RowFn, RowSource};
+use crate::core::pointer::PointerEvent;
 use crate::core::response::Response;
 use crate::core::scroll::{HScroll, ScrollPane, Scrollable};
 use crate::core::selection::{ClickPolicy, RowSelection, SelectGesture};
 use crate::theme::{SyntaxTone, Theme};
 use crate::ui::column_solver::ColumnSizing;
+use crate::ui::context::{ContextAnchor, ContextRequest, ContextSource, row_rect};
 use crate::ui::ctx::{RenderCtx, VisualState, fill};
 use crate::ui::row::{MarkKind, RowLook, RowUi};
 use crate::ui::text::{fit, fit_right, truncate, truncate_middle, wider_than, width, width_capped};
@@ -711,6 +713,45 @@ impl Bindings for DataGrid {
         }
         v.extend(actions_bindings(&self.keymap));
         v
+    }
+}
+
+impl ContextSource for DataGrid {
+    type Target = (usize, usize);
+    fn context_target(&self, ev: &PointerEvent) -> Option<(usize, usize)> {
+        if !ev.on(self.id) {
+            return None;
+        }
+        if let Some(r) = ev.index_of(Part::ROW_NUMBER) {
+            return Some((r, self.cursor.1));
+        }
+        let r = ev.index_of(Part::CELL)?;
+        Some((r, self.column_at(ev.pos().x)?))
+    }
+
+    fn context_select(&mut self, cell: (usize, usize)) {
+        if cell.1 < self.columns().len()
+            && let Some(r) = Navigable::cursor(self).select(cell.0, self).index()
+        {
+            self.context_selection(r, cell.1);
+        }
+    }
+    fn context_cursor(&self) -> Option<ContextRequest<(usize, usize)>> {
+        (self.cursor.0 < self.len()).then(|| ContextRequest {
+            target: self.cursor,
+            anchor: ContextAnchor::Control {
+                id: self.cell_id(self.cursor.0, self.cursor.1),
+                fallback: row_rect(
+                    Rect {
+                        y: self.area.y.saturating_add(1),
+                        height: self.area.height.saturating_sub(1),
+                        ..self.area
+                    },
+                    self.cursor.0,
+                    self.scroll.offset,
+                ),
+            },
+        })
     }
 }
 

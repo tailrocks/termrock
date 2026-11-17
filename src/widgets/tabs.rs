@@ -10,7 +10,9 @@ use crate::core::hit::Axis;
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::core::keymap::{Actions, KeyBinding, KeyMap, NavKeys, lookup, unassigned_chord};
 use crate::core::list::{Cursor, Navigable, RowSource};
+use crate::core::pointer::PointerEvent;
 use crate::theme::Kind;
+use crate::ui::context::{ContextAnchor, ContextRequest, ContextSource};
 use crate::ui::ctx::RenderCtx;
 use crate::ui::tooltip::Tip;
 use crate::widgets::icon_button::IconButton;
@@ -1119,5 +1121,26 @@ impl Bindings for Tabs {
         let mut v = vec![Binding::group("←→", "Switch tab")];
         v.extend(actions_bindings(&self.keymap));
         v
+    }
+}
+
+impl ContextSource for Tabs {
+    type Target = usize;
+    fn context_target(&self, ev: &PointerEvent) -> Option<usize> {
+        (self.layout_valid() && ev.on(self.id)).then(|| ev.index_of(Part::TAB))?
+    }
+    fn context_select(&mut self, tab: usize) {
+        if let Some(i) = Navigable::cursor(self).select(tab, self).index() {
+            self.cursor = i;
+        }
+    }
+    fn context_cursor(&self) -> Option<ContextRequest<usize>> {
+        (self.cursor < self.items().len()).then(|| ContextRequest {
+            target: self.cursor,
+            anchor: ContextAnchor::Control {
+                id: self.tab_id(self.cursor),
+                fallback: self.areas.get(self.cursor).copied().unwrap_or_default(),
+            },
+        })
     }
 }

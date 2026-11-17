@@ -12,11 +12,6 @@ production	src/core/hints.rs	widgets::keyhint
 production	src/core/selection.rs	theme
 production	src/theme.rs	ui::ctx
 production	src/theme.rs	widgets::panel
-production	src/ui/context.rs	widgets::grid
-production	src/ui/context.rs	widgets::list
-production	src/ui/context.rs	widgets::table
-production	src/ui/context.rs	widgets::tabs
-production	src/ui/context.rs	widgets::tree
 production	src/ui/layer.rs	widgets::choice_dialog
 production	src/ui/layer.rs	widgets::dialog
 production	src/ui/layer.rs	widgets::form_dialog

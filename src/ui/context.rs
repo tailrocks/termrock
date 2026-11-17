@@ -1,17 +1,11 @@
 use crate::core::keymap::Actions;
-use crate::core::list::Navigable;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
 
 use crate::core::event::Key;
-use crate::core::id::{Part, WidgetId};
+use crate::core::id::WidgetId;
 use crate::core::pointer::PointerEvent;
-use crate::widgets::grid::DataGrid;
-use crate::widgets::list::ListBox;
 use crate::widgets::menu::{ContextMenu, MenuItem};
-use crate::widgets::table::DataTable;
-use crate::widgets::tabs::Tabs;
-use crate::widgets::tree::TreeView;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ContextKeys {
@@ -217,161 +211,9 @@ pub fn command_items<A: Actions + Copy + PartialEq>(
         .collect()
 }
 
-fn row_rect(area: Rect, row: usize, offset: usize) -> Rect {
+pub(crate) fn row_rect(area: Rect, row: usize, offset: usize) -> Rect {
     let dy = row
         .saturating_sub(offset)
         .min(area.height.saturating_sub(1) as usize) as u16;
     Rect::new(area.x, area.y + dy, area.width.max(1), 1)
-}
-
-impl ContextSource for ListBox {
-    type Target = usize;
-    fn context_target(&self, ev: &PointerEvent) -> Option<usize> {
-        ev.on(self.id).then(|| ev.index_of(Part::ROW))?
-    }
-    fn context_select(&mut self, row: usize) {
-        if let Some(i) = Navigable::cursor(self).select(row, self).index() {
-            self.cursor = i;
-        }
-    }
-    fn context_cursor(&self) -> Option<ContextRequest<usize>> {
-        (self.cursor < self.items.len()).then(|| ContextRequest {
-            target: self.cursor,
-            anchor: ContextAnchor::Control {
-                id: self.row_id(self.cursor),
-                fallback: row_rect(self.area, self.cursor, self.scroll.offset),
-            },
-        })
-    }
-}
-
-impl ContextSource for TreeView {
-    type Target = usize;
-    fn context_target(&self, ev: &PointerEvent) -> Option<usize> {
-        self.row_at(ev)
-    }
-    fn context_select(&mut self, row: usize) {
-        if let Some(i) = Navigable::cursor(self).select(row, self).index() {
-            self.cursor = i;
-        }
-    }
-    fn context_cursor(&self) -> Option<ContextRequest<usize>> {
-        self.cursor_path()?;
-        Some(ContextRequest {
-            target: self.cursor,
-            anchor: ContextAnchor::Control {
-                id: self.row_id(self.cursor),
-                fallback: row_rect(self.area, self.cursor, self.scroll.offset),
-            },
-        })
-    }
-}
-
-impl ContextSource for DataTable {
-    type Target = (usize, usize);
-    fn context_target(&self, ev: &PointerEvent) -> Option<(usize, usize)> {
-        if !ev.on(self.id) {
-            return None;
-        }
-        if let Some(r) = ev.index_of(Part::ROW) {
-            return Some((r, self.cursor_col));
-        }
-        let r = ev.index_of(Part::CELL)?;
-        Some((r, self.column_at(ev.pos().x).unwrap_or(self.cursor_col)))
-    }
-
-    fn context_select(&mut self, (row, col): (usize, usize)) {
-        if let Some(r) = Navigable::cursor(self).select(row, self).index() {
-            self.cursor_row = r;
-            if self.cell_nav && col < self.columns().len() {
-                self.cursor_col = col;
-            }
-            self.context_selection(r);
-        }
-    }
-    fn context_cursor(&self) -> Option<ContextRequest<(usize, usize)>> {
-        (self.cursor_row < self.rows().len()).then(|| {
-            let id = if self.cell_nav {
-                self.cell_id(self.cursor_row, self.cursor_col)
-            } else {
-                self.row_id(self.cursor_row)
-            };
-            ContextRequest {
-                target: (self.cursor_row, self.cursor_col),
-                anchor: ContextAnchor::Control {
-                    id,
-
-                    fallback: row_rect(
-                        Rect {
-                            y: self.area.y.saturating_add(1),
-                            height: self.area.height.saturating_sub(1),
-                            ..self.area
-                        },
-                        self.cursor_row,
-                        self.scroll.offset,
-                    ),
-                },
-            }
-        })
-    }
-}
-
-impl ContextSource for DataGrid {
-    type Target = (usize, usize);
-    fn context_target(&self, ev: &PointerEvent) -> Option<(usize, usize)> {
-        if !ev.on(self.id) {
-            return None;
-        }
-        if let Some(r) = ev.index_of(Part::ROW_NUMBER) {
-            return Some((r, self.cursor.1));
-        }
-        let r = ev.index_of(Part::CELL)?;
-        Some((r, self.column_at(ev.pos().x)?))
-    }
-
-    fn context_select(&mut self, cell: (usize, usize)) {
-        if cell.1 < self.columns().len()
-            && let Some(r) = Navigable::cursor(self).select(cell.0, self).index()
-        {
-            self.context_selection(r, cell.1);
-        }
-    }
-    fn context_cursor(&self) -> Option<ContextRequest<(usize, usize)>> {
-        (self.cursor.0 < self.len()).then(|| ContextRequest {
-            target: self.cursor,
-            anchor: ContextAnchor::Control {
-                id: self.cell_id(self.cursor.0, self.cursor.1),
-                fallback: row_rect(
-                    Rect {
-                        y: self.area.y.saturating_add(1),
-                        height: self.area.height.saturating_sub(1),
-                        ..self.area
-                    },
-                    self.cursor.0,
-                    self.scroll.offset,
-                ),
-            },
-        })
-    }
-}
-
-impl ContextSource for Tabs {
-    type Target = usize;
-    fn context_target(&self, ev: &PointerEvent) -> Option<usize> {
-        (self.layout_valid() && ev.on(self.id)).then(|| ev.index_of(Part::TAB))?
-    }
-    fn context_select(&mut self, tab: usize) {
-        if let Some(i) = Navigable::cursor(self).select(tab, self).index() {
-            self.cursor = i;
-        }
-    }
-    fn context_cursor(&self) -> Option<ContextRequest<usize>> {
-        (self.cursor < self.items().len()).then(|| ContextRequest {
-            target: self.cursor,
-            anchor: ContextAnchor::Control {
-                id: self.tab_id(self.cursor),
-                fallback: self.areas.get(self.cursor).copied().unwrap_or_default(),
-            },
-        })
-    }
 }
