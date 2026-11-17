@@ -10,14 +10,13 @@ default-run = "showcase"
 
 [[bin]]
 name = "showcase"
-path = "../../src/bin/showcase/main.rs"
+path = "src/main.rs"
 
 [features]
 default = []
-work-metrics = ["junie-tui/work-metrics", "termrock/work-metrics"]
+work-metrics = ["termrock/work-metrics"]
 
 [dependencies]
-junie-tui = { path = "../..", default-features = false, features = ["cli", "terminal"] }
 termrock = { path = "../../crates/termrock", default-features = false, features = ["cli", "terminal"] }
 clap = { workspace = true }
 ratatui = { workspace = true }

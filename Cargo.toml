@@ -5,7 +5,6 @@ edition = "2024"
 rust-version = "1.99"
 description = "Junie-inspired Ratatui design-system laboratory"
 license = "MIT"
-autobins = false
 
 [workspace]
 members = [

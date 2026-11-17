@@ -285,7 +285,7 @@ ROUTE_CASES = {
 
 
 def parse_options() -> dict[str, list[dict]]:
-    text = (ROOT / "src/bin/showcase/options.rs").read_text()
+    text = (ROOT / "apps/showcase/src/options.rs").read_text()
     groups: dict[str, list[dict]] = defaultdict(list)
     current = None
     # Associate each Opt::new with the static array that contains it.
@@ -514,9 +514,9 @@ def main() -> None:
             ],
             "forbidden_shared_edits": forbidden,
             "source_inputs": [
-                "src/bin/showcase/app.rs",
-                "src/bin/showcase/inspector.rs",
-                "src/bin/showcase/options.rs",
+                "apps/showcase/src/app.rs",
+                "apps/showcase/src/inspector.rs",
+                "apps/showcase/src/options.rs",
                 "src/shell/",
             ],
             "coverage_rows": [item["case_id"] for item in shell_rows],
@@ -664,9 +664,9 @@ def main() -> None:
                 ],
                 "forbidden_shared_edits": forbidden,
                 "source_inputs": [
-                    f"src/bin/showcase/pages/{source}",
-                    "src/bin/showcase/options.rs",
-                    "src/bin/showcase/pages/template.rs",
+                    f"apps/showcase/src/pages/{source}",
+                    "apps/showcase/src/options.rs",
+                    "apps/showcase/src/pages/template.rs",
                     "src/ui/specimen.rs",
                 ],
                 "coverage_rows": [item["case_id"] for item in owned_rows],
@@ -1688,7 +1688,7 @@ def consumer_leaves() -> list[dict]:
         [("export", "Enter an invalid path, cancel a valid path, and confirm a valid path.", "Invalid is rejected. Cancel writes no success report. Confirm reports that path.", "The test claims a host file was written.")])
 
     # Cross-application
-    add("X01.cli", "cross", ["src/cli.rs", "src/bin/showcase/main.rs", "apps/tablepro/src/main.rs", "apps/holla/src/main.rs", "src/bin/jackin/main.rs"],
+    add("X01.cli", "cross", ["src/cli.rs", "apps/showcase/src/main.rs", "apps/tablepro/src/main.rs", "apps/holla/src/main.rs", "src/bin/jackin/main.rs"],
         "Help and invalid CLI values return the current exit status and error text. Short commands do not use the Ctrl+Q helper.",
         [("cli", "Run --help and an unknown page, scenario, connection, option key, and option value for each binary. Repeat --opt and observe precedence.", "The exit status and the error name the bad argument. A valid option is accepted.", "An invalid option starts the full-screen UI and is treated as success.")])
     add("X01.env", "cross", ["src/cli.rs", "src/theme.rs", "src/motion.rs"],
@@ -1731,7 +1731,7 @@ def consumer_leaves() -> list[dict]:
         "Unicode and ASCII modes render the same component family with their own glyphs.",
         [("glyphs", "Open one glyph-dependent family in Unicode and ASCII, including combining text, wide text, and emoji where the fixture has them.", "ASCII mode does not draw the Unicode gutter or seam.", "ASCII mode still draws ┃.")],
         deps=["G03", "G04", "G05", "S02.buttons"])
-    add("X03.motion", "cross", ["src/motion.rs", "src/bin/jackin/rain.rs", "src/bin/showcase/app.rs"],
+    add("X03.motion", "cross", ["src/motion.rs", "src/bin/jackin/rain.rs", "apps/showcase/src/app.rs"],
         "Full, reduced, and paused motion are distinct where the app implements them. A transient that cannot be frozen stays BLOCKED.",
         [("motion", "Capture paused and reduced frames with the existing frame controls. Capture a Jackin phase with the clock hook. Do not add a Showcase clock hook.", "Paused frames are stable. A Showcase transient that cannot be frozen is BLOCKED, not accepted as a changing baseline.", "A changing frame is stored as the expected image.")],
         deps=["G03", "G04", "G05", "J05.intro", "J05.handoff", "J05.outro", "S06.progress"])

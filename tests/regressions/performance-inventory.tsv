@@ -56,7 +56,7 @@ S	Holla projection reuse (Finder)	termrock-holla::bin/holla	/holla_projection_/	
 T	screens::finder::tests::holla_projection_group_change_reranks_without_source_work
 S	TablePro page scenarios	termrock-tablepro::bin/tablepro	/^work_metrics_tests::/	apps/tablepro/src/work_metrics_tests.rs
 T	work_metrics_tests::work_contract_tablepro_idle_and_cell_edit
-S	Showcase page scenarios and stress fits	termrock-showcase::bin/showcase	/^work_metrics_tests::/	src/bin/showcase/work_metrics_tests.rs
+S	Showcase page scenarios and stress fits	termrock-showcase::bin/showcase	/^work_metrics_tests::/	apps/showcase/src/work_metrics_tests.rs
 T	work_metrics_tests::work_contract_showcase_idle_and_switch
 T	work_metrics_tests::work_contract_stress_toolbars_items
 T	work_metrics_tests::work_contract_stress_breadcrumbs_items

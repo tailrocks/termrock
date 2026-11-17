@@ -2170,7 +2170,6 @@ name = "termrock-showcase"
 version = "0.1.0"
 dependencies = [
  "clap",
- "junie-tui",
  "libc",
  "ratatui",
  "serde_json",
