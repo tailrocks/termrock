@@ -1,0 +1,27 @@
+[package]
+name = "termrock-tablepro"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+description = "TablePro, a database client built from the termrock components"
+license = "MIT"
+publish = false
+default-run = "tablepro"
+
+[[bin]]
+name = "tablepro"
+path = "../../src/bin/tablepro/main.rs"
+
+[features]
+default = []
+work-metrics = ["junie-tui/work-metrics"]
+
+[dependencies]
+junie-tui = { path = "../..", default-features = false, features = ["cli"] }
+clap = { workspace = true }
+ratatui = { workspace = true }
+regex = "1.13"
+
+[dev-dependencies]
+serde_json = { workspace = true }
+sha2 = { workspace = true }

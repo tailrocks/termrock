@@ -14,18 +14,8 @@ use tui_test::{
     WaitQuietOptions,
 };
 
-pub const SHOWCASE: &str = match option_env!("CARGO_BIN_EXE_showcase") {
-    Some(path) => path,
-    None => "",
-};
-pub const TABLEPRO: &str = match option_env!("CARGO_BIN_EXE_tablepro") {
-    Some(path) => path,
-    None => "",
-};
-pub const HOLLA: &str = match option_env!("CARGO_BIN_EXE_holla") {
-    Some(path) => path,
-    None => "",
-};
+#[allow(unused_imports)]
+pub use crate::bins::{HOLLA, SHOWCASE, TABLEPRO};
 const TIMEOUT: Duration = Duration::from_secs(10);
 // A quitting app flushes state and restores the terminal, so under load it
 // needs more than a screen wait.
@@ -92,10 +82,11 @@ pub struct Launch {
 }
 
 impl Launch {
-    pub fn new(name: &str, bin: &str) -> Self {
+    pub fn new(name: &str, bin: impl AsRef<str>) -> Self {
+        let bin = bin.as_ref();
         assert!(
             !bin.is_empty(),
-            "launch `{name}` has an empty app binary path: this test target has no CARGO_BIN_EXE_<bin> for it. Look the binary up by name (see crates/functional-cross) or run the case from the package that owns the bin."
+            "launch `{name}` has an empty app binary path: the caller passed no candidate path. The root journeys take theirs from tests/functional/bins.rs; functional-cross looks the binary up by name."
         );
         Self {
             name: name.to_string(),
@@ -152,7 +143,15 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(name: &str, bin: &str, args: &[&str], cols: u16, rows: u16, color: &str) -> Self {
+    pub fn new(
+        name: &str,
+        bin: impl AsRef<str>,
+        args: &[&str],
+        cols: u16,
+        rows: u16,
+        color: &str,
+    ) -> Self {
+        let bin = bin.as_ref();
         let mut launch = Launch::new(name, bin);
         launch.args = args.iter().map(|arg| (*arg).to_string()).collect();
         launch.cols = cols;

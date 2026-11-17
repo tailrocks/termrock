@@ -1,0 +1,10 @@
+[package]
+name = "termrock-consumer-terminal"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+termrock = { path = "../../../crates/termrock", default-features = false, features = ["terminal"] }

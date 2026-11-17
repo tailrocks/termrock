@@ -513,7 +513,7 @@ mod gate_logic {
         // `mod work_metrics_tests;` removed from the tablepro binary: the
         // binary is still listed, its tests are gone.
         let mut list = full_list();
-        list["rust-suites"]["junie-tui::bin/tablepro"]["testcases"] = serde_json::json!({});
+        list["rust-suites"]["termrock-tablepro::bin/tablepro"]["testcases"] = serde_json::json!({});
         let problems = list_problems(&list);
         assert_eq!(problems.len(), 1, "{problems:?}");
         assert!(problems[0].contains("work_contract_tablepro_idle_and_cell_edit"));
@@ -534,7 +534,7 @@ mod gate_logic {
     #[test]
     fn an_ignored_test_fails() {
         let mut list = full_list();
-        list["rust-suites"]["junie-tui::bin/showcase"]["testcases"]["work_metrics_tests::work_contract_showcase_idle_and_switch"]
+        list["rust-suites"]["termrock-showcase::bin/showcase"]["testcases"]["work_metrics_tests::work_contract_showcase_idle_and_switch"]
             ["ignored"] = serde_json::json!(true);
         let problems = list_problems(&list);
         assert_eq!(problems.len(), 1, "{problems:?}");

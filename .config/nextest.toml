@@ -44,10 +44,10 @@ default-filter = '''
   | binary_id(=junie-tui) & test(/^widgets::keyed_cost_tests::/)
   | binary_id(=junie-tui) & test(/^widgets::search_detail::cost_tests::/)
   | binary_id(=junie-tui::regressions) & test(/^work_budgets::/)
-  | binary_id(=junie-tui::bin/holla) & test(/^work_metrics_tests::/)
-  | binary_id(=junie-tui::bin/holla) & test(/holla_projection_/)
-  | binary_id(=junie-tui::bin/tablepro) & test(/^work_metrics_tests::/)
-  | binary_id(=junie-tui::bin/showcase) & test(/^work_metrics_tests::/)
+  | binary_id(=termrock-holla::bin/holla) & test(/^work_metrics_tests::/)
+  | binary_id(=termrock-holla::bin/holla) & test(/holla_projection_/)
+  | binary_id(=termrock-tablepro::bin/tablepro) & test(/^work_metrics_tests::/)
+  | binary_id(=termrock-showcase::bin/showcase) & test(/^work_metrics_tests::/)
   | binary_id(=junie-tui) & test(/^runtime::raw_input_tests::work::/)
   | binary_id(=jackin-console) & test(/^sim::link::tests::work::/)
   | binary_id(=jackin-console::regressions) & test(/^work_budgets::/)
@@ -67,13 +67,13 @@ fail-fast = false
 test-threads = 1
 slow-timeout = { period = "120s", terminate-after = 5 }
 
-# Builds the binaries the functional-cross cases launch into target/app-bins and
-# exports TCB_BIN_<NAME>, so it cannot replace the feature-matched binaries
-# that the other functional targets launch from target/<profile>/.
+# Builds the binaries the functional-cross cases and the root functional
+# journeys launch into target/app-bins and exports TCB_BIN_<NAME> and, unless
+# scripts/run_functional.py already did, TERMROCK_TEST_<NAME>.
 [scripts.setup.app-bins]
 command = ["sh", "scripts/build-app-bins.sh"]
 slow-timeout = { period = "120s", terminate-after = 2 }
 
 [[profile.default.scripts]]
-filter = "package(functional-cross)"
+filter = "package(functional-cross) | binary_id(=junie-tui::functional)"
 setup = "app-bins"
