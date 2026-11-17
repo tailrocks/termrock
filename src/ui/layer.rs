@@ -16,6 +16,8 @@ use crate::ui::modal::{FocusOnOpen, Modal, ModalStack};
 use crate::ui::popup::{Dismiss, Placement};
 use crate::widgets::icon_button::IconButton;
 use crate::widgets::keyhint::Hint;
+use crate::widgets::menu::MenuAction;
+use crate::widgets::picker::PickerAction;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LayerKind {
@@ -487,10 +489,66 @@ impl<R: 'static, W: ?Sized + 'static, O> ModalStack<LayerEntry<R, W, O>> {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LayerResult {
+    Dialog {
+        action: Option<usize>,
+        text: Option<String>,
+    },
+
+    Picker(PickerAction),
+
+    Menu(MenuAction),
+
+    Form(FormAction),
+
+    Choice(Option<usize>),
+
+    Info(InfoResult),
+
+    Help,
+
+    File(FileBrowserResult),
+}
+
+pub(crate) fn layer_out<R: From<LayerResult>>(r: LayerResult, closes: bool) -> LayerOut<R> {
+    if closes {
+        LayerOut::Close(r.into())
+    } else {
+        LayerOut::Event(r.into())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FormAction {
+    Changed(String),
+
+    Choose(String),
+
+    Action(String),
+    Save,
+    Cancel,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum InfoResult {
+    Closed,
+    Copy(String),
+
+    Action(usize),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FileBrowserResult {
+    Chosen { path: String, checked: bool },
+
+    Url(String),
+    Cancelled,
+}
+
 #[cfg(test)]
 mod queue_tests {
     use super::*;
-    use crate::ui::layers::LayerResult;
     use crate::widgets::menu::{ContextMenu, MenuAction, MenuItem};
     use crate::widgets::picker::{Picker, PickerAction};
 

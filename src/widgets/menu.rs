@@ -9,11 +9,14 @@ use crate::core::hit::{Axis, ReleaseFrom};
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::core::keymap::{Nav, NavKeys, unassigned_chord};
 use crate::core::list::{Cursor, Moved, Navigable, RowFn, RowSource};
+use crate::core::pointer::{MouseTarget, PointerEvent};
 use crate::core::response::Response;
 use crate::core::scroll::Scrollable;
 use crate::theme::{CursorStyle, Kind, Plane};
 use crate::ui::ctx::{RenderCtx, fill};
-use crate::ui::layer::{DismissReason, LayerSpec, Overlay};
+use crate::ui::layer::{
+    DismissReason, Layer, LayerCx, LayerOut, LayerResult, LayerSpec, Overlay, layer_out,
+};
 use crate::ui::popup::{Dismiss, Place, backdrop_id, place_with};
 use crate::ui::specimen::{Specimen, SpecimenState};
 use crate::ui::text::{truncate, width};
@@ -1488,5 +1491,42 @@ impl Overlay for MenuBar {
     fn on_dismiss(&mut self, _: DismissReason) -> Response<MenuBarAction> {
         self.close();
         Response::emit(MenuBarAction::Closed)
+    }
+}
+
+impl<R: From<LayerResult> + 'static, W: ?Sized + 'static> Layer<R, W> for ContextMenu {
+    fn hints(&self, focused: Option<WidgetId>) -> Vec<Hint> {
+        HasHints::hints(self, &HintCx::new(focused))
+    }
+    fn spec(&self) -> LayerSpec {
+        Overlay::spec(self)
+    }
+    fn render(&mut self, screen: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, _: &W) {
+        ContextMenu::render(self, screen, buf, ctx);
+    }
+    fn on_key(&mut self, key: &Key, _: &mut LayerCx<'_, W>) -> Outcome {
+        let (o, ev) = ContextMenu::on_key(self, key);
+        self.pending.extend(ev);
+        o.or(Outcome::Consumed)
+    }
+    fn pointer(&mut self, ev: &PointerEvent, _: &mut LayerCx<'_, W>) -> Outcome {
+        let mut r = MouseTarget::pointer(self, ev);
+        let actions = r.take_actions();
+        self.pending.extend(actions);
+        r.outcome()
+    }
+    fn on_click(&mut self, id: WidgetId, _: Position, _: &mut LayerCx<'_, W>) -> Outcome {
+        let action = ContextMenu::on_click(self, id);
+        self.pending.extend(action);
+        Outcome::Changed
+    }
+    fn on_dismiss(&mut self, reason: DismissReason) {
+        let actions = Overlay::on_dismiss(self, reason).into_actions();
+        self.pending.clear();
+        self.pending.extend(actions);
+    }
+    fn take_result(&mut self) -> Option<LayerOut<R>> {
+        let next = self.pending.next(|_| true)?;
+        Some(layer_out(LayerResult::Menu(next.into_inner()), true))
     }
 }

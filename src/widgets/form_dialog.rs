@@ -1,14 +1,17 @@
 use crate::core::event::{Key, Outcome};
-use crate::core::focus::{Focus, FocusRing};
+use crate::core::focus::{Focus, FocusChange, FocusRing};
 use crate::core::hints::{HasHints, HintCx};
+use crate::core::hit::Axis;
 use crate::core::id::WidgetId;
 use crate::core::intent::DismissReason;
 use crate::core::keymap::{Nav, NavKeys};
+use crate::core::pointer::PointerEvent;
 use crate::core::response::Response;
 use crate::core::scroll::{ScrollPane, Scrollable};
 use crate::theme::{Strings, Tone};
 use crate::ui::ctx::RenderCtx;
-use crate::ui::layer::{LayerSpec, Overlay};
+pub use crate::ui::layer::FormAction;
+use crate::ui::layer::{Layer, LayerCx, LayerOut, LayerResult, LayerSpec, Overlay, layer_out};
 use crate::ui::popup::Dismiss;
 use crate::ui::text::truncate;
 use crate::widgets::button::{Button, row_layout_right, row_lines};
@@ -223,17 +226,6 @@ impl HasHints for FormDialog {
         }
         v
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum FormAction {
-    Changed(String),
-
-    Choose(String),
-
-    Action(String),
-    Save,
-    Cancel,
 }
 
 pub struct FormDialog {
@@ -1205,6 +1197,72 @@ impl Overlay for FormDialog {
     }
     fn close_button(&self) -> Option<&IconButton> {
         Some(&self.close_button)
+    }
+}
+
+impl<R: From<LayerResult> + 'static, W: ?Sized + 'static> Layer<R, W> for FormDialog {
+    fn hints(&self, focused: Option<WidgetId>) -> Vec<Hint> {
+        HasHints::hints(self, &HintCx::new(focused))
+    }
+    fn spec(&self) -> LayerSpec {
+        Overlay::spec(self)
+    }
+    fn is_editing(&self) -> bool {
+        FormDialog::is_editing(self)
+    }
+    fn render(&mut self, screen: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, _: &W) {
+        FormDialog::render(self, screen, buf, ctx);
+    }
+    fn on_key(&mut self, key: &Key, cx: &mut LayerCx<'_, W>) -> Outcome {
+        FormDialog::on_key(self, key, cx.focus, cx.ring).or(Outcome::Consumed)
+    }
+
+    fn pointer(&mut self, ev: &PointerEvent, cx: &mut LayerCx<'_, W>) -> Outcome {
+        FormDialog::pointer_in(self, ev, cx.focus).outcome()
+    }
+    fn on_click_count(
+        &mut self,
+        id: WidgetId,
+        pos: Position,
+        count: u8,
+        cx: &mut LayerCx<'_, W>,
+    ) -> Outcome {
+        FormDialog::on_click_count(self, id, pos, count, cx.focus)
+    }
+    fn on_click(&mut self, id: WidgetId, pos: Position, cx: &mut LayerCx<'_, W>) -> Outcome {
+        FormDialog::on_click_count(self, id, pos, 1, cx.focus)
+    }
+    fn on_press(&mut self, id: WidgetId, pos: Position, count: u8) -> Outcome {
+        FormDialog::on_press(self, id, pos, count)
+    }
+    fn on_drag(&mut self, pressed: WidgetId, pos: Position) -> Outcome {
+        FormDialog::on_drag(self, pressed, pos)
+    }
+    fn on_release(&mut self, pressed: WidgetId, pos: Position) -> Outcome {
+        FormDialog::on_release(self, pressed, pos)
+    }
+    fn on_wheel(&mut self, delta: i32, _: Position) -> Outcome {
+        Scrollable::wheel(self, Axis::Vertical, delta).outcome()
+    }
+    fn on_paste(&mut self, _: &str) -> Outcome {
+        Outcome::Consumed
+    }
+    fn on_paste_focused(&mut self, text: &str, focus: &Focus) -> Outcome {
+        FormDialog::on_paste(self, text, focus)
+    }
+    fn on_blur(&mut self, change: FocusChange) -> Outcome {
+        FormDialog::on_blur(self, change)
+    }
+    fn on_dismiss(&mut self, reason: DismissReason) {
+        let _ = Overlay::on_dismiss(self, reason);
+    }
+    fn take_result(&mut self) -> Option<LayerOut<R>> {
+        if self.events.is_empty() {
+            return None;
+        }
+        let ev = self.events.remove(0);
+        let closes = matches!(ev, FormAction::Save | FormAction::Cancel);
+        Some(layer_out(LayerResult::Form(ev), closes))
     }
 }
 
