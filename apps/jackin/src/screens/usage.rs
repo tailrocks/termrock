@@ -1,35 +1,35 @@
 use crate::screens::Jackin;
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::hit::Axis;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::core::scroll::{ScrollState, TrackClick};
-use junie_tui::shell::Page;
-use junie_tui::theme::{StatusKind, Tone};
-use junie_tui::ui::columns::{self, Col};
-use junie_tui::ui::ctx::{RenderCtx, fill, legible_on_fill};
-use junie_tui::ui::text::{fit, truncate, width};
-use junie_tui::widgets::empty::{self, EmptyState};
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::progress::{Meter, MeterVisual, spinner_frame};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::hit::Axis;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::PointerEvent;
+use termrock::core::scroll::{ScrollState, TrackClick};
+use termrock::shell::Page;
+use termrock::theme::{StatusKind, Tone};
+use termrock::ui::columns::{self, Col};
+use termrock::ui::ctx::{RenderCtx, fill, legible_on_fill};
+use termrock::ui::text::{fit, truncate, width};
+use termrock::widgets::empty::{self, EmptyState};
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::progress::{Meter, MeterVisual, spinner_frame};
 
 use super::accounts::QuotaTone;
 use super::row_meta::ClockStamp;
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::viewport::{Span, render_spans};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
+use termrock::widgets::scrollbar;
+use termrock::widgets::viewport::{Span, render_spans};
 
 use super::{Cx, Go, Screen};
 use crate::domain::account::{Account, AccountId, IssueCode, Lifecycle};
 use crate::domain::agent::UsageSurface;
 use crate::domain::usage::{Freshness, OverallSummary, QuotaStatus};
 use crate::world::{Msg, World};
-use junie_tui::ui::text::plural;
+use termrock::ui::text::plural;
 
 enum OvLine {
     Text(Vec<Span>),
@@ -683,7 +683,7 @@ impl UsageScreen {
                 buf.set_string(
                     area.x,
                     title_row,
-                    junie_tui::ui::reveal::cut(
+                    termrock::ui::reveal::cut(
                         Rect::new(area.x, title_row, area.width.saturating_sub(20), 1),
                         &title,
                     ),
@@ -739,7 +739,7 @@ impl UsageScreen {
                             buf.set_string(
                                 body.x,
                                 y,
-                                junie_tui::ui::reveal::cut(
+                                termrock::ui::reveal::cut(
                                     Rect::new(body.x, y, body.width, 1),
                                     text,
                                 ),

@@ -4,9 +4,9 @@
 mod pane_support;
 
 use jackin_console::panes::{Lease, LinkEvent, PaneBody, PaneKey};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::hit::Axis;
 use pane_support::*;
+use termrock::core::event::Outcome;
+use termrock::core::hit::Axis;
 
 #[test]
 fn ctrl_b_ctrl_b_sends_the_prefix_key() {
@@ -143,7 +143,7 @@ fn kitty_query_answer_is_legacy() {
     );
     let enter = jackin_console::panes::PaneBody::key(
         &mut pane,
-        &junie_tui::core::event::Key {
+        &termrock::core::event::Key {
             code: ratatui::crossterm::event::KeyCode::Enter,
             mods: ratatui::crossterm::event::KeyModifiers::SHIFT,
         },

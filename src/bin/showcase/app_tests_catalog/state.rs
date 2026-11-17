@@ -9,41 +9,41 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
-use junie_tui::core::edit::{
-    CMD_TEXT_KEYS, EditEntry, EditKind, FieldKeys, FocusSelect, TextCmd, UndoStack, clipboard,
-};
-use junie_tui::core::event::{ClientPlatform, Key, Outcome};
-use junie_tui::core::focus::{
-    BlurAction, BlurTarget, Focus, FocusChange, FocusFallback, FocusRing, cancel_focus_request,
-    forward_blur, request_focus_next,
-};
-use junie_tui::core::hit::{Axis, HitRegistry};
-use junie_tui::core::id::{ItemKey, Part, PartRef, WidgetId, custom_hash16};
-use junie_tui::core::keymap::{KeyBinding, Nav, NavKeys, lookup};
-use junie_tui::core::list::{
-    Cursor, KeyStep, Moved, NavProfile, Navigable, RowFn, RowSource, TypeAheadPrecedence, route_key,
-};
-use junie_tui::core::nav::step_index;
-use junie_tui::core::pointer::PointerState;
-use junie_tui::core::response::{Actions, Flow, Invalidate, Response, StateFlags};
-use junie_tui::core::selection::{
-    Activate, CheckClick, ClickPolicy, RowSelection, SelectGesture, SelectionMode, TriState,
-};
-use junie_tui::core::shape::{
-    CARET_RESET, CaretShape, PointerShape, ShapeSupport, ShapeSync, Shapes, reset_sequence,
-    shapes_for, under,
-};
-use junie_tui::core::text::{CursorPos, TextBuffer};
-use junie_tui::core::typeahead::TypeAhead;
-use junie_tui::theme::{ColorLevel, Glyphs, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::widgets::edit::EditField;
-use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::list::{ListBox, ListItem, SelectMode};
-use junie_tui::widgets::table::{DataTable, TableAction};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
+use termrock::core::edit::{
+    CMD_TEXT_KEYS, EditEntry, EditKind, FieldKeys, FocusSelect, TextCmd, UndoStack, clipboard,
+};
+use termrock::core::event::{ClientPlatform, Key, Outcome};
+use termrock::core::focus::{
+    BlurAction, BlurTarget, Focus, FocusChange, FocusFallback, FocusRing, cancel_focus_request,
+    forward_blur, request_focus_next,
+};
+use termrock::core::hit::{Axis, HitRegistry};
+use termrock::core::id::{ItemKey, Part, PartRef, WidgetId, custom_hash16};
+use termrock::core::keymap::{KeyBinding, Nav, NavKeys, lookup};
+use termrock::core::list::{
+    Cursor, KeyStep, Moved, NavProfile, Navigable, RowFn, RowSource, TypeAheadPrecedence, route_key,
+};
+use termrock::core::nav::step_index;
+use termrock::core::pointer::PointerState;
+use termrock::core::response::{Actions, Flow, Invalidate, Response, StateFlags};
+use termrock::core::selection::{
+    Activate, CheckClick, ClickPolicy, RowSelection, SelectGesture, SelectionMode, TriState,
+};
+use termrock::core::shape::{
+    CARET_RESET, CaretShape, PointerShape, ShapeSupport, ShapeSync, Shapes, reset_sequence,
+    shapes_for, under,
+};
+use termrock::core::text::{CursorPos, TextBuffer};
+use termrock::core::typeahead::TypeAhead;
+use termrock::theme::{ColorLevel, Glyphs, Theme};
+use termrock::ui::ctx::{Interaction, RenderCtx};
+use termrock::widgets::edit::EditField;
+use termrock::widgets::input::TextInput;
+use termrock::widgets::list::{ListBox, ListItem, SelectMode};
+use termrock::widgets::table::{DataTable, TableAction};
 
 use super::ScenarioCase;
 use super::{cells, paint, paint_hits, text_of, two_columns};
@@ -1940,19 +1940,19 @@ fn assert_registers(hits: &HitRegistry, owner: WidgetId, wanted: &[Part], what: 
 }
 
 fn state_part_regions() {
-    use junie_tui::ui::modal::Frame;
-    use junie_tui::ui::popup::Dismiss;
-    use junie_tui::widgets::chips::{Chip, ChipBar};
-    use junie_tui::widgets::grid::{CellKind, CellValue, ColumnSpec, DataGrid, GridRows, RowTotal};
-    use junie_tui::widgets::hintbar::{HintBar, HintLayer};
-    use junie_tui::widgets::keyhint::Hint;
-    use junie_tui::widgets::option_editor::{Affordance, ColumnEditor, EditorConfig, Options};
-    use junie_tui::widgets::panel::ScrollPanel;
-    use junie_tui::widgets::picker::Picker;
-    use junie_tui::widgets::rail::SidebarRail;
-    use junie_tui::widgets::search_detail::{SearchConfig, SearchFocusMode};
-    use junie_tui::widgets::tabs::{TabItem, Tabs};
-    use junie_tui::widgets::tree::{TreeNode, TreeView};
+    use termrock::ui::modal::Frame;
+    use termrock::ui::popup::Dismiss;
+    use termrock::widgets::chips::{Chip, ChipBar};
+    use termrock::widgets::grid::{CellKind, CellValue, ColumnSpec, DataGrid, GridRows, RowTotal};
+    use termrock::widgets::hintbar::{HintBar, HintLayer};
+    use termrock::widgets::keyhint::Hint;
+    use termrock::widgets::option_editor::{Affordance, ColumnEditor, EditorConfig, Options};
+    use termrock::widgets::panel::ScrollPanel;
+    use termrock::widgets::picker::Picker;
+    use termrock::widgets::rail::SidebarRail;
+    use termrock::widgets::search_detail::{SearchConfig, SearchFocusMode};
+    use termrock::widgets::tabs::{TabItem, Tabs};
+    use termrock::widgets::tree::{TreeNode, TreeView};
 
     // Tabs: each tab, its close button and the new-tab button; a crowded
     // strip adds the overflow button.

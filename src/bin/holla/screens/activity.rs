@@ -1,31 +1,31 @@
 use crate::screens::Holla;
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::shell::Page as ShellPage;
-use junie_tui::theme::Tone;
-use junie_tui::ui::context::ContextAnchor;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::text::width;
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::chips::{Chip, ChipAction, ChipBar};
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::menu::MenuItem;
-use junie_tui::widgets::page_header::PageHeader;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::statusbar::StatusItem;
-use junie_tui::widgets::viewport::{Line, Mark, Span, TextViewport, ViewportAction, line_text};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Rect;
+use termrock::core::event::{Key, Outcome};
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::shell::Page as ShellPage;
+use termrock::theme::Tone;
+use termrock::ui::context::ContextAnchor;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::text::width;
+use termrock::widgets::button::Button;
+use termrock::widgets::chips::{Chip, ChipAction, ChipBar};
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::menu::MenuItem;
+use termrock::widgets::page_header::PageHeader;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::statusbar::StatusItem;
+use termrock::widgets::viewport::{Line, Mark, Span, TextViewport, ViewportAction, line_text};
 
 use crate::domain::activity::{
     ActivityKind, ActivityState, InputError, KILL_AFTER_TICKS, LineTone, RETAIN_LINES, key_bytes,
 };
 use crate::screens::{Cx, Go, ModalResult, Screen, StatusBits, open_context, ticks_label};
 use crate::sim::world::{STOPPING_REFUSAL, World};
-use junie_tui::ui::layer::LayerTag;
+use termrock::ui::layer::LayerTag;
 
 pub const VIEW: WidgetId = WidgetId::of("activity.view");
 pub const CHIPS: WidgetId = WidgetId::of("activity.chips");
@@ -192,7 +192,7 @@ impl ActivityTab {
         }
         let texts: Vec<String> = self.view.lines().map(|l| line_text(l)).collect();
         for (i, l) in texts.iter().enumerate() {
-            for r in junie_tui::ui::text::find_ranges(l, &q, false) {
+            for r in termrock::ui::text::find_ranges(l, &q, false) {
                 self.find_matches.push((i, r));
             }
         }
@@ -749,11 +749,11 @@ impl ShellPage<Holla> for ActivityTab {
         self.sync(w);
         let t = ctx.theme;
         let Some(a) = w.activity(&self.id) else {
-            junie_tui::widgets::empty::render(
+            termrock::widgets::empty::render(
                 area,
                 buf,
                 t,
-                &junie_tui::widgets::empty::EmptyState::new("This activity is gone")
+                &termrock::widgets::empty::EmptyState::new("This activity is gone")
                     .hint("Esc returns to Here"),
                 t.canvas,
             );
@@ -846,7 +846,7 @@ impl ShellPage<Holla> for ActivityTab {
         let follow_w: Vec<u16> = self.follow_ups.iter().map(Button::width).collect();
         let follow_area = Rect::new(area.x + 7, 0, area.width.saturating_sub(7), 1);
         let follow_h: u16 = if !self.follow_ups.is_empty() && !a.state.live() {
-            1 + junie_tui::widgets::button::row_lines(follow_area.width, &follow_w, 2)
+            1 + termrock::widgets::button::row_lines(follow_area.width, &follow_w, 2)
         } else {
             0
         };
@@ -896,7 +896,7 @@ impl ShellPage<Holla> for ActivityTab {
         if follow_h > 0 {
             let y = area.bottom().saturating_sub(follow_h - 1);
             buf.set_string(area.x + 1, y, "Next", t.faint());
-            let rects = junie_tui::widgets::button::row_layout(
+            let rects = termrock::widgets::button::row_layout(
                 Rect::new(follow_area.x, y, follow_area.width, follow_h - 1),
                 &follow_w,
                 2,
@@ -958,7 +958,7 @@ impl ShellPage<Holla> for ActivityTab {
         }
         v.push(hint("x", "Close"));
         v.push(hint("Esc", "Back to Here"));
-        v.push(junie_tui::widgets::keyhint::CONTEXT_MENU);
+        v.push(termrock::widgets::keyhint::CONTEXT_MENU);
         v
     }
 
@@ -1061,10 +1061,10 @@ mod tests {
     use crate::domain::context::ScopeTag;
     use crate::domain::fixtures::world_for;
     use crate::scenario::{Motion, Scenario};
-    use junie_tui::core::focus::{Focus, FocusRing};
-    use junie_tui::core::hit::HitRegistry;
-    use junie_tui::theme::Theme;
-    use junie_tui::ui::ctx::Interaction;
+    use termrock::core::focus::{Focus, FocusRing};
+    use termrock::core::hit::HitRegistry;
+    use termrock::theme::Theme;
+    use termrock::ui::ctx::Interaction;
 
     fn press(tab: &mut ActivityTab, w: &mut World, cx: &mut Cx<'_>, code: KeyCode) {
         let key = Key {

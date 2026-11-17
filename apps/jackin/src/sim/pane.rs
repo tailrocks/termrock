@@ -1,13 +1,13 @@
 use std::collections::VecDeque;
 use std::sync::Arc;
 
-use junie_tui::core::event::Key;
-use junie_tui::core::id::WidgetId;
-use junie_tui::theme::Tone;
-use junie_tui::widgets::viewport::{Line, Span, TextViewport};
-use junie_tui::widgets::viewport_ops::ViewportOps;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
+use termrock::core::event::Key;
+use termrock::core::id::WidgetId;
+use termrock::theme::Tone;
+use termrock::widgets::viewport::{Line, Span, TextViewport};
+use termrock::widgets::viewport_ops::ViewportOps;
 
 use crate::domain::account::AccountId;
 use crate::domain::agent::Agent;
@@ -240,9 +240,9 @@ impl ScriptPane {
                 self.term.push(pl);
             }
             let n = self.term.len().saturating_sub(1);
-            let col = junie_tui::ui::text::width(&self.proc.prompt)
-                + junie_tui::ui::text::width(&self.input);
-            self.term.caret = Some(junie_tui::widgets::viewport::CellPos { line: n, col });
+            let col = termrock::ui::text::width(&self.proc.prompt)
+                + termrock::ui::text::width(&self.input);
+            self.term.caret = Some(termrock::widgets::viewport::CellPos { line: n, col });
         } else {
             self.term.caret = None;
         }
@@ -400,11 +400,11 @@ mod tests {
     use crate::domain::instance::InstanceId;
     use crate::panes::PaneSpawn;
     use crate::sim::scripts::SimScripts;
-    use junie_tui::core::focus::FocusRing;
-    use junie_tui::core::hit::HitRegistry;
-    use junie_tui::theme::{ColorLevel, Theme};
-    use junie_tui::ui::ctx::{Interaction, RenderCtx};
     use ratatui::buffer::Buffer;
+    use termrock::core::focus::FocusRing;
+    use termrock::core::hit::HitRegistry;
+    use termrock::theme::{ColorLevel, Theme};
+    use termrock::ui::ctx::{Interaction, RenderCtx};
 
     const INNER: Rect = Rect::new(0, 0, 80, 24);
 

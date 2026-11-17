@@ -7,37 +7,37 @@
 
 use std::time::Duration;
 
-use junie_tui::core::edit::{EditEntry, FieldKeys};
-use junie_tui::core::focus::FocusRing;
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::scroll::ScrollState;
-use junie_tui::theme::{
+use ratatui::buffer::Buffer;
+use ratatui::layout::{Position, Rect, Size};
+use ratatui::style::{Color, Modifier, Style};
+use termrock::core::edit::{EditEntry, FieldKeys};
+use termrock::core::focus::FocusRing;
+use termrock::core::hit::HitRegistry;
+use termrock::core::id::WidgetId;
+use termrock::core::scroll::ScrollState;
+use termrock::theme::{
     self, BadgeKind, ButtonKind, Charset, ColorLevel, CursorRow, CursorStyle, EnvKind, Glyphs,
     HintAlign, HintBarStyle, InactiveSelection, Insets, Interactive, Kind, Ladder, Ladders,
     LevelOverrides, Plane, Spacing, StateModifiers, StatusKind, Strings, SyntaxTone, Theme, Tone,
     contrast_ratio,
 };
-use junie_tui::ui::content::{self, ContentState};
-use junie_tui::ui::ctx::{Interaction, RenderCtx, VisualState};
-use junie_tui::ui::fade;
-use junie_tui::ui::measure::{self, Measure, Tile};
-use junie_tui::ui::reveal::RevealState;
-use junie_tui::ui::row::{MarkKind, RowLook, RowPaint, RowUi};
-use junie_tui::ui::specimen::{KindSample, Specimen, SpecimenState, StateGrid};
-use junie_tui::ui::text::{self, DurationStyle, WrapOpts};
-use junie_tui::widgets::brand::Lockup;
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::choice::Checkbox;
-use junie_tui::widgets::empty::{EmptyAction, EmptyKind, EmptyState};
-use junie_tui::widgets::grid::RowState;
-use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::keyref::KeyReference;
-use junie_tui::widgets::panel::CardHeading;
-use junie_tui::widgets::segments::{self, Segment};
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Position, Rect, Size};
-use ratatui::style::{Color, Modifier, Style};
+use termrock::ui::content::{self, ContentState};
+use termrock::ui::ctx::{Interaction, RenderCtx, VisualState};
+use termrock::ui::fade;
+use termrock::ui::measure::{self, Measure, Tile};
+use termrock::ui::reveal::RevealState;
+use termrock::ui::row::{MarkKind, RowLook, RowPaint, RowUi};
+use termrock::ui::specimen::{KindSample, Specimen, SpecimenState, StateGrid};
+use termrock::ui::text::{self, DurationStyle, WrapOpts};
+use termrock::widgets::brand::Lockup;
+use termrock::widgets::button::Button;
+use termrock::widgets::choice::Checkbox;
+use termrock::widgets::empty::{EmptyAction, EmptyKind, EmptyState};
+use termrock::widgets::grid::RowState;
+use termrock::widgets::input::TextInput;
+use termrock::widgets::keyref::KeyReference;
+use termrock::widgets::panel::CardHeading;
+use termrock::widgets::segments::{self, Segment};
 
 use super::{ScenarioCase, paint, paint_hits, rows, text_of};
 use crate::coverage::ScenarioId;

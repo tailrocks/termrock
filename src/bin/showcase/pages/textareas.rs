@@ -6,20 +6,20 @@ use crate::options::{PageValues, page_options};
 use crate::pages::inputs::{blur_action, custom_text_keymap, field_keys, pointer_select};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::edit::{EditEntry, FocusSelect};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::NavKeys;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::core::scroll::HScroll;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::measure::{Measure, Tile, Tiled, tiles};
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::input::InputAction;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::textarea::TextArea;
+use termrock::core::edit::{EditEntry, FocusSelect};
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::keymap::NavKeys;
+use termrock::core::pointer::MouseTarget;
+use termrock::core::scroll::HScroll;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::measure::{Measure, Tile, Tiled, tiles};
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::input::InputAction;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::scrollbar;
+use termrock::widgets::textarea::TextArea;
 
 const ID: WidgetId = WidgetId::of("textareas");
 
@@ -190,10 +190,7 @@ impl Page for TextAreasPage {
                 ("Tab", "Next"),
             ]
         } else {
-            vec![
-                junie_tui::widgets::widget_hints::EDIT_PAIR,
-                ("↑↓", "Scroll"),
-            ]
+            vec![termrock::widgets::widget_hints::EDIT_PAIR, ("↑↓", "Scroll")]
         }
     }
 }

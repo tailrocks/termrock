@@ -7,20 +7,20 @@ use crate::app::PageId;
 use crate::options::page_options;
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::{KeyBinding, NavKeys};
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::core::scroll::TrackClick;
-use junie_tui::core::text::TextBuffer;
-use junie_tui::theme::Tone;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::reveal::{Reveal, RevealMode};
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::text::{self, DurationStyle, WrapOpts};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::{self, Prop, PropsAction, PropsCmd, PropsList, Sheet};
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::keymap::{KeyBinding, NavKeys};
+use termrock::core::pointer::MouseTarget;
+use termrock::core::scroll::TrackClick;
+use termrock::core::text::TextBuffer;
+use termrock::theme::Tone;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::reveal::{Reveal, RevealMode};
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::text::{self, DurationStyle, WrapOpts};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::{self, Prop, PropsAction, PropsCmd, PropsList, Sheet};
 
 const ID: WidgetId = WidgetId::of("textutilities");
 const LIST: WidgetId = WidgetId::of("textutilities.props");
@@ -127,7 +127,7 @@ impl TextUtilitiesPage {
 
     fn list_readout(&self) -> String {
         let l = &self.list;
-        let key = junie_tui::core::keymap::label_for(&l.keymap, PropsCmd::Copy)
+        let key = termrock::core::keymap::label_for(&l.keymap, PropsCmd::Copy)
             .unwrap_or_else(|| "none".into());
         let reveal = match l.reveal.config {
             Some(r) if r.keyboard.is_none() && !r.hover => "off".to_owned(),

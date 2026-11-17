@@ -9,22 +9,22 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::focus::Focus;
-use junie_tui::core::id::{ItemKey, Part, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::list::{KeyedRowSource, RowSource, SourceStamp};
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::theme::{ButtonKind, StatusKind, Tone};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::Split;
-use junie_tui::ui::specimen::StateGrid;
-use junie_tui::ui::text::fit;
-use junie_tui::widgets::empty::{self, EmptyState};
-use junie_tui::widgets::list_detail::{
+use termrock::core::event::{Key, Outcome};
+use termrock::core::focus::Focus;
+use termrock::core::id::{ItemKey, Part, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::list::{KeyedRowSource, RowSource, SourceStamp};
+use termrock::core::pointer::PointerEvent;
+use termrock::theme::{ButtonKind, StatusKind, Tone};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::Split;
+use termrock::ui::specimen::StateGrid;
+use termrock::ui::text::fit;
+use termrock::widgets::empty::{self, EmptyState};
+use termrock::widgets::list_detail::{
     Action, Event, Line, ListDetail, ListDetailSource, ListRowRef, SourceFrame,
 };
-use junie_tui::widgets::notice::Notice;
+use termrock::widgets::notice::Notice;
 
 const ID: WidgetId = WidgetId::of("listdetail");
 const LIST: WidgetId = ID.sub("list");
@@ -578,8 +578,8 @@ impl Page for ListDetailPage {
                 }
                 if let Some((axis, delta)) = ev.wheel() {
                     return match axis {
-                        junie_tui::core::hit::Axis::Vertical => self.ld.wheel_event(ev, delta),
-                        junie_tui::core::hit::Axis::Horizontal => Outcome::Ignored,
+                        termrock::core::hit::Axis::Vertical => self.ld.wheel_event(ev, delta),
+                        termrock::core::hit::Axis::Horizontal => Outcome::Ignored,
                     };
                 }
                 match ev.phase() {

@@ -5,21 +5,21 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::focus::{BlurAction, forward_blur};
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::StackChild;
-use junie_tui::ui::measure::Measure;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::button::{Button, row_layout};
-use junie_tui::widgets::choice::{Checkbox, RadioGroup, Toggle};
-use junie_tui::widgets::edit::ValidateWhen;
-use junie_tui::widgets::input::{InputAction, TextInput};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::textarea::TextArea;
+use termrock::core::event::Outcome;
+use termrock::core::focus::{BlurAction, forward_blur};
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::StackChild;
+use termrock::ui::measure::Measure;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::button::{Button, row_layout};
+use termrock::widgets::choice::{Checkbox, RadioGroup, Toggle};
+use termrock::widgets::edit::ValidateWhen;
+use termrock::widgets::input::{InputAction, TextInput};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::textarea::TextArea;
 
 const ID: WidgetId = WidgetId::of("forms");
 const SUBMIT_TICKS: u8 = 23;
@@ -214,10 +214,7 @@ impl FormsPage {
         cx.status("Form reset");
     }
 
-    fn message(
-        &self,
-        t: &junie_tui::theme::Theme,
-    ) -> Option<(&'static str, ratatui::style::Style)> {
+    fn message(&self, t: &termrock::theme::Theme) -> Option<(&'static str, ratatui::style::Style)> {
         match self.state {
             Submit::Idle
                 if self.attempted
@@ -245,7 +242,7 @@ impl FormsPage {
         self.reset.render(rects[1], buf, ctx, bg);
         if let Some((m, st)) = self.message(t) {
             let x = rects[1].right() + 3;
-            if x + junie_tui::ui::text::width(m) as u16 <= row.right() {
+            if x + termrock::ui::text::width(m) as u16 <= row.right() {
                 buf.set_string(x, row.y, m, st.bg(bg));
             }
         }
@@ -340,7 +337,7 @@ impl FormsPage {
             buf.set_string(
                 area.x + 2,
                 area.y + 2,
-                junie_tui::ui::text::truncate(MANAGED, area.width.saturating_sub(2) as usize),
+                termrock::ui::text::truncate(MANAGED, area.width.saturating_sub(2) as usize),
                 t.faint().bg(bg),
             );
         }
@@ -374,7 +371,7 @@ impl FormsPage {
             .max(self.open_pr.width())
             .max(self.auto_approve.width())
             .max(self.notify.width())
-            .max(2 + junie_tui::ui::text::width(MANAGED) as u16);
+            .max(2 + termrock::ui::text::width(MANAGED) as u16);
         let actions = self.submit.width() + 2 + self.reset.width();
         (left, right, actions)
     }
@@ -727,7 +724,7 @@ impl Page for FormsPage {
                 vec![("Enter", "Activate"), ("Ctrl+S", "Submit")]
             }
             _ => vec![
-                junie_tui::widgets::widget_hints::EDIT_PAIR,
+                termrock::widgets::widget_hints::EDIT_PAIR,
                 ("Ctrl+S", "Submit"),
             ],
         }

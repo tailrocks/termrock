@@ -5,31 +5,31 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, CxExt, Hint, Page, PageEvent, Report};
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::focus::forward_blur;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::theme::{EnvKind, Glyphs, Tone};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layer::LayerTag;
-use junie_tui::ui::layers::LayerResult;
-use junie_tui::ui::layout::Split;
-use junie_tui::ui::master_detail::MasterDetail;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::action_row::ActionRow;
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::detail_card::DetailCard;
-use junie_tui::widgets::dialog::{Dialog, DialogResult};
-use junie_tui::widgets::empty::{self, EmptyAction, EmptyState};
-use junie_tui::widgets::form_dialog::{FieldValue, FormAction, FormDialog, FormField};
-use junie_tui::widgets::input::{InputAction, TextInput};
-use junie_tui::widgets::notice::Notice;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::progress::render_indeterminate;
-use junie_tui::widgets::props::Prop;
-use junie_tui::widgets::select::Select;
-use junie_tui::widgets::tree::{TreeAction, TreeNode, TreeView};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::focus::forward_blur;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::theme::{EnvKind, Glyphs, Tone};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layer::LayerTag;
+use termrock::ui::layers::LayerResult;
+use termrock::ui::layout::Split;
+use termrock::ui::master_detail::MasterDetail;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::action_row::ActionRow;
+use termrock::widgets::button::Button;
+use termrock::widgets::detail_card::DetailCard;
+use termrock::widgets::dialog::{Dialog, DialogResult};
+use termrock::widgets::empty::{self, EmptyAction, EmptyState};
+use termrock::widgets::form_dialog::{FieldValue, FormAction, FormDialog, FormField};
+use termrock::widgets::input::{InputAction, TextInput};
+use termrock::widgets::notice::Notice;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::progress::render_indeterminate;
+use termrock::widgets::props::Prop;
+use termrock::widgets::select::Select;
+use termrock::widgets::tree::{TreeAction, TreeNode, TreeView};
 
 const ID: WidgetId = WidgetId::of("connections");
 const FORM: WidgetId = ID.sub("form");
@@ -520,7 +520,7 @@ impl ConnectionsPage {
             buf.set_string(
                 l.summary.x + 1,
                 l.summary.y,
-                junie_tui::ui::text::truncate(&line, l.summary.width.saturating_sub(1) as usize),
+                termrock::ui::text::truncate(&line, l.summary.width.saturating_sub(1) as usize),
                 t.muted().bg(t.canvas),
             );
         }

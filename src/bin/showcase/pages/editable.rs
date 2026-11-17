@@ -6,23 +6,23 @@ use crate::pages::layout::{sheet_height, sheet_width};
 use crate::pages::tables::route_table;
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::focus::BlurAction;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::keymap::{KeyBinding, KeyMap, NavKeys, hint_key};
-use junie_tui::core::response::Actions;
-use junie_tui::core::scroll::{HScroll, ScrollbarVisibility, TrackClick};
-use junie_tui::ui::columns::HeaderLabels;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::StackChild;
-use junie_tui::ui::reveal::Reveal;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::empty::EmptyState;
-use junie_tui::widgets::option_editor::{Affordance, ColumnEditor, EditorConfig, Options};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::{self, Prop};
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::table::{Align, Cell, Column, DataTable, TableAction, TableCmd, Tone};
+use termrock::core::event::Outcome;
+use termrock::core::focus::BlurAction;
+use termrock::core::id::WidgetId;
+use termrock::core::keymap::{KeyBinding, KeyMap, NavKeys, hint_key};
+use termrock::core::response::Actions;
+use termrock::core::scroll::{HScroll, ScrollbarVisibility, TrackClick};
+use termrock::ui::columns::HeaderLabels;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::StackChild;
+use termrock::ui::reveal::Reveal;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::empty::EmptyState;
+use termrock::widgets::option_editor::{Affordance, ColumnEditor, EditorConfig, Options};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::{self, Prop};
+use termrock::widgets::scrollbar;
+use termrock::widgets::table::{Align, Cell, Column, DataTable, TableAction, TableCmd, Tone};
 
 const ID: WidgetId = WidgetId::of("editable");
 
@@ -420,7 +420,7 @@ impl Page for EditablePage {
     }
 
     fn measure(&self, avail: ratatui::layout::Size, ctx: &RenderCtx) -> ratatui::layout::Size {
-        use junie_tui::ui::measure::Measure;
+        use termrock::ui::measure::Measure;
         let cols: Vec<Prop> = self.column_props().into_iter().map(Prop::wrap).collect();
         let w = [
             self.table.min_width(ratatui::layout::Size::new(0, 0), ctx) + 4,
@@ -512,10 +512,7 @@ impl Page for EditablePage {
             };
             return vec![("Enter", "Apply"), ("Esc", "Cancel"), ("Tab", tab)];
         }
-        let mut h = vec![
-            ("↑↓←→", "Cell"),
-            junie_tui::widgets::widget_hints::EDIT_PAIR,
-        ];
+        let mut h = vec![("↑↓←→", "Cell"), termrock::widgets::widget_hints::EDIT_PAIR];
 
         if let Some(k) = hint_key(&self.table.keymap, TableCmd::SortByColumn) {
             h.push((k, "Sort"));
@@ -540,10 +537,10 @@ impl Page for EditablePage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use junie_tui::core::event::Key;
-    use junie_tui::core::focus::{Focus, FocusRing};
-    use junie_tui::shell::Request;
     use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+    use termrock::core::event::Key;
+    use termrock::core::focus::{Focus, FocusRing};
+    use termrock::shell::Request;
 
     fn key(code: KeyCode) -> PageEvent {
         PageEvent::Key(Key {

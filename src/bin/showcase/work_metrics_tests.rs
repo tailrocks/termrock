@@ -5,16 +5,16 @@
 //! for the test thread only. Every number below was measured with
 //!
 //! ```text
-//! cargo nextest run -p junie-tui --features work-metrics --bin showcase \
+//! cargo nextest run -p termrock-showcase --features work-metrics --bin showcase \
 //!     --no-tests fail -E 'test(/^work_metrics_tests::/)'
 //! ```
 
-use junie_tui::core::event::{Input, Mouse, MouseKind};
-use junie_tui::metrics::harness::{Harness, assert_exact};
-use junie_tui::metrics::{Metric, measure};
-use junie_tui::motion::Motion;
-use junie_tui::theme::{ColorLevel, Theme};
 use ratatui::layout::Position;
+use termrock::core::event::{Input, Mouse, MouseKind};
+use termrock::metrics::harness::{Harness, assert_exact};
+use termrock::metrics::{Metric, measure};
+use termrock::motion::Motion;
+use termrock::theme::{ColorLevel, Theme};
 
 use crate::app::{App, PageId};
 

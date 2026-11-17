@@ -6,18 +6,18 @@ use crate::pages::row_menu::{MENU_HINTS, RowMenu};
 use crate::pages::tables::route_table;
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::{Part, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::ui::columns::{self, Col, HeaderLabels};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::StackChild;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::menu::ContextMenu;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::{self, Prop};
-use junie_tui::widgets::table::{Cell, Column, DataTable, Tone};
+use termrock::core::event::Outcome;
+use termrock::core::id::{Part, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::pointer::PointerEvent;
+use termrock::ui::columns::{self, Col, HeaderLabels};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::StackChild;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::menu::ContextMenu;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::{self, Prop};
+use termrock::widgets::table::{Cell, Column, DataTable, Tone};
 
 const ID: WidgetId = WidgetId::of("columns");
 const HEADER_MENU: WidgetId = WidgetId::of("columns.header-menu");
@@ -224,7 +224,7 @@ impl ColumnsPage {
         )
         .expect("rectangular fixture")
         .numeric(&[2, 3, 4, 5, 6, 7])
-        .selection_mode(junie_tui::core::selection::SelectionMode::None);
+        .selection_mode(termrock::core::selection::SelectionMode::None);
         let (cols, cells): (Vec<Column>, Vec<Cell>) = rules
             .iter()
             .zip(&widths)
@@ -238,7 +238,7 @@ impl ColumnsPage {
             .unzip();
         self.row = DataTable::try_new(ID.sub("row"), cols, vec![cells])
             .expect("rectangular fixture")
-            .selection_mode(junie_tui::core::selection::SelectionMode::None);
+            .selection_mode(termrock::core::selection::SelectionMode::None);
     }
 
     fn ideal_row() -> u16 {
@@ -386,7 +386,7 @@ impl Page for ColumnsPage {
     }
 
     fn measure(&self, avail: ratatui::layout::Size, ctx: &RenderCtx) -> ratatui::layout::Size {
-        use junie_tui::ui::measure::Measure;
+        use termrock::ui::measure::Measure;
         let any = ratatui::layout::Size::new(0, 0);
         let menu = Panel::card(Some("Header menu"));
         let w = [

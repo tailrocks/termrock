@@ -14,9 +14,9 @@ use jackin_console::panes::{
     Lease, LinkEvent, LinkFault, LinkSource, PaneBody, PaneCommand, PaneLink, PanePolicy,
     PaneRequest, PaneSize, PaneTiming, Sent, TerminalPane,
 };
-use junie_tui::core::event::Key;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Rect;
+use termrock::core::event::Key;
 
 pub const INSTANCE: &str = "jk-test";
 

@@ -106,6 +106,15 @@ workspaces, Docker, OpenShell, Codex).
 - Apps are thin consumers. An app provides routes, pages and
   configuration. Input routing, focus, modals, hints, help, quit guards
   and similar shell behaviour belong to the library.
+- The four apps (`apps/showcase`, `apps/tablepro`, `apps/holla`,
+  `apps/jackin`) depend on the `termrock` facade (`crates/termrock`) and
+  import `termrock::`, never `junie_tui::`; `junie-tui` stays the
+  implementation package. `tests/regressions/facade_contract.rs` enforces it.
+  A new public module is added to the facade explicitly, and the facade keeps
+  empty default features. The independent consumer fixtures under
+  `tests/consumers/` each have their own `[workspace]` and `Cargo.lock`; keep
+  them compiling from their declared features alone (`docs/api-contract.md`,
+  `scripts/check-consumers.sh`).
 - Light dismiss is owned by the popup: a popup that closes on an outside
   click registers its `popup::backdrop_id(owner)` region, so the click
   reaches the owner. Apps and pages must not reimplement "click elsewhere

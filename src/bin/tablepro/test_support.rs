@@ -1,6 +1,6 @@
 //! Helpers shared by the TablePro test modules.
 
-use junie_tui::widgets::dialog::{Dialog, DialogBody};
+use termrock::widgets::dialog::{Dialog, DialogBody};
 
 use super::App;
 

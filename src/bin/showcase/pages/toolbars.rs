@@ -6,18 +6,18 @@ use crate::pages::layout::{sheet_height, sheet_width};
 use crate::pages::stress::{self, Mode};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::NavKeys;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::measure::{Tile, Tiled, tiles};
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::text;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::{self, Prop};
-use junie_tui::widgets::toolbar::{ToolItem, Toolbar, ToolbarAction};
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::keymap::NavKeys;
+use termrock::core::pointer::MouseTarget;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::measure::{Tile, Tiled, tiles};
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::text;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::{self, Prop};
+use termrock::widgets::toolbar::{ToolItem, Toolbar, ToolbarAction};
 
 const ID: WidgetId = WidgetId::of("toolbars");
 
@@ -524,7 +524,7 @@ pub fn page() -> Box<dyn Page> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use junie_tui::core::focus::{Focus, FocusRing};
+    use termrock::core::focus::{Focus, FocusRing};
 
     /// Activates the narrow bar's item labelled `label` as the » menu would.
     fn activate(page: &mut ToolbarsPage, label: &str) {

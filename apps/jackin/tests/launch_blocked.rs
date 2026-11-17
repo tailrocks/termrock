@@ -6,10 +6,10 @@ use common::*;
 use jackin_console::app::{App, Route};
 use jackin_console::domain::instance::{InstanceEntry, InstanceStatus};
 use jackin_console::fixtures::{Scenario, app_with_world, world_for};
-use junie_tui::core::event::Input;
-use junie_tui::motion::Motion;
-use junie_tui::runtime::Application;
-use junie_tui::theme::{ColorLevel, Theme};
+use termrock::core::event::Input;
+use termrock::motion::Motion;
+use termrock::runtime::Application;
+use termrock::theme::{ColorLevel, Theme};
 
 /// The hard-cases world launches `sre` in `infra-control-plane`; the
 /// simulator blocks that launch at the sidecar stage.

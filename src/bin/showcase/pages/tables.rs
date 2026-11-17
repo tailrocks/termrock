@@ -5,25 +5,25 @@ use crate::data::TaskStatus;
 use crate::pages::row_menu::{MENU_HINTS, OPEN_HINT, RowMenu, plain};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::data::{DataError, ShapeError, validate_rectangular};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::{ItemKey, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::core::response::Actions;
-use junie_tui::core::selection::{SelectionMode, TriState};
-use junie_tui::ui::context::ContextRequest;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::StackChild;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::text;
-use junie_tui::widgets::menu::{ContextMenu, MenuItem};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::table::{
+use ratatui::crossterm::event::KeyCode;
+use termrock::core::data::{DataError, ShapeError, validate_rectangular};
+use termrock::core::event::Outcome;
+use termrock::core::id::{ItemKey, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::core::response::Actions;
+use termrock::core::selection::{SelectionMode, TriState};
+use termrock::ui::context::ContextRequest;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::StackChild;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::text;
+use termrock::widgets::menu::{ContextMenu, MenuItem};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::scrollbar;
+use termrock::widgets::table::{
     Cell, Column, DataTable, KeyedTable, KeyedTableError, SortDir, TableAction, Tone,
 };
-use ratatui::crossterm::event::KeyCode;
 
 const ID: WidgetId = WidgetId::of("tables");
 const MENU: WidgetId = WidgetId::of("tables.menu");
@@ -493,8 +493,8 @@ impl TablesPage {
     fn on_keyed_actions(
         &mut self,
         response: Result<
-            junie_tui::core::response::Response<TableAction<ItemKey>>,
-            junie_tui::core::keyed::KeyedSourceError,
+            termrock::core::response::Response<TableAction<ItemKey>>,
+            termrock::core::keyed::KeyedSourceError,
         >,
         cx: &mut Cx,
     ) -> Outcome {
@@ -730,7 +730,7 @@ impl TablesPage {
             Some((c, d)) => format!(
                 "sorted by {} {}",
                 self.table.columns()[c].title.to_lowercase(),
-                if d == junie_tui::widgets::table::SortDir::Asc {
+                if d == termrock::widgets::table::SortDir::Asc {
                     "▴"
                 } else {
                     "▾"
@@ -814,7 +814,7 @@ impl Page for TablesPage {
     }
 
     fn measure(&self, avail: ratatui::layout::Size, ctx: &RenderCtx) -> ratatui::layout::Size {
-        use junie_tui::ui::measure::Measure;
+        use termrock::ui::measure::Measure;
         let any = ratatui::layout::Size::new(0, 0);
         let w = [&self.table, &self.reviewers, &self.empty]
             .iter()

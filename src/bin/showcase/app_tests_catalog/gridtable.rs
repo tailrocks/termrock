@@ -5,48 +5,48 @@
 //! `ScenarioId` variant from the `lane:gridtable` block in `../coverage.rs`. Edit only
 //! this file and `../coverage/lane_gridtable.rs`.
 
-use junie_tui::core::event::{ClientPlatform, Key, Outcome};
-use junie_tui::core::focus::BlurAction;
-use junie_tui::core::focus::{Focus, FocusRing};
-use junie_tui::core::hit::{Axis, HitRegistry};
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::{DismissReason, Phase};
-use junie_tui::core::keymap::{KeyBinding, NavKeys};
-use junie_tui::core::list::{TypeAheadPrecedence, route_key};
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::core::response::Response;
-use junie_tui::core::scroll::{HScroll, TrackClick};
-use junie_tui::core::selection::{ClickPolicy, SelectGesture, SelectionMode, TriState};
-use junie_tui::theme::{ColorLevel, Glyphs, Strings, Theme, Tone};
-use junie_tui::ui::columns::HeaderAction;
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::ui::layer::{Layer, LayerCx, LayerOut};
-use junie_tui::ui::reveal::Reveal;
-use junie_tui::widgets::diff::{
+use ratatui::buffer::Buffer;
+use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use ratatui::layout::{Constraint, Position, Rect};
+use termrock::core::event::{ClientPlatform, Key, Outcome};
+use termrock::core::focus::BlurAction;
+use termrock::core::focus::{Focus, FocusRing};
+use termrock::core::hit::{Axis, HitRegistry};
+use termrock::core::id::WidgetId;
+use termrock::core::intent::{DismissReason, Phase};
+use termrock::core::keymap::{KeyBinding, NavKeys};
+use termrock::core::list::{TypeAheadPrecedence, route_key};
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::core::response::Response;
+use termrock::core::scroll::{HScroll, TrackClick};
+use termrock::core::selection::{ClickPolicy, SelectGesture, SelectionMode, TriState};
+use termrock::theme::{ColorLevel, Glyphs, Strings, Theme, Tone};
+use termrock::ui::columns::HeaderAction;
+use termrock::ui::ctx::{Interaction, RenderCtx};
+use termrock::ui::layer::{Layer, LayerCx, LayerOut};
+use termrock::ui::reveal::Reveal;
+use termrock::widgets::diff::{
     DiffFile, DiffHunk, DiffLine, DiffLineKind, DiffMode, DiffStatus, DiffView, UnreadFile,
     review_lines, review_lines_with, unified_lines, unified_lines_with,
 };
-use junie_tui::widgets::empty::EmptyState;
-use junie_tui::widgets::grid::{
+use termrock::widgets::empty::EmptyState;
+use termrock::widgets::grid::{
     CellEditResult, CellKind, CellParser, CellValue, ColumnSpec, DEFAULT_WIDTH_SAMPLE_ROWS,
     DataGrid, EditState, GridAction, GridChoice, GridCmd, GridRows, GridUndo, GridUndoKind,
     PendingChanges, RowState, RowTotal, cell_text, cell_text_with, cell_validator,
     default_validator,
 };
-use junie_tui::widgets::inspect_changes::{
+use termrock::widgets::inspect_changes::{
     ChangeSet, ChangeWords, InspectChanges, InspectMode, InspectOutcome,
 };
-use junie_tui::widgets::option_editor::{
+use termrock::widgets::option_editor::{
     Affordance, ColumnEditor, EditorConfig, OptionItem, Options,
 };
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::table::{
+use termrock::widgets::scrollbar;
+use termrock::widgets::table::{
     Align, Cell, ChoiceEdit, Column, DataTable, SortDir, TableAction, TableCmd,
 };
-use junie_tui::widgets::viewport::line_text;
-use ratatui::buffer::Buffer;
-use ratatui::crossterm::event::{KeyCode, KeyModifiers};
-use ratatui::layout::{Constraint, Position, Rect};
+use termrock::widgets::viewport::line_text;
 
 use super::{Painted, ScenarioCase, key, paint, paint_hits, text_of};
 use crate::coverage::ScenarioId;
@@ -88,7 +88,7 @@ fn sample_file() -> DiffFile {
     }
 }
 
-fn plain(lines: &[Vec<junie_tui::widgets::viewport::Span>]) -> Vec<String> {
+fn plain(lines: &[Vec<termrock::widgets::viewport::Span>]) -> Vec<String> {
     lines.iter().map(|l| line_text(l)).collect()
 }
 
@@ -427,8 +427,8 @@ fn inspect_changes_modes() {
     assert!(text.contains("review · v switches"), "{text}");
 }
 
-fn ctrl(c: char) -> junie_tui::core::event::Key {
-    junie_tui::core::event::Key {
+fn ctrl(c: char) -> termrock::core::event::Key {
+    termrock::core::event::Key {
         code: KeyCode::Char(c),
         mods: KeyModifiers::CONTROL,
     }
@@ -629,7 +629,7 @@ fn grid_values_and_draft() {
         let mut hits = HitRegistry::default();
         let mut ring = FocusRing::default();
         let ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
-        junie_tui::ui::measure::Measure::measure(&wide, ratatui::layout::Size::new(80, 20), &ctx)
+        termrock::ui::measure::Measure::measure(&wide, ratatui::layout::Size::new(80, 20), &ctx)
             .width
     };
     assert!(
@@ -1057,7 +1057,7 @@ fn grid_keys_and_commands() {
 
     // The context menu offers the commands that apply and disables the rest.
     let items = cmds.context_items();
-    let find = |items: &[(GridCmd, junie_tui::widgets::menu::MenuItem)], cmd: GridCmd| {
+    let find = |items: &[(GridCmd, termrock::widgets::menu::MenuItem)], cmd: GridCmd| {
         items
             .iter()
             .find(|(c, _)| *c == cmd)
@@ -2066,8 +2066,7 @@ fn table_keys_and_edits() {
     assert!(!edit.is_editing());
     assert_eq!(table_press(&mut edit, KeyCode::Enter), None);
     assert!(edit.is_editing());
-    let session: &junie_tui::widgets::table::EditState =
-        edit.edit.as_ref().expect("a text session");
+    let session: &termrock::widgets::table::EditState = edit.edit.as_ref().expect("a text session");
     assert_eq!((session.row, session.col), (0, 0));
     assert_eq!(edit.on_paste("!"), Outcome::Changed);
     assert_eq!(

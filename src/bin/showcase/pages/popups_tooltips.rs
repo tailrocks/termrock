@@ -8,26 +8,26 @@ use crate::pages::layout::{sheet_height, sheet_width};
 use crate::pages::row_menu::{MENU_HINTS, RowMenu};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::{Part, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::theme::Tone;
-use junie_tui::ui::ctx::{Backdrop, RenderCtx};
-use junie_tui::ui::measure::{Measure, Tile, Tiled, tiles};
-use junie_tui::ui::modal::Frame;
-use junie_tui::ui::popup::{self, Dismiss, Overflow, Place, Placement, RefuseFeedback, VAlign};
-use junie_tui::ui::reveal::{Reveal, RevealMode, RevealState};
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::text;
-use junie_tui::ui::tooltip::{Tip, Tooltips};
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::icon_button::IconButton;
-use junie_tui::widgets::list::{ListBox, ListItem, SelectMode};
-use junie_tui::widgets::menu::{ContextMenu, MenuAction, MenuItem};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::{self, Prop};
-use junie_tui::widgets::statusbar::{StatusBar, StatusItem};
+use termrock::core::event::Outcome;
+use termrock::core::id::{Part, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::pointer::MouseTarget;
+use termrock::theme::Tone;
+use termrock::ui::ctx::{Backdrop, RenderCtx};
+use termrock::ui::measure::{Measure, Tile, Tiled, tiles};
+use termrock::ui::modal::Frame;
+use termrock::ui::popup::{self, Dismiss, Overflow, Place, Placement, RefuseFeedback, VAlign};
+use termrock::ui::reveal::{Reveal, RevealMode, RevealState};
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::text;
+use termrock::ui::tooltip::{Tip, Tooltips};
+use termrock::widgets::button::Button;
+use termrock::widgets::icon_button::IconButton;
+use termrock::widgets::list::{ListBox, ListItem, SelectMode};
+use termrock::widgets::menu::{ContextMenu, MenuAction, MenuItem};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::{self, Prop};
+use termrock::widgets::statusbar::{StatusBar, StatusItem};
 
 const ID: WidgetId = WidgetId::of("popupstooltips");
 const POPOVER: WidgetId = ID.sub("popover");
@@ -345,7 +345,7 @@ impl PopupsTooltipsPage {
         let bw = self.open.width().min(inner.width);
         self.open
             .render(Rect::new(inner.x, inner.y, bw, 1), buf, ctx, bg);
-        for (i, line) in junie_tui::ui::text::wrap(POP_NOTE, inner.width.max(1) as usize)
+        for (i, line) in termrock::ui::text::wrap(POP_NOTE, inner.width.max(1) as usize)
             .iter()
             .enumerate()
         {
@@ -372,7 +372,7 @@ impl PopupsTooltipsPage {
             buf.set_string(
                 inner.x,
                 inner.y + 4,
-                junie_tui::ui::text::truncate(GRID_NOTE, inner.width as usize),
+                termrock::ui::text::truncate(GRID_NOTE, inner.width as usize),
                 t.muted().bg(bg),
             );
         }
@@ -439,7 +439,7 @@ fn frame_grid(o: &PageValues) -> StateGrid {
     }
     if o.value("popupstooltips.frame_close_button") == "danger" {
         f = f.close_button(
-            IconButton::close(junie_tui::ui::modal::CLOSE)
+            IconButton::close(termrock::ui::modal::CLOSE)
                 .with_glyph("✕")
                 .danger_hover(true),
         );

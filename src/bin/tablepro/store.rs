@@ -19,8 +19,8 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use junie_tui::core::id::ItemKey;
-use junie_tui::widgets::grid::{CellValue, CommittedRow, GridChangeSet, GridCommitReceipt};
+use termrock::core::id::ItemKey;
+use termrock::widgets::grid::{CellValue, CommittedRow, GridChangeSet, GridCommitReceipt};
 
 use crate::db::{Catalog, ColType, Column, Table, Value};
 use crate::tabs::to_cell;

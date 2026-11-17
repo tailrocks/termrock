@@ -5,53 +5,53 @@
 //! `ScenarioId` variant from the `lane:pickers` block in `../coverage.rs`. Edit only
 //! this file and `../coverage/lane_pickers.rs`.
 
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::focus::FocusRing;
-use junie_tui::core::hit::{Axis, HitRegistry};
-use junie_tui::core::id::{ItemKey, Part, PartRef, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::{Actions as _, KeyBinding};
-use junie_tui::core::keymap::{Nav, NavKeys};
-use junie_tui::core::list::{Moved, RowSource};
-use junie_tui::core::scroll::Scrollable;
-use junie_tui::core::scroll::TrackClick;
-use junie_tui::core::selection::ClickPolicy;
-use junie_tui::core::text::TextBuffer;
-use junie_tui::theme::{ColorLevel, CursorStyle, Theme, Tone};
-use junie_tui::ui::content::ContentState;
-use junie_tui::ui::ctx::{Backdrop, Interaction, RenderCtx, VisualState};
-use junie_tui::ui::measure::Measure;
-use junie_tui::ui::popup::{Dismiss, Place, Placement, backdrop_id};
-use junie_tui::ui::reveal::{Reveal, RevealMode};
-use junie_tui::ui::scroll_view::ScrollView;
-use junie_tui::widgets::completion::{Completion, CompletionAction, TEXT_INSET};
-use junie_tui::widgets::edit::{EditField, LineLook};
-use junie_tui::widgets::empty::EmptyState;
-use junie_tui::widgets::meter_list::{MeterList, MeterRow};
-use junie_tui::widgets::option_editor::{
-    Affordance, ChoiceEditor, ChoiceResult, ColumnEditor, EditorConfig, OptionItem, Options,
-};
-use junie_tui::widgets::option_list::{
-    AsItem, Item, OptionList, SelectArrows, WheelMode, query_pointer,
-};
-use junie_tui::widgets::picker::{
-    Picker, PickerAction, PickerItemsError, PickerKeyProfile, PickerStatus,
-};
-use junie_tui::widgets::progress::{
-    BarLayout, METER_LOW_MAX, METER_MEDIUM_MAX, Meter, MeterLevel, MeterTone, MeterVisual,
-    ProgressBar, ProgressStatus, SPINNER, StaleStyle, Tally, VALUE_W, render_bar, render_bar_with,
-    render_indeterminate, render_indeterminate_with, render_meter, render_spinner, spinner_frame,
-};
-use junie_tui::widgets::props::{
-    Prop, PropsAction, PropsCmd, PropsList, Sheet, measure, measure_with, render as render_props,
-    render_in, render_with, width as props_width, width_with,
-};
-use junie_tui::widgets::select::{Select, SelectAction};
-use junie_tui::widgets::table::{Cell, Column, DataTable};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Constraint, Position, Rect};
 use ratatui::style::{Color, Modifier};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::focus::FocusRing;
+use termrock::core::hit::{Axis, HitRegistry};
+use termrock::core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::keymap::{Actions as _, KeyBinding};
+use termrock::core::keymap::{Nav, NavKeys};
+use termrock::core::list::{Moved, RowSource};
+use termrock::core::scroll::Scrollable;
+use termrock::core::scroll::TrackClick;
+use termrock::core::selection::ClickPolicy;
+use termrock::core::text::TextBuffer;
+use termrock::theme::{ColorLevel, CursorStyle, Theme, Tone};
+use termrock::ui::content::ContentState;
+use termrock::ui::ctx::{Backdrop, Interaction, RenderCtx, VisualState};
+use termrock::ui::measure::Measure;
+use termrock::ui::popup::{Dismiss, Place, Placement, backdrop_id};
+use termrock::ui::reveal::{Reveal, RevealMode};
+use termrock::ui::scroll_view::ScrollView;
+use termrock::widgets::completion::{Completion, CompletionAction, TEXT_INSET};
+use termrock::widgets::edit::{EditField, LineLook};
+use termrock::widgets::empty::EmptyState;
+use termrock::widgets::meter_list::{MeterList, MeterRow};
+use termrock::widgets::option_editor::{
+    Affordance, ChoiceEditor, ChoiceResult, ColumnEditor, EditorConfig, OptionItem, Options,
+};
+use termrock::widgets::option_list::{
+    AsItem, Item, OptionList, SelectArrows, WheelMode, query_pointer,
+};
+use termrock::widgets::picker::{
+    Picker, PickerAction, PickerItemsError, PickerKeyProfile, PickerStatus,
+};
+use termrock::widgets::progress::{
+    BarLayout, METER_LOW_MAX, METER_MEDIUM_MAX, Meter, MeterLevel, MeterTone, MeterVisual,
+    ProgressBar, ProgressStatus, SPINNER, StaleStyle, Tally, VALUE_W, render_bar, render_bar_with,
+    render_indeterminate, render_indeterminate_with, render_meter, render_spinner, spinner_frame,
+};
+use termrock::widgets::props::{
+    Prop, PropsAction, PropsCmd, PropsList, Sheet, measure, measure_with, render as render_props,
+    render_in, render_with, width as props_width, width_with,
+};
+use termrock::widgets::select::{Select, SelectAction};
+use termrock::widgets::table::{Cell, Column, DataTable};
 
 use super::{Painted, ScenarioCase, key, paint_hits, rows};
 use crate::coverage::ScenarioId;
@@ -2001,7 +2001,7 @@ fn choice_editor_pointer_and_render() {
         select.option_id(1),
         select
             .id
-            .part(junie_tui::widgets::option_list::OptionList::row_part(1))
+            .part(termrock::widgets::option_list::OptionList::row_part(1))
     );
     let painted = paint_hits(screen, |_, buf, ctx| select.render(cell, buf, ctx, &cfg));
     let text = rows(&painted.buf).join("\n");
@@ -2268,7 +2268,7 @@ fn props_list_interaction() {
     assert_eq!(list.core.click, ClickPolicy::NAVIGATION);
     assert_eq!(
         list.row_id(1),
-        ID.part(junie_tui::core::id::PartRef::item(
+        ID.part(termrock::core::id::PartRef::item(
             Part::ROW,
             ItemKey::index(1)
         ))

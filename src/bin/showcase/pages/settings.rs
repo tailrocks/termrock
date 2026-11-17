@@ -5,24 +5,24 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, CxExt, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::focus::forward_blur;
-use junie_tui::core::id::{Part, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::measure::Measure;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::button::{Button, row_layout};
-use junie_tui::widgets::choice::{RadioGroup, Toggle};
-use junie_tui::widgets::dialog::{Dialog, DialogResult};
-use junie_tui::widgets::input::{InputAction, TextInput};
-use junie_tui::widgets::list::{ListBox, ListItem, SelectMode};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::table::{Cell, Column, DataTable, TableAction, Tone};
-use junie_tui::widgets::tabs::Tabs;
-use junie_tui::widgets::textarea::TextArea;
+use termrock::core::event::Outcome;
+use termrock::core::focus::forward_blur;
+use termrock::core::id::{Part, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::measure::Measure;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::button::{Button, row_layout};
+use termrock::widgets::choice::{RadioGroup, Toggle};
+use termrock::widgets::dialog::{Dialog, DialogResult};
+use termrock::widgets::input::{InputAction, TextInput};
+use termrock::widgets::list::{ListBox, ListItem, SelectMode};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::scrollbar;
+use termrock::widgets::table::{Cell, Column, DataTable, TableAction, Tone};
+use termrock::widgets::tabs::Tabs;
+use termrock::widgets::textarea::TextArea;
 
 const ID: WidgetId = WidgetId::of("settings");
 const REMOVE_DLG: WidgetId = ID.sub("remove-dialog");
@@ -229,7 +229,7 @@ impl SettingsPage {
 
 impl SettingsPage {
     fn general_needs(&self, ctx: &RenderCtx) -> (u16, u16) {
-        let w = |s: &str| junie_tui::ui::text::width(s) as u16;
+        let w = |s: &str| termrock::ui::text::width(s) as u16;
 
         let left = self.description.min_width(Size::ZERO, ctx);
         let right = self
@@ -452,11 +452,11 @@ impl Page for SettingsPage {
         self.name.editing || self.description.editing || self.members.is_editing()
     }
 
-    fn leave_stakes(&self) -> junie_tui::ui::leave::Stakes {
+    fn leave_stakes(&self) -> termrock::ui::leave::Stakes {
         if self.dirty {
-            junie_tui::ui::leave::Stakes::Unsaved { changes: 0 }
+            termrock::ui::leave::Stakes::Unsaved { changes: 0 }
         } else {
-            junie_tui::ui::leave::Stakes::Clean
+            termrock::ui::leave::Stakes::Clean
         }
     }
 
@@ -475,7 +475,7 @@ impl Page for SettingsPage {
             Some(f) if f == self.members.id => {
                 vec![
                     ("↑↓←→", "Cell"),
-                    junie_tui::widgets::widget_hints::EDIT_PAIR,
+                    termrock::widgets::widget_hints::EDIT_PAIR,
                     ("s", "Sort"),
                 ]
             }

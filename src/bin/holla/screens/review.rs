@@ -1,27 +1,27 @@
 use crate::screens::Holla;
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::hit::Axis;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::core::scroll::ScrollState;
-use junie_tui::shell::Page as ShellPage;
-use junie_tui::theme::Tone;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::scroll_view::{Axes, ScrollView};
-use junie_tui::widgets::action_row::ActionRow;
-use junie_tui::widgets::button::{Button, RowAlign};
-use junie_tui::widgets::input::{InputAction, TextInput};
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::page_header::PageHeader;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::{self, Prop};
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::select::Select;
-use junie_tui::widgets::statusbar::StatusItem;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::hit::Axis;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::core::scroll::ScrollState;
+use termrock::shell::Page as ShellPage;
+use termrock::theme::Tone;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::scroll_view::{Axes, ScrollView};
+use termrock::widgets::action_row::ActionRow;
+use termrock::widgets::button::{Button, RowAlign};
+use termrock::widgets::input::{InputAction, TextInput};
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::page_header::PageHeader;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::{self, Prop};
+use termrock::widgets::scrollbar;
+use termrock::widgets::select::Select;
+use termrock::widgets::statusbar::StatusItem;
 
 use crate::domain::action::{ArgSpec, Item, Risk};
 use crate::screens::finder::item_facts;
@@ -30,10 +30,10 @@ use crate::screens::{
     scroll_drag, scroll_press,
 };
 use crate::sim::world::World;
-use junie_tui::ui::context::ContextAnchor;
-use junie_tui::ui::layer::LayerTag;
-use junie_tui::ui::text::plural;
-use junie_tui::widgets::menu::MenuItem;
+use termrock::ui::context::ContextAnchor;
+use termrock::ui::layer::LayerTag;
+use termrock::ui::text::plural;
+use termrock::widgets::menu::MenuItem;
 
 pub const SEQUENCE: WidgetId = WidgetId::of("gate.sequence");
 pub const GATE_CANCEL: WidgetId = WidgetId::of("gate.cancel");
@@ -275,7 +275,7 @@ impl GatePage {
                             "{:02}  {verb} {}  # {} · {}",
                             i + 1,
                             crate::domain::exec::quote(&it.path),
-                            junie_tui::ui::text::bytes(it.estimate),
+                            termrock::ui::text::bytes(it.estimate),
                             it.category
                         )
                     })
@@ -286,7 +286,7 @@ impl GatePage {
                     return;
                 };
                 self.title = format!("Review · {}", it.label);
-                let mut f = item_facts(&it, w, &junie_tui::theme::Theme::junie());
+                let mut f = item_facts(&it, w, &termrock::theme::Theme::junie());
                 if !args.is_empty() {
                     f.push(Prop::new(
                         "Arguments",
@@ -531,7 +531,7 @@ impl ShellPage<Holla> for GatePage {
             buf.set_string(
                 inner.x + 4,
                 y,
-                junie_tui::ui::reveal::cut(
+                termrock::ui::reveal::cut(
                     Rect::new(
                         inner.x + 4,
                         y,
@@ -570,7 +570,7 @@ impl ShellPage<Holla> for GatePage {
                 hint("y", "Copy sequence"),
                 hint("Tab", "Buttons"),
                 hint("Esc", "Cancel"),
-                junie_tui::widgets::keyhint::CONTEXT_MENU,
+                termrock::widgets::keyhint::CONTEXT_MENU,
             ];
         }
         let enter = [&self.cancel, &self.cont]
@@ -899,7 +899,7 @@ impl ShellPage<Holla> for TrustPage {
         let t = ctx.theme;
         let title = format!("Trust {}?", w.location.short(&self.config));
         buf.set_string(area.x + 1, area.y, &title, t.title());
-        buf.set_string(area.x + 1, area.y + 1, junie_tui::ui::reveal::cut(Rect::new(area.x + 1, area.y + 1, area.width.saturating_sub(2), 1), "not trusted yet · review the exact definition, commands and environment before it runs"), t.muted());
+        buf.set_string(area.x + 1, area.y + 1, termrock::ui::reveal::cut(Rect::new(area.x + 1, area.y + 1, area.width.saturating_sub(2), 1), "not trusted yet · review the exact definition, commands and environment before it runs"), t.muted());
         let (facts, body) = self.lines(w);
         let buttons_y = area.bottom().saturating_sub(1);
 
@@ -938,7 +938,7 @@ impl ShellPage<Holla> for TrustPage {
             buf.set_string(
                 inner.x,
                 inner.y + k as u16,
-                junie_tui::ui::reveal::cut(
+                termrock::ui::reveal::cut(
                     Rect::new(inner.x, inner.y + k as u16, inner.width, 1),
                     line,
                 ),
@@ -1216,7 +1216,7 @@ impl ShellPage<Holla> for ArgsPage {
 
     fn on_blur(
         &mut self,
-        ch: junie_tui::core::focus::FocusChange,
+        ch: termrock::core::focus::FocusChange,
         _w: &mut World,
         _cx: &mut Cx,
     ) -> Outcome {
@@ -1255,7 +1255,7 @@ impl ShellPage<Holla> for ArgsPage {
         buf.set_string(
             area.x + 1,
             area.y + 1,
-            junie_tui::ui::reveal::cut(
+            termrock::ui::reveal::cut(
                 Rect::new(area.x + 1, area.y + 1, area.width.saturating_sub(2), 1),
                 "field name, expected value, default and validation · secrets stay masked",
             ),
@@ -1281,7 +1281,7 @@ impl ShellPage<Holla> for ArgsPage {
             buf.set_string(
                 inner.x,
                 inner.y,
-                junie_tui::ui::reveal::cut(
+                termrock::ui::reveal::cut(
                     Rect::new(inner.x, inner.y, inner.width, 1),
                     &self.preview(),
                 ),
@@ -1299,10 +1299,10 @@ impl ShellPage<Holla> for ArgsPage {
 
     fn hints(&self, _focus: Option<WidgetId>, _w: &World) -> Vec<Hint> {
         if self.is_editing() {
-            return junie_tui::widgets::keyhint::EDIT_FIELD.to_vec();
+            return termrock::widgets::keyhint::EDIT_FIELD.to_vec();
         }
         vec![
-            junie_tui::widgets::widget_hints::EDIT,
+            termrock::widgets::widget_hints::EDIT,
             hint("Tab", "Next"),
             hint("Ctrl+S", "Run task"),
             hint("Esc", "Cancel"),

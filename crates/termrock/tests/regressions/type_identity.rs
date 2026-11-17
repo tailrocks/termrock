@@ -1,5 +1,5 @@
 use termrock::prelude::{
-    Flow, Invalidate, ItemKey, KeyedRowSource, Response, RowSource, SourceStamp, WidgetId,
+    Actions, Flow, Invalidate, ItemKey, KeyedRowSource, Response, RowSource, SourceStamp, WidgetId,
 };
 
 fn takes_impl_response(response: junie_tui::core::response::Response<u8>) -> u8 {
@@ -109,4 +109,12 @@ fn impl_stamp<S: junie_tui::core::list::KeyedRowSource>(
 fn facade_keyed_source_contract_preserves_identity() {
     let stamp: SourceStamp = impl_stamp(&Keyed);
     assert_eq!(stamp.instance, ItemKey::num(1));
+}
+
+#[test]
+fn facade_prelude_actions_preserve_identity() {
+    fn takes_actions(actions: junie_tui::core::response::Actions<u8>) -> usize {
+        actions.len()
+    }
+    assert_eq!(takes_actions(Actions::One(9u8)), 1);
 }

@@ -7,26 +7,26 @@ use crate::pages::keyed_tree::{KeyedConnections, TreeFault};
 use crate::pages::row_menu::{MENU_HINTS, OPEN_HINT, RowMenu, plain};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::{ItemKey, Part, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::{Actions as KeyActions, KeyBinding, NavKeys, hint_key};
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::core::response::{Actions, Response};
-use junie_tui::core::scroll::TrackClick;
-use junie_tui::core::selection::ClickPolicy;
-use junie_tui::theme::Tone;
-use junie_tui::ui::context::ContextRequest;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::text;
-use junie_tui::widgets::menu::MenuItem;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::tree::{
+use ratatui::crossterm::event::KeyCode;
+use termrock::core::event::Outcome;
+use termrock::core::id::{ItemKey, Part, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::keymap::{Actions as KeyActions, KeyBinding, NavKeys, hint_key};
+use termrock::core::pointer::MouseTarget;
+use termrock::core::response::{Actions, Response};
+use termrock::core::scroll::TrackClick;
+use termrock::core::selection::ClickPolicy;
+use termrock::theme::Tone;
+use termrock::ui::context::ContextRequest;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::text;
+use termrock::widgets::menu::MenuItem;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::scrollbar;
+use termrock::widgets::tree::{
     BranchAction, KeyedTree, KeyedTreeNode, TreeAction, TreeCmd, TreeNode, TreeView,
 };
-use ratatui::crossterm::event::KeyCode;
 
 fn push_step(last: &mut String, step: String) {
     if !last.is_empty() {
@@ -364,7 +364,7 @@ impl TreesPage {
     /// Folds a keyed tree's actions into the readout and the status line.
     fn on_keyed_actions(
         &mut self,
-        response: Result<Response<TreeAction<ItemKey>>, junie_tui::core::keyed::KeyedSourceError>,
+        response: Result<Response<TreeAction<ItemKey>>, termrock::core::keyed::KeyedSourceError>,
         cx: &mut Cx,
     ) -> Outcome {
         let (out, actions) = response
@@ -983,9 +983,9 @@ impl Page for TreesPage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use junie_tui::core::event::Key;
-    use junie_tui::core::focus::{Focus, FocusRing};
     use ratatui::crossterm::event::KeyModifiers;
+    use termrock::core::event::Key;
+    use termrock::core::focus::{Focus, FocusRing};
 
     /// With `branch_activate: both`, Enter on a collapsed lazy branch reports
     /// the expansion request and then the activation, each once, in order.

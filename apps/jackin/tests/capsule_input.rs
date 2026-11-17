@@ -7,8 +7,8 @@ mod product_support;
 
 use capsule_support::*;
 use jackin_console::panes::PaneCommand;
-use junie_tui::core::event::MouseKind;
 use pane_support::*;
+use termrock::core::event::MouseKind;
 
 fn pane_cell(rig: &mut Rig) -> (u16, u16) {
     let at = rig.locate("line one");

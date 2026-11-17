@@ -5,16 +5,16 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::{Part, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::NavKeys;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::StackChild;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::choice::{CheckHit, Checkbox, RadioGroup, Toggle};
-use junie_tui::widgets::panel::Panel;
+use termrock::core::event::Outcome;
+use termrock::core::id::{Part, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::keymap::NavKeys;
+use termrock::core::pointer::MouseTarget;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::StackChild;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::choice::{CheckHit, Checkbox, RadioGroup, Toggle};
+use termrock::widgets::panel::Panel;
 
 const ID: WidgetId = WidgetId::of("checksradios");
 
@@ -169,7 +169,7 @@ impl ChecksRadiosPage {
             buf.set_string(
                 inner.x,
                 y,
-                junie_tui::ui::text::truncate(&text, inner.width as usize),
+                termrock::ui::text::truncate(&text, inner.width as usize),
                 t.faint().bg(bg),
             );
         }

@@ -1,4 +1,4 @@
-use junie_tui::theme::StatusKind;
+use termrock::theme::StatusKind;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DoctorSurface {

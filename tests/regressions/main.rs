@@ -14,6 +14,7 @@ mod common;
 mod data_shape;
 mod deferred_api_calls;
 mod document_workspace;
+mod facade_contract;
 mod file_browser_paths;
 mod focus_edit;
 mod form_dialog_geometry;

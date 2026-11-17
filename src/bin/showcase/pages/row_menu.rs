@@ -3,14 +3,14 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Rect;
 
 use super::{Hint, PageEvent};
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::intent::{DismissReason, Phase};
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::core::response::Actions;
-use junie_tui::ui::context::ContextConfig;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layer;
-use junie_tui::widgets::menu::{ContextMenu, MenuAction};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::intent::{DismissReason, Phase};
+use termrock::core::pointer::MouseTarget;
+use termrock::core::response::Actions;
+use termrock::ui::context::ContextConfig;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layer;
+use termrock::widgets::menu::{ContextMenu, MenuAction};
 
 pub const MENU_HINTS: [Hint; 3] = [("↑↓", "Move"), ("Enter", "Choose"), ("Esc", "Close")];
 

@@ -12,28 +12,28 @@ use crate::options::{PageValues, page_options};
 use crate::pages::inputs::{custom_text_keymap, field_keys};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::edit::EditEntry;
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::{Actions, KeyBinding, KeyMap, NavKeys};
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::core::scroll::{HScroll, TrackClick};
-use junie_tui::theme::{CursorStyle, SyntaxTone, Tone};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::measure::Measure;
-use junie_tui::ui::popup::{Dismiss, Place, Placement};
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::text::fuzzy;
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::code::{
+use termrock::core::edit::EditEntry;
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::keymap::{Actions, KeyBinding, KeyMap, NavKeys};
+use termrock::core::pointer::MouseTarget;
+use termrock::core::scroll::{HScroll, TrackClick};
+use termrock::theme::{CursorStyle, SyntaxTone, Tone};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::measure::Measure;
+use termrock::ui::popup::{Dismiss, Place, Placement};
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::text::fuzzy;
+use termrock::widgets::button::Button;
+use termrock::widgets::code::{
     CodeCmd, CodeEditor, Diagnostic, EditorAction, Highlighter, Segmenter, Severity,
 };
-use junie_tui::widgets::completion::{Completion, CompletionAction, TEXT_INSET};
-use junie_tui::widgets::empty::{self, EmptyState};
-use junie_tui::widgets::option_list::Item;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::{self, Prop};
+use termrock::widgets::completion::{Completion, CompletionAction, TEXT_INSET};
+use termrock::widgets::empty::{self, EmptyState};
+use termrock::widgets::option_list::Item;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::{self, Prop};
 
 const ID: WidgetId = WidgetId::of("editor");
 
@@ -706,7 +706,7 @@ impl EditorPage {
 
         let widths = [self.find.width(), self.run_button.width()];
         let rects =
-            junie_tui::widgets::button::row_layout(Rect::new(r.x, r.y, r.width, 1), &widths, 2);
+            termrock::widgets::button::row_layout(Rect::new(r.x, r.y, r.width, 1), &widths, 2);
         self.find.render(rects[0], buf, ctx, t.canvas);
         self.run_button.render(rects[1], buf, ctx, t.canvas);
         let r = Rect::new(r.x, r.y + 2, r.width, r.height.saturating_sub(2));
@@ -739,12 +739,10 @@ impl EditorPage {
                     if yy >= inner.bottom() {
                         break;
                     }
-                    let line = junie_tui::core::text::TextBuffer::pos_of(
-                        self.editor.text(),
-                        d.range.start,
-                    )
-                    .line
-                        + 1;
+                    let line =
+                        termrock::core::text::TextBuffer::pos_of(self.editor.text(), d.range.start)
+                            .line
+                            + 1;
                     let (glyph, st) = match d.severity {
                         Severity::Error => ("!", Style::new().fg(t.error)),
                         Severity::Warning => ("!", Style::new().fg(t.warning)),
@@ -753,7 +751,7 @@ impl EditorPage {
                     buf.set_string(
                         inner.x + 2,
                         yy,
-                        junie_tui::ui::text::truncate(
+                        termrock::ui::text::truncate(
                             &format!("ln {line} · {}", d.message),
                             inner.width.saturating_sub(2) as usize,
                         ),
@@ -1096,10 +1094,10 @@ mod tests {
     }
 
     fn drawn(page: &mut EditorPage) -> String {
-        use junie_tui::core::focus::FocusRing;
-        use junie_tui::core::hit::HitRegistry;
-        use junie_tui::theme::{ColorLevel, Theme};
-        use junie_tui::ui::ctx::Interaction;
+        use termrock::core::focus::FocusRing;
+        use termrock::core::hit::HitRegistry;
+        use termrock::theme::{ColorLevel, Theme};
+        use termrock::ui::ctx::Interaction;
 
         let theme = Theme::for_level(ColorLevel::TrueColor);
         let area = Rect::new(0, 0, 120, 40);
@@ -1138,7 +1136,7 @@ mod tests {
 
     #[test]
     fn a_paste_with_the_popup_open_refreshes_what_accept_replaces() {
-        use junie_tui::core::focus::{Focus, FocusRing};
+        use termrock::core::focus::{Focus, FocusRing};
         let mut page = EditorPage::new();
         page.editor.field.buffer.insert_str("fet");
         page.editor.begin_edit();
@@ -1153,7 +1151,7 @@ mod tests {
         assert_eq!(word, "fetch");
         // Accepting must replace the whole word the user now sees, not the
         // three characters the popup was opened with.
-        let enter = junie_tui::core::event::Key {
+        let enter = termrock::core::event::Key {
             code: KeyCode::Enter,
             mods: ratatui::crossterm::event::KeyModifiers::NONE,
         };

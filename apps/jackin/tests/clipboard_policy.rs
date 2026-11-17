@@ -9,8 +9,8 @@ use jackin_console::panes::{
     ClipboardWrite, EndKind, Lease, LinkEvent, LinkStatus, PaneBody, PaneEffect, PanePolicy,
     TerminalPane, sanitize_title,
 };
-use junie_tui::theme::Tone;
 use pane_support::*;
+use termrock::theme::Tone;
 
 const HELLO: &[u8] = b"\x1b]52;c;SGVsbG8=\x07";
 
@@ -151,7 +151,7 @@ fn rig_without_gesture() -> Rig {
 #[test]
 fn only_a_key_or_a_click_is_a_gesture() {
     let mut wheel = rig_without_gesture();
-    wheel.pane.wheel(junie_tui::core::hit::Axis::Vertical, -3);
+    wheel.pane.wheel(termrock::core::hit::Axis::Vertical, -3);
     assert_eq!(
         wheel.write(1_000, HELLO),
         [blocked(WRITE_BLOCKED)],

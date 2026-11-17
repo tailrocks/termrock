@@ -5,22 +5,22 @@ use crate::app::PageId;
 use crate::options::page_options;
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::cli::CommonArgs;
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::shell::StatusLine;
-use junie_tui::theme::{BadgeKind, HintAlign, HintBarStyle, StatusKind, Theme, Tone};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::StackChild;
-use junie_tui::ui::reveal::Reveal;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::text::truncate;
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::hintbar::{HintBar, HintLayer};
-use junie_tui::widgets::keyhint::{self, Hint as KeyHint, HintPriority, hint, toggle_hint};
-use junie_tui::widgets::progress::{ProgressBar, render_spinner};
-use junie_tui::widgets::too_small::TooSmall;
+use termrock::cli::CommonArgs;
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::pointer::MouseTarget;
+use termrock::shell::StatusLine;
+use termrock::theme::{BadgeKind, HintAlign, HintBarStyle, StatusKind, Theme, Tone};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::StackChild;
+use termrock::ui::reveal::Reveal;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::text::truncate;
+use termrock::widgets::button::Button;
+use termrock::widgets::hintbar::{HintBar, HintLayer};
+use termrock::widgets::keyhint::{self, Hint as KeyHint, HintPriority, hint, toggle_hint};
+use termrock::widgets::progress::{ProgressBar, render_spinner};
+use termrock::widgets::too_small::TooSmall;
 
 const ID: WidgetId = WidgetId::of("statushints");
 
@@ -58,11 +58,11 @@ fn ttl_note() -> String {
 }
 
 fn note_rows(text: &str, w: u16) -> u16 {
-    junie_tui::ui::text::wrap(text, w.saturating_sub(2).max(1) as usize).len() as u16
+    termrock::ui::text::wrap(text, w.saturating_sub(2).max(1) as usize).len() as u16
 }
 
 fn note(area: Rect, buf: &mut Buffer, t: &Theme, y: u16, text: &str) -> u16 {
-    let lines = junie_tui::ui::text::wrap(text, area.width.saturating_sub(2).max(1) as usize);
+    let lines = termrock::ui::text::wrap(text, area.width.saturating_sub(2).max(1) as usize);
     for (i, l) in lines.iter().enumerate() {
         let y = y + i as u16;
         if y < area.bottom() {
@@ -74,12 +74,12 @@ fn note(area: Rect, buf: &mut Buffer, t: &Theme, y: u16, text: &str) -> u16 {
 
 fn hanging(line: &str, w: u16) -> Vec<String> {
     let w = w as usize;
-    if junie_tui::ui::text::width(line) <= w {
+    if termrock::ui::text::width(line) <= w {
         return vec![line.to_owned()];
     }
     let (flag, help) = line.split_at(ARG_COL.min(line.len()));
     let room = w.saturating_sub(ARG_COL).max(10);
-    junie_tui::ui::text::wrap(help, room)
+    termrock::ui::text::wrap(help, room)
         .into_iter()
         .enumerate()
         .map(|(i, l)| {
@@ -296,7 +296,7 @@ impl StatusHintsPage {
         let mut y = area.y;
         let caption = |buf: &mut Buffer, y: u16, text: &str| {
             if y < area.bottom() {
-                let text = junie_tui::ui::text::truncate(text, area.width as usize);
+                let text = termrock::ui::text::truncate(text, area.width as usize);
                 buf.set_string(area.x, y, text, t.title().bg(t.canvas));
             }
         };
@@ -355,7 +355,7 @@ impl StatusHintsPage {
         if y < area.bottom() {
             label(buf, y, "resolved →");
             let r = row(y, w);
-            junie_tui::ui::ctx::fill(buf, r, ratatui::style::Style::new().bg(t.surface));
+            termrock::ui::ctx::fill(buf, r, ratatui::style::Style::new().bg(t.surface));
             let s = HintBarStyle {
                 align: resolved.align.unwrap_or(style.align),
                 ..style
@@ -650,7 +650,7 @@ impl StatusHintsPage {
             .unwrap_or(BAR_W);
         let captions = CAPTIONS
             .iter()
-            .map(|c| junie_tui::ui::text::width(c) as u16)
+            .map(|c| termrock::ui::text::width(c) as u16)
             .max()
             .unwrap_or(0);
         (LABEL_W + bars).max(captions).max(2 + TOO_SMALL_W)

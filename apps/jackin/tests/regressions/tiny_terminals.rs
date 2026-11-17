@@ -13,17 +13,17 @@
 use crate::common::*;
 use jackin_console::app::App;
 use jackin_console::fixtures::Scenario;
-use junie_tui::core::focus::FocusRing;
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::runtime::Application;
-use junie_tui::shell::App as ShellApp;
-use junie_tui::ui::ctx::RenderCtx;
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use std::collections::BTreeMap;
 use std::panic::{AssertUnwindSafe, catch_unwind};
+use termrock::core::focus::FocusRing;
+use termrock::core::hit::HitRegistry;
+use termrock::runtime::Application;
+use termrock::shell::App as ShellApp;
+use termrock::ui::ctx::RenderCtx;
 
 const KEYS: &[&str] = &[
     "enter", "esc", "tab", "down", "right", "up", "left", "space", "insert", "n", "e", "s", "d",
@@ -99,7 +99,7 @@ fn record_panic_site(info: &std::panic::PanicHookInfo<'_>) {
             .lines()
             .map(str::trim)
             .find(|l| {
-                (l.contains("jackin_console::") || l.contains("junie_tui::"))
+                (l.contains("jackin_console::") || l.contains("termrock::"))
                     && !l.contains("regressions::")
             })
             .unwrap_or("outside Jackin and the library")

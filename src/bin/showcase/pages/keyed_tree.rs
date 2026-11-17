@@ -9,15 +9,15 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 
 use crate::pages::Cx;
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::id::{ItemKey, WidgetId};
-use junie_tui::core::keyed::KeyedSourceError;
-use junie_tui::core::list::SourceStamp;
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::core::response::Response;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::widgets::empty::{self, EmptyState};
-use junie_tui::widgets::tree::{
+use termrock::core::event::{Key, Outcome};
+use termrock::core::id::{ItemKey, WidgetId};
+use termrock::core::keyed::KeyedSourceError;
+use termrock::core::list::SourceStamp;
+use termrock::core::pointer::PointerEvent;
+use termrock::core::response::Response;
+use termrock::ui::ctx::RenderCtx;
+use termrock::widgets::empty::{self, EmptyState};
+use termrock::widgets::tree::{
     KeyedTree, KeyedTreeNode, TreeAction, TreeNodeRef, TreeSource, TreeView,
 };
 

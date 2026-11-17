@@ -6,79 +6,75 @@
 //! that every referenced scenario has exactly one case here. One line per
 //! case keeps a restack mechanical.
 
-use junie_tui::clock::Moment;
-use junie_tui::core::data::{DataError, ShapeError, validate_rectangular};
-use junie_tui::core::edit::{FieldKeys, TextCmd};
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::focus::{Focus, FocusChange, FocusRing};
-use junie_tui::core::hit::{Axis, HitRegistry};
-use junie_tui::core::id::{ItemKey, Part, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keyed::{KeyedRecord, KeyedSourceError, KeyedState, KeyedVec, Reconcile};
-use junie_tui::core::keymap::{Actions as _, KeyBinding};
-use junie_tui::core::list::{KeyedRowSource, RowSource, SourceStamp};
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::core::refusal::{Reason, clear_refusal, take_refusal};
-use junie_tui::core::response::{
-    Actions, ActionsIntoIter, ActionsIter, Flow, Invalidate, Response,
-};
-use junie_tui::core::selection::{ClickPolicy, RowSelection};
-use junie_tui::core::text::TextBuffer;
-use junie_tui::shell::{Cx, Request, StatusLine, background};
-use junie_tui::terminal::{TerminalState, TerminalViewport};
-use junie_tui::theme::{ColorLevel, SyntaxTone, Theme, Tone};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::ui::layout::{Split, SplitDir};
-use junie_tui::ui::popup::{Dismiss, Placement};
-use junie_tui::widgets::chips::{Chip, ChipAction, ChipBar};
-use junie_tui::widgets::choice::Checkbox;
-use junie_tui::widgets::choice_dialog::ChoiceDialog;
-use junie_tui::widgets::code::{CodeEditor, Diagnostic, Highlighter, Segmenter, Severity};
-use junie_tui::widgets::completion::Completion;
-use junie_tui::widgets::dialog::{Dialog, DialogResult};
-use junie_tui::widgets::edit::{EditField, Validator};
-use junie_tui::widgets::form_dialog::{FormAction, FormDialog, FormField};
-use junie_tui::widgets::grid::{
+use ratatui::buffer::Buffer;
+use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use ratatui::layout::{Constraint, Position, Rect};
+use termrock::clock::Moment;
+use termrock::core::data::{DataError, ShapeError, validate_rectangular};
+use termrock::core::edit::{FieldKeys, TextCmd};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::focus::{Focus, FocusChange, FocusRing};
+use termrock::core::hit::{Axis, HitRegistry};
+use termrock::core::id::{ItemKey, Part, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::keyed::{KeyedRecord, KeyedSourceError, KeyedState, KeyedVec, Reconcile};
+use termrock::core::keymap::{Actions as _, KeyBinding};
+use termrock::core::list::{KeyedRowSource, RowSource, SourceStamp};
+use termrock::core::pointer::PointerEvent;
+use termrock::core::refusal::{Reason, clear_refusal, take_refusal};
+use termrock::core::response::{Actions, ActionsIntoIter, ActionsIter, Flow, Invalidate, Response};
+use termrock::core::selection::{ClickPolicy, RowSelection};
+use termrock::core::text::TextBuffer;
+use termrock::shell::{Cx, Request, StatusLine, background};
+use termrock::terminal::{TerminalState, TerminalViewport};
+use termrock::theme::{ColorLevel, SyntaxTone, Theme, Tone};
+use termrock::ui::ctx::{Interaction, RenderCtx};
+use termrock::ui::layout::{Split, SplitDir};
+use termrock::ui::popup::{Dismiss, Placement};
+use termrock::widgets::chips::{Chip, ChipAction, ChipBar};
+use termrock::widgets::choice::Checkbox;
+use termrock::widgets::choice_dialog::ChoiceDialog;
+use termrock::widgets::code::{CodeEditor, Diagnostic, Highlighter, Segmenter, Severity};
+use termrock::widgets::completion::Completion;
+use termrock::widgets::dialog::{Dialog, DialogResult};
+use termrock::widgets::edit::{EditField, Validator};
+use termrock::widgets::form_dialog::{FormAction, FormDialog, FormField};
+use termrock::widgets::grid::{
     CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, FinishEdit, GridAction,
     GridCommitFailure, GridDataError, GridEditError, GridKeyError, GridRows, GridUndoKind,
     RowTotal,
 };
-use junie_tui::widgets::info_dialog::InfoDialog;
-use junie_tui::widgets::input::{TextInput, TextInput as FinderQuery};
-use junie_tui::widgets::list::{
-    ListAction, ListBox, ListItem, ListItemRef, ListSource, SelectMode,
-};
-use junie_tui::widgets::list_detail::{
+use termrock::widgets::info_dialog::InfoDialog;
+use termrock::widgets::input::{TextInput, TextInput as FinderQuery};
+use termrock::widgets::list::{ListAction, ListBox, ListItem, ListItemRef, ListSource, SelectMode};
+use termrock::widgets::list_detail::{
     Action, DetailPane, Event, Frame, Line, ListDetail, ListDetailSource, ListRow, ListRowRef,
     MasterRow, PaneHost, SourceFrame,
 };
-use junie_tui::widgets::nav_list::{NavItem, NavList};
-use junie_tui::widgets::option_editor::{
+use termrock::widgets::nav_list::{NavItem, NavList};
+use termrock::widgets::option_editor::{
     ChoiceEditor, ColumnEditor, EditorConfig, OptionItem, Options,
 };
-use junie_tui::widgets::option_list::Item;
-use junie_tui::widgets::panel::ScrollPanel;
-use junie_tui::widgets::picker::{Picker, PickerAction, PickerItemsError, VisibleKey};
-use junie_tui::widgets::props::Prop;
-use junie_tui::widgets::search_detail::{
+use termrock::widgets::option_list::Item;
+use termrock::widgets::panel::ScrollPanel;
+use termrock::widgets::picker::{Picker, PickerAction, PickerItemsError, VisibleKey};
+use termrock::widgets::props::Prop;
+use termrock::widgets::search_detail::{
     MissingSelection, QueryPasteMode, QueryRequest, QueryView, ResultRowKind, RowPaint,
     SearchAction, SearchCmd, SearchConfig, SearchDetail, SearchDetailSource, SearchError,
     SearchFocusMode, SearchPaint, SearchPhase, SearchSession, SearchSource, paint_query_default,
 };
-use junie_tui::widgets::splitter::Splitter;
-use junie_tui::widgets::table::{
+use termrock::widgets::splitter::Splitter;
+use termrock::widgets::table::{
     Cell, CellRef, Column, DataTable, KeyedTable, KeyedTableError, TableAction, TableEditSource,
     TableSource,
 };
-use junie_tui::widgets::tabs::{TabItem, Tabs};
-use junie_tui::widgets::toolbar::{ToolItem, Toolbar, ToolbarAction};
-use junie_tui::widgets::tree::{
+use termrock::widgets::tabs::{TabItem, Tabs};
+use termrock::widgets::toolbar::{ToolItem, Toolbar, ToolbarAction};
+use termrock::widgets::tree::{
     KeyedTree, KeyedTreeNode, TreeAction, TreeNodeRef, TreeSource, TreeView,
 };
-use junie_tui::widgets::viewport_ops::ViewportOps;
-use ratatui::buffer::Buffer;
-use ratatui::crossterm::event::{KeyCode, KeyModifiers};
-use ratatui::layout::{Constraint, Position, Rect};
+use termrock::widgets::viewport_ops::ViewportOps;
 
 use super::super::coverage::ScenarioId;
 
@@ -570,7 +566,7 @@ fn list_detail_navigation() {
         let items = (0..4).map(|n| Line::Item {
             mark: None,
             cols: [format!("item{n:02}"), "agent".into(), "meta".into()],
-            tone: junie_tui::theme::Tone::Secondary,
+            tone: termrock::theme::Tone::Secondary,
         });
         let frame = Frame {
             title: "List",
@@ -584,7 +580,7 @@ fn list_detail_navigation() {
             actions: vec![Action::new(
                 "go",
                 "go the whole selection",
-                junie_tui::theme::ButtonKind::Secondary,
+                termrock::theme::ButtonKind::Secondary,
             )],
         };
         list.render(area, &mut buf, &mut ctx, &frame);
@@ -1136,7 +1132,7 @@ impl ListDetailSource for FinderCat {
             label: self.rows[visible].1,
             detail: "via-list-detail",
             meta: "",
-            meta_tone: junie_tui::theme::Tone::Muted,
+            meta_tone: termrock::theme::Tone::Muted,
             faint: false,
         }
     }
@@ -1652,7 +1648,7 @@ fn preview_frame(lines: &[Line]) -> SourceFrame<'_> {
 
 fn preview_lines(count: usize) -> Vec<Line> {
     (1..=count)
-        .map(|n| Line::Text(format!("entry {n:02}"), junie_tui::theme::Tone::Muted))
+        .map(|n| Line::Text(format!("entry {n:02}"), termrock::theme::Tone::Muted))
         .collect()
 }
 
@@ -2106,7 +2102,7 @@ fn two_columns() -> Vec<Column> {
 }
 
 fn table_model_updates() {
-    use junie_tui::core::data::DataError;
+    use termrock::core::data::DataError;
     let mut table = DataTable::try_new(
         WidgetId::of("scenario.table"),
         two_columns(),
@@ -3207,7 +3203,7 @@ impl TreeSource for Graph {
             label: "node",
             meta: None,
             glyph: None,
-            glyph_tone: junie_tui::theme::Tone::Muted,
+            glyph_tone: termrock::theme::Tone::Muted,
             label_tone: None,
             children,
             lazy: false,
@@ -3672,10 +3668,10 @@ fn catalog_all_routes_visible_once() {
 
 #[test]
 fn catalog_picker_setters_and_accessors_behave() {
-    use junie_tui::core::hints::{HasHints, HintCx};
-    use junie_tui::core::hit::Axis;
-    use junie_tui::core::keymap::KeyBinding;
-    use junie_tui::widgets::picker::{DEFAULT_GLYPH, PickerCmd, PickerKeyProfile};
+    use termrock::core::hints::{HasHints, HintCx};
+    use termrock::core::hit::Axis;
+    use termrock::core::keymap::KeyBinding;
+    use termrock::widgets::picker::{DEFAULT_GLYPH, PickerCmd, PickerKeyProfile};
 
     assert_eq!(
         (Picker::MAX_ROWS, Picker::WIDTH, DEFAULT_GLYPH),
@@ -4052,10 +4048,10 @@ fn code_editor_diagnostics_find() {
 /// small bounded channel, retries on `Full` and loses nothing, while the
 /// receiver carries the policy the page's "Turn budget" option shows.
 fn external_feed_bounds() {
-    use junie_tui::core::event::External;
-    use junie_tui::runtime::{ExternalPolicy, ExternalSendError, bounded_external_channel};
     use std::num::NonZeroUsize;
     use std::time::{Duration, Instant};
+    use termrock::core::event::External;
+    use termrock::runtime::{ExternalPolicy, ExternalSendError, bounded_external_channel};
 
     assert_eq!(
         (
@@ -4119,8 +4115,8 @@ fn external_feed_bounds() {
 /// The Scrolling page's Virtual rows: a 10,000-row source paints only the
 /// window, and the frame's scratch work stays bounded by the viewport.
 fn scroll_window_work() {
-    use junie_tui::ui::scroll_view::{Axes, ScrollView, ScrollWork, VisibleWindow};
     use ratatui::layout::Size;
+    use termrock::ui::scroll_view::{Axes, ScrollView, ScrollWork, VisibleWindow};
 
     let screen = Rect::new(0, 0, 60, 14);
     let area = Rect::new(2, 2, 40, 8);
@@ -4179,10 +4175,10 @@ fn scroll_window_work() {
 /// focus, closing can restore or keep it, and `settle` drains every queued
 /// layer result in order.
 fn modal_focus_policy() {
-    use junie_tui::core::event::Key as KeyEvent;
-    use junie_tui::core::intent::DismissReason;
-    use junie_tui::ui::layer::{Layer, LayerCx, LayerOut, LayerSpec, LayerTag, ShellLayers, Taken};
-    use junie_tui::ui::modal::{FocusOnOpen, ModalStack};
+    use termrock::core::event::Key as KeyEvent;
+    use termrock::core::intent::DismissReason;
+    use termrock::ui::layer::{Layer, LayerCx, LayerOut, LayerSpec, LayerTag, ShellLayers, Taken};
+    use termrock::ui::modal::{FocusOnOpen, ModalStack};
 
     let (a, b, c, d) = (
         WidgetId::of("scenario.modal.a"),
@@ -4279,14 +4275,14 @@ fn modal_focus_policy() {
 /// and preview opens, activation, operations that only the live generation
 /// may end, and close requests that only the live token may answer.
 fn document_workspace_lifecycle() {
-    use junie_tui::core::response::Response;
-    use junie_tui::widgets::document_workspace::{
+    use ratatui::style::Color;
+    use std::borrow::Cow;
+    use termrock::core::response::Response;
+    use termrock::widgets::document_workspace::{
         CloseDecision, CloseToken, DocumentWorkspace, OpenKind, OperationToken, WorkspaceAction,
         WorkspaceDocument,
     };
-    use junie_tui::widgets::tabs::Tabs;
-    use ratatui::style::Color;
-    use std::borrow::Cow;
+    use termrock::widgets::tabs::Tabs;
 
     struct Note {
         title: String,
@@ -4423,7 +4419,7 @@ fn document_workspace_lifecycle() {
         workspace
             .end_operation(first, |mut view| view.show("stale"))
             .err(),
-        Some(junie_tui::widgets::document_workspace::WorkspaceError::StaleOperation)
+        Some(termrock::widgets::document_workspace::WorkspaceError::StaleOperation)
     );
     let (_, _) = workspace
         .end_operation(second, |mut view| view.show("25 rows"))
@@ -4543,7 +4539,7 @@ fn document_workspace_lifecycle() {
 /// program's title, bell and clipboard request, and what the host reads back.
 fn session_attach_replay() {
     use crate::pages::terminal_session::{DemoFault, Script, controller};
-    use junie_tui::terminal::{
+    use termrock::terminal::{
         SessionClipboardRefusal, SessionConfig, SessionEffect, SessionLease, SessionStatus,
     };
 
@@ -4634,7 +4630,7 @@ fn session_attach_replay() {
 /// the link receives for each.
 fn session_input_and_paste() {
     use crate::pages::terminal_session::{Script, controller};
-    use junie_tui::terminal::{SessionKey, SessionPaste};
+    use termrock::terminal::{SessionKey, SessionPaste};
 
     let (mut session, commands) = controller(Script::Owner, 64 * 1024);
     let a = key(KeyCode::Char('a'));
@@ -4695,7 +4691,7 @@ fn session_input_and_paste() {
 /// policy swapped while the program runs.
 fn session_endings_and_policy() {
     use crate::pages::terminal_session::{DemoFault, Script, controller, host_policy};
-    use junie_tui::terminal::{
+    use termrock::terminal::{
         SessionDetach, SessionEffect, SessionKey, SessionLease, SessionPaste, SessionStatus,
     };
 
@@ -4814,7 +4810,7 @@ fn logged(commands: &crate::pages::terminal_session::CommandLog) -> Vec<String> 
 }
 
 fn session_row(
-    session: &junie_tui::terminal::TerminalSessionController<
+    session: &termrock::terminal::TerminalSessionController<
         crate::pages::terminal_session::DemoFault,
     >,
     row: u16,
@@ -4838,9 +4834,7 @@ fn session_row(
 /// `record_work!` counts exactly when `ENABLED` says it does.
 fn work_counter_contract() {
     use crate::pages::meters_work;
-    use junie_tui::metrics::{
-        ENABLED, METRIC_COUNT, Metric, MetricsError, WorkDelta, WorkSnapshot,
-    };
+    use termrock::metrics::{ENABLED, METRIC_COUNT, Metric, MetricsError, WorkDelta, WorkSnapshot};
 
     /// `SegmentedLines` becomes `segmented_lines`: the name every metric must carry,
     /// derived from the variant so the scenario does not repeat the catalog.
@@ -4859,9 +4853,9 @@ fn work_counter_contract() {
     /// `record_work!`, and returns each metric's count.
     #[cfg(feature = "work-metrics")]
     fn record_each(amount: u64) -> WorkDelta {
-        junie_tui::metrics::measure(|| {
+        termrock::metrics::measure(|| {
             for metric in Metric::ALL {
-                junie_tui::metrics::record(metric, amount);
+                termrock::metrics::record(metric, amount);
             }
         })
         .1
@@ -4941,8 +4935,8 @@ fn work_counter_contract() {
             counted.check_exact(&Metric::ALL.map(|metric| (metric, 2))),
             Ok(())
         );
-        let (_, delta) = junie_tui::metrics::measure(|| {
-            junie_tui::record_work!(SegmentedLines, 3usize);
+        let (_, delta) = termrock::metrics::measure(|| {
+            termrock::record_work!(SegmentedLines, 3usize);
         });
         assert_eq!(delta.get(Metric::SegmentedLines), 3);
         assert_eq!(meters_work::probe(), Some(3));
@@ -4950,7 +4944,7 @@ fn work_counter_contract() {
     #[cfg(not(feature = "work-metrics"))]
     {
         let evaluated = std::cell::Cell::new(false);
-        junie_tui::record_work!(InputDispatches, {
+        termrock::record_work!(InputDispatches, {
             evaluated.set(true);
             1usize
         });

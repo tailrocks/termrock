@@ -10,30 +10,30 @@ use crate::pages::adapter::Showcase;
 use crate::pages::{
     Closed, Cx, DIALOG_TAG, Go, HELP_TAG, LayerRes, Page, PageEvent, Report, Request,
 };
-use junie_tui::clock::{Clock, WallClock};
-use junie_tui::core::event::{Input, Key, Outcome};
-use junie_tui::core::focus::FocusChange;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::pointer::{
+use termrock::clock::{Clock, WallClock};
+use termrock::core::event::{Input, Key, Outcome};
+use termrock::core::focus::FocusChange;
+use termrock::core::id::WidgetId;
+use termrock::core::pointer::{
     FocusOn, MouseTarget, PointerConfig, PointerEvent, PointerHost, PointerParts, PointerRouter,
 };
-use junie_tui::core::response::Response;
-use junie_tui::shell::{self, Page as _, Shell};
-use junie_tui::theme::{Theme, Tone};
-use junie_tui::ui::ctx::{RenderCtx, fill};
-use junie_tui::ui::layer::{
+use termrock::core::response::Response;
+use termrock::shell::{self, Page as _, Shell};
+use termrock::theme::{Theme, Tone};
+use termrock::ui::ctx::{RenderCtx, fill};
+use termrock::ui::layer::{
     DismissReason, Dismissed, Layer, LayerCx, LayerEntry, LayerPointer, LayerTag, ShellLayers,
     Taken,
 };
-use junie_tui::ui::layers::LayerResult;
-use junie_tui::ui::leave::{LeaveGuard, Resolved, Stakes};
-use junie_tui::ui::popup::Dismiss;
-use junie_tui::widgets::breadcrumb::Breadcrumb;
-use junie_tui::widgets::dialog::{Dialog, DialogResult};
-use junie_tui::widgets::form_dialog::FormDialog;
-use junie_tui::widgets::help::HelpOverlay;
-use junie_tui::widgets::too_small::TooSmall;
-use junie_tui::widgets::tree::{TreeAction, TreeNode, TreeView};
+use termrock::ui::layers::LayerResult;
+use termrock::ui::leave::{LeaveGuard, Resolved, Stakes};
+use termrock::ui::popup::Dismiss;
+use termrock::widgets::breadcrumb::Breadcrumb;
+use termrock::widgets::dialog::{Dialog, DialogResult};
+use termrock::widgets::form_dialog::FormDialog;
+use termrock::widgets::help::HelpOverlay;
+use termrock::widgets::too_small::TooSmall;
+use termrock::widgets::tree::{TreeAction, TreeNode, TreeView};
 
 const BRAND: &str = "Junie Design system";
 
@@ -54,27 +54,27 @@ const INSPECTOR_W: u16 = 30;
 
 const INSPECTOR_OVERLAY_W: u16 = 34;
 
-const LEVELS: [junie_tui::theme::ColorLevel; 4] = [
-    junie_tui::theme::ColorLevel::TrueColor,
-    junie_tui::theme::ColorLevel::Ansi256,
-    junie_tui::theme::ColorLevel::Ansi16,
-    junie_tui::theme::ColorLevel::Mono,
+const LEVELS: [termrock::theme::ColorLevel; 4] = [
+    termrock::theme::ColorLevel::TrueColor,
+    termrock::theme::ColorLevel::Ansi256,
+    termrock::theme::ColorLevel::Ansi16,
+    termrock::theme::ColorLevel::Mono,
 ];
 
-fn level_index(level: junie_tui::theme::ColorLevel) -> usize {
+fn level_index(level: termrock::theme::ColorLevel) -> usize {
     LEVELS.iter().position(|l| *l == level).unwrap_or(0)
 }
 
-const CHARSETS: [junie_tui::theme::Charset; 2] = [
-    junie_tui::theme::Charset::Unicode,
-    junie_tui::theme::Charset::Ascii,
+const CHARSETS: [termrock::theme::Charset; 2] = [
+    termrock::theme::Charset::Unicode,
+    termrock::theme::Charset::Ascii,
 ];
 
-fn charset_index(matches: impl Fn(junie_tui::theme::Charset) -> bool) -> usize {
+fn charset_index(matches: impl Fn(termrock::theme::Charset) -> bool) -> usize {
     CHARSETS.iter().position(|c| matches(*c)).unwrap_or(0)
 }
 
-pub use junie_tui::motion::Motion;
+pub use termrock::motion::Motion;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PageId {
@@ -606,7 +606,7 @@ fn nav_tree() -> TreeView {
     );
 
     TreeView::new(NAV, nodes)
-        .click(junie_tui::core::selection::ClickPolicy::NAVIGATION)
+        .click(termrock::core::selection::ClickPolicy::NAVIGATION)
         .type_ahead(true)
         .selected_marker(Some("›"))
 }
@@ -648,15 +648,15 @@ pub struct App {
 
     pub options: ShellOptions,
 
-    pub track_click: junie_tui::core::scroll::TrackClick,
+    pub track_click: termrock::core::scroll::TrackClick,
 
-    pub tooltips: junie_tui::ui::tooltip::Tooltips,
+    pub tooltips: termrock::ui::tooltip::Tooltips,
 
-    pub reveal: junie_tui::ui::reveal::Reveal,
+    pub reveal: termrock::ui::reveal::Reveal,
 
-    pub input: junie_tui::core::event::InputConfig,
+    pub input: termrock::core::event::InputConfig,
 
-    pub keyboard_protocol: junie_tui::core::keyboard::KeyboardProtocol,
+    pub keyboard_protocol: termrock::core::keyboard::KeyboardProtocol,
 
     alt_keys: usize,
 
@@ -814,11 +814,11 @@ impl App {
             inspector: false,
             insp: Inspector::new(PageId::Overview),
             options,
-            track_click: junie_tui::core::scroll::TrackClick::Page,
-            tooltips: junie_tui::ui::tooltip::Tooltips::default(),
-            reveal: junie_tui::ui::reveal::Reveal::default(),
-            input: junie_tui::core::event::InputConfig::default(),
-            keyboard_protocol: junie_tui::core::keyboard::KeyboardProtocol::current(),
+            track_click: termrock::core::scroll::TrackClick::Page,
+            tooltips: termrock::ui::tooltip::Tooltips::default(),
+            reveal: termrock::ui::reveal::Reveal::default(),
+            input: termrock::core::event::InputConfig::default(),
+            keyboard_protocol: termrock::core::keyboard::KeyboardProtocol::current(),
             alt_keys: 0,
             inspector_focus: None,
             tick: frame,
@@ -961,7 +961,7 @@ impl App {
             Input::Tick => self.on_tick(),
             Input::Key(key) => {
                 self.last_key =
-                    Some(junie_tui::core::keymap::KeyBinding::new(key.code, key.mods).label());
+                    Some(termrock::core::keymap::KeyBinding::new(key.code, key.mods).label());
                 shell::KeyRouter::route(self, &key)
             }
             Input::Mouse(m) => PointerRouter::route(self, m),
@@ -974,7 +974,7 @@ impl App {
         self.pages.iter().position(|p| p.external().is_some())
     }
 
-    fn on_external(&mut self, message: &junie_tui::core::event::External) -> Outcome {
+    fn on_external(&mut self, message: &termrock::core::event::External) -> Outcome {
         match self.external_page() {
             Some(i) => self.with_page(i, |page, cx| page.on_external(message, cx)),
             None => Outcome::Ignored,
@@ -1058,7 +1058,7 @@ impl App {
                 Request::Help => self.open_help(),
                 Request::RefusedOutsideClick(dismiss) => {
                     let now = self.clock.now_ms();
-                    junie_tui::ui::modal::refuse_outside_click(
+                    termrock::ui::modal::refuse_outside_click(
                         &mut self.shell.pointer,
                         dismiss,
                         now,
@@ -1206,7 +1206,7 @@ impl App {
             },
             Dismissed::Refused => {
                 let now = self.clock.now_ms();
-                junie_tui::ui::modal::refuse_outside_click(&mut self.shell.pointer, dismiss, now);
+                termrock::ui::modal::refuse_outside_click(&mut self.shell.pointer, dismiss, now);
                 Outcome::Changed
             }
             Dismissed::Closed(entry, Some(r)) => self.layer_closed(entry, r).or(Outcome::Changed),
@@ -1383,14 +1383,14 @@ impl App {
     }
 
     fn apply_shell(&mut self) {
-        use junie_tui::core::edit::{EditEntry, FieldKeys};
-        use junie_tui::core::event::ClientPlatform;
-        use junie_tui::core::pointer::SecondaryOutside;
-        use junie_tui::core::scroll::TrackClick;
-        use junie_tui::core::shape::CaretShape;
-        use junie_tui::theme::{Charset, LevelOverrides};
-        use junie_tui::ui::reveal::Reveal;
-        use junie_tui::ui::tooltip::Tooltips;
+        use termrock::core::edit::{EditEntry, FieldKeys};
+        use termrock::core::event::ClientPlatform;
+        use termrock::core::pointer::SecondaryOutside;
+        use termrock::core::scroll::TrackClick;
+        use termrock::core::shape::CaretShape;
+        use termrock::theme::{Charset, LevelOverrides};
+        use termrock::ui::reveal::Reveal;
+        use termrock::ui::tooltip::Tooltips;
         let o = &self.options;
         let overrides = if o.get("shell.overrides") == 1 {
             LevelOverrides::ASCII_MONO
@@ -1406,10 +1406,10 @@ impl App {
             theme = theme.with_strings(Charset::Ascii.strings());
         }
         theme = theme.with_card_heading(
-            junie_tui::widgets::panel::CardHeading::ALL[o.get("shell.card_heading")],
+            termrock::widgets::panel::CardHeading::ALL[o.get("shell.card_heading")],
         );
         theme = theme.with_inactive_selection(
-            junie_tui::theme::InactiveSelection::ALL[o.get("shell.inactive_selection")],
+            termrock::theme::InactiveSelection::ALL[o.get("shell.inactive_selection")],
         );
         theme = theme.with_edit_entry(
             [
@@ -1476,21 +1476,21 @@ impl App {
             Reveal::OFF
         };
 
-        let mut input = junie_tui::core::event::InputConfig::for_platform(
+        let mut input = termrock::core::event::InputConfig::for_platform(
             platform.unwrap_or_else(ClientPlatform::current),
         );
         input.shift_wheel_horizontal = o.on("shell.shift_wheel_horizontal");
         input.legacy_ctrl_punctuation = o.on("shell.legacy_ctrl_punctuation");
         self.input = input;
         {
-            use junie_tui::core::keyboard::KeyboardProtocol as P;
+            use termrock::core::keyboard::KeyboardProtocol as P;
             self.keyboard_protocol =
                 [P::current(), P::On, P::Off][o.get("shell.keyboard_protocol")];
         }
 
         let alt = o.get("shell.alt_keys");
         if alt != self.alt_keys {
-            use junie_tui::core::keyboard::{AltKeys as A, set_alt_keys};
+            use termrock::core::keyboard::{AltKeys as A, set_alt_keys};
             self.alt_keys = alt;
             set_alt_keys(match alt {
                 1 => A::Delivered,
@@ -1503,16 +1503,16 @@ impl App {
             });
         }
         self.shell.focus_fallback = [
-            junie_tui::core::focus::FocusFallback::First,
-            junie_tui::core::focus::FocusFallback::Nearest,
+            termrock::core::focus::FocusFallback::First,
+            termrock::core::focus::FocusFallback::Nearest,
         ][o.get("shell.focus_fallback")];
     }
 
-    pub fn input_config(&self) -> junie_tui::core::event::InputConfig {
+    pub fn input_config(&self) -> termrock::core::event::InputConfig {
         self.input
     }
 
-    pub fn keyboard_protocol(&self) -> junie_tui::core::keyboard::KeyboardProtocol {
+    pub fn keyboard_protocol(&self) -> termrock::core::keyboard::KeyboardProtocol {
         self.keyboard_protocol
     }
 
@@ -1532,7 +1532,7 @@ impl App {
             self.keyboard_protocol,
             self.shell.focus_fallback,
             self.alt_keys,
-            junie_tui::core::keyboard::AltKeys::current()
+            termrock::core::keyboard::AltKeys::current()
         )
     }
 
@@ -1547,8 +1547,8 @@ impl App {
     }
 
     fn open_help(&mut self) {
-        use junie_tui::core::hints::Bindings;
-        use junie_tui::widgets::help::HelpSection;
+        use termrock::core::hints::Bindings;
+        use termrock::widgets::help::HelpSection;
         let shell = self.keys.help_section("Shell", |c| {
             Some(match c {
                 ShowCmd::Inspector => "The Inspector",
@@ -1597,8 +1597,8 @@ impl App {
     }
 
     fn chrome_pointer(&mut self, ev: &PointerEvent) -> Option<Outcome> {
-        use junie_tui::core::id::Part;
-        use junie_tui::core::intent::Phase;
+        use termrock::core::id::Part;
+        use termrock::core::intent::Phase;
         if let Some(key) = self.shell.footer_keys.clicked(ev) {
             return Some(self.handle_input(Input::Key(key)).or(Outcome::Changed));
         }
@@ -1645,8 +1645,8 @@ impl App {
     }
 
     fn inspector_pointer(&mut self, ev: &PointerEvent) -> Option<Outcome> {
-        use junie_tui::core::id::Part;
-        use junie_tui::core::intent::Phase;
+        use termrock::core::id::Part;
+        use termrock::core::intent::Phase;
         if !self.inspector {
             return None;
         }
@@ -1654,7 +1654,7 @@ impl App {
         if overlay
             && ev.is(Phase::Click)
             && ((ev.on(inspector::ID) && ev.part().part == Part::BACKDROP)
-                || ev.on(junie_tui::ui::modal::CLOSE))
+                || ev.on(termrock::ui::modal::CLOSE))
         {
             self.close_inspector();
             return Some(Outcome::Changed);
@@ -1828,7 +1828,7 @@ impl App {
             " i Inspector "
         };
         for (label, id) in [(help, HEADER_HELP), (insp, HEADER_INSPECT)] {
-            let w = junie_tui::ui::text::width(label) as u16;
+            let w = termrock::ui::text::width(label) as u16;
             rx = rx.saturating_sub(w);
 
             let style = ctx.title_style(id, t.canvas);
@@ -1850,7 +1850,7 @@ impl App {
             .areas
             .last()
             .map_or(0, |r| r.right().saturating_sub(x));
-        let cw = junie_tui::ui::text::width(&cap) as u16;
+        let cw = termrock::ui::text::width(&cap) as u16;
         if rx > x + crumb_w + cw + 2 {
             buf.set_string(rx.saturating_sub(cw + 1), area.y, &cap, t.faint());
         }
@@ -1875,7 +1875,7 @@ impl App {
         let t = self.theme;
 
         let count = NAV_ENTRIES.len().to_string();
-        let panel = junie_tui::widgets::panel::Panel::card(Some("Components"))
+        let panel = termrock::widgets::panel::Panel::card(Some("Components"))
             .pad_x(1)
             .focused(ctx.interaction.focused(NAV))
             .meta(&count);
@@ -1890,17 +1890,17 @@ impl App {
         let area = match &self.nav_filter {
             Some(q) if area.height > 2 => {
                 let row = Rect::new(area.x, area.y, area.width, 1);
-                let fs = t.field_style(junie_tui::ui::ctx::VisualState {
+                let fs = t.field_style(termrock::ui::ctx::VisualState {
                     editing: true,
                     ..Default::default()
                 });
                 fill(buf, row, fs);
                 buf.set_string(row.x + 1, row.y, "/", fs.fg(t.text_muted));
-                let shown = junie_tui::ui::text::truncate(q, row.width.saturating_sub(4) as usize);
+                let shown = termrock::ui::text::truncate(q, row.width.saturating_sub(4) as usize);
                 buf.set_string(row.x + 3, row.y, &shown, fs);
                 if ctx.interaction.focused(NAV) {
                     ctx.set_cursor(ratatui::layout::Position::new(
-                        row.x + 3 + junie_tui::ui::text::width(&shown) as u16,
+                        row.x + 3 + termrock::ui::text::width(&shown) as u16,
                         row.y,
                     ));
                 }
@@ -1942,9 +1942,9 @@ impl App {
         }
 
         buf.set_string(area.x, area.y, page.title(), t.title());
-        let tw = junie_tui::ui::text::width(page.title()) as u16;
+        let tw = termrock::ui::text::width(page.title()) as u16;
         if area.width > tw + 4 {
-            let blurb = junie_tui::ui::text::truncate(page.blurb(), (area.width - tw - 3) as usize);
+            let blurb = termrock::ui::text::truncate(page.blurb(), (area.width - tw - 3) as usize);
             buf.set_string(area.x + tw + 2, area.y, &blurb, t.muted());
         }
         let body = Rect::new(
@@ -1961,8 +1961,8 @@ impl App {
         }
     }
 
-    fn state_props(&self) -> Vec<junie_tui::widgets::props::Prop> {
-        use junie_tui::widgets::props::Prop;
+    fn state_props(&self) -> Vec<termrock::widgets::props::Prop> {
+        use termrock::widgets::props::Prop;
         let mode = if self.dialog().is_some() {
             "MODAL"
         } else if self.page_editing() {
@@ -2057,19 +2057,19 @@ impl App {
     fn draw_inspector(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
         let t = self.theme;
         let within = self.insp.has_focus(self.shell.focus.current());
-        let panel = junie_tui::widgets::panel::Panel::card(Some("Inspector")).focused(within);
+        let panel = termrock::widgets::panel::Panel::card(Some("Inspector")).focused(within);
         let bg = panel.bg(&t);
         let inner = panel.render(area, buf, &t);
         self.render_inspector(inner, bg, buf, ctx);
     }
 
     fn draw_inspector_overlay(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
-        use junie_tui::ui::popup::{self, Dismiss, Placement};
+        use termrock::ui::popup::{self, Dismiss, Placement};
         let body_h = area.height.saturating_sub(2);
         let w = INSPECTOR_OVERLAY_W.min(area.width);
 
         let anchor = Rect::new(area.right().saturating_sub(1), area.y + 1, 1, 1);
-        let frame = junie_tui::ui::modal::Frame::new(w, body_h)
+        let frame = termrock::ui::modal::Frame::new(w, body_h)
             .title("Inspector")
             .dismiss(Dismiss::LIGHT)
             .anchor(anchor, Placement::Left)
@@ -2087,9 +2087,9 @@ impl App {
     pub(crate) fn footer(&self) -> shell::Footer {
         let focus = self.shell.focus.current();
         let pairs =
-            |v: Vec<(&'static str, &'static str)>| -> Vec<junie_tui::widgets::keyhint::Hint> {
+            |v: Vec<(&'static str, &'static str)>| -> Vec<termrock::widgets::keyhint::Hint> {
                 v.into_iter()
-                    .map(|(key, action)| junie_tui::widgets::keyhint::hint(key, action))
+                    .map(|(key, action)| termrock::widgets::keyhint::hint(key, action))
                     .collect()
             };
         let top = self.layers.top();
@@ -2203,13 +2203,13 @@ impl shell::App for App {
             || self.inspector_overlay()
             || self.pages[self.page().index()].layer_open()
     }
-    fn input_config(&self) -> junie_tui::core::event::InputConfig {
+    fn input_config(&self) -> termrock::core::event::InputConfig {
         App::input_config(self)
     }
-    fn keyboard_protocol(&self) -> junie_tui::core::keyboard::KeyboardProtocol {
+    fn keyboard_protocol(&self) -> termrock::core::keyboard::KeyboardProtocol {
         App::keyboard_protocol(self)
     }
-    fn external(&self) -> Option<&junie_tui::runtime::ExternalReceiver> {
+    fn external(&self) -> Option<&termrock::runtime::ExternalReceiver> {
         self.pages.iter().find_map(|p| p.external())
     }
 }
@@ -2280,8 +2280,8 @@ pub enum ShowCmd {
 }
 
 pub fn shell_keys() -> shell::ShellKeys<ShowCmd> {
-    use junie_tui::core::keymap::KeyBinding;
     use shell::ShellAction;
+    use termrock::core::keymap::KeyBinding;
     shell::ShellKeys::new()
         .bind_fallback(KeyBinding::char(']'), ShellAction::NextPage)
         .bind_fallback(KeyBinding::char('['), ShellAction::PrevPage)

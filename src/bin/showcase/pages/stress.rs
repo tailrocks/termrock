@@ -57,10 +57,10 @@ pub fn long_label() -> String {
 /// Test helpers shared by the pages that take stress data.
 #[cfg(test)]
 pub mod testing {
-    use junie_tui::core::focus::FocusRing;
-    use junie_tui::core::hit::HitRegistry;
-    use junie_tui::theme::{ColorLevel, Theme};
-    use junie_tui::ui::ctx::{Interaction, RenderCtx};
+    use termrock::core::focus::FocusRing;
+    use termrock::core::hit::HitRegistry;
+    use termrock::theme::{ColorLevel, Theme};
+    use termrock::ui::ctx::{Interaction, RenderCtx};
 
     /// The index of `value` in [`super::VALUES`], as a page option takes it.
     pub fn index(value: &str) -> usize {

@@ -5,43 +5,43 @@
 //! `ScenarioId` variant from the `lane:scroll` block in `../coverage.rs`. Edit only
 //! this file and `../coverage/lane_scroll.rs`.
 
-use junie_tui::core::edit::clipboard;
-use junie_tui::core::event::{Input, Key, Mouse, MouseKind, Outcome};
-use junie_tui::core::focus::FocusRing;
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::hit::{Axis, Bar};
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::{Actions as _, KeyBinding, NavKeys};
-use junie_tui::core::pointer::MouseTarget as _;
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::core::scroll::{
-    FollowCursor, HScroll, ScrollPane, ScrollState, Scrollable, ScrollbarVisibility, TrackClick,
-};
-use junie_tui::terminal::{
-    ForwardPolicy, Modes, Paste, RowWrap, SCROLLBACK_ROWS, TermCell, TermEvent, TermView,
-    TerminalState, TerminalView, TerminalViewport, encode_key, is_spoofing_format,
-};
-use junie_tui::theme::Tone;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::VisualState;
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::ui::reveal::{self, Reveal, RevealLine, RevealMode, RevealState};
-use junie_tui::ui::scroll_view::{Axes, ScrollCmd, ScrollFrame, ScrollView, ViewLayout};
-use junie_tui::widgets::field_common::PointerSelect;
-use junie_tui::widgets::panel::{
-    CARD_PAD, CardHeading, Panel, PanelCmd, PanelFocus, PanelKind, ScrollPanel, TITLE_MIN,
-};
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::viewport::{
-    self, CellPos, Line, Mark, Span, TextViewport, ViewportAction, ViewportCmd, WorkCounters,
-};
-use junie_tui::widgets::viewport_ops::ViewportOps;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect, Size};
 use ratatui::widgets::Padding;
 use ratatui::widgets::Widget as _;
+use termrock::core::edit::clipboard;
+use termrock::core::event::{Input, Key, Mouse, MouseKind, Outcome};
+use termrock::core::focus::FocusRing;
+use termrock::core::hit::HitRegistry;
+use termrock::core::hit::{Axis, Bar};
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::keymap::{Actions as _, KeyBinding, NavKeys};
+use termrock::core::pointer::MouseTarget as _;
+use termrock::core::pointer::PointerEvent;
+use termrock::core::scroll::{
+    FollowCursor, HScroll, ScrollPane, ScrollState, Scrollable, ScrollbarVisibility, TrackClick,
+};
+use termrock::terminal::{
+    ForwardPolicy, Modes, Paste, RowWrap, SCROLLBACK_ROWS, TermCell, TermEvent, TermView,
+    TerminalState, TerminalView, TerminalViewport, encode_key, is_spoofing_format,
+};
+use termrock::theme::Tone;
+use termrock::theme::{ColorLevel, Theme};
+use termrock::ui::ctx::VisualState;
+use termrock::ui::ctx::{Interaction, RenderCtx};
+use termrock::ui::reveal::{self, Reveal, RevealLine, RevealMode, RevealState};
+use termrock::ui::scroll_view::{Axes, ScrollCmd, ScrollFrame, ScrollView, ViewLayout};
+use termrock::widgets::field_common::PointerSelect;
+use termrock::widgets::panel::{
+    CARD_PAD, CardHeading, Panel, PanelCmd, PanelFocus, PanelKind, ScrollPanel, TITLE_MIN,
+};
+use termrock::widgets::scrollbar;
+use termrock::widgets::viewport::{
+    self, CellPos, Line, Mark, Span, TextViewport, ViewportAction, ViewportCmd, WorkCounters,
+};
+use termrock::widgets::viewport_ops::ViewportOps;
 
 use super::{ScenarioCase, paint_hits, text_of};
 use crate::coverage::ScenarioId;
@@ -1628,10 +1628,9 @@ fn scroll_panel_input() {
 
     // Pointer selection: drag, word, line, and the policy that switches it off.
     let painted = draw(&mut panel);
-    let event =
-        |hits: &junie_tui::core::hit::HitRegistry, phase: Phase, at: Position, count: u8| {
-            PointerEvent::new(hits, phase, id, at, count, KeyModifiers::NONE)
-        };
+    let event = |hits: &termrock::core::hit::HitRegistry, phase: Phase, at: Position, count: u8| {
+        PointerEvent::new(hits, phase, id, at, count, KeyModifiers::NONE)
+    };
     let _ = panel.pointer(&event(&painted.hits, Phase::Press, Position::new(0, 0), 1));
     let _ = panel.pointer(&event(&painted.hits, Phase::Drag, Position::new(6, 0), 1));
     assert_eq!(panel.selected_text().as_deref(), Some("line 0"));

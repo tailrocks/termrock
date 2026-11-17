@@ -7,20 +7,20 @@ use crate::options::{PageValues, page_options};
 use crate::pages::meters_work::{self, Frame};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::theme::Tone;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::StackChild;
-use junie_tui::ui::measure::Measure;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::meter_list::{MeterList, MeterRow};
-use junie_tui::widgets::page_header::{Heading, PageHeader};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::progress::{Meter, MeterLevel, MeterTone, MeterVisual, StaleStyle};
-use junie_tui::widgets::props;
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::pointer::MouseTarget;
+use termrock::theme::Tone;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::StackChild;
+use termrock::ui::measure::Measure;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::button::Button;
+use termrock::widgets::meter_list::{MeterList, MeterRow};
+use termrock::widgets::page_header::{Heading, PageHeader};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::progress::{Meter, MeterLevel, MeterTone, MeterVisual, StaleStyle};
+use termrock::widgets::props;
 
 const ID: WidgetId = WidgetId::of("meters");
 
@@ -316,7 +316,7 @@ impl MetersPage {
         let bg = panel.bg(t);
         let inner = panel.render(area, buf, t);
         list.render(inner, buf, ctx, bg);
-        let rects = junie_tui::widgets::button::row_layout(
+        let rects = termrock::widgets::button::row_layout(
             Rect::new(inner.x, inner.y + list.height() + 1, inner.width, 1),
             &[self.refresh.width(), self.offline.width()],
             2,

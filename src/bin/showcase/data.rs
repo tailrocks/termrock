@@ -1,4 +1,4 @@
-use junie_tui::widgets::tree::TreeNode;
+use termrock::widgets::tree::TreeNode;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TaskRow {
@@ -378,7 +378,7 @@ pub const GRAPHEME_SAMPLES: [(&str, &str); 6] = [
 #[cfg(test)]
 mod grapheme_sample_tests {
     use super::GRAPHEME_SAMPLES;
-    use junie_tui::ui::text::width;
+    use termrock::ui::text::width;
 
     fn measure(kind: &str) -> (usize, usize) {
         let (_, sample) = GRAPHEME_SAMPLES

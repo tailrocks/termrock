@@ -6,8 +6,8 @@
 //! emulator, so the bytes fed per tick are the transport's cost. They must
 //! equal the budget, never exceed it, and sum to the stream exactly once.
 
-use junie_tui::metrics::harness::assert_exact;
-use junie_tui::metrics::{Metric, measure};
+use termrock::metrics::harness::assert_exact;
+use termrock::metrics::{Metric, measure};
 
 use super::*;
 

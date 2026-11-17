@@ -1,10 +1,10 @@
 use jackin_console::app::App;
 use jackin_console::fixtures::{Scenario, app_for};
 use jackin_console::world::Msg;
-use junie_tui::core::event::Input;
-use junie_tui::motion::Motion;
-use junie_tui::runtime::Application;
-use junie_tui::theme::{ColorLevel, Theme};
+use termrock::core::event::Input;
+use termrock::motion::Motion;
+use termrock::runtime::Application;
+use termrock::theme::{ColorLevel, Theme};
 
 use crate::common::{press, screen};
 

@@ -13,16 +13,16 @@ use ratatui::layout::{Position, Rect};
 use ratatui::style::Modifier;
 
 use super::{ACTIONS, Results, SCOPE_LINK, SCOPES, risk_tone};
-use junie_tui::theme::{CursorStyle, Tone};
-use junie_tui::ui::ctx::{RenderCtx, VisualState, fill};
-use junie_tui::ui::text::{fit, truncate_middle, width};
-use junie_tui::widgets::chips::overflow_run;
-use junie_tui::widgets::empty::{self, EmptyState};
-use junie_tui::widgets::list_detail::DetailPane;
-use junie_tui::widgets::page_header::Heading;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::search_detail::{QueryView, ResultRowKind, RowPaint, SearchPaint};
+use termrock::theme::{CursorStyle, Tone};
+use termrock::ui::ctx::{RenderCtx, VisualState, fill};
+use termrock::ui::text::{fit, truncate_middle, width};
+use termrock::widgets::chips::overflow_run;
+use termrock::widgets::empty::{self, EmptyState};
+use termrock::widgets::list_detail::DetailPane;
+use termrock::widgets::page_header::Heading;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::scrollbar;
+use termrock::widgets::search_detail::{QueryView, ResultRowKind, RowPaint, SearchPaint};
 
 pub(super) struct Hosted {
     pub scope: usize,

@@ -5,18 +5,18 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::core::refusal::{Control, Reason, take_refusal};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::choice::{Checkbox, RadioGroup};
-use junie_tui::widgets::list::{ListBox, ListItem, SelectMode};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::select::Select;
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::MouseTarget;
+use termrock::core::refusal::{Control, Reason, take_refusal};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::button::Button;
+use termrock::widgets::choice::{Checkbox, RadioGroup};
+use termrock::widgets::list::{ListBox, ListItem, SelectMode};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::select::Select;
 
 const ID: WidgetId = WidgetId::of("fixedcontrols");
 
@@ -107,7 +107,7 @@ impl FixedControlsPage {
         bg: ratatui::style::Color,
     ) {
         if let Some(reason) = control.reason() {
-            let text = junie_tui::ui::text::truncate(&reason.text, usize::from(at.width));
+            let text = termrock::ui::text::truncate(&reason.text, usize::from(at.width));
             buf.set_string(at.x, at.y, text, ctx.theme.faint().bg(bg));
         }
     }

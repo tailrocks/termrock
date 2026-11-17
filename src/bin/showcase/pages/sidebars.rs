@@ -5,17 +5,17 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::{Part, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::NavKeys;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::nav_list::{NavAction, NavItem, NavList};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::rail::{RailAction, SidebarRail};
+use termrock::core::event::Outcome;
+use termrock::core::id::{Part, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::keymap::NavKeys;
+use termrock::core::pointer::MouseTarget;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::button::Button;
+use termrock::widgets::nav_list::{NavAction, NavItem, NavList};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::rail::{RailAction, SidebarRail};
 
 const ID: WidgetId = WidgetId::of("sidebars");
 
@@ -162,7 +162,7 @@ impl SidebarsPage {
         let rows: usize = self
             .lines()
             .iter()
-            .map(|l| junie_tui::ui::text::wrap(l, inner).len().max(1))
+            .map(|l| termrock::ui::text::wrap(l, inner).len().max(1))
             .sum();
         panel.outer(Size::new(0, rows as u16)).height
     }
@@ -238,7 +238,7 @@ impl SidebarsPage {
         let mut clipped = false;
         for (i, l) in lines.iter().enumerate() {
             let accent = (2..=4).contains(&i);
-            for (j, wl) in junie_tui::ui::text::wrap(l, inner.width as usize)
+            for (j, wl) in termrock::ui::text::wrap(l, inner.width as usize)
                 .iter()
                 .enumerate()
             {
@@ -409,12 +409,12 @@ impl Page for SidebarsPage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use junie_tui::core::event::Key;
-    use junie_tui::core::focus::{Focus, FocusRing};
-    use junie_tui::core::hit::HitRegistry;
-    use junie_tui::theme::{ColorLevel, Theme};
-    use junie_tui::ui::ctx::Interaction;
     use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+    use termrock::core::event::Key;
+    use termrock::core::focus::{Focus, FocusRing};
+    use termrock::core::hit::HitRegistry;
+    use termrock::theme::{ColorLevel, Theme};
+    use termrock::ui::ctx::Interaction;
 
     const SET: &str = "sidebars.items";
 

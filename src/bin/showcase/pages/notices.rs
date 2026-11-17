@@ -5,16 +5,16 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::theme::Tone;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::StackChild;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::notice::{Notice, NoticeKind};
-use junie_tui::widgets::panel::Panel;
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::pointer::MouseTarget;
+use termrock::theme::Tone;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::StackChild;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::button::Button;
+use termrock::widgets::notice::{Notice, NoticeKind};
+use termrock::widgets::panel::Panel;
 
 const ID: WidgetId = WidgetId::of("notices");
 
@@ -163,7 +163,7 @@ impl NoticesPage {
                 buf.set_string(
                     inner.x,
                     inner.y,
-                    junie_tui::ui::text::truncate(ADDRESS, inner.width as usize),
+                    termrock::ui::text::truncate(ADDRESS, inner.width as usize),
                     t.secondary().bg(bg),
                 );
                 let body = Rect::new(
@@ -240,7 +240,7 @@ impl Page for NoticesPage {
 
     fn measure(&self, _avail: Size, _ctx: &RenderCtx) -> Size {
         let w = self.width(u16::MAX);
-        let content = w.max(junie_tui::ui::text::width(ADDRESS) as u16);
+        let content = w.max(termrock::ui::text::width(ADDRESS) as u16);
         let width = CARDS
             .iter()
             .map(|(title, meta)| {

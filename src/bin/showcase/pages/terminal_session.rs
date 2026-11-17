@@ -10,23 +10,23 @@ use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
-use junie_tui::core::event::Key;
-use junie_tui::core::hit::Axis;
-use junie_tui::core::id::WidgetId;
-use junie_tui::terminal::{
+use ratatui::buffer::Buffer;
+use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use ratatui::layout::{Rect, Size};
+use ratatui::widgets::Widget;
+use termrock::core::event::Key;
+use termrock::core::hit::Axis;
+use termrock::core::id::WidgetId;
+use termrock::terminal::{
     SessionClipboardContext, SessionClipboardDecision, SessionClipboardRefusal, SessionCommand,
     SessionConfig, SessionDetach, SessionEffect, SessionEnd, SessionEvent, SessionHostPolicy,
     SessionKey, SessionLease, SessionLink, SessionPaste, SessionSent, SessionSize, SessionSource,
     SessionStatus, TerminalSessionController, TerminalView,
 };
-use junie_tui::theme::Tone;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::{self, Prop};
-use ratatui::buffer::Buffer;
-use ratatui::crossterm::event::{KeyCode, KeyModifiers};
-use ratatui::layout::{Rect, Size};
-use ratatui::widgets::Widget;
+use termrock::theme::Tone;
+use termrock::ui::ctx::RenderCtx;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::{self, Prop};
 
 use super::terminal_pane::{caret, key_name};
 
@@ -740,7 +740,7 @@ impl SessionDemo {
                         buf.set_string(
                             inner.x + 1,
                             y,
-                            junie_tui::ui::text::truncate(
+                            termrock::ui::text::truncate(
                                 line,
                                 inner.width.saturating_sub(1) as usize,
                             ),
@@ -923,7 +923,7 @@ mod tests {
     }
 
     fn session_ids() -> Vec<&'static str> {
-        junie_tui::catalog::CAPABILITIES
+        termrock::catalog::CAPABILITIES
             .iter()
             .map(|cap| cap.id)
             .filter(|id| {
@@ -944,7 +944,7 @@ mod tests {
     #[test]
     fn showcase_terminal_session_capabilities_are_registered() {
         use crate::coverage::TERMINAL_SESSION_COVERAGE;
-        use junie_tui::catalog::ALLOWLIST;
+        use termrock::catalog::ALLOWLIST;
 
         let ids = session_ids();
         assert!(

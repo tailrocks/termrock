@@ -1,9 +1,9 @@
 use crate::db::{Catalog, ColType, Table, Value};
 use crate::sql::{FUNCTIONS, KEYWORDS, TokKind, tokenize};
 use crate::store::Source;
-use junie_tui::core::id::ItemKey;
-use junie_tui::ui::text::fuzzy;
-use junie_tui::widgets::grid::{CellValue, GridChangeSet};
+use termrock::core::id::ItemKey;
+use termrock::ui::text::fuzzy;
+use termrock::widgets::grid::{CellValue, GridChangeSet};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SqlLiteralError {
@@ -1293,8 +1293,8 @@ mod completion_prefix_tests {
 mod tests {
     use super::*;
     use crate::db::{Column, ObjectKind};
-    use junie_tui::core::id::WidgetId;
-    use junie_tui::widgets::grid::{CellKind, ColumnSpec, DataGrid, GridRows, RowTotal};
+    use termrock::core::id::WidgetId;
+    use termrock::widgets::grid::{CellKind, ColumnSpec, DataGrid, GridRows, RowTotal};
 
     fn column(name: &str, ty: ColType, primary: bool) -> Column {
         Column {

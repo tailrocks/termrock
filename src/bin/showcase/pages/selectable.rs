@@ -5,27 +5,27 @@ use ratatui::layout::{Constraint, Rect};
 use crate::pages::row_menu::{MENU_HINTS, OPEN_HINT, RowMenu};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, CxExt, Hint, Page, PageEvent};
-use junie_tui::core::event::{ClientPlatform, Outcome};
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::core::response::{Actions, Response};
-use junie_tui::core::selection::{Activate, ClickPolicy, SelectionMode};
-use junie_tui::ui::context::ContextRequest;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::StackChild;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::button::{Button, row_layout};
-use junie_tui::widgets::choice::Checkbox;
-use junie_tui::widgets::dialog::{Dialog, DialogResult};
-use junie_tui::widgets::empty::{self, EmptyState};
-use junie_tui::widgets::input::{InputAction, TextInput};
-use junie_tui::widgets::keyhint;
-use junie_tui::widgets::menu::MenuItem;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::select::Select;
-use junie_tui::widgets::table::{Cell, Column, DataTable, TableAction, Tone};
+use termrock::core::event::{ClientPlatform, Outcome};
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::core::response::{Actions, Response};
+use termrock::core::selection::{Activate, ClickPolicy, SelectionMode};
+use termrock::ui::context::ContextRequest;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::StackChild;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::button::{Button, row_layout};
+use termrock::widgets::choice::Checkbox;
+use termrock::widgets::dialog::{Dialog, DialogResult};
+use termrock::widgets::empty::{self, EmptyState};
+use termrock::widgets::input::{InputAction, TextInput};
+use termrock::widgets::keyhint;
+use termrock::widgets::menu::MenuItem;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::scrollbar;
+use termrock::widgets::select::Select;
+use termrock::widgets::table::{Cell, Column, DataTable, TableAction, Tone};
 
 const ID: WidgetId = WidgetId::of("selectable");
 const DELETE: WidgetId = WidgetId::of("selectable.delete_dialog");
@@ -322,7 +322,7 @@ pub struct SelectablePage {
 
     menu: RowMenu<(usize, usize)>,
 
-    pending: Option<(junie_tui::core::selection::RowSelection, usize)>,
+    pending: Option<(termrock::core::selection::RowSelection, usize)>,
     sections: crate::pages::layout::Sections,
 }
 
@@ -785,7 +785,7 @@ impl SelectablePage {
         buf.set_string(
             inner.x + 2,
             y,
-            junie_tui::ui::text::truncate(&heading, inner.width.saturating_sub(2) as usize),
+            termrock::ui::text::truncate(&heading, inner.width.saturating_sub(2) as usize),
             t.faint().bg(bg),
         );
         y += 1;
@@ -827,14 +827,14 @@ impl SelectablePage {
                 buf.set_string(
                     inner.x + 2,
                     ay - 1,
-                    junie_tui::ui::text::truncate(&msg, inner.width.saturating_sub(2) as usize),
+                    termrock::ui::text::truncate(&msg, inner.width.saturating_sub(2) as usize),
                     t.accent_fg().bg(bg),
                 );
             } else if dirty && ay > inner.y {
                 buf.set_string(
                     inner.x + 2,
                     ay - 1,
-                    junie_tui::ui::text::truncate(
+                    termrock::ui::text::truncate(
                         "Unsaved changes",
                         inner.width.saturating_sub(2) as usize,
                     ),
@@ -934,7 +934,7 @@ impl SelectablePage {
 
     fn route_input(
         input: &mut TextInput,
-        key: &junie_tui::core::event::Key,
+        key: &termrock::core::event::Key,
         cx: &mut Cx,
     ) -> Outcome {
         let (out, ev) = input.on_key(key);
@@ -993,7 +993,7 @@ impl SelectablePage {
 
 impl Page for SelectablePage {
     fn measure(&self, avail: ratatui::layout::Size, ctx: &RenderCtx) -> ratatui::layout::Size {
-        use junie_tui::ui::measure::Measure;
+        use termrock::ui::measure::Measure;
         let any = ratatui::layout::Size::new(0, 0);
 
         let table_h = self.table.measure(any, ctx).height.min(1 + TABLE_ROWS) + 4;
@@ -1174,11 +1174,11 @@ impl Page for SelectablePage {
         }
     }
 
-    fn leave_stakes(&self) -> junie_tui::ui::leave::Stakes {
+    fn leave_stakes(&self) -> termrock::ui::leave::Stakes {
         if self.dirty() {
-            junie_tui::ui::leave::Stakes::Unsaved { changes: 0 }
+            termrock::ui::leave::Stakes::Unsaved { changes: 0 }
         } else {
-            junie_tui::ui::leave::Stakes::Clean
+            termrock::ui::leave::Stakes::Clean
         }
     }
 
@@ -1211,7 +1211,7 @@ impl Page for SelectablePage {
                     {
                         h.insert(2, (click, "Toggle row"));
                     }
-                    h.push(junie_tui::widgets::widget_hints::EDIT_PAIR);
+                    h.push(termrock::widgets::widget_hints::EDIT_PAIR);
                     h.push(("d", "Delete…"));
 
                     if self.table.esc_clears {
@@ -1229,7 +1229,7 @@ impl Page for SelectablePage {
             }
             Some(f) if f == self.name.id || f == self.email.id || f == self.notes.id => {
                 vec![
-                    junie_tui::widgets::widget_hints::EDIT_PAIR,
+                    termrock::widgets::widget_hints::EDIT_PAIR,
                     ("Tab", "Next field"),
                     save,
                 ]
@@ -1249,8 +1249,8 @@ impl Page for SelectablePage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use junie_tui::core::event::Key;
     use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+    use termrock::core::event::Key;
 
     fn type_into(input: &mut TextInput, s: &str) {
         for c in s.chars() {

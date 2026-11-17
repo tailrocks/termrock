@@ -12,21 +12,19 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 
 use crate::pages::{Cx, Hint};
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::id::{ItemKey, Part, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keyed::{KeyedSourceError, KeyedState, KeyedVec, Reconcile};
-use junie_tui::core::list::{KeyedRowSource, RowSource, SourceStamp};
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::core::response::{Actions, Response};
-use junie_tui::theme::Tone;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::text;
-use junie_tui::widgets::empty::{self, EmptyState};
-use junie_tui::widgets::list::{
-    ListAction, ListBox, ListItem, ListItemRef, ListSource, SelectMode,
-};
-use junie_tui::widgets::panel::Panel;
+use termrock::core::event::{Key, Outcome};
+use termrock::core::id::{ItemKey, Part, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::keyed::{KeyedSourceError, KeyedState, KeyedVec, Reconcile};
+use termrock::core::list::{KeyedRowSource, RowSource, SourceStamp};
+use termrock::core::pointer::PointerEvent;
+use termrock::core::response::{Actions, Response};
+use termrock::theme::Tone;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::text;
+use termrock::widgets::empty::{self, EmptyState};
+use termrock::widgets::list::{ListAction, ListBox, ListItem, ListItemRef, ListSource, SelectMode};
+use termrock::widgets::panel::Panel;
 
 pub const KEYED: WidgetId = WidgetId::of("lists.keyed");
 

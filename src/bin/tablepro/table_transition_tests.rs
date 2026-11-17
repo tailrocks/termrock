@@ -3,11 +3,11 @@
 //! answer, and change together, once, when a change is installed.
 
 use super::*;
-use junie_tui::core::event::Key;
-use junie_tui::widgets::document_workspace::CloseDecision;
-use junie_tui::widgets::grid::{CellEditResult, GridChangeSet, GridRevision, PendingChanges};
-use junie_tui::widgets::table::SortDir;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use termrock::core::event::Key;
+use termrock::widgets::document_workspace::CloseDecision;
+use termrock::widgets::grid::{CellEditResult, GridChangeSet, GridRevision, PendingChanges};
+use termrock::widgets::table::SortDir;
 
 use crate::tabs::{TableTab, TableViewState};
 
@@ -377,7 +377,7 @@ fn issue12_install_rejection_after_prepare_preserves_draft() {
         let token = t.grid.begin_submission(snapshot).expect("locks");
         assert_eq!(
             t.install_load(loaded, next),
-            Err(junie_tui::widgets::grid::GridDataError::Busy)
+            Err(termrock::widgets::grid::GridDataError::Busy)
         );
         t.grid.cancel_submission(token).expect("unlocks");
     })
@@ -688,7 +688,7 @@ fn issue12_invalid_live_edit_stops_the_request_and_stays_open() {
     focus_grid(&mut app, key);
     with_tab(&mut app, key, |t| {
         let g = &mut t.grid;
-        g.validator = junie_tui::widgets::grid::cell_validator(|_, _| Err("no".to_owned()));
+        g.validator = termrock::widgets::grid::cell_validator(|_, _| Err("no".to_owned()));
         g.cursor = (0, NAME);
         let _ = g.begin_edit();
     });
@@ -763,13 +763,13 @@ fn draw(app: &mut App) {
     let mut terminal = ratatui::Terminal::new(ratatui::backend::TestBackend::new(140, 40))
         .expect("a test terminal");
     terminal
-        .draw(|f| junie_tui::shell::render(app, f))
+        .draw(|f| termrock::shell::render(app, f))
         .expect("draws");
 }
 
 /// Clicks the middle of a widget the way the terminal reports it: press, then release.
 fn click_widget(app: &mut App, id: WidgetId) {
-    use junie_tui::core::event::{Mouse, MouseKind};
+    use termrock::core::event::{Mouse, MouseKind};
     let area = app
         .shell
         .hits

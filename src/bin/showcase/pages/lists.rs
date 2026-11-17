@@ -7,32 +7,32 @@ use crate::pages::keyed_store::{CARD_H, CARD_W, Fault, KEYED, KeyedCard};
 use crate::pages::row_menu::{MENU_HINTS, OPEN_HINT, RowMenu, plain};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::{ItemKey, Part, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::{Actions, KeyBinding, NavKeys, label_for};
-use junie_tui::core::list::{KeyedRowSource, RowSource, SourceStamp};
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::core::response::Response;
-use junie_tui::core::scroll::TrackClick;
-use junie_tui::core::selection::{CheckClick, ClickPolicy, SelectGesture};
-use junie_tui::core::typeahead::TypeAhead;
-use junie_tui::theme::Tone;
-use junie_tui::ui::content::ContentState;
-use junie_tui::ui::context::ContextRequest;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::measure::{Tile, Tiled, tiles};
-use junie_tui::ui::reveal::{Reveal, RevealMode};
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::text;
-use junie_tui::widgets::empty::EmptyState;
-use junie_tui::widgets::list::{
+use ratatui::crossterm::event::KeyCode;
+use termrock::core::event::Outcome;
+use termrock::core::id::{ItemKey, Part, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::keymap::{Actions, KeyBinding, NavKeys, label_for};
+use termrock::core::list::{KeyedRowSource, RowSource, SourceStamp};
+use termrock::core::pointer::MouseTarget;
+use termrock::core::response::Response;
+use termrock::core::scroll::TrackClick;
+use termrock::core::selection::{CheckClick, ClickPolicy, SelectGesture};
+use termrock::core::typeahead::TypeAhead;
+use termrock::theme::Tone;
+use termrock::ui::content::ContentState;
+use termrock::ui::context::ContextRequest;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::measure::{Tile, Tiled, tiles};
+use termrock::ui::reveal::{Reveal, RevealMode};
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::text;
+use termrock::widgets::empty::EmptyState;
+use termrock::widgets::list::{
     ListAction, ListBox, ListCmd, ListItem, ListItemRef, ListSource, SelectMode,
 };
-use junie_tui::widgets::menu::MenuItem;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::scrollbar;
-use ratatui::crossterm::event::KeyCode;
+use termrock::widgets::menu::MenuItem;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::scrollbar;
 
 const ID: WidgetId = WidgetId::of("lists");
 const MENU: WidgetId = WidgetId::of("lists.menu");
@@ -440,7 +440,7 @@ impl ListsPage {
                 let all = (0..l.items.len())
                     .filter(|&i| !l.items[i].disabled)
                     .all(|i| l.is_checked(i));
-                let key = junie_tui::core::keymap::hint_key(&l.keymap, ListCmd::ToggleAll);
+                let key = termrock::core::keymap::hint_key(&l.keymap, ListCmd::ToggleAll);
                 let all = MenuItem::new(if all { "Select none" } else { "Select all" });
                 vec![
                     toggle.separator(),
@@ -472,8 +472,8 @@ impl ListsPage {
             0 => l.activate(row),
             _ => {
                 let key =
-                    junie_tui::core::keymap::deliverable_binding_for(&l.keymap, ListCmd::ToggleAll)
-                        .map_or(plain(KeyCode::Char('a')), |b| junie_tui::core::event::Key {
+                    termrock::core::keymap::deliverable_binding_for(&l.keymap, ListCmd::ToggleAll)
+                        .map_or(plain(KeyCode::Char('a')), |b| termrock::core::event::Key {
                             code: b.code,
                             mods: b.mods,
                         });
@@ -495,8 +495,8 @@ impl ListsPage {
     }
 
     fn multi_header(&self) -> String {
-        let all = junie_tui::core::keymap::hint_key(&self.multi.keymap, ListCmd::ToggleAll)
-            .unwrap_or("—");
+        let all =
+            termrock::core::keymap::hint_key(&self.multi.keymap, ListCmd::ToggleAll).unwrap_or("—");
         format!("Space toggle · {all} all · Shift+↓ range")
     }
 
@@ -817,7 +817,7 @@ impl Page for ListsPage {
         }
         if focus == Some(self.multi.id) {
             hints.push(("Space", "Toggle"));
-            if let Some(k) = junie_tui::core::keymap::hint_key(&l.keymap, ListCmd::ToggleAll) {
+            if let Some(k) = termrock::core::keymap::hint_key(&l.keymap, ListCmd::ToggleAll) {
                 hints.push((k, "All / none"));
             }
             hints.push(("Shift+↓", "Range"));

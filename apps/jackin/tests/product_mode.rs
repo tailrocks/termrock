@@ -20,14 +20,14 @@ use jackin_console::launch::{LaunchFeed, LaunchTarget};
 use jackin_console::panes::{PaneBody, PanePolicy, PaneRequest, PaneSpawn};
 use jackin_console::rain::INTRO_END;
 use jackin_console::world::{Snapshot, World, WorldParts};
-use junie_tui::clock::SimClock;
-use junie_tui::core::event::{Input, Key};
-use junie_tui::motion::Motion;
-use junie_tui::runtime::{Application, ExternalReceiver, ExternalSender, external_channel};
-use junie_tui::theme::{ColorLevel, Theme};
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use termrock::clock::SimClock;
+use termrock::core::event::{Input, Key};
+use termrock::motion::Motion;
+use termrock::runtime::{Application, ExternalReceiver, ExternalSender, external_channel};
+use termrock::theme::{ColorLevel, Theme};
 
 #[derive(Debug)]
 struct TestBackendData;

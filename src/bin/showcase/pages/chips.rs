@@ -10,26 +10,26 @@ use crate::pages::layout::{sheet_height, sheet_width};
 use crate::pages::stress::{self, Mode};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::focus::forward_blur;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::{KeyBinding, NavKeys};
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::core::scroll::TrackClick;
-use junie_tui::theme::{CursorStyle, Tone};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::measure::{Measure, Tile, Tiled, tiles};
-use junie_tui::ui::popup::{Dismiss, Place, Placement};
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::text;
-use junie_tui::widgets::chips::{Chip, ChipAction, ChipBar, ChipCmd};
-use junie_tui::widgets::empty::{self, EmptyState};
-use junie_tui::widgets::icon_button::IconButton;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::{self, Prop};
-use junie_tui::widgets::segments::{self, Segment};
-use junie_tui::widgets::select::{Select, SelectAction, SelectArrows, TabInOpen, WheelMode};
+use termrock::core::event::Outcome;
+use termrock::core::focus::forward_blur;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::keymap::{KeyBinding, NavKeys};
+use termrock::core::pointer::MouseTarget;
+use termrock::core::scroll::TrackClick;
+use termrock::theme::{CursorStyle, Tone};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::measure::{Measure, Tile, Tiled, tiles};
+use termrock::ui::popup::{Dismiss, Place, Placement};
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::text;
+use termrock::widgets::chips::{Chip, ChipAction, ChipBar, ChipCmd};
+use termrock::widgets::empty::{self, EmptyState};
+use termrock::widgets::icon_button::IconButton;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::{self, Prop};
+use termrock::widgets::segments::{self, Segment};
+use termrock::widgets::select::{Select, SelectAction, SelectArrows, TabInOpen, WheelMode};
 
 const ID: WidgetId = WidgetId::of("chips");
 
@@ -156,7 +156,7 @@ impl ChipsPage {
                 (KeyBinding::key(KeyCode::Delete).shift(), ChipCmd::ClearAll),
                 (KeyBinding::char('*'), ChipCmd::Lead),
             ],
-            _ => <ChipCmd as junie_tui::core::keymap::Actions>::default_keymap(),
+            _ => <ChipCmd as termrock::core::keymap::Actions>::default_keymap(),
         };
         let bar = |b: &ChipBar, id: WidgetId| {
             let mut n = ChipBar::new(id)
@@ -432,7 +432,7 @@ impl ChipsPage {
             empty_panel
                 .outer(Size::new(
                     inner,
-                    junie_tui::widgets::empty::height(&e, inner),
+                    termrock::widgets::empty::height(&e, inner),
                 ))
                 .height
                 .max(empty_panel.outer(empty).height)
@@ -476,7 +476,7 @@ impl ChipsPage {
             buf.set_string(
                 inner.x,
                 inner.y + 2,
-                junie_tui::ui::text::truncate(
+                termrock::ui::text::truncate(
                     &format!("last action: {}", self.last),
                     inner.width as usize,
                 ),
@@ -813,10 +813,10 @@ fn render_below(l: Rect, r: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
 
 #[cfg(test)]
 mod tests {
-    use junie_tui::core::focus::FocusRing;
-    use junie_tui::core::hit::HitRegistry;
-    use junie_tui::theme::{ColorLevel, Theme};
-    use junie_tui::ui::ctx::{Interaction, RenderCtx};
+    use termrock::core::focus::FocusRing;
+    use termrock::core::hit::HitRegistry;
+    use termrock::theme::{ColorLevel, Theme};
+    use termrock::ui::ctx::{Interaction, RenderCtx};
 
     use super::*;
     use crate::pages::stress::testing::{index, measuring};
@@ -876,8 +876,8 @@ mod tests {
 
     #[test]
     fn an_event_drops_the_measured_bar_width() {
-        use junie_tui::core::event::{Key, Outcome};
-        use junie_tui::core::focus::{Focus, FocusRing};
+        use termrock::core::event::{Key, Outcome};
+        use termrock::core::focus::{Focus, FocusRing};
         let mut page = ChipsPage::new();
         let size = Size::new(120, 40);
         measuring(|ctx| page.measure(size, ctx));

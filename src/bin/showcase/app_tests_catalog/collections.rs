@@ -5,47 +5,47 @@
 //! `ScenarioId` variant from the `lane:collections` block in `../coverage.rs`. Edit only
 //! this file and `../coverage/lane_collections.rs`.
 
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::focus::FocusRing;
-use junie_tui::core::focus::{Focus, FocusChange};
-use junie_tui::core::hit::{Axis, HitRegistry};
-use junie_tui::core::id::{Part, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::{Actions as _, KeyBinding, NavKeys};
-use junie_tui::core::list::{TypeAheadPrecedence, route_key};
-use junie_tui::core::pointer::MouseTarget as _;
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::core::refusal::{Control, Reason, clear_refusal};
-use junie_tui::core::response::Response;
-use junie_tui::core::scroll::TrackClick;
-use junie_tui::core::selection::{ClickPolicy, SelectGesture};
-use junie_tui::theme::{ButtonKind, InactiveSelection, StatusKind, Tone};
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::content::ContentState;
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::ui::layout::{Split, SplitCmd, SplitKeys};
-use junie_tui::ui::master_detail::{DetailSize, MasterDetail, MdLayout, Mode, SPLIT_MIN};
-use junie_tui::ui::popup::Dismiss;
-use junie_tui::ui::reveal::Reveal;
-use junie_tui::widgets::empty::EmptyState;
-use junie_tui::widgets::file_browser::{
-    Choose, FileBrowser, FileBrowserResult, FileCmd, FileEntry, FileSource, FsSource, MemorySource,
-    UrlEntry, UrlValidator,
-};
-use junie_tui::widgets::icon_button::IconButton;
-use junie_tui::widgets::list::{ListBox, ListCmd, ListItem, SelectMode};
-use junie_tui::widgets::list_detail::{Action, Event, Frame, Line, ListDetail, ListRow};
-use junie_tui::widgets::nav_list::{NavAction, NavItem, NavList};
-use junie_tui::widgets::notice::Notice;
-use junie_tui::widgets::tabs::{
-    CloseReveal, DEFAULT_CLOSE_KEYS, TabAction, TabCmd, TabItem, TabRule, Tabs,
-};
-use junie_tui::widgets::tree::{
-    BranchAction, FlatRow, Path, TreeAction, TreeCmd, TreeNode, TreeView,
-};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::focus::FocusRing;
+use termrock::core::focus::{Focus, FocusChange};
+use termrock::core::hit::{Axis, HitRegistry};
+use termrock::core::id::{Part, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::keymap::{Actions as _, KeyBinding, NavKeys};
+use termrock::core::list::{TypeAheadPrecedence, route_key};
+use termrock::core::pointer::MouseTarget as _;
+use termrock::core::pointer::PointerEvent;
+use termrock::core::refusal::{Control, Reason, clear_refusal};
+use termrock::core::response::Response;
+use termrock::core::scroll::TrackClick;
+use termrock::core::selection::{ClickPolicy, SelectGesture};
+use termrock::theme::{ButtonKind, InactiveSelection, StatusKind, Tone};
+use termrock::theme::{ColorLevel, Theme};
+use termrock::ui::content::ContentState;
+use termrock::ui::ctx::{Interaction, RenderCtx};
+use termrock::ui::layout::{Split, SplitCmd, SplitKeys};
+use termrock::ui::master_detail::{DetailSize, MasterDetail, MdLayout, Mode, SPLIT_MIN};
+use termrock::ui::popup::Dismiss;
+use termrock::ui::reveal::Reveal;
+use termrock::widgets::empty::EmptyState;
+use termrock::widgets::file_browser::{
+    Choose, FileBrowser, FileBrowserResult, FileCmd, FileEntry, FileSource, FsSource, MemorySource,
+    UrlEntry, UrlValidator,
+};
+use termrock::widgets::icon_button::IconButton;
+use termrock::widgets::list::{ListBox, ListCmd, ListItem, SelectMode};
+use termrock::widgets::list_detail::{Action, Event, Frame, Line, ListDetail, ListRow};
+use termrock::widgets::nav_list::{NavAction, NavItem, NavList};
+use termrock::widgets::notice::Notice;
+use termrock::widgets::tabs::{
+    CloseReveal, DEFAULT_CLOSE_KEYS, TabAction, TabCmd, TabItem, TabRule, Tabs,
+};
+use termrock::widgets::tree::{
+    BranchAction, FlatRow, Path, TreeAction, TreeCmd, TreeNode, TreeView,
+};
 
 use super::{ScenarioCase, key, text_of};
 use crate::coverage::ScenarioId;
@@ -1756,9 +1756,9 @@ fn master_detail_layout() {
     let early = MasterDetail::new(MD_MASTER, MD_DETAIL).collapse_below(60);
     assert!(early.split_rects(Rect::new(0, 0, 70, 10)).is_some());
     let seamed =
-        MasterDetail::new(MD_MASTER, MD_DETAIL).seam(junie_tui::widgets::splitter::Splitter::new(
+        MasterDetail::new(MD_MASTER, MD_DETAIL).seam(termrock::widgets::splitter::Splitter::new(
             WidgetId::of("collections.md.custom-seam"),
-            junie_tui::ui::layout::SplitDir::Horizontal,
+            termrock::ui::layout::SplitDir::Horizontal,
         ));
     assert_eq!(seamed.seam.id, WidgetId::of("collections.md.custom-seam"));
 

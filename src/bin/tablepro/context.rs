@@ -2,18 +2,18 @@ use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
 
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::id::{ItemKey, WidgetId};
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::shell::Menus;
-use junie_tui::ui::columns::HeaderAction;
-use junie_tui::ui::context::{ContextConfig, ContextRequest};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layer::{DismissReason, Layer, LayerCx, LayerOut, LayerSpec, Overlay};
-use junie_tui::widgets::grid::DataGrid;
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::menu::{ContextMenu, MenuItem};
-use junie_tui::widgets::table::SortDir;
+use termrock::core::event::{Key, Outcome};
+use termrock::core::id::{ItemKey, WidgetId};
+use termrock::core::pointer::PointerEvent;
+use termrock::shell::Menus;
+use termrock::ui::columns::HeaderAction;
+use termrock::ui::context::{ContextConfig, ContextRequest};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layer::{DismissReason, Layer, LayerCx, LayerOut, LayerSpec, Overlay};
+use termrock::widgets::grid::DataGrid;
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::menu::{ContextMenu, MenuItem};
+use termrock::widgets::table::SortDir;
 
 use crate::app::ModalResult;
 use crate::connections::ConnectionsScreen;
@@ -108,7 +108,7 @@ impl Layer<ModalResult> for CtxMenu {
     }
     fn pointer(
         &mut self,
-        ev: &junie_tui::core::pointer::PointerEvent,
+        ev: &termrock::core::pointer::PointerEvent,
         cx: &mut LayerCx<'_>,
     ) -> Outcome {
         Layer::<ModalResult>::pointer(&mut self.menu, ev, cx)
@@ -246,7 +246,7 @@ pub fn on_key(
 }
 
 pub fn select(w: &mut Workbench, target: Target) {
-    use junie_tui::ui::context::ContextSource;
+    use termrock::ui::context::ContextSource;
     match target {
         Target::Explorer(row) => w.explorer.context_select(row),
         Target::Tab(i) => w.strip.context_select(i),

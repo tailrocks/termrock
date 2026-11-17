@@ -167,8 +167,8 @@ mod projection_work {
     use jackin_console::pages::Pages;
     use jackin_console::panes::{Daemon, Lease, LinkEvent, PaneId};
     use jackin_console::world::{Msg, WorkSnapshot, World, WorldParts, refresh_snapshot};
-    use junie_tui::core::event::{External, Input, Outcome};
-    use junie_tui::runtime::Application;
+    use termrock::core::event::{External, Input, Outcome};
+    use termrock::runtime::Application;
 
     use super::parts;
 
@@ -401,7 +401,7 @@ mod projection_work {
             "and then nothing is asked for"
         );
 
-        rig.app.set_status("saved", junie_tui::theme::Tone::Normal);
+        rig.app.set_status("saved", termrock::theme::Tone::Normal);
         let shown: Vec<Outcome> = (0..120).map(|_| tick(&mut rig)).collect();
         assert!(shown.contains(&Outcome::Changed), "status expiry is drawn");
         assert_eq!(&shown[shown.len() - 3..], [Outcome::Ignored; 3]);

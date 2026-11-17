@@ -7,26 +7,26 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::theme::Tone;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::{Split, SplitDir, StackChild};
-use junie_tui::ui::master_detail::{MasterDetail, Mode};
-use junie_tui::ui::measure::Measure;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::text::truncate;
-use junie_tui::widgets::button::{Button, ButtonRow};
-use junie_tui::widgets::meter_list::{MeterList, MeterRow};
-use junie_tui::widgets::notice::Notice;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::progress::{Meter, MeterLevel, MeterTone, MeterVisual};
-use junie_tui::widgets::props::{Prop, PropsAction, PropsList};
-use junie_tui::widgets::splitter::Splitter;
-use junie_tui::widgets::table::{Cell, Column, DataTable};
-use junie_tui::widgets::tree::{TreeNode, TreeView};
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::MouseTarget;
+use termrock::theme::Tone;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::{Split, SplitDir, StackChild};
+use termrock::ui::master_detail::{MasterDetail, Mode};
+use termrock::ui::measure::Measure;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::text::truncate;
+use termrock::widgets::button::{Button, ButtonRow};
+use termrock::widgets::meter_list::{MeterList, MeterRow};
+use termrock::widgets::notice::Notice;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::progress::{Meter, MeterLevel, MeterTone, MeterVisual};
+use termrock::widgets::props::{Prop, PropsAction, PropsList};
+use termrock::widgets::splitter::Splitter;
+use termrock::widgets::table::{Cell, Column, DataTable};
+use termrock::widgets::tree::{TreeNode, TreeView};
 
 const ID: WidgetId = WidgetId::of("accountsusage");
 const TREE: WidgetId = ID.sub("tree");
@@ -651,7 +651,7 @@ fn states_grid() -> StateGrid {
         )
 }
 
-fn page_hint(h: junie_tui::widgets::keyhint::Hint) -> Hint {
+fn page_hint(h: termrock::widgets::keyhint::Hint) -> Hint {
     let key = match h.key {
         Cow::Borrowed(key) => key,
         Cow::Owned(_) => "",

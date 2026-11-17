@@ -6,20 +6,20 @@ use crate::app::PageId;
 use crate::pages::layout::{sheet_height, sheet_width};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, CxExt, Hint, Page, PageEvent};
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::{Actions, KeyBinding, KeyMap, NavKeys, hint_key, label_for};
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::theme::Strings;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::measure::Measure;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::widgets::dialog::DialogResult;
-use junie_tui::widgets::icon_button::IconButton;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::{self, Prop};
-use junie_tui::widgets::tabs::{CloseReveal, TabAction, TabCmd, TabItem, TabRule, Tabs};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::keymap::{Actions, KeyBinding, KeyMap, NavKeys, hint_key, label_for};
+use termrock::core::pointer::MouseTarget;
+use termrock::theme::Strings;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::measure::Measure;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::widgets::dialog::DialogResult;
+use termrock::widgets::icon_button::IconButton;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::{self, Prop};
+use termrock::widgets::tabs::{CloseReveal, TabAction, TabCmd, TabItem, TabRule, Tabs};
 
 const ID: WidgetId = WidgetId::of("tabs-page");
 const CLOSE_DLG: WidgetId = ID.sub("close-dialog");
@@ -216,7 +216,7 @@ impl TabsPage {
                 if it.dirty {
                     self.closing = Some(i);
                     self.last = format!("{a:?} · {} has unsaved changes: asked first", it.label);
-                    cx.open_dialog(junie_tui::ui::leave::unsaved_dialog(
+                    cx.open_dialog(termrock::ui::leave::unsaved_dialog(
                         CLOSE_DLG,
                         1,
                         &Strings::DEFAULT,

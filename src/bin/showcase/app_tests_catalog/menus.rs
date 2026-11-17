@@ -5,57 +5,57 @@
 //! `ScenarioId` variant from the `lane:menus` block in `../coverage.rs`. Edit only
 //! this file and `../coverage/lane_menus.rs`.
 
-use junie_tui::core::edit::{EditEntry, FieldKeys, TextCmd, clipboard};
-use junie_tui::core::event::ClientPlatform;
-use junie_tui::core::event::Outcome;
-use junie_tui::core::event::{Input, Key};
-use junie_tui::core::hints::Binding;
-use junie_tui::core::hit::{Axis, ReleaseFrom};
-use junie_tui::core::id::Part;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::DismissReason;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::keymap::Actions as _;
-use junie_tui::core::keymap::NavKeys;
-use junie_tui::core::list::{TypeAheadPrecedence, route_key};
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::core::refusal::{Control, Reason, clear_refusal, take_refusal};
-use junie_tui::core::scroll::TrackClick;
-use junie_tui::theme::CursorStyle;
-use junie_tui::theme::{BadgeKind, ColorLevel, HintAlign, HintBarStyle, StatusKind, Theme, Tone};
-use junie_tui::ui::context::{
-    ContextAnchor, ContextCmd, ContextConfig, ContextKeys, ContextRequest, ContextSource,
-    command_items,
-};
-use junie_tui::ui::edit_menu::{
-    EditCaps, EditMenu, EditMenuHost, edit_items, edit_menu_key, edit_menu_pointer,
-    edit_menu_route, editable_target, point_editable, point_field,
-};
-use junie_tui::ui::popup::{
-    self, Dismiss, Overflow, Place, Placement, RefuseFeedback, VAlign, backdrop_id,
-};
-use junie_tui::ui::tooltip::{self, Tip, Tooltips, tip_id};
-use junie_tui::widgets::brand::Lockup;
-use junie_tui::widgets::edit::EditField;
-use junie_tui::widgets::help::{HelpCmd, HelpOverlay, HelpSection};
-use junie_tui::widgets::hintbar::{HintBar, HintKeys, HintLayer};
-use junie_tui::widgets::icon_button::IconButton;
-use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::keyhint::{self, Hint, HintPriority};
-use junie_tui::widgets::list::{ListBox, ListItem, SelectMode};
-use junie_tui::widgets::menu::{ContextMenu, MenuAction, MenuItem, UnknownKey, reason_room};
-use junie_tui::widgets::menu::{MenuBar, MenuBarAction, OpenOn, Overflow as BarOverflow};
-use junie_tui::widgets::option_list::{SelectArrows, WheelMode};
-use junie_tui::widgets::progress::MeterTone;
-use junie_tui::widgets::row_menu::{self, RowMenu};
-use junie_tui::widgets::select::{Select, SelectAction, TabInOpen};
-use junie_tui::widgets::statusbar::{
-    Emphasis, Group, Placed, STATUS_METER_TRACK, StatusBar, StatusItem, reveal_id,
-};
-use junie_tui::widgets::widget_hints;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
+use termrock::core::edit::{EditEntry, FieldKeys, TextCmd, clipboard};
+use termrock::core::event::ClientPlatform;
+use termrock::core::event::Outcome;
+use termrock::core::event::{Input, Key};
+use termrock::core::hints::Binding;
+use termrock::core::hit::{Axis, ReleaseFrom};
+use termrock::core::id::Part;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::DismissReason;
+use termrock::core::intent::Phase;
+use termrock::core::keymap::Actions as _;
+use termrock::core::keymap::NavKeys;
+use termrock::core::list::{TypeAheadPrecedence, route_key};
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::core::refusal::{Control, Reason, clear_refusal, take_refusal};
+use termrock::core::scroll::TrackClick;
+use termrock::theme::CursorStyle;
+use termrock::theme::{BadgeKind, ColorLevel, HintAlign, HintBarStyle, StatusKind, Theme, Tone};
+use termrock::ui::context::{
+    ContextAnchor, ContextCmd, ContextConfig, ContextKeys, ContextRequest, ContextSource,
+    command_items,
+};
+use termrock::ui::edit_menu::{
+    EditCaps, EditMenu, EditMenuHost, edit_items, edit_menu_key, edit_menu_pointer,
+    edit_menu_route, editable_target, point_editable, point_field,
+};
+use termrock::ui::popup::{
+    self, Dismiss, Overflow, Place, Placement, RefuseFeedback, VAlign, backdrop_id,
+};
+use termrock::ui::tooltip::{self, Tip, Tooltips, tip_id};
+use termrock::widgets::brand::Lockup;
+use termrock::widgets::edit::EditField;
+use termrock::widgets::help::{HelpCmd, HelpOverlay, HelpSection};
+use termrock::widgets::hintbar::{HintBar, HintKeys, HintLayer};
+use termrock::widgets::icon_button::IconButton;
+use termrock::widgets::input::TextInput;
+use termrock::widgets::keyhint::{self, Hint, HintPriority};
+use termrock::widgets::list::{ListBox, ListItem, SelectMode};
+use termrock::widgets::menu::{ContextMenu, MenuAction, MenuItem, UnknownKey, reason_room};
+use termrock::widgets::menu::{MenuBar, MenuBarAction, OpenOn, Overflow as BarOverflow};
+use termrock::widgets::option_list::{SelectArrows, WheelMode};
+use termrock::widgets::progress::MeterTone;
+use termrock::widgets::row_menu::{self, RowMenu};
+use termrock::widgets::select::{Select, SelectAction, TabInOpen};
+use termrock::widgets::statusbar::{
+    Emphasis, Group, Placed, STATUS_METER_TRACK, StatusBar, StatusItem, reveal_id,
+};
+use termrock::widgets::widget_hints;
 
 use super::{ScenarioCase, key, paint_hits, rows, text_of};
 use crate::coverage::ScenarioId;
@@ -123,21 +123,21 @@ fn popup_dismiss_policy() {
     );
     // The feedback decides what an ignored outside click does: flash the modal
     // surface, or nothing. A click the policy honours is never refused.
-    let mut pointer = junie_tui::core::pointer::PointerState::default();
-    assert!(!junie_tui::ui::modal::refuse_outside_click(
+    let mut pointer = termrock::core::pointer::PointerState::default();
+    assert!(!termrock::ui::modal::refuse_outside_click(
         &mut pointer,
         light,
         100
     ));
     assert!(!pointer.has_flash());
-    assert!(junie_tui::ui::modal::refuse_outside_click(
+    assert!(termrock::ui::modal::refuse_outside_click(
         &mut pointer,
         escape,
         100
     ));
-    assert_eq!(pointer.flashing(100), Some(junie_tui::ui::modal::SURFACE));
-    let mut quiet = junie_tui::core::pointer::PointerState::default();
-    assert!(!junie_tui::ui::modal::refuse_outside_click(
+    assert_eq!(pointer.flashing(100), Some(termrock::ui::modal::SURFACE));
+    let mut quiet = termrock::core::pointer::PointerState::default();
+    assert!(!termrock::ui::modal::refuse_outside_click(
         &mut quiet,
         escape.refuse_feedback(RefuseFeedback::None),
         100
@@ -1196,16 +1196,16 @@ fn select_popup() {
     let hover = |on: bool| {
         let mut select = channel_select(0).hover_moves_cursor(on);
         select.on_click(select.id);
-        let t = junie_tui::theme::Theme::for_level(junie_tui::theme::ColorLevel::TrueColor);
+        let t = termrock::theme::Theme::for_level(termrock::theme::ColorLevel::TrueColor);
         let mut buf = ratatui::buffer::Buffer::empty(screen);
-        let mut hits = junie_tui::core::hit::HitRegistry::default();
-        let mut ring = junie_tui::core::focus::FocusRing::default();
+        let mut hits = termrock::core::hit::HitRegistry::default();
+        let mut ring = termrock::core::focus::FocusRing::default();
         let hovered = select.option_id(2);
-        let interaction = junie_tui::ui::ctx::Interaction {
+        let interaction = termrock::ui::ctx::Interaction {
             hover: Some(hovered),
             ..Default::default()
         };
-        let mut ctx = junie_tui::ui::ctx::RenderCtx::new(&t, interaction, &mut hits, &mut ring);
+        let mut ctx = termrock::ui::ctx::RenderCtx::new(&t, interaction, &mut hits, &mut ring);
         select.render(area, &mut buf, &mut ctx, t.canvas);
         ctx.flush_overlays(&mut buf);
         select.list.cursor.index
@@ -1654,7 +1654,7 @@ fn row_menu_flow() {
 
     // Context keys: Shift+F10 and the Menu key by default, configurable.
     let shift_f10 = ratatui::crossterm::event::KeyEvent::new(KeyCode::F(10), KeyModifiers::SHIFT);
-    let shift_f10 = junie_tui::core::event::Key {
+    let shift_f10 = termrock::core::event::Key {
         code: shift_f10.code,
         mods: shift_f10.modifiers,
     };
@@ -1678,7 +1678,7 @@ fn row_menu_flow() {
     assert!(
         hints
             .iter()
-            .all(|h| junie_tui::core::keyboard::label_deliverable(&h.key))
+            .all(|h| termrock::core::keyboard::label_deliverable(&h.key))
     );
 }
 
@@ -2277,16 +2277,16 @@ fn tooltip_frame(
     policy: Option<Tooltips>,
     tip: &Tip,
 ) -> Buffer {
-    let t = junie_tui::theme::Theme::for_level(junie_tui::theme::ColorLevel::TrueColor);
+    let t = termrock::theme::Theme::for_level(termrock::theme::ColorLevel::TrueColor);
     let mut buf = Buffer::empty(Rect::new(0, 0, 60, 10));
-    let mut hits = junie_tui::core::hit::HitRegistry::default();
-    let mut ring = junie_tui::core::focus::FocusRing::default();
-    let interaction = junie_tui::ui::ctx::Interaction {
+    let mut hits = termrock::core::hit::HitRegistry::default();
+    let mut ring = termrock::core::focus::FocusRing::default();
+    let interaction = termrock::ui::ctx::Interaction {
         hover,
         hover_ms: rested,
         ..Default::default()
     };
-    let mut ctx = junie_tui::ui::ctx::RenderCtx::new(&t, interaction, &mut hits, &mut ring);
+    let mut ctx = termrock::ui::ctx::RenderCtx::new(&t, interaction, &mut hits, &mut ring);
     tooltip::show(&mut ctx, owner, Rect::new(10, 2, 8, 1), tip, policy);
     ctx.flush_overlays(&mut buf);
     buf
@@ -2813,22 +2813,22 @@ fn hint_bar() {
         .find(|r| r.owner == HintBar::ID && r.area.contains(at("Close")))
         .map(|r| r.id)
         .expect("a region for Esc");
-    let styled = |interaction: junie_tui::ui::ctx::Interaction| {
+    let styled = |interaction: termrock::ui::ctx::Interaction| {
         let t = theme();
         let mut buf = Buffer::empty(Rect::new(0, 0, 60, 3));
-        let mut hits = junie_tui::core::hit::HitRegistry::default();
-        let mut ring = junie_tui::core::focus::FocusRing::default();
-        let mut ctx = junie_tui::ui::ctx::RenderCtx::new(&t, interaction, &mut hits, &mut ring);
+        let mut hits = termrock::core::hit::HitRegistry::default();
+        let mut ring = termrock::core::focus::FocusRing::default();
+        let mut ctx = termrock::ui::ctx::RenderCtx::new(&t, interaction, &mut hits, &mut ring);
         HintBar::render_ctx(area, &mut buf, &mut ctx, &layer);
         buf[(at("Close").x, 0)].modifier
     };
     use ratatui::style::Modifier;
     let rest = styled(Default::default());
-    let hover = styled(junie_tui::ui::ctx::Interaction {
+    let hover = styled(termrock::ui::ctx::Interaction {
         hover: Some(region),
         ..Default::default()
     });
-    let press = styled(junie_tui::ui::ctx::Interaction {
+    let press = styled(termrock::ui::ctx::Interaction {
         hover: Some(region),
         pressed: Some(region),
         ..Default::default()
@@ -2999,14 +2999,14 @@ fn status_bar() {
     assert_eq!(tipped.left[0].tip, Some(tip));
     let t = theme();
     let mut buf = Buffer::empty(Rect::new(0, 0, 60, 6));
-    let mut hits = junie_tui::core::hit::HitRegistry::default();
-    let mut ring = junie_tui::core::focus::FocusRing::default();
-    let interaction = junie_tui::ui::ctx::Interaction {
+    let mut hits = termrock::core::hit::HitRegistry::default();
+    let mut ring = termrock::core::focus::FocusRing::default();
+    let interaction = termrock::ui::ctx::Interaction {
         hover: Some(hover_id),
         hover_ms: Some(2000),
         ..Default::default()
     };
-    let mut ctx = junie_tui::ui::ctx::RenderCtx::new(&t, interaction, &mut hits, &mut ring);
+    let mut ctx = termrock::ui::ctx::RenderCtx::new(&t, interaction, &mut hits, &mut ring);
     tipped.render(area, &mut buf, &mut ctx);
     ctx.flush_overlays(&mut buf);
     assert!(
@@ -3078,7 +3078,7 @@ fn help_overlay() {
         assert!(help.closed, "{code:?}");
     }
     let mut other = HelpOverlay::new(id, "Showcase", sections()).keymap(vec![(
-        junie_tui::core::keymap::KeyBinding::char('x'),
+        termrock::core::keymap::KeyBinding::char('x'),
         HelpCmd::Close,
     )]);
     assert_eq!(
@@ -3093,13 +3093,13 @@ fn help_overlay() {
     assert_eq!(sticky.on_key(&key(KeyCode::Esc)), Outcome::Consumed);
     assert!(!sticky.closed);
     assert_eq!(
-        sticky.on_click(junie_tui::ui::modal::CLOSE),
+        sticky.on_click(termrock::ui::modal::CLOSE),
         Outcome::Consumed,
         "no close button under Never"
     );
     let mut clicked = HelpOverlay::new(id, "Showcase", sections());
     assert_eq!(
-        clicked.on_click(junie_tui::ui::modal::CLOSE),
+        clicked.on_click(termrock::ui::modal::CLOSE),
         Outcome::Changed
     );
     assert!(clicked.closed);
@@ -3189,7 +3189,7 @@ fn catalog_menus_widget_hint_constants() {
         widget_hints::EDIT,
         Hint::new(widget_hints::EDIT_PAIR.0, widget_hints::EDIT_PAIR.1)
     );
-    assert!(junie_tui::core::keyboard::label_deliverable(
+    assert!(termrock::core::keyboard::label_deliverable(
         widget_hints::EDIT_PAIR.0
     ));
     assert_eq!(

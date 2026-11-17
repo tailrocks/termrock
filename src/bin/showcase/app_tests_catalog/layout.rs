@@ -6,38 +6,38 @@
 //! this file and `../coverage/lane_layout.rs`.
 
 use super::*;
-use junie_tui::core::keymap::NavKeys;
-use junie_tui::core::list::{KeyStep, Moved};
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::core::response::Response;
-use junie_tui::core::scroll::TrackClick;
-use junie_tui::ui::columns::{
+use termrock::core::keymap::NavKeys;
+use termrock::core::list::{KeyStep, Moved};
+use termrock::core::pointer::MouseTarget;
+use termrock::core::response::Response;
+use termrock::core::scroll::TrackClick;
+use termrock::ui::columns::{
     Col, ColumnSizing, DEFAULT_SEAM_W, HeaderAction, HeaderLabels, MIN_USER_WIDTH, header_menu,
     render_seam, seam_part, solve,
 };
-use junie_tui::ui::content::ContentState;
-use junie_tui::ui::layout::{
+use termrock::ui::content::ContentState;
+use termrock::ui::layout::{
     Maximized, Overflow, SplitCmd, SplitKeys, Stack, StackChild, StackLayout, StackScroll,
 };
-use junie_tui::ui::list_core::ListCore;
-use junie_tui::ui::pane_tree::{
+use termrock::ui::list_core::ListCore;
+use termrock::ui::pane_tree::{
     Direction, Frames, PaneCmd, PaneId, PaneNode, PaneRefusal, PaneResult, PaneTree, Seam, nearest,
 };
-use junie_tui::widgets::action_row::ActionRow;
-use junie_tui::widgets::breadcrumb::Breadcrumb;
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::chips::{ChipCmd, overflow_run};
-use junie_tui::widgets::detail_card::{DetailCard, DetailLayout};
-use junie_tui::widgets::empty::EmptyState;
-use junie_tui::widgets::empty::{self, EmptyAction, EmptyKind};
-use junie_tui::widgets::icon_button::IconButton;
-use junie_tui::widgets::notice::{Notice, NoticeKind};
-use junie_tui::widgets::page_header::{Heading, PageHeader};
-use junie_tui::widgets::rail::{RailAction, SidebarRail};
-use junie_tui::widgets::splitter::SeamDoubleClick;
-use junie_tui::widgets::steps::{Step, StepRail, StepState};
-use junie_tui::widgets::table::SortDir;
-use junie_tui::widgets::too_small::TooSmall;
+use termrock::widgets::action_row::ActionRow;
+use termrock::widgets::breadcrumb::Breadcrumb;
+use termrock::widgets::button::Button;
+use termrock::widgets::chips::{ChipCmd, overflow_run};
+use termrock::widgets::detail_card::{DetailCard, DetailLayout};
+use termrock::widgets::empty::EmptyState;
+use termrock::widgets::empty::{self, EmptyAction, EmptyKind};
+use termrock::widgets::icon_button::IconButton;
+use termrock::widgets::notice::{Notice, NoticeKind};
+use termrock::widgets::page_header::{Heading, PageHeader};
+use termrock::widgets::rail::{RailAction, SidebarRail};
+use termrock::widgets::splitter::SeamDoubleClick;
+use termrock::widgets::steps::{Step, StepRail, StepState};
+use termrock::widgets::table::SortDir;
+use termrock::widgets::too_small::TooSmall;
 
 #[rustfmt::skip]
 pub const CASES: &[ScenarioCase] = &[
@@ -264,11 +264,11 @@ fn layout_split_keys() {
         assert_eq!(cmd.label(), label);
     }
     assert_eq!(
-        junie_tui::core::keymap::lookup(&keys.keymap, &up),
+        termrock::core::keymap::lookup(&keys.keymap, &up),
         Some(SplitCmd::Up)
     );
     assert_eq!(
-        junie_tui::core::keymap::lookup(&keys.keymap, &down),
+        termrock::core::keymap::lookup(&keys.keymap, &down),
         Some(SplitCmd::Down)
     );
 
@@ -455,7 +455,7 @@ fn layout_stack_flow() {
     assert_eq!(buf[(29, 0)].symbol(), " ", "no track, no chrome");
 }
 
-fn ctx_glyph() -> junie_tui::theme::Glyphs {
+fn ctx_glyph() -> termrock::theme::Glyphs {
     Theme::for_level(ColorLevel::TrueColor).glyphs
 }
 
@@ -514,7 +514,7 @@ fn layout_stack_scroll() {
     let frame = paint_hits(area, |area, buf, ctx| {
         Stack::chrome(&laid, area, buf, ctx, id, &state)
     });
-    let bar = junie_tui::widgets::scrollbar::id_for(id);
+    let bar = termrock::widgets::scrollbar::id_for(id);
     let wheel = |axis, delta| {
         PointerEvent::wheel_on(
             &frame.hits,
@@ -1479,7 +1479,7 @@ fn layout_column_header_menu() {
     let labels = HeaderLabels::default();
     assert_eq!(labels, HeaderLabels::DEFAULT);
     assert_eq!(labels.sort_asc, "Sort Ascending");
-    let actions = |menu: &[(HeaderAction, junie_tui::widgets::menu::MenuItem)]| {
+    let actions = |menu: &[(HeaderAction, termrock::widgets::menu::MenuItem)]| {
         menu.iter().map(|(a, _)| *a).collect::<Vec<_>>()
     };
 
@@ -1494,7 +1494,7 @@ fn layout_column_header_menu() {
             HeaderAction::ResetWidths,
         ]
     );
-    let item = |menu: &[(HeaderAction, junie_tui::widgets::menu::MenuItem)], a: HeaderAction| {
+    let item = |menu: &[(HeaderAction, termrock::widgets::menu::MenuItem)], a: HeaderAction| {
         menu.iter()
             .find(|(x, _)| *x == a)
             .expect("action")
@@ -2392,7 +2392,7 @@ fn layout_step_rail_scroll() {
     let id = WidgetId::of("scenario.layout.steps.scroll");
     let long = || -> Vec<Step> { (1..=12).map(|n| Step::new(&format!("Step {n}"))).collect() };
     let area = Rect::new(0, 0, 30, 4);
-    let bar = junie_tui::widgets::scrollbar::id_for(id);
+    let bar = termrock::widgets::scrollbar::id_for(id);
     let press_bottom = |rail: &mut StepRail| {
         let frame = step_frame(rail, area, 0);
         let ev = PointerEvent::new(
@@ -2419,7 +2419,7 @@ fn layout_step_rail_scroll() {
 
 struct Labels(&'static [&'static str]);
 
-impl junie_tui::core::list::RowSource for Labels {
+impl termrock::core::list::RowSource for Labels {
     fn len(&self) -> usize {
         self.0.len()
     }
@@ -2457,14 +2457,14 @@ fn layout_list_core() {
     let (step, moved) = core
         .key_step(&key(KeyCode::Down), &rows)
         .expect("a nav key");
-    assert_eq!(step, KeyStep::Nav(junie_tui::core::keymap::Nav::Down));
+    assert_eq!(step, KeyStep::Nav(termrock::core::keymap::Nav::Down));
     assert_eq!(moved, Moved::To(1));
     assert!(
         core.key_step(&key(KeyCode::F(5)), &rows).is_none(),
         "not a list key"
     );
     core.type_ahead = true;
-    core.type_ahead_precedence = Some(junie_tui::core::list::TypeAheadPrecedence::TypeAhead);
+    core.type_ahead_precedence = Some(termrock::core::list::TypeAheadPrecedence::TypeAhead);
     let (step, moved) = core
         .key_step(&key(KeyCode::Char('g')), &rows)
         .expect("a typed key");

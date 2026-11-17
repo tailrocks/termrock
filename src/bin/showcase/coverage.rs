@@ -2699,7 +2699,7 @@ mod tests {
     use super::*;
 
     fn catalog_source() -> String {
-        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."));
         std::fs::read_to_string(root.join("src/catalog.rs")).expect("catalog source reads")
     }
 
@@ -2713,7 +2713,7 @@ mod tests {
             );
             assert!(!page.is_empty(), "coverage entry names no page: {id}");
             let method = id.rsplit("::").next().expect("a capability id has a name");
-            let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+            let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."));
             let source =
                 std::fs::read_to_string(root.join(format!("src/bin/showcase/pages/{page}.rs")))
                     .unwrap_or_else(|e| panic!("coverage page {page} has no source: {e}"));
@@ -2727,7 +2727,7 @@ mod tests {
     #[test]
     fn grid_edit_coverage_ids_are_catalog_capabilities_used_by_their_page() {
         let catalog = catalog_source();
-        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."));
         let mut seen = std::collections::BTreeSet::new();
         for (id, page) in GRID_EDIT_COVERAGE {
             assert!(
@@ -3021,7 +3021,7 @@ mod tests {
 
     #[test]
     fn search_detail_coverage_ids_are_used_by_their_pages() {
-        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."));
         for (id, pages) in SEARCH_DETAIL_COVERAGE {
             let mut parts = id.rsplit("::");
             let last = parts.next().expect("id has a segment");

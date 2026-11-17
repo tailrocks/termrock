@@ -5,24 +5,24 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent, Report};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::keymap::{Actions, label_for};
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layer::LayerTag;
-use junie_tui::ui::layers::LayerResult;
-use junie_tui::ui::layout::StackChild;
-use junie_tui::ui::popup::Dismiss;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::text::truncate;
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::choice::Checkbox;
-use junie_tui::widgets::file_browser::{
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::keymap::{Actions, label_for};
+use termrock::core::pointer::MouseTarget;
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layer::LayerTag;
+use termrock::ui::layers::LayerResult;
+use termrock::ui::layout::StackChild;
+use termrock::ui::popup::Dismiss;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::text::truncate;
+use termrock::widgets::button::Button;
+use termrock::widgets::choice::Checkbox;
+use termrock::widgets::file_browser::{
     Choose, FileBrowser, FileBrowserResult, FileCmd, FileEntry, FileSource, FsSource, MemorySource,
     UrlEntry,
 };
-use junie_tui::widgets::panel::Panel;
+use termrock::widgets::panel::Panel;
 
 const ID: WidgetId = WidgetId::of("filebrowser");
 const HOME: &str = "/Users/ada";
@@ -106,7 +106,7 @@ impl FileBrowserPage {
         }
     }
 
-    fn keymap(&self) -> Vec<(junie_tui::core::keymap::KeyBinding, FileCmd)> {
+    fn keymap(&self) -> Vec<(termrock::core::keymap::KeyBinding, FileCmd)> {
         if self.opts.value("filebrowser.keys") == "vim" {
             FileCmd::vim_keymap()
         } else {
@@ -366,7 +366,7 @@ impl Page for FileBrowserPage {
     }
 
     fn measure(&self, _avail: Size, _ctx: &RenderCtx) -> Size {
-        let w = |s: &str| junie_tui::ui::text::width(s) as u16;
+        let w = |s: &str| termrock::ui::text::width(s) as u16;
         let widest = |rows: &[String]| rows.iter().map(|r| w(r)).max().unwrap_or(0);
         let host = format!("Host folder   {}", self.chosen);
         let new = INTRO

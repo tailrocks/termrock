@@ -5,24 +5,24 @@ use crate::app::PageId;
 use crate::options::{PageValues, page_options};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, CxExt, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::theme::{StatusKind, Tone};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::layout::{Split, SplitDir};
-use junie_tui::ui::master_detail::{MasterDetail, Mode};
-use junie_tui::ui::measure::Measure;
-use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::text::{plural, truncate};
-use junie_tui::widgets::button::{Button, row_layout};
-use junie_tui::widgets::dialog::{Dialog, DialogResult};
-use junie_tui::widgets::list::{ListBox, ListItem, SelectMode};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::{self, Prop, PropsList};
-use junie_tui::widgets::segments::{self, Segment};
-use junie_tui::widgets::splitter::Splitter;
-use junie_tui::widgets::tree::{TreeAction, TreeNode, TreeView};
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::pointer::MouseTarget;
+use termrock::theme::{StatusKind, Tone};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::layout::{Split, SplitDir};
+use termrock::ui::master_detail::{MasterDetail, Mode};
+use termrock::ui::measure::Measure;
+use termrock::ui::specimen::{SpecimenState, StateGrid};
+use termrock::ui::text::{plural, truncate};
+use termrock::widgets::button::{Button, row_layout};
+use termrock::widgets::dialog::{Dialog, DialogResult};
+use termrock::widgets::list::{ListBox, ListItem, SelectMode};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::{self, Prop, PropsList};
+use termrock::widgets::segments::{self, Segment};
+use termrock::widgets::splitter::Splitter;
+use termrock::widgets::tree::{TreeAction, TreeNode, TreeView};
 
 const ID: WidgetId = WidgetId::of("workspaces");
 
@@ -637,7 +637,7 @@ impl WorkspacesPage {
         }
     }
 
-    fn button_key(&mut self, key: &junie_tui::core::event::Key, cx: &mut Cx) -> Option<Outcome> {
+    fn button_key(&mut self, key: &termrock::core::event::Key, cx: &mut Cx) -> Option<Outcome> {
         let f = cx.focus.current()?;
         let (o, act) = if f == self.launch.id {
             self.launch.on_key(key)

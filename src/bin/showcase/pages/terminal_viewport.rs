@@ -8,17 +8,17 @@ use crate::options::{PageValues, page_options};
 use crate::pages::inputs::pointer_select;
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::MouseTarget;
-use junie_tui::terminal::{TerminalState, TerminalViewport};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::ui::specimen::{Specimen, SpecimenState, StateGrid};
-use junie_tui::widgets::button::{Button, row_layout};
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::{self, Prop};
-use junie_tui::widgets::viewport_ops::ViewportOps;
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::MouseTarget;
+use termrock::terminal::{TerminalState, TerminalViewport};
+use termrock::ui::ctx::RenderCtx;
+use termrock::ui::specimen::{Specimen, SpecimenState, StateGrid};
+use termrock::widgets::button::{Button, row_layout};
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::{self, Prop};
+use termrock::widgets::viewport_ops::ViewportOps;
 
 const ID: WidgetId = WidgetId::of("terminalviewport");
 const VIEW: WidgetId = WidgetId::of("terminalviewport.view");
@@ -87,7 +87,7 @@ struct ViewSpecimen {
 impl ViewSpecimen {
     fn new(id: WidgetId) -> Self {
         let mut scrolled = viewport(id.child(2), SPECIMEN_ROWS, SPECIMEN_COLS, &history_bytes());
-        scrolled.wheel(junie_tui::core::hit::Axis::Vertical, -3);
+        scrolled.wheel(termrock::core::hit::Axis::Vertical, -3);
         Self {
             id,
             rest: viewport(id.child(0), SPECIMEN_ROWS, SPECIMEN_COLS, &history_bytes()),
@@ -281,7 +281,7 @@ impl TerminalViewportPage {
         self.opts.get("terminalviewport.fixture").unwrap_or(0)
     }
 
-    fn pointer(&mut self, ev: &junie_tui::core::pointer::PointerEvent, cx: &mut Cx) -> Outcome {
+    fn pointer(&mut self, ev: &termrock::core::pointer::PointerEvent, cx: &mut Cx) -> Outcome {
         if let Some(response) = self.view.route(ev) {
             let outcome = response.outcome();
             let released = ev.is(Phase::DragEnd) || (ev.is(Phase::Click) && ev.count() >= 2);
