@@ -66,13 +66,25 @@ next to its test executable in `target/<profile>/`, or at `TCB_BIN_<NAME>`. A
 nextest setup script (`app-bins` in `.config/nextest.toml`) runs
 `scripts/build-app-bins.sh` before any selected `functional-cross` test, so
 `cargo nextest run -p functional-cross` works from a clean target directory.
-The script builds the three app packages (`termrock-showcase`, `termrock-tablepro`, `termrock-holla`) with default features into
-`<target>/app-bins` and exports `TCB_BIN_<NAME>` for them. It uses its own
-target directory so that it never replaces `target/<profile>/showcase`, which
-the developer's own `--all-features` build produced. The script builds the dev
-profile, so `--cargo-profile release` would still launch the debug binaries.
-It exports `TERMROCK_TEST_<NAME>` as well, for the root `functional` target,
-unless the caller already did.
+The script builds the three app packages (`termrock-showcase`, `termrock-tablepro`, `termrock-holla`) with the feature set of the run:
+a setup script is not told the features, so it reads `--all-features`,
+`--features` and `-F` from the command line of the nextest process that
+started it, and `TCB_APP_FEATURES` (`all-features`, `work-metrics` or empty)
+overrides that. An archive run (`cargo nextest run --archive-file`) shows no
+features, so it builds the default set, which is how CI builds the `functional`
+archive; export `TCB_APP_FEATURES` there when the archive was built otherwise.
+Each set goes to its own directory, `<target>/app-bins` for the default set and
+`<target>/app-bins-all-features` or `<target>/app-bins-work-metrics`, so it never
+replaces `target/<profile>/showcase`, which the developer's own build produced.
+The script builds the dev profile, so `--cargo-profile release` would still
+launch the debug binaries. It exports `TERMROCK_TEST_<NAME>` as well, for the
+root `functional` target, unless the caller already did; when the caller
+exported all three, as `scripts/run_functional.py` does, it builds nothing and
+uses those paths for `TCB_BIN_<NAME>` too. A binary built without the feature
+the test target was compiled with fails
+`s06_meters::option_work_counters_card_follows_the_build` with a message that
+names the cause, and `python3 -m unittest tests/test_build_app_bins.py` covers the
+script's choice.
 
 Filter one journey during development, without hiding missing tests:
 
