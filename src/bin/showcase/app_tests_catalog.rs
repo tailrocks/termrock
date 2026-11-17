@@ -87,7 +87,7 @@ pub struct ScenarioCase {
     pub run: fn(),
 }
 
-#[path = "app_tests_catalog/collections.rs"]
+#[path = "../../../apps/showcase/src/app_tests_catalog/collections.rs"]
 mod lane_collections;
 #[path = "../../../apps/showcase/src/app_tests_catalog/dialogs.rs"]
 mod lane_dialogs;
@@ -95,15 +95,15 @@ mod lane_dialogs;
 mod lane_fields;
 #[path = "../../../apps/showcase/src/app_tests_catalog/gridtable.rs"]
 mod lane_gridtable;
-#[path = "app_tests_catalog/layout.rs"]
+#[path = "../../../apps/showcase/src/app_tests_catalog/layout.rs"]
 mod lane_layout;
 #[path = "../../../apps/showcase/src/app_tests_catalog/menus.rs"]
 mod lane_menus;
-#[path = "app_tests_catalog/pickers.rs"]
+#[path = "../../../apps/showcase/src/app_tests_catalog/pickers.rs"]
 mod lane_pickers;
 #[path = "../../../apps/showcase/src/app_tests_catalog/routing.rs"]
 mod lane_routing;
-#[path = "app_tests_catalog/scroll.rs"]
+#[path = "../../../apps/showcase/src/app_tests_catalog/scroll.rs"]
 mod lane_scroll;
 #[path = "../../../apps/showcase/src/app_tests_catalog/shell.rs"]
 mod lane_shell;
