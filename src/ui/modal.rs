@@ -6,9 +6,11 @@ use crate::core::focus::{Focus, FocusFallback, FocusRing};
 use crate::core::id::WidgetId;
 use crate::ui::ctx::{Backdrop, RenderCtx, fill};
 use crate::ui::popup::{Dismiss, Place, Placement, place_with};
+use crate::ui::specimen::{Specimen, SpecimenState};
 use crate::ui::text::{truncate, width};
 use crate::ui::tooltip::Tip;
 use crate::widgets::icon_button::IconButton;
+use ratatui::style::Color;
 
 pub const CLOSE: WidgetId = WidgetId::of("modal.close");
 
@@ -471,4 +473,47 @@ pub fn modal_frame(
         .placement(Placement::Center)
         .dismiss(dismiss)
         .render(screen, buf, ctx)
+}
+
+impl Specimen for Frame<'static> {
+    fn specimen_id(&self) -> WidgetId {
+        CLOSE
+    }
+
+    fn supports(&self, state: SpecimenState) -> bool {
+        use SpecimenState::*;
+        let close = self.dismiss.is_some_and(|d| d.shows_close());
+        match state {
+            Rest => true,
+            Hover | Pressed => close,
+            _ => false,
+        }
+    }
+
+    fn specimen_height(&self, _state: SpecimenState) -> u16 {
+        let m = OUTER_MARGIN;
+        self.height.max(self.min_height) + 2 * m.vertical + self.top + self.bottom + 2
+    }
+
+    fn specimen(
+        &self,
+        state: SpecimenState,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: Color,
+    ) {
+        let mut f = self.clone();
+        if f.placement != crate::ui::popup::Placement::Center {
+            let anchor = Rect::new(area.x + 4, area.y + f.top + 1, 8, 1).intersection(area);
+            f.anchor = anchor;
+            let t = ctx.theme;
+            buf.set_string(anchor.x, anchor.y, "▣ anchor", t.secondary().bg(bg));
+        }
+        let v = state.visual();
+        ctx.interaction.focus = None;
+        ctx.interaction.hover = v.hovered.then_some(CLOSE);
+        ctx.interaction.pressed = v.pressed.then_some(CLOSE);
+        f.render(area, buf, ctx);
+    }
 }

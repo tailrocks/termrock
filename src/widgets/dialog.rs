@@ -13,11 +13,13 @@ use crate::theme::{ButtonKind, StatusKind, Strings};
 use crate::ui::ctx::{Backdrop, RenderCtx, fill};
 pub use crate::ui::modal::{OUTER_MARGIN, body_bounds};
 use crate::ui::popup::{Dismiss, Place, Placement, place_with};
+use crate::ui::specimen::{Specimen, SpecimenState};
 use crate::widgets::button::{Button, ButtonRow, RowAlign, RowOverflow};
 use crate::widgets::input::{InputAction, TextInput};
 use crate::widgets::keyhint::{Hint, hint};
 use crate::widgets::panel::Panel;
 use crate::widgets::scrollbar;
+use ratatui::style::Color;
 
 #[derive(Debug, Clone)]
 pub enum DialogBody {
@@ -1359,5 +1361,98 @@ impl Dialog {
             Some(Phase::Click) => self.on_click_count(id, pos, ev.count(), focus).into(),
             _ => Response::ignored(),
         }
+    }
+}
+
+impl Specimen for Dialog {
+    fn specimen_id(&self) -> WidgetId {
+        self.id
+    }
+
+    fn supports(&self, state: SpecimenState) -> bool {
+        use SpecimenState::*;
+        match state {
+            Rest | Hover | Pressed | Focused | FocusedHover | Disabled | Overflow => {
+                !self.actions.is_empty()
+            }
+            Editing => dialog_field(self).is_some(),
+            Selected | Busy | Error | Empty | Loading | Narrow => false,
+        }
+    }
+
+    fn specimen_height(&self, _state: SpecimenState) -> u16 {
+        self.height(self.width)
+    }
+
+    fn specimen(
+        &self,
+        state: SpecimenState,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: Color,
+    ) {
+        let _ = bg;
+        let mut d = self.clone();
+        d.outer_margin = ratatui::layout::Margin::new(0, 0);
+        d.placement = crate::ui::popup::Placement::Center;
+        d.backdrop = crate::ui::ctx::Backdrop::FULL;
+        d.width = area.width;
+        let target = dialog_target(&d);
+        let v = state.visual();
+        if v.disabled
+            && let Some(b) = d.actions.get_mut(target)
+        {
+            b.disabled = true;
+        }
+        if state == SpecimenState::Overflow {
+            d.max_height = Some(self.height(self.width));
+            if let DialogBody::Text(t) = &mut d.body {
+                t.push_str(
+                    " The rest of this text is longer than the dialog has room for, \
+                     so the body scrolls and says how much is below.",
+                );
+            }
+        }
+        let field = dialog_field(&d);
+        if v.editing
+            && let DialogBody::Input(i)
+            | DialogBody::Facts {
+                ack: Some(AckInput { input: i, .. }),
+                ..
+            } = &mut d.body
+        {
+            i.editing = true;
+        }
+        let button = d.actions.get(target).map(|b| b.id);
+        ctx.interaction.hover = if v.hovered { button } else { None };
+        ctx.interaction.pressed = if v.pressed { button } else { None };
+        ctx.interaction.focus = match (v.focused, v.editing) {
+            (true, true) => field,
+            (true, false) => button,
+            _ => None,
+        };
+        d.render_in(area, area, buf, ctx);
+    }
+}
+
+fn dialog_target(d: &Dialog) -> usize {
+    d.confirm_index
+        .or_else(|| {
+            d.actions.iter().position(|b| {
+                matches!(
+                    b.kind,
+                    crate::theme::ButtonKind::Primary | crate::theme::ButtonKind::Danger
+                )
+            })
+        })
+        .unwrap_or(d.actions.len().saturating_sub(1))
+}
+
+fn dialog_field(d: &Dialog) -> Option<WidgetId> {
+    match &d.body {
+        DialogBody::Input(i) => Some(i.id),
+        DialogBody::Facts { ack: Some(a), .. } => Some(a.input.id),
+        _ => None,
     }
 }

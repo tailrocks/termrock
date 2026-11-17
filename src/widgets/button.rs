@@ -8,9 +8,11 @@ use crate::core::refusal::{Control, Reason};
 use crate::theme::{ButtonKind, Kind};
 use crate::ui::ctx::RenderCtx;
 use crate::ui::measure::terminal_extent;
+use crate::ui::specimen::{Specimen, SpecimenState};
 use crate::ui::text::{paint_clipped, width};
 use crate::widgets::keyhint::Hint;
 use ratatui::crossterm::event::KeyCode;
+use ratatui::style::Color;
 use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Debug, Clone)]
@@ -696,5 +698,42 @@ impl HasHints for Button {
             return vec![];
         }
         vec![self.hint()]
+    }
+}
+
+impl Specimen for Button {
+    fn specimen_id(&self) -> WidgetId {
+        self.id
+    }
+
+    fn supports(&self, state: SpecimenState) -> bool {
+        use SpecimenState::*;
+        match state {
+            Rest | Hover | Pressed | Focused | FocusedHover | Disabled | Busy | Overflow => true,
+            Selected => self.on.is_some(),
+            Error | Editing | Empty | Loading | Narrow => false,
+        }
+    }
+
+    fn specimen(
+        &self,
+        state: SpecimenState,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: Color,
+    ) {
+        let mut b = self.clone();
+        b.tip = None;
+        let v = state.visual();
+        b.disabled |= v.disabled;
+        b.busy |= v.busy;
+        if v.selected {
+            b.on = Some(true);
+        }
+        if state == SpecimenState::Overflow {
+            b.label = format!("{} with a long label", b.label);
+        }
+        b.render(area, buf, ctx, bg);
     }
 }

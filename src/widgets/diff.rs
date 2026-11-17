@@ -10,8 +10,10 @@ use crate::core::response::Response;
 use crate::core::scroll::{ScrollPane, Scrollable};
 use crate::theme::{Glyphs, Strings, Tone};
 use crate::ui::ctx::RenderCtx;
+use crate::ui::specimen::{Specimen, SpecimenState};
 use crate::ui::text::{expand_tabs, fit, truncate, width};
 use crate::widgets::viewport::{Line, Span, TextViewport, ViewportAction};
+use crate::widgets::viewport_specimen::SAMPLE_ROWS;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DiffLineKind {
@@ -602,5 +604,35 @@ impl crate::core::pointer::MouseTarget for DiffView {
 
     fn route(&mut self, ev: &crate::core::pointer::PointerEvent) -> Option<Response<()>> {
         (ev.on(self.id()) || self.term.edit_menu.owns(ev)).then(|| self.pointer(ev))
+    }
+}
+
+impl Specimen for DiffView {
+    fn specimen_id(&self) -> WidgetId {
+        self.id()
+    }
+
+    fn supports(&self, state: SpecimenState) -> bool {
+        use SpecimenState::*;
+        matches!(state, Rest | Focused | Empty | Narrow)
+    }
+
+    fn specimen_height(&self, _state: SpecimenState) -> u16 {
+        SAMPLE_ROWS + 1
+    }
+
+    fn specimen(
+        &self,
+        state: SpecimenState,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: Color,
+    ) {
+        let mut d = self.clone();
+        if state == SpecimenState::Empty {
+            d.set_file(None);
+        }
+        d.render(area, buf, ctx, bg);
     }
 }

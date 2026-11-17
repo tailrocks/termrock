@@ -14,6 +14,7 @@ use crate::core::pointer::PointerEvent;
 use crate::theme::Kind;
 use crate::ui::context::{ContextAnchor, ContextRequest, ContextSource};
 use crate::ui::ctx::RenderCtx;
+use crate::ui::specimen::{Specimen, SpecimenState};
 use crate::ui::tooltip::Tip;
 use crate::widgets::icon_button::IconButton;
 use crate::widgets::keyhint::{Hint, hint};
@@ -1142,5 +1143,57 @@ impl ContextSource for Tabs {
                 fallback: self.areas.get(self.cursor).copied().unwrap_or_default(),
             },
         })
+    }
+}
+
+impl Specimen for Tabs {
+    fn specimen_id(&self) -> WidgetId {
+        self.id
+    }
+
+    fn supports(&self, state: SpecimenState) -> bool {
+        use SpecimenState::*;
+        match state {
+            Rest | Hover | Pressed | Focused | FocusedHover | Busy | Error | Overflow | Narrow => {
+                !self.items().is_empty()
+            }
+            Selected | Disabled | Editing | Empty | Loading => false,
+        }
+    }
+
+    fn specimen_height(&self, _state: SpecimenState) -> u16 {
+        2
+    }
+
+    fn specimen(
+        &self,
+        state: SpecimenState,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: Color,
+    ) {
+        let mut t = self.clone();
+        let v = state.visual();
+        let target = (t.active + 1).min(t.items().len().saturating_sub(1));
+        if v.hovered {
+            ctx.interaction.hover = Some(t.tab_id(target));
+        }
+        if v.pressed {
+            ctx.interaction.pressed = Some(t.tab_id(target));
+        }
+        if v.focused {
+            t.cursor = if v.hovered { t.active } else { target };
+        }
+        t.update_item(target, |it| {
+            it.busy |= v.busy;
+            it.error |= v.error;
+        });
+        if state == SpecimenState::Overflow {
+            let mut items = t.items().to_vec();
+            items.extend((1..=6).map(|i| TabItem::new(&format!("More {i}"))));
+            t.set_items(items);
+        }
+        t.render(area, buf, ctx, bg);
     }
 }

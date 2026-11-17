@@ -5,16 +5,15 @@ use ratatui::style::{Color, Modifier, Style};
 use crate::core::event::{Key, Outcome};
 
 use crate::core::hints::{HasHints, HintCx, nav_hints};
-use crate::core::hit::Axis;
-use crate::core::hit::ReleaseFrom;
+use crate::core::hit::{Axis, ReleaseFrom};
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::core::keymap::unassigned_chord;
-use crate::core::keymap::{Nav, NavKeys};
+use crate::core::keymap::{Nav, NavKeys, unassigned_chord};
 use crate::core::list::{Cursor, Moved, Navigable, RowFn, RowSource};
 use crate::core::scroll::Scrollable;
 use crate::theme::{CursorStyle, Kind, Plane};
 use crate::ui::ctx::{RenderCtx, fill};
 use crate::ui::popup::{Dismiss, Place, backdrop_id, place_with};
+use crate::ui::specimen::{Specimen, SpecimenState};
 use crate::ui::text::{truncate, width};
 use crate::widgets::brand::Lockup;
 use crate::widgets::keyhint::Hint;
@@ -1401,5 +1400,62 @@ impl crate::core::pointer::MouseTarget for MenuBar {
             Some(Phase::Click) => self.on_click(ev.id).into(),
             _ => Response::ignored(),
         }
+    }
+}
+
+impl Specimen for ContextMenu {
+    fn specimen_id(&self) -> WidgetId {
+        self.id
+    }
+
+    fn supports(&self, state: SpecimenState) -> bool {
+        use SpecimenState::*;
+        match state {
+            Rest | Hover | Pressed | Disabled | Overflow | Narrow => self.items.len() > 1,
+            Focused | FocusedHover | Selected | Busy | Error | Editing | Empty | Loading => false,
+        }
+    }
+
+    fn specimen_height(&self, state: SpecimenState) -> u16 {
+        let mut m = self.clone();
+        if state == SpecimenState::Overflow {
+            m = m.max_rows(2);
+        }
+        m.size().1
+    }
+
+    fn specimen(
+        &self,
+        state: SpecimenState,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: Color,
+    ) {
+        let _ = bg;
+        let mut m = self
+            .clone()
+            .anchor(
+                Rect::new(area.x, area.y, 1, 0),
+                crate::ui::popup::Placement::Below,
+            )
+            .edge_margin(0);
+        m.anchor_to = None;
+        let v = state.visual();
+        let row = 1.min(m.items.len() - 1);
+        if v.disabled {
+            m.items[row].item.disabled = true;
+        }
+        if v.hovered {
+            ctx.interaction.hover = Some(m.row_id(row));
+        }
+        if v.pressed {
+            ctx.interaction.pressed = Some(m.row_id(row));
+        }
+        if state == SpecimenState::Overflow {
+            m = m.max_rows(2);
+        }
+        m.render(area, buf, ctx);
+        ctx.flush_overlays(buf);
     }
 }
