@@ -1,3 +1,4 @@
+pub(crate) mod column_solver;
 pub mod columns;
 pub mod content;
 pub mod context;

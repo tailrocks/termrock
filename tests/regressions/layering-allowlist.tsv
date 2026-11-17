@@ -12,8 +12,6 @@ production	src/core/hints.rs	widgets::keyhint
 production	src/core/selection.rs	theme
 production	src/theme.rs	ui::ctx
 production	src/theme.rs	widgets::panel
-production	src/ui/columns.rs	widgets::menu
-production	src/ui/columns.rs	widgets::table
 production	src/ui/context.rs	widgets::grid
 production	src/ui/context.rs	widgets::list
 production	src/ui/context.rs	widgets::table

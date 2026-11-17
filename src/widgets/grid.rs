@@ -17,7 +17,7 @@ use crate::core::response::Response;
 use crate::core::scroll::{HScroll, ScrollPane, Scrollable};
 use crate::core::selection::{ClickPolicy, RowSelection, SelectGesture};
 use crate::theme::{SyntaxTone, Theme};
-use crate::ui::columns::{ColumnSizing, HeaderAction, HeaderLabels};
+use crate::ui::column_solver::ColumnSizing;
 use crate::ui::ctx::{RenderCtx, VisualState, fill};
 use crate::ui::row::{MarkKind, RowLook, RowUi};
 use crate::ui::text::{fit, fit_right, truncate, truncate_middle, wider_than, width, width_capped};
@@ -27,7 +27,7 @@ use crate::widgets::option_editor::{
     Affordance, ChoiceEditor, ChoiceResult, ColumnEditor, EditorConfig,
 };
 use crate::widgets::scrollbar;
-use crate::widgets::table::SortDir;
+use crate::widgets::table::{HeaderAction, HeaderLabels, SortDir, header_menu};
 
 #[path = "grid_changes.rs"]
 mod changes;
@@ -1339,7 +1339,7 @@ impl DataGrid {
     pub fn header_menu(&self, c: usize) -> Vec<(HeaderAction, crate::widgets::menu::MenuItem)> {
         let sortable = self.columns.get(c).is_some_and(|col| col.sortable);
         let sorted = self.sort.and_then(|(sc, d)| (sc == c).then_some(d));
-        crate::ui::columns::header_menu(
+        header_menu(
             &self.header_labels,
             sortable,
             sorted,
@@ -2811,7 +2811,7 @@ impl DataGrid {
     }
 
     pub fn seam_id(&self, c: usize) -> WidgetId {
-        self.id.part(crate::ui::columns::seam_part(c))
+        self.id.part(crate::ui::column_solver::seam_part(c))
     }
 
     fn seam_of(&self, id: WidgetId) -> Option<usize> {
@@ -3472,7 +3472,7 @@ impl DataGrid {
             if self.sizing.resizable {
                 let hit = self.sizing.seam_rect(rect.right(), header_y, 2, grid_area);
                 let held = self.sizing.dragging() == Some(ci);
-                crate::ui::columns::render_seam(
+                crate::ui::column_solver::render_seam(
                     buf,
                     ctx,
                     (self.id, ci),

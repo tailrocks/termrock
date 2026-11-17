@@ -18,19 +18,108 @@ use crate::core::list::{Cursor, KeyStep, KeyedRowSource, Moved, Navigable, RowSo
 use crate::core::response::Response;
 use crate::core::scroll::{HScroll, ScrollPane, Scrollable};
 use crate::core::selection::{ClickPolicy, RowSelection, SelectGesture, SelectionMode, TriState};
-use crate::ui::columns::{ColumnSizing, HeaderAction, HeaderLabels};
+use crate::ui::column_solver::ColumnSizing;
 use crate::ui::ctx::{RenderCtx, fill};
 use crate::ui::row::{MarkKind, RowLook, RowUi};
 use crate::widgets::edit::{EditExit, EditField, Validator};
 use crate::widgets::option_editor::{
     Affordance, ChoiceEditor, ChoiceResult, ColumnEditor, EditorConfig,
 };
+use crate::widgets::menu::MenuItem;
 use crate::widgets::scrollbar;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SortDir {
     Asc,
     Desc,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HeaderAction {
+    SortAsc,
+    SortDesc,
+    ClearSort,
+
+    Autofit,
+
+    ResetWidths,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct HeaderLabels {
+    pub sort_asc: &'static str,
+    pub sort_desc: &'static str,
+    pub clear_sort: &'static str,
+    pub autofit: &'static str,
+    pub reset_widths: &'static str,
+}
+
+impl HeaderLabels {
+    pub const DEFAULT: Self = Self {
+        sort_asc: "Sort Ascending",
+        sort_desc: "Sort Descending",
+        clear_sort: "Clear Sort",
+        autofit: "Size Column to Fit",
+        reset_widths: "Reset Column Widths",
+    };
+}
+
+impl Default for HeaderLabels {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
+}
+
+pub fn header_menu(
+    labels: &HeaderLabels,
+    sortable: bool,
+    sorted: Option<SortDir>,
+    resizable: bool,
+    has_user_widths: bool,
+) -> Vec<(HeaderAction, MenuItem)> {
+    let no_sort = (!sortable).then_some("This column does not sort");
+    let item = |label: &str, off: Option<&str>| {
+        let it = MenuItem::new(label);
+        match off {
+            Some(r) => it.reason(r),
+            None => it,
+        }
+    };
+    let mut v = vec![
+        (
+            HeaderAction::SortAsc,
+            item(
+                labels.sort_asc,
+                no_sort.or((sorted == Some(SortDir::Asc)).then_some("Already sorted ascending")),
+            ),
+        ),
+        (
+            HeaderAction::SortDesc,
+            item(
+                labels.sort_desc,
+                no_sort.or((sorted == Some(SortDir::Desc)).then_some("Already sorted descending")),
+            ),
+        ),
+        (
+            HeaderAction::ClearSort,
+            item(
+                labels.clear_sort,
+                no_sort.or(sorted.is_none().then_some("Not sorted")),
+            )
+            .separator_if(resizable),
+        ),
+    ];
+    if resizable {
+        v.push((HeaderAction::Autofit, item(labels.autofit, None)));
+        v.push((
+            HeaderAction::ResetWidths,
+            item(
+                labels.reset_widths,
+                (!has_user_widths).then_some("Columns have their default widths"),
+            ),
+        ));
+    }
+    v
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -931,7 +1020,7 @@ impl DataTable {
     }
 
     pub fn seam_id(&self, c: usize) -> WidgetId {
-        self.id.part(crate::ui::columns::seam_part(c))
+        self.id.part(crate::ui::column_solver::seam_part(c))
     }
 
     fn seam_of(&self, id: WidgetId) -> Option<usize> {
@@ -998,10 +1087,10 @@ impl DataTable {
         self.sizing.set(c, need.min(cap) as u16);
     }
 
-    pub fn header_menu(&self, c: usize) -> Vec<(HeaderAction, crate::widgets::menu::MenuItem)> {
+    pub fn header_menu(&self, c: usize) -> Vec<(HeaderAction, MenuItem)> {
         let sortable = self.columns.get(c).is_some_and(|col| col.sortable);
         let sorted = self.sort.and_then(|(sc, d)| (sc == c).then_some(d));
-        crate::ui::columns::header_menu(
+        header_menu(
             &self.header_labels,
             sortable,
             sorted,
@@ -2305,7 +2394,7 @@ impl DataTable {
             }
             if self.sizing.resizable {
                 let hit = self.sizing.seam_rect(r.right(), header_y, 2, area);
-                crate::ui::columns::render_seam(
+                crate::ui::column_solver::render_seam(
                     buf,
                     ctx,
                     (self.id, ci),
