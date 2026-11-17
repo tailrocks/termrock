@@ -12,7 +12,8 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, HOLLA, Launch, text, try_launch};
+use crate::bins::holla;
+use crate::support::{App, Launch, text, try_launch};
 
 const QUERY: &str = "Custom action configuration";
 // The 120-column finder cuts the label. The drawn prefix is what `›` marks.
@@ -42,7 +43,7 @@ fn visual_id(checkpoint: &str) -> String {
 }
 
 fn launch(name: &str) -> App {
-    let mut launch = Launch::new(name, HOLLA);
+    let mut launch = Launch::new(name, holla());
     launch.cols = 120;
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());

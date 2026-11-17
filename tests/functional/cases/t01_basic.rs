@@ -5,9 +5,8 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{
-    App, Launch, Point, TABLEPRO, find_all, flash_settle, row_text, text, try_launch,
-};
+use crate::bins::tablepro;
+use crate::support::{App, Launch, Point, find_all, flash_settle, row_text, text, try_launch};
 
 const HOST: &str = "prod-db-1.acme.io";
 const HOST_PORT: &str = "prod-db-1.acme.io:5432";
@@ -38,7 +37,7 @@ fn visual_id(checkpoint: &str) -> String {
 }
 
 fn open() -> App {
-    let mut launch = Launch::new("t01-basic", TABLEPRO);
+    let mut launch = Launch::new("t01-basic", tablepro());
     launch.cols = 120;
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());

@@ -8,7 +8,8 @@ use std::time::{Duration, Instant};
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, HOLLA, Launch, row_text, text, try_launch};
+use crate::bins::holla;
+use crate::support::{App, Launch, row_text, text, try_launch};
 
 const HOLLA_ROOT: &str = "~/work/holla";
 const HOLLA_FILE: &str = " M src/bin/holla/app.rs";
@@ -31,7 +32,7 @@ fn visual_id(checkpoint: &str) -> String {
 }
 
 fn open(name: &str, scenario: &str) -> App {
-    let mut launch = Launch::new(name, HOLLA);
+    let mut launch = Launch::new(name, holla());
     launch.args = vec!["--scenario".to_string(), scenario.to_string()];
     launch.cols = 120;
     launch.rows = 40;

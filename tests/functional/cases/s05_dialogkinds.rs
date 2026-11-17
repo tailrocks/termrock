@@ -7,7 +7,8 @@ use std::collections::BTreeSet;
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{Launch, Point, SHOWCASE, find_all, row_text, text, try_launch};
+use crate::bins::showcase;
+use crate::support::{Launch, Point, find_all, row_text, text, try_launch};
 
 const TITLE: &str = "Dialog kinds";
 const BLURB: &str = "Forms, info, choices and help: the purpose-built modals on one layer stack";
@@ -34,7 +35,7 @@ fn visual_id(case_id: &str) -> String {
 }
 
 fn open(name: &str, cols: u16, rows: u16, args: &[&str]) -> crate::support::App {
-    let mut launch = Launch::new(name, SHOWCASE);
+    let mut launch = Launch::new(name, showcase());
     launch.args = args.iter().copied().map(str::to_string).collect();
     launch.cols = cols;
     launch.rows = rows;

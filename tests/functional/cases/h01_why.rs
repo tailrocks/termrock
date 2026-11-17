@@ -7,7 +7,8 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, HOLLA, Launch, cell_bg, find_all, row_text, text, try_launch};
+use crate::bins::holla;
+use crate::support::{App, Launch, cell_bg, find_all, row_text, text, try_launch};
 
 const ROW_A: &str = "Analyze disk usage";
 const ROW_B: &str = "Open btm";
@@ -32,7 +33,7 @@ fn visual_id(checkpoint: &str) -> String {
 }
 
 fn open(name: &str) -> App {
-    let mut launch = Launch::new(name, HOLLA);
+    let mut launch = Launch::new(name, holla());
     launch.cols = 120;
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());

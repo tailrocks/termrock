@@ -7,9 +7,8 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{
-    App, Launch, Point, TABLEPRO, find_all, flash_settle, row_text, text, try_launch,
-};
+use crate::bins::tablepro;
+use crate::support::{App, Launch, Point, find_all, flash_settle, row_text, text, try_launch};
 
 const QUERY: &str = "Query 1";
 const TABLE: &str = "organizations";
@@ -34,7 +33,7 @@ fn visual_id(checkpoint: &str) -> String {
 }
 
 fn open(name: &str) -> App {
-    let mut launch = Launch::new(name, TABLEPRO);
+    let mut launch = Launch::new(name, tablepro());
     launch.cols = 120;
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());
@@ -405,7 +404,7 @@ fn organizations_is_dirty(screen: &TerminalSnapshot) -> bool {
 
 #[test]
 fn issue11_save_switch_pty() {
-    let mut launch = Launch::new("t02-commit-owner", TABLEPRO);
+    let mut launch = Launch::new("t02-commit-owner", tablepro());
     launch.cols = 120;
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());

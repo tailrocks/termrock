@@ -5,27 +5,13 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use junie_tui::clock::TestRequest;
-use junie_tui::core::pointer::PointerConfig;
-use junie_tui::shell::StatusLine;
+use crate::engine::{PointerConfig, StatusLine, TestRequest};
 use tui_test::{
     CheckedMouseAction, KeyAction, LaunchEnvMode, LaunchOptions, MouseOptions, OpenOptions,
     Operation, OperationResult, RunOptions, Session, SnapshotCell, SnapshotScope, TerminalSnapshot,
     WaitQuietOptions,
 };
 
-pub const SHOWCASE: &str = match option_env!("CARGO_BIN_EXE_showcase") {
-    Some(path) => path,
-    None => "",
-};
-pub const TABLEPRO: &str = match option_env!("CARGO_BIN_EXE_tablepro") {
-    Some(path) => path,
-    None => "",
-};
-pub const HOLLA: &str = match option_env!("CARGO_BIN_EXE_holla") {
-    Some(path) => path,
-    None => "",
-};
 const TIMEOUT: Duration = Duration::from_secs(10);
 // A quitting app flushes state and restores the terminal, so under load it
 // needs more than a screen wait.
@@ -95,7 +81,7 @@ impl Launch {
     pub fn new(name: &str, bin: &str) -> Self {
         assert!(
             !bin.is_empty(),
-            "launch `{name}` has an empty app binary path: this test target has no CARGO_BIN_EXE_<bin> for it. Look the binary up by name (see crates/functional-cross) or run the case from the package that owns the bin."
+            "launch `{name}` has an empty app binary path: the caller passed no candidate path. The root journeys take theirs from tests/functional/bins.rs; functional-cross looks the binary up by name."
         );
         Self {
             name: name.to_string(),

@@ -1,9 +1,8 @@
 use tui_test::terminal::cell::Attrs;
 use tui_test::{SnapshotColor, TerminalSnapshot};
 
-use super::support::{
-    App, Point, SHOWCASE, cell_bg, crop, find, find_all, flash_settle, row_text, text,
-};
+use super::bins::showcase;
+use super::support::{App, Point, cell_bg, crop, find, find_all, flash_settle, row_text, text};
 
 fn inside(point: Point) -> Point {
     Point {
@@ -21,7 +20,7 @@ fn bg(screen: &TerminalSnapshot, p: Point) -> SnapshotColor {
 fn button_lifecycle(color: &str) {
     let app = App::new(
         &format!("showcase-buttons-{color}"),
-        SHOWCASE,
+        showcase(),
         &["--page", "buttons", "--motion", "paused"],
         160,
         50,
@@ -133,7 +132,7 @@ fn cropped_text(screen: &TerminalSnapshot, point: Point, width: u16, height: u16
 fn showcase_wheel_targets_the_pointed_pane_then_keys_follow_clicked_focus() {
     let app = App::new(
         "showcase-nested-scroll",
-        SHOWCASE,
+        showcase(),
         &[
             "--page",
             "scrolling",
@@ -202,7 +201,7 @@ fn showcase_wheel_targets_the_pointed_pane_then_keys_follow_clicked_focus() {
 fn showcase_primary_button_exact_rest_hover_held_colours() {
     let app = App::new(
         "showcase-primary-colours",
-        SHOWCASE,
+        showcase(),
         &["--page", "buttons", "--motion", "reduced", "--frame", "40"],
         120,
         40,
@@ -249,7 +248,7 @@ fn showcase_primary_button_exact_rest_hover_held_colours() {
 fn showcase_wheel_scrolls_pointed_grid_without_moving_sidebar() {
     let app = App::new(
         "showcase-datagrid-wheel",
-        SHOWCASE,
+        showcase(),
         &["--page", "datagrid", "--motion", "paused", "--frame", "40"],
         120,
         40,
@@ -291,7 +290,7 @@ fn showcase_wheel_scrolls_pointed_grid_without_moving_sidebar() {
 fn showcase_checks_radio_exclusivity_mixed_and_disabled() {
     let app = App::new(
         "showcase-checks",
-        SHOWCASE,
+        showcase(),
         &["--page", "checks", "--motion", "paused"],
         120,
         40,
@@ -347,7 +346,7 @@ fn showcase_checks_radio_exclusivity_mixed_and_disabled() {
 fn showcase_tab_selection_survives_focus_move_and_single_gutter() {
     let app = App::new(
         "showcase-tabs",
-        SHOWCASE,
+        showcase(),
         &["--page", "tabs", "--motion", "paused"],
         120,
         40,
@@ -384,7 +383,7 @@ fn showcase_tab_selection_survives_focus_move_and_single_gutter() {
 fn showcase_select_outside_click_and_escape_dismiss_without_change() {
     let app = App::new(
         "showcase-select-dismiss",
-        SHOWCASE,
+        showcase(),
         &["--page", "chipsselects", "--motion", "paused"],
         120,
         40,
@@ -433,7 +432,7 @@ fn showcase_select_outside_click_and_escape_dismiss_without_change() {
 fn showcase_menu_outside_click_dismisses() {
     let app = App::new(
         "showcase-menus",
-        SHOWCASE,
+        showcase(),
         &["--page", "menus", "--motion", "paused"],
         120,
         40,
@@ -458,7 +457,7 @@ fn showcase_menu_outside_click_dismisses() {
 fn showcase_splitter_seam_drag_resizes_panes() {
     let app = App::new(
         "showcase-splits",
-        SHOWCASE,
+        showcase(),
         &["--page", "splits", "--motion", "paused"],
         120,
         40,
@@ -509,7 +508,7 @@ fn showcase_splitter_seam_drag_resizes_panes() {
 fn showcase_scrollbar_thumb_drag_moves_list() {
     let app = App::new(
         "showcase-scrollbar",
-        SHOWCASE,
+        showcase(),
         &[
             "--page",
             "scrolling",
@@ -573,7 +572,7 @@ fn gutter_on(screen: &TerminalSnapshot, label: &str) -> bool {
 fn showcase_keyboard_activates_focused_run_task() {
     let app = App::new(
         "showcase-keyboard",
-        SHOWCASE,
+        showcase(),
         &["--page", "buttons", "--motion", "paused"],
         120,
         40,
@@ -613,7 +612,7 @@ fn showcase_keyboard_activates_focused_run_task() {
 fn showcase_list_selection_keyboard_and_multiselect() {
     let app = App::new(
         "showcase-lists",
-        SHOWCASE,
+        showcase(),
         &["--page", "lists", "--motion", "paused"],
         120,
         40,
@@ -644,7 +643,7 @@ fn showcase_list_selection_keyboard_and_multiselect() {
 fn showcase_tree_expand_and_file_selection() {
     let app = App::new(
         "showcase-trees",
-        SHOWCASE,
+        showcase(),
         &["--page", "trees", "--motion", "paused"],
         120,
         40,
@@ -716,7 +715,7 @@ fn showcase_tree_expand_and_file_selection() {
 fn showcase_input_edit_apply_and_escape_reverts() {
     let app = App::new(
         "showcase-inputs",
-        SHOWCASE,
+        showcase(),
         &["--page", "inputs", "--motion", "paused"],
         120,
         40,
@@ -750,7 +749,7 @@ fn showcase_input_edit_apply_and_escape_reverts() {
 fn showcase_dialog_opens_traps_and_escape_cancels() {
     let app = App::new(
         "showcase-dialogs",
-        SHOWCASE,
+        showcase(),
         &["--page", "dialogs", "--motion", "paused"],
         120,
         40,
@@ -796,7 +795,7 @@ fn showcase_dialog_opens_traps_and_escape_cancels() {
 fn showcase_table_header_sort_changes_row_order() {
     let app = App::new(
         "showcase-tables",
-        SHOWCASE,
+        showcase(),
         &["--page", "tables", "--motion", "paused"],
         120,
         40,
@@ -854,7 +853,7 @@ fn task_lines(screen: &TerminalSnapshot) -> Vec<String> {
 fn showcase_form_required_validation_and_reset() {
     let app = App::new(
         "showcase-forms",
-        SHOWCASE,
+        showcase(),
         &["--page", "forms", "--motion", "paused"],
         120,
         40,
@@ -870,7 +869,7 @@ fn showcase_form_required_validation_and_reset() {
 
     let app = App::new(
         "showcase-forms-reset",
-        SHOWCASE,
+        showcase(),
         &["--page", "forms", "--motion", "reduced"],
         120,
         40,
@@ -901,7 +900,7 @@ fn showcase_form_required_validation_and_reset() {
 fn visit_page(slug: &str, heading: &str) {
     let app = App::new(
         &format!("showcase-page-{slug}"),
-        SHOWCASE,
+        showcase(),
         &["--page", slug, "--motion", "paused"],
         120,
         40,
@@ -949,7 +948,7 @@ page_test!(showcase_page_pickers, "pickers", "Pickers");
 fn showcase_layer_focus_policy_keeps_or_restores_focus_on_close() {
     let app = App::new(
         "showcase-layer-focus",
-        SHOWCASE,
+        showcase(),
         &["--page", "focusnavigation", "--motion", "paused"],
         120,
         40,
@@ -985,7 +984,7 @@ fn showcase_layer_focus_policy_keeps_or_restores_focus_on_close() {
 fn showcase_multi_picker_modes_filter_disabled_and_report_selection() {
     let app = App::new(
         "showcase-multi-pickers",
-        SHOWCASE,
+        showcase(),
         &["--page", "pickers", "--motion", "paused"],
         120,
         40,
@@ -1081,7 +1080,7 @@ fn terminal_pane(name: &str, opts: &[&str]) -> App {
     for opt in opts {
         args.extend(["--opt", opt]);
     }
-    let app = App::new(name, SHOWCASE, &args, 120, 40, "truecolor");
+    let app = App::new(name, showcase(), &args, 120, 40, "truecolor");
     app.wait_text("Terminal pane");
     app.settle();
     app
@@ -1481,7 +1480,7 @@ fn showcase_terminal_session_below_minimum_waits_for_room() {
 fn small_terminal_keeps_controls(cols: u16, rows: u16) {
     let app = App::new(
         &format!("showcase-terminal-pane-{cols}x{rows}"),
-        SHOWCASE,
+        showcase(),
         &["--page", "terminalpane", "--motion", "paused"],
         cols,
         rows,
@@ -1517,7 +1516,7 @@ fn fixed_page_in(name: &str, opts: &[&str], cols: u16, rows: u16, motion: &str) 
     for opt in opts {
         args.extend(["--opt", opt]);
     }
-    let app = App::new(name, SHOWCASE, &args, cols, rows, "truecolor");
+    let app = App::new(name, showcase(), &args, cols, rows, "truecolor");
     app.wait_text("Keep awake");
     app.settle();
     app
@@ -1721,7 +1720,7 @@ fn showcase_fixed_controls_show_the_full_reason_at_80x24() {
 fn showcase_fixedcontrols_focused_refused() {
     let app = App::new(
         "showcase-fixed-refused",
-        SHOWCASE,
+        showcase(),
         &["--page", "fixedcontrols", "--motion", "paused"],
         120,
         40,
@@ -1743,7 +1742,7 @@ fn terminal_viewport(name: &str, opts: &[&str]) -> App {
     for opt in opts {
         args.extend(["--opt", opt]);
     }
-    let app = App::new(name, SHOWCASE, &args, 120, 40, "truecolor");
+    let app = App::new(name, showcase(), &args, 120, 40, "truecolor");
     app.wait_text("Terminal viewport");
     app.settle();
     app
@@ -2011,7 +2010,7 @@ fn list_detail_with(name: &str, cols: u16, rows: u16, opts: &[&str]) -> App {
     for opt in opts {
         args.extend(["--opt", opt]);
     }
-    let app = App::new(name, SHOWCASE, &args, cols, rows, "truecolor");
+    let app = App::new(name, showcase(), &args, cols, rows, "truecolor");
     app.wait_text("nightly-backup");
     app.settle();
     app
@@ -2269,7 +2268,7 @@ fn showcase_listdetail_hosted_painter_owns_every_pane_and_resets_the_detail() {
 
     let app = App::new(
         "showcase-listdetail-hosted-empty",
-        SHOWCASE,
+        showcase(),
         &[
             "--page",
             "listdetail",
@@ -2311,7 +2310,7 @@ fn fixed_dialogs(name: &str, opts: &[&str]) -> App {
     for opt in opts {
         args.extend(["--opt", opt]);
     }
-    let app = App::new(name, SHOWCASE, &args, 120, 40, "truecolor");
+    let app = App::new(name, showcase(), &args, 120, 40, "truecolor");
     app.wait_text("Choice dialog");
     app.settle();
     app
@@ -2416,7 +2415,7 @@ fn showcase_fixeddialogs_form_refusals_and_repeats_report_no_change() {
 fn showcase_dialogkinds_sqlite_hides_remote_fields_and_keeps_their_values() {
     let app = App::new(
         "showcase-dialogkinds-sqlite",
-        SHOWCASE,
+        showcase(),
         &["--page", "dialogkinds", "--motion", "paused"],
         120,
         50,
@@ -2476,7 +2475,7 @@ fn showcase_fixeddialogs_browser_box_refuses_and_shows_its_reason() {
 fn showcase_picker_multi_select_order_toggle_and_confirm() {
     let app = App::new(
         "showcase-picker-multi",
-        SHOWCASE,
+        showcase(),
         &["--page", "pickers", "--motion", "paused"],
         160,
         50,
@@ -2518,7 +2517,7 @@ fn showcase_picker_multi_select_order_toggle_and_confirm() {
 fn showcase_picker_multi_search_space_edits_query_and_hidden_checked_retained() {
     let app = App::new(
         "showcase-picker-multi-search",
-        SHOWCASE,
+        showcase(),
         &["--page", "pickers", "--motion", "paused"],
         160,
         50,
@@ -2557,7 +2556,7 @@ fn showcase_picker_multi_search_space_edits_query_and_hidden_checked_retained() 
 fn showcase_picker_returns_both_named_rows_selected_across_a_filter() {
     let app = App::new(
         "showcase-picker-multi-search-labels",
-        SHOWCASE,
+        showcase(),
         &["--page", "pickers", "--motion", "paused"],
         160,
         50,
@@ -2602,7 +2601,7 @@ fn showcase_picker_returns_both_named_rows_selected_across_a_filter() {
 fn showcase_picker_reports_group_conflicts_and_keeps_selection() {
     let app = App::new(
         "showcase-picker-group-conflict",
-        SHOWCASE,
+        showcase(),
         &["--page", "pickers", "--motion", "paused"],
         160,
         50,
@@ -2655,7 +2654,7 @@ fn showcase_picker_nav_profiles_toggle_with_the_displayed_key() {
     ] {
         let app = App::new(
             &format!("showcase-picker-nav-{name}"),
-            SHOWCASE,
+            showcase(),
             &["--page", "pickers", "--motion", "paused", "--opt", option],
             160,
             50,
@@ -2683,7 +2682,7 @@ fn showcase_previously_hidden_pages_open_from_the_sidebar() {
     ] {
         let app = App::new(
             &format!("showcase-sidebar-{slug}"),
-            SHOWCASE,
+            showcase(),
             &["--motion", "paused"],
             120,
             40,

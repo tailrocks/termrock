@@ -6,9 +6,10 @@
 
 use tui_test::TerminalSnapshot;
 
+use crate::bins::tablepro;
 use crate::support::{
-    App, Launch, SessionMode, TABLEPRO, file_sha256, find_all, reference_binary_from,
-    reference_digest_from, row_text, text, try_launch,
+    App, Launch, SessionMode, file_sha256, find_all, reference_binary_from, reference_digest_from,
+    row_text, text, try_launch,
 };
 
 const HOST: &str = "dev-db.internal.acme.io";
@@ -46,7 +47,7 @@ fn open(name: &str) -> App {
         launch.reference_manifest = Some(manifest);
         launch
     } else {
-        Launch::new(name, TABLEPRO)
+        Launch::new(name, tablepro())
     };
     launch.cols = 120;
     launch.rows = 40;

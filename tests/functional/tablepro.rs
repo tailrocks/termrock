@@ -1,4 +1,5 @@
-use super::support::{App, Point, TABLEPRO, crop, find, find_all, row_text, text};
+use super::bins::tablepro;
+use super::support::{App, Point, crop, find, find_all, row_text, text};
 
 fn inside(point: Point) -> Point {
     Point {
@@ -26,7 +27,7 @@ fn dialog_action(app: &App, label: &str) -> Point {
 fn tablepro_write_confirmation_cancels_retries_and_executes_only_when_armed() {
     let app = App::new(
         "tablepro-write-gate",
-        TABLEPRO,
+        tablepro(),
         &["--connect", "Production", "--motion", "reduced"],
         160,
         50,
@@ -111,7 +112,7 @@ fn tablepro_write_confirmation_cancels_retries_and_executes_only_when_armed() {
 fn tablepro_connection_failure_retries_then_another_connection_succeeds() {
     let app = App::new(
         "tablepro-connection-recovery",
-        TABLEPRO,
+        tablepro(),
         &["--motion", "reduced"],
         120,
         40,
@@ -156,7 +157,7 @@ const OTHER_SQL: &str = "SELECT 'other_query_survives';";
 fn tablepro_connected(name: &str) -> App {
     let app = App::new(
         name,
-        TABLEPRO,
+        tablepro(),
         &["--connect", "Local PostgreSQL", "--motion", "reduced"],
         120,
         40,
@@ -341,7 +342,7 @@ fn freeze(app: &App, test_id: &str) {
 fn connected(name: &str) -> App {
     let app = App::new(
         name,
-        TABLEPRO,
+        tablepro(),
         &["--connect", "Local PostgreSQL", "--motion", "reduced"],
         120,
         40,
@@ -355,7 +356,7 @@ fn connected(name: &str) -> App {
 fn tablepro_connections_landing_and_unreachable_detail() {
     let app = App::new(
         "tablepro-landing",
-        TABLEPRO,
+        tablepro(),
         &["--motion", "reduced"],
         120,
         40,
@@ -371,7 +372,7 @@ fn tablepro_connections_landing_and_unreachable_detail() {
 
     let app = App::new(
         "tablepro-unreachable",
-        TABLEPRO,
+        tablepro(),
         &["--motion", "reduced"],
         120,
         40,
@@ -394,7 +395,7 @@ fn tablepro_connections_landing_and_unreachable_detail() {
 fn tablepro_connect_development_opens_workbench() {
     let app = App::new(
         "tablepro-dev-connect",
-        TABLEPRO,
+        tablepro(),
         &["--motion", "reduced"],
         120,
         40,
@@ -412,7 +413,7 @@ fn tablepro_connect_development_opens_workbench() {
 fn tablepro_delete_connection_cancel_then_confirm() {
     let app = App::new(
         "tablepro-delete-conn",
-        TABLEPRO,
+        tablepro(),
         &["--motion", "reduced"],
         120,
         40,
@@ -453,7 +454,7 @@ fn tablepro_query_select_results_and_error_recovery() {
 
     let app = App::new(
         "tablepro-query-error",
-        TABLEPRO,
+        tablepro(),
         &["--connect", "Local PostgreSQL", "--motion", "reduced"],
         120,
         40,
@@ -523,7 +524,7 @@ fn tablepro_history_rerun_and_help_and_layout() {
 fn tablepro_resize_and_too_small_recovers() {
     let app = App::new(
         "tablepro-resize",
-        TABLEPRO,
+        tablepro(),
         &["--connect", "Local PostgreSQL", "--motion", "reduced"],
         120,
         40,
@@ -547,7 +548,7 @@ fn tablepro_resize_and_too_small_recovers() {
 
     let app = App::new(
         "tablepro-nocolor",
-        TABLEPRO,
+        tablepro(),
         &["--motion", "reduced"],
         100,
         36,

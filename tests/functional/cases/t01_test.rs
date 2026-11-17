@@ -5,9 +5,8 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{
-    App, Launch, Point, TABLEPRO, find_all, flash_settle, row_text, text, try_launch,
-};
+use crate::bins::tablepro;
+use crate::support::{App, Launch, Point, find_all, flash_settle, row_text, text, try_launch};
 
 /// The form card is at most 84 columns, and the test result is drawn after
 /// the buttons, so the full sentence is truncated at 120×40.
@@ -26,7 +25,7 @@ fn visual_id(case_id: &str) -> String {
 }
 
 fn open(name: &str, motion: &str) -> App {
-    let mut launch = Launch::new(name, TABLEPRO);
+    let mut launch = Launch::new(name, tablepro());
     launch.cols = 120;
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());

@@ -6,7 +6,7 @@ use ratatui::crossterm::event::{self, Event, KeyCode};
 use ratatui::crossterm::terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled};
 use ratatui::widgets::Paragraph;
 
-use super::bins::SHOWCASE;
+use super::bins::showcase;
 use super::support::{App, Launch, Point, find, text, try_launch};
 
 #[test]
@@ -14,7 +14,7 @@ use super::support::{App, Launch, Point, find, text, try_launch};
 fn showcase_help_survives_shrink_and_growth_and_returns_focus() {
     let app = App::new(
         "showcase-lifecycle",
-        SHOWCASE,
+        showcase(),
         &["--page", "overview", "--motion", "paused", "--frame", "40"],
         120,
         40,
@@ -56,7 +56,7 @@ fn showcase_help_survives_shrink_and_growth_and_returns_focus() {
 fn showcase_popover_survives_resize_and_escape_returns_focus() {
     let app = App::new(
         "showcase-popover-resize",
-        SHOWCASE,
+        showcase(),
         &["--page", "popups", "--motion", "paused"],
         120,
         40,

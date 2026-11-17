@@ -8,7 +8,8 @@ use std::path::PathBuf;
 use tui_test::{SnapshotColor, TerminalSnapshot};
 use tuiscotti_latest::check::CheckOutcome;
 
-use crate::support::{Launch, Point, SHOWCASE, cell_bg, find_all, row_text, text, try_launch};
+use crate::bins::showcase;
+use crate::support::{Launch, Point, cell_bg, find_all, row_text, text, try_launch};
 
 const TITLE: &str = "Editable tables";
 const BLURB: &str = "Navigation is reversed cell; editing is a cursor. They never look alike.";
@@ -26,7 +27,7 @@ fn visual_id(case_id: &str) -> String {
 }
 
 fn open(name: &str, cols: u16, rows: u16, args: &[&str]) -> crate::support::App {
-    let mut launch = Launch::new(name, SHOWCASE);
+    let mut launch = Launch::new(name, showcase());
     launch.args = args.iter().copied().map(str::to_string).collect();
     launch.cols = cols;
     launch.rows = rows;

@@ -53,7 +53,7 @@ fn visual_id(checkpoint: &str) -> String {
 }
 
 fn launch(name: &str, scenario: &str) -> App {
-    let mut launch = Launch::new(name, crate::support::HOLLA);
+    let mut launch = Launch::new(name, crate::bins::holla());
     launch.cols = 120;
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());

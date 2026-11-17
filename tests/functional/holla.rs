@@ -1,9 +1,9 @@
-use super::support::{App, HOLLA, find, text};
+use super::support::{App, find, text};
 
 fn holla(name: &str, scenario: &str) -> App {
     App::new(
         name,
-        HOLLA,
+        super::bins::holla(),
         &[
             "--scenario",
             scenario,
@@ -21,7 +21,7 @@ fn holla(name: &str, scenario: &str) -> App {
 fn holla_paused(name: &str) -> App {
     App::new(
         name,
-        HOLLA,
+        super::bins::holla(),
         &[
             "--scenario",
             "first-use",
@@ -131,7 +131,7 @@ fn holla_browser_pointer_selection_loads_preview_and_hidden_toggle() {
 fn holla_trust_cancel_then_run_uses_the_child_directory() {
     let app = App::new(
         "holla-trust-run",
-        HOLLA,
+        super::bins::holla(),
         &["--scenario", "monorepo-child", "--motion", "reduced"],
         120,
         40,
@@ -188,7 +188,7 @@ fn holla_trust_cancel_then_run_uses_the_child_directory() {
 fn holla_browser_hidden_files_preview_scroll_and_bad_path_recovery() {
     let app = App::new(
         "holla-browser",
-        HOLLA,
+        super::bins::holla(),
         &["--scenario", "parity-browser", "--motion", "reduced"],
         120,
         40,
@@ -377,7 +377,7 @@ fn holla_disk_tree_and_plan_review_flows() {
 
     let plan = App::new(
         "holla-plan-review",
-        HOLLA,
+        super::bins::holla(),
         &[
             "--scenario",
             "upgrade-plan",
@@ -419,7 +419,7 @@ fn holla_launch_failure_state_is_visible() {
 fn holla_resize_finder_recovers() {
     let app = App::new(
         "holla-resize",
-        HOLLA,
+        super::bins::holla(),
         &[
             "--scenario",
             "parity-browser",

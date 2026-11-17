@@ -1,11 +1,11 @@
-use super::bins::SHOWCASE;
+use super::bins::showcase;
 use super::support::{App, find, text};
 
 #[test]
 fn showcase_held_button_matches_frozen_tuiscotti_baseline() {
     let app = App::new(
         "showcase-visual-held",
-        SHOWCASE,
+        showcase(),
         &["--page", "buttons", "--motion", "reduced", "--frame", "40"],
         120,
         40,

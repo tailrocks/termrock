@@ -7,7 +7,8 @@ use std::path::PathBuf;
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, TABLEPRO, find_all, flash_settle, row_text, text, try_launch};
+use crate::bins::tablepro;
+use crate::support::{App, Launch, find_all, flash_settle, row_text, text, try_launch};
 
 const ROUTE_ID: &str = "pre_refactor/t01_leave/t01_leave_route_120x40";
 const WIDE_ID: &str = "pre_refactor/t01_leave/t01_leave_guards_120x40";
@@ -30,7 +31,7 @@ const NEW: &str = "New connection";
 const SPLICE: &str = "prod-db-2.acme.ioprod";
 
 fn open(name: &str) -> App {
-    let mut launch = Launch::new(name, TABLEPRO);
+    let mut launch = Launch::new(name, tablepro());
     launch.cols = 120;
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());

@@ -10,7 +10,8 @@ use std::time::{Duration, Instant};
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, HOLLA, Launch, row_text, text, try_launch};
+use crate::bins::holla;
+use crate::support::{App, Launch, row_text, text, try_launch};
 
 const TITLE: &str = "Upgrade everything";
 const DIALOG: &str = "Start upgrade everything?";
@@ -50,7 +51,7 @@ fn visual_id(checkpoint: &str) -> String {
 }
 
 fn open(name: &str) -> App {
-    let mut launch = Launch::new(name, HOLLA);
+    let mut launch = Launch::new(name, holla());
     launch.args = vec!["--scenario".to_string(), "upgrade-plan".to_string()];
     launch.cols = 120;
     launch.rows = 40;
