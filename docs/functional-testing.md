@@ -516,7 +516,7 @@ per-app `app_tests*` suites.
 | src/bin/showcase/app_tests* (incl. catalog/coverage gate) | 546 + macro suites | Superseded by Showcase functional journeys; the catalog/coverage source-scan gate is dropped with the estate (its files `catalog_scan.rs` deleted; production-compiled `coverage.rs`/`src/catalog.rs` registry retained as production source, not tests). The declared-API gate returned with #14 as `src/catalog_contract.rs` (source coverage) and `src/bin/showcase/app_tests_catalog.rs` (callable scenarios); see AGENTS.md. |
 | src/bin/tablepro/app_tests*, motion_tests, perf_tests | 151 | Superseded by TablePro functional journeys; perf tests dropped as timing gates. |
 | src/bin/holla/app_tests* | 162 | Superseded by Holla functional journeys. |
-| src/bin/jackin/app_tests* (formerly jackin_preview) (incl. reach_tests! suites) | 147 + generated | Superseded by Jackin functional journeys. The `reach_tests!` macro in `src/shell/reach.rs` is retained as library support code with no remaining invocations. |
+| src/bin/jackin/app_tests* (formerly jackin_preview) (incl. reach_tests! suites) | 147 + generated | Superseded by Jackin functional journeys. The `reach_tests!` macro in `src/shell/reach.rs` is retained as library support code; the Showcase catalog invokes it once (`apps/showcase/src/app_tests_catalog/shell.rs`, with its empty allow file `apps/showcase/tests/reach_allow.txt`). |
 | tools/frozen* (frozen baseline CLI parity tooling) | 6 files + crate | Deleted: dead helpers for the retired frozen harness. |
 
 Kept and why: `src/catalog.rs` and `apps/showcase/src/coverage.rs`

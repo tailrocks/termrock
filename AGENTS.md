@@ -169,8 +169,8 @@ workspaces, Docker, OpenShell, Codex).
   proof. Run `cargo nextest run -p junie-tui --all-features --no-tests fail -E
   'test(catalog_)'`; the Rust crate CI job already runs it. The proofs
   are split into lanes so parallel work never edits one file: a lane owns
-  `src/bin/showcase/coverage/lane_<lane>.rs` (its proofs and exceptions),
-  `src/bin/showcase/app_tests_catalog/<lane>.rs` (its cases and scenario
+  `apps/showcase/src/coverage/lane_<lane>.rs` (its proofs and exceptions),
+  `apps/showcase/src/app_tests_catalog/<lane>.rs` (its cases and scenario
   functions) and its marked block of `ScenarioId`. The gate rejects a lane
   file that is not wired in. After a change
   moves many captures, `scripts/accept-changed-baselines.py` re-accepts each
