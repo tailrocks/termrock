@@ -1,4 +1,4 @@
-use junie_tui::ui::text::fuzzy;
+use termrock::ui::text::fuzzy;
 
 use crate::domain::action::{Item, Signal};
 use crate::domain::context::Scope;
@@ -136,7 +136,7 @@ pub fn search_with(
     let words: Vec<&str> = text.split_whitespace().collect();
     let mut out = vec![];
     if crate::domain::projection::counting() {
-        junie_tui::record_work!(RankRowsVisited, items.len());
+        termrock::record_work!(RankRowsVisited, items.len());
     }
     for (i, item) in items.iter().enumerate() {
         if item.hidden && !has_query {

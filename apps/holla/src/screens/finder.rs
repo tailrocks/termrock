@@ -11,35 +11,6 @@
 //! preview-scroll state of its own.
 
 use crate::screens::Holla;
-use junie_tui::core::edit::TextCmd;
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::id::{ItemKey, WidgetId};
-use junie_tui::core::keymap::KeyBinding;
-use junie_tui::core::list::{KeyedRowSource, RowSource, SourceStamp};
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::core::response::Response;
-use junie_tui::core::selection::ClickPolicy;
-use junie_tui::shell::Page as ShellPage;
-use junie_tui::theme::{CursorStyle, Theme, Tone};
-use junie_tui::ui::columns::{self, Col};
-use junie_tui::ui::context::{ContextAnchor, ContextSource};
-use junie_tui::ui::ctx::{RenderCtx, fill};
-use junie_tui::ui::layout::Split;
-use junie_tui::ui::master_detail::SPLIT_MIN;
-use junie_tui::ui::text::{fit, truncate, truncate_middle, wider_than, width, wrap};
-use junie_tui::widgets::empty::{self, EmptyState};
-use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::list_detail::DetailPane;
-use junie_tui::widgets::page_header::Heading;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::search_detail::{
-    MissingSelection, QueryPasteMode, QueryRequest, QueryView, ResultRowKind, RowPaint,
-    SearchAction, SearchCmd, SearchConfig, SearchDetail, SearchFocusMode, SearchPaint,
-    SearchSource,
-};
-use junie_tui::widgets::statusbar::StatusItem;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
@@ -47,6 +18,35 @@ use ratatui::style::{Modifier, Style};
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::atomic::{AtomicU64, Ordering};
+use termrock::core::edit::TextCmd;
+use termrock::core::event::{Key, Outcome};
+use termrock::core::id::{ItemKey, WidgetId};
+use termrock::core::keymap::KeyBinding;
+use termrock::core::list::{KeyedRowSource, RowSource, SourceStamp};
+use termrock::core::pointer::PointerEvent;
+use termrock::core::response::Response;
+use termrock::core::selection::ClickPolicy;
+use termrock::shell::Page as ShellPage;
+use termrock::theme::{CursorStyle, Theme, Tone};
+use termrock::ui::columns::{self, Col};
+use termrock::ui::context::{ContextAnchor, ContextSource};
+use termrock::ui::ctx::{RenderCtx, fill};
+use termrock::ui::layout::Split;
+use termrock::ui::master_detail::SPLIT_MIN;
+use termrock::ui::text::{fit, truncate, truncate_middle, wider_than, width, wrap};
+use termrock::widgets::empty::{self, EmptyState};
+use termrock::widgets::input::TextInput;
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::list_detail::DetailPane;
+use termrock::widgets::page_header::Heading;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::scrollbar;
+use termrock::widgets::search_detail::{
+    MissingSelection, QueryPasteMode, QueryRequest, QueryView, ResultRowKind, RowPaint,
+    SearchAction, SearchCmd, SearchConfig, SearchDetail, SearchFocusMode, SearchPaint,
+    SearchSource,
+};
+use termrock::widgets::statusbar::StatusItem;
 
 use crate::domain::action::{Confirmation, Item, Kind, Launch, Risk};
 use crate::domain::context::Scope;
@@ -54,7 +54,7 @@ use crate::domain::projection::{CatalogStamp, Deadline, Seen};
 use crate::domain::ranking::{Ranked, search};
 use crate::screens::{Cx, Go, Page, Screen, StatusBits, risk_tone};
 use crate::sim::world::World;
-use junie_tui::ui::text::{plural, truncate_sep};
+use termrock::ui::text::{plural, truncate_sep};
 
 pub const FINDER: WidgetId = WidgetId::of("here.finder");
 pub const SCOPE: WidgetId = WidgetId::of("here.scope");
@@ -366,7 +366,7 @@ fn holla_keymap() -> Vec<(KeyBinding, SearchCmd)> {
 }
 
 fn new_search() -> SearchDetail {
-    use junie_tui::core::edit::CMD_TEXT_KEYS;
+    use termrock::core::edit::CMD_TEXT_KEYS;
     let mut search = SearchDetail::new(FINDER, TextInput::new(QUERY, ""), Split::new(60, 28, 34))
         .config(
             SearchConfig::default()
@@ -491,7 +491,7 @@ impl FinderPage {
         }
         self.rebuilds += 1;
         if crate::domain::projection::counting() {
-            junie_tui::record_work!(ProjectionRebuilds, 1usize);
+            termrock::record_work!(ProjectionRebuilds, 1usize);
         }
         let results = Results {
             stamp: request.token.result_stamp(),
@@ -1220,7 +1220,7 @@ fn preview_lines(it: &Item, w: &World) -> Vec<PreviewLine> {
     alts.push("Alias".into());
     alts.push("Why here?".into());
 
-    let key = if junie_tui::core::keyboard::label_deliverable("Alt+Enter") {
+    let key = if termrock::core::keyboard::label_deliverable("Alt+Enter") {
         "Alt+Enter"
     } else {
         "Alternatives…"
@@ -1313,7 +1313,7 @@ impl SearchPaint<Results> for Paint<'_> {
     fn query(&mut self, area: Rect, view: QueryView<'_>, buf: &mut Buffer, ctx: &mut RenderCtx) {
         let t = ctx.theme;
         let focused = view.focused;
-        let fs = t.field_style(junie_tui::ui::ctx::VisualState {
+        let fs = t.field_style(termrock::ui::ctx::VisualState {
             focused,
             editing: focused,
             ..Default::default()
@@ -1323,12 +1323,12 @@ impl SearchPaint<Results> for Paint<'_> {
         buf.set_string(
             area.x,
             area.y,
-            t.gutter_symbol(junie_tui::ui::ctx::VisualState {
+            t.gutter_symbol(termrock::ui::ctx::VisualState {
                 focused,
                 ..Default::default()
             }),
             t.gutter(
-                junie_tui::ui::ctx::VisualState {
+                termrock::ui::ctx::VisualState {
                     focused,
                     ..Default::default()
                 },
@@ -1358,7 +1358,7 @@ impl SearchPaint<Results> for Paint<'_> {
             buf.set_string(
                 area.x + 2,
                 area.y,
-                junie_tui::ui::reveal::cut(
+                termrock::ui::reveal::cut(
                     Rect::new(area.x + 2, area.y, (text_w) as u16, 1),
                     &placeholder,
                 ),
@@ -1426,7 +1426,7 @@ impl SearchPaint<Results> for Paint<'_> {
                     .iter()
                     .map(|idx| width(&self.items[*idx].label) as u16 + 2)
                     .collect();
-                let (shown, more) = junie_tui::widgets::chips::overflow_run(
+                let (shown, more) = termrock::widgets::chips::overflow_run(
                     &widths,
                     rect.right().saturating_sub(x),
                     1,
@@ -1467,7 +1467,7 @@ impl SearchPaint<Results> for Paint<'_> {
                 let label_cell = Rect::new(x, y, label_w, 1);
                 let mut cut = wider_than(&it.label, label_w as usize);
                 let label = truncate(&it.label, label_w as usize);
-                junie_tui::ui::reveal::queue_cut(label_cell, &it.label);
+                termrock::ui::reveal::queue_cut(label_cell, &it.label);
                 let mut lx = x;
                 for (bi, ch) in label.char_indices() {
                     let mut cs = st;
@@ -1515,13 +1515,13 @@ impl SearchPaint<Results> for Paint<'_> {
                         },
                     ));
                     buf.set_string(x, y, truncate_sep(&reason, reason_w as usize), rs);
-                    junie_tui::ui::reveal::queue_cut(Rect::new(x, y, reason_w, 1), &reason);
+                    termrock::ui::reveal::queue_cut(Rect::new(x, y, reason_w, 1), &reason);
                     cut |= wider_than(&reason, reason_w as usize);
                     if cut && s.focused {
-                        junie_tui::ui::reveal::peek(ctx, &format!("{} — {reason}", it.label));
+                        termrock::ui::reveal::peek(ctx, &format!("{} — {reason}", it.label));
                     }
                 } else if cut && s.focused {
-                    junie_tui::ui::reveal::peek(ctx, &it.label);
+                    termrock::ui::reveal::peek(ctx, &it.label);
                 }
 
                 if risk_w > 0 && matches!(it.risk, Risk::Destructive | Risk::Privileged) {
@@ -1627,7 +1627,7 @@ impl SearchPaint<Results> for Paint<'_> {
             buf.set_string(
                 inner.x + label_w,
                 y,
-                junie_tui::ui::reveal::cut(Rect::new(inner.x + label_w, y, (vw) as u16, 1), v),
+                termrock::ui::reveal::cut(Rect::new(inner.x + label_w, y, (vw) as u16, 1), v),
                 st,
             );
         }
@@ -1658,7 +1658,7 @@ impl SearchPaint<Results> for Paint<'_> {
         buf.set_string(
             area.x + 3,
             area.y,
-            junie_tui::ui::reveal::cut(
+            termrock::ui::reveal::cut(
                 Rect::new(area.x + 3, area.y, area.width.saturating_sub(3), 1),
                 &line,
             ),
@@ -1720,7 +1720,7 @@ impl ShellPage<Holla> for FinderPage {
     fn pointer(&mut self, ev: &PointerEvent, w: &mut World, cx: &mut Cx) -> Outcome {
         self.ensure_projection(w);
         if ev.id == SCOPE {
-            if !ev.is(junie_tui::core::intent::Phase::Click) {
+            if !ev.is(termrock::core::intent::Phase::Click) {
                 return Outcome::Ignored;
             }
             let next = match self.scope {
@@ -1924,8 +1924,8 @@ impl Screen for FinderPage {
     }
 }
 
-pub fn item_facts(it: &Item, w: &World, theme: &Theme) -> Vec<junie_tui::widgets::props::Prop> {
-    use junie_tui::widgets::props::Prop;
+pub fn item_facts(it: &Item, w: &World, theme: &Theme) -> Vec<termrock::widgets::props::Prop> {
+    use termrock::widgets::props::Prop;
     let _ = theme;
     let mut v = vec![
         Prop::new("Action", it.summary.clone()).wrap(),

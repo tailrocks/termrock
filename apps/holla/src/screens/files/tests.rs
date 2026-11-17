@@ -2,10 +2,10 @@ use super::*;
 use crate::alloc_probe::allocated_by;
 use crate::domain::fixtures::world_for;
 use crate::scenario::{Motion, Scenario};
-use junie_tui::core::focus::{Focus, FocusRing};
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::theme::Theme;
-use junie_tui::ui::ctx::Interaction;
+use termrock::core::focus::{Focus, FocusRing};
+use termrock::core::hit::HitRegistry;
+use termrock::theme::Theme;
+use termrock::ui::ctx::Interaction;
 
 const AREA: Rect = Rect::new(0, 0, 160, 40);
 const MIB: usize = 1024 * 1024;

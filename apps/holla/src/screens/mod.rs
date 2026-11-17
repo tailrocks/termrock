@@ -8,16 +8,16 @@ pub mod plan;
 pub mod review;
 pub mod snapshot;
 
-use junie_tui::core::event::Outcome;
-use junie_tui::core::scroll::ScrollState;
-use junie_tui::theme::Tone;
-use junie_tui::ui::layer::{LayerEntry, LayerTag, ShellLayers};
-use junie_tui::ui::layers::LayerResult;
-use junie_tui::widgets::menu::MenuAction;
-use junie_tui::widgets::picker::PickerAction;
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::statusbar::StatusItem;
 use ratatui::layout::{Position, Rect};
+use termrock::core::event::Outcome;
+use termrock::core::scroll::ScrollState;
+use termrock::theme::Tone;
+use termrock::ui::layer::{LayerEntry, LayerTag, ShellLayers};
+use termrock::ui::layers::LayerResult;
+use termrock::widgets::menu::MenuAction;
+use termrock::widgets::picker::PickerAction;
+use termrock::widgets::scrollbar;
+use termrock::widgets::statusbar::StatusItem;
 
 use crate::domain::context::Scope;
 use crate::sim::world::{Msg, World};
@@ -197,9 +197,9 @@ pub enum Page {
     },
 }
 
-pub type Request = junie_tui::shell::Request<ModalResult, (), Go>;
+pub type Request = termrock::shell::Request<ModalResult, (), Go>;
 
-pub type Cx<'a> = junie_tui::shell::Cx<'a, ModalResult, (), Go>;
+pub type Cx<'a> = termrock::shell::Cx<'a, ModalResult, (), Go>;
 
 #[derive(Default)]
 pub struct StatusBits {
@@ -209,7 +209,7 @@ pub struct StatusBits {
 
 pub struct Holla;
 
-impl junie_tui::shell::PageTypes for Holla {
+impl termrock::shell::PageTypes for Holla {
     type State = World;
     type Msg = Msg;
     type Result = ModalResult;
@@ -217,7 +217,7 @@ impl junie_tui::shell::PageTypes for Holla {
     type Go = Go;
 }
 
-pub use junie_tui::shell::{open_context, row_anchor, row_choice};
+pub use termrock::shell::{open_context, row_anchor, row_choice};
 
 impl ModalResult {
     pub fn menu_chosen(&self) -> Option<usize> {
@@ -286,7 +286,7 @@ impl<C> PendingMenu<C> {
     }
 }
 
-pub trait Screen: junie_tui::shell::Page<Holla> {
+pub trait Screen: termrock::shell::Page<Holla> {
     /// Whether this page needs its tick while another tab is shown. A page
     /// whose tick only refreshes a projection of the world returns false: the
     /// domain keeps running, and the page catches up once when it is entered.
@@ -315,9 +315,9 @@ pub trait Screen: junie_tui::shell::Page<Holla> {
 }
 
 pub fn ticks_label(ticks: u64) -> String {
-    junie_tui::ui::text::duration(
+    termrock::ui::text::duration(
         std::time::Duration::from_millis(ticks * crate::sim::world::TICK_MS as u64),
-        junie_tui::ui::text::DurationStyle::Spoken,
+        termrock::ui::text::DurationStyle::Spoken,
     )
 }
 
@@ -354,17 +354,17 @@ pub(crate) fn scroll_drag(area: Rect, pos: Position, scroll: &mut ScrollState) -
 #[cfg(test)]
 pub(crate) mod pointer_tests {
     use super::{Cx, Holla, LayerTag, World};
-    use junie_tui::core::focus::{Focus, FocusRing};
-    use junie_tui::core::hit::HitRegistry;
-    use junie_tui::core::id::WidgetId;
-    use junie_tui::core::intent::Phase;
-    use junie_tui::core::pointer::PointerEvent;
-    use junie_tui::shell::{Page as ShellPage, Request};
-    use junie_tui::theme::{ColorLevel, Theme};
-    use junie_tui::ui::ctx::{Interaction, RenderCtx};
     use ratatui::buffer::Buffer;
     use ratatui::crossterm::event::KeyModifiers;
     use ratatui::layout::{Position, Rect};
+    use termrock::core::focus::{Focus, FocusRing};
+    use termrock::core::hit::HitRegistry;
+    use termrock::core::id::WidgetId;
+    use termrock::core::intent::Phase;
+    use termrock::core::pointer::PointerEvent;
+    use termrock::shell::{Page as ShellPage, Request};
+    use termrock::theme::{ColorLevel, Theme};
+    use termrock::ui::ctx::{Interaction, RenderCtx};
 
     /// A screen tall enough that every row of the test fixtures is visible.
     pub(crate) const AREA: Rect = Rect::new(0, 0, 120, 300);

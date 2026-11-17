@@ -1,29 +1,29 @@
 use crate::screens::{DetailRewind, Holla};
-use junie_tui::shell::Page as ShellPage;
-use junie_tui::widgets::page_header::{Heading, PageHeader};
 use std::collections::BTreeSet;
+use termrock::shell::Page as ShellPage;
+use termrock::widgets::page_header::{Heading, PageHeader};
 
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::hit::Axis;
-use junie_tui::core::id::{ItemKey, Part, PartRef, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::core::scroll::ScrollState;
-use junie_tui::theme::Tone;
-use junie_tui::ui::context::ContextAnchor;
-use junie_tui::ui::ctx::{RenderCtx, fill, legible_on_fill};
-use junie_tui::ui::master_detail::MasterDetail;
-use junie_tui::ui::text::{fit, width, wrap};
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::menu::MenuItem;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::props::Prop;
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::statusbar::StatusItem;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::hit::Axis;
+use termrock::core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::pointer::PointerEvent;
+use termrock::core::scroll::ScrollState;
+use termrock::theme::Tone;
+use termrock::ui::context::ContextAnchor;
+use termrock::ui::ctx::{RenderCtx, fill, legible_on_fill};
+use termrock::ui::master_detail::MasterDetail;
+use termrock::ui::text::{fit, width, wrap};
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::menu::MenuItem;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::props::Prop;
+use termrock::widgets::scrollbar;
+use termrock::widgets::statusbar::StatusItem;
 
 use crate::domain::catalog::{InsightCategory, insight_candidates, observe_process};
 use crate::domain::cleanup::{self, DeleteItem, DeletePlan, Eligibility, Mode, ProcessObservation};
@@ -33,8 +33,8 @@ use crate::screens::{
     scroll_drag, scroll_press,
 };
 use crate::sim::world::World;
-use junie_tui::ui::layer::LayerTag;
-use junie_tui::ui::text::plural;
+use termrock::ui::layer::LayerTag;
+use termrock::ui::text::plural;
 
 pub const LIST: WidgetId = WidgetId::of("cleanup.list");
 pub const DETAIL: WidgetId = WidgetId::of("cleanup.detail");
@@ -550,7 +550,7 @@ impl CleanupPage {
         cx.status(format!(
             "{} selected · {}",
             plural(self.checked.len(), "item", "items"),
-            junie_tui::ui::text::bytes(self.selected_bytes())
+            termrock::ui::text::bytes(self.selected_bytes())
         ));
     }
 
@@ -581,7 +581,7 @@ impl CleanupPage {
         cx.status(format!(
             "{label} · {} selected · {}{}",
             plural(self.checked.len(), "item", "items"),
-            junie_tui::ui::text::bytes(self.selected_bytes()),
+            termrock::ui::text::bytes(self.selected_bytes()),
             if skipped > 0 {
                 format!(" · {skipped} ineligible stay unselected")
             } else {
@@ -608,7 +608,7 @@ impl CleanupPage {
         cx.status(if selected {
             format!(
                 "Every eligible candidate selected · {}",
-                junie_tui::ui::text::bytes(self.selected_bytes())
+                termrock::ui::text::bytes(self.selected_bytes())
             )
         } else {
             "Everything unselected".to_owned()
@@ -706,7 +706,7 @@ impl CleanupPage {
                         "Size",
                         format!(
                             "{}{}",
-                            junie_tui::ui::text::bytes(c.bytes()),
+                            termrock::ui::text::bytes(c.bytes()),
                             if c.candidates.iter().any(|k| k.partial) {
                                 " · partial (unreadable entries)"
                             } else {
@@ -787,7 +787,7 @@ impl CleanupPage {
                         "Size",
                         format!(
                             "{}{}",
-                            junie_tui::ui::text::bytes(k.bytes),
+                            termrock::ui::text::bytes(k.bytes),
                             if k.partial { " · lower bound" } else { "" }
                         ),
                     ),
@@ -888,7 +888,7 @@ impl CleanupPage {
                 Row::Note(n) => buf.set_string(
                     area.x + 5,
                     y,
-                    junie_tui::ui::reveal::cut(
+                    termrock::ui::reveal::cut(
                         Rect::new(area.x + 5, y, row_w.saturating_sub(5), 1),
                         n,
                     ),
@@ -947,7 +947,7 @@ impl CleanupPage {
                     let label_w = (row_w * 34 / 100).clamp(16, 40);
                     buf.set_string(row.x + 7, y, fit(&label, label_w as usize), st);
                     let mut x = row.x + 7 + label_w + 2;
-                    let size = format!("{:>9}", junie_tui::ui::text::bytes(c.bytes()));
+                    let size = format!("{:>9}", termrock::ui::text::bytes(c.bytes()));
                     if x + 10 <= row.right() {
                         buf.set_string(x, y, &size, plain.fg(t.text_secondary));
                     }
@@ -973,7 +973,7 @@ impl CleanupPage {
                         buf.set_string(
                             x,
                             y,
-                            junie_tui::ui::text::truncate_sep(&meta, avail),
+                            termrock::ui::text::truncate_sep(&meta, avail),
                             plain.fg(match c.process {
                                 ProcessObservation::NotRunning => t.text_muted,
                                 _ => t.warning,
@@ -1027,7 +1027,7 @@ impl CleanupPage {
                         buf.set_string(
                             x,
                             y,
-                            format!("{:>9}", junie_tui::ui::text::bytes(k.bytes)),
+                            format!("{:>9}", termrock::ui::text::bytes(k.bytes)),
                             plain.fg(t.text_secondary),
                         );
                     }
@@ -1060,7 +1060,7 @@ impl CleanupPage {
                         buf.set_string(
                             x,
                             y,
-                            junie_tui::ui::reveal::cut(Rect::new(x, y, (avail) as u16, 1), &tail),
+                            termrock::ui::reveal::cut(Rect::new(x, y, (avail) as u16, 1), &tail),
                             plain.fg(if ineligible { quiet } else { t.text_faint }),
                         );
                     }
@@ -1116,7 +1116,7 @@ impl CleanupPage {
             buf.set_string(
                 inner.x + label_w,
                 y,
-                junie_tui::ui::reveal::cut(Rect::new(inner.x + label_w, y, (vw) as u16, 1), v),
+                termrock::ui::reveal::cut(Rect::new(inner.x + label_w, y, (vw) as u16, 1), v),
                 Style::new().fg(t.tone(*tone)).bg(bg),
             );
         }
@@ -1608,9 +1608,9 @@ impl ShellPage<Holla> for CleanupPage {
         let line = format!(
             "{} · {} · {} selected ({}) · {}{}",
             plural(self.cats.len(), "category", "categories"),
-            junie_tui::ui::text::bytes(total),
+            termrock::ui::text::bytes(total),
             self.selected_items().len(),
-            junie_tui::ui::text::bytes(self.selected_bytes()),
+            termrock::ui::text::bytes(self.selected_bytes()),
             match self.mode {
                 Mode::Trash => "Trash",
                 Mode::Permanent => "PERMANENT",
@@ -1664,13 +1664,13 @@ impl ShellPage<Holla> for CleanupPage {
             hint("Enter", "Open"),
         ];
         v.push(hint("a", "All"));
-        v.push(junie_tui::widgets::keyhint::toggle_hint(
+        v.push(termrock::widgets::keyhint::toggle_hint(
             "m",
             self.mode == Mode::Permanent,
             "Use Trash",
             "Use permanent delete",
         ));
-        v.push(junie_tui::widgets::keyhint::toggle_hint(
+        v.push(termrock::widgets::keyhint::toggle_hint(
             "n",
             self.dry_run,
             "Switch to live run",
@@ -1679,7 +1679,7 @@ impl ShellPage<Holla> for CleanupPage {
         v.push(hint("d", "Review deletion"));
         v.push(hint("p", "Details"));
         v.push(hint("Esc", "Back"));
-        v.push(junie_tui::widgets::keyhint::CONTEXT_MENU);
+        v.push(termrock::widgets::keyhint::CONTEXT_MENU);
         v
     }
 
@@ -1718,7 +1718,7 @@ impl Screen for CleanupPage {
                     format!(
                         "{} selected · {}{}",
                         self.selected_items().len(),
-                        junie_tui::ui::text::bytes(self.selected_bytes()),
+                        termrock::ui::text::bytes(self.selected_bytes()),
                         if self.dry_run { " · dry run" } else { "" }
                     ),
                     Tone::Secondary,
@@ -1764,7 +1764,7 @@ pub fn plan_facts(plan: &DeletePlan, w: &World) -> Vec<Prop> {
             }),
             (Mode::Permanent, false) => "PERMANENT · unlink and remove_dir_all · cannot be undone".into(),
         }).tone(if plan.mode == Mode::Permanent && !plan.dry_run { Tone::Error } else { Tone::Normal }).wrap(),
-        Prop::new("Estimate", format!("{} allocated · APFS clones may overcount · purgeable space excluded · not a free-space guarantee", junie_tui::ui::text::bytes(plan.estimate()))).wrap(),
+        Prop::new("Estimate", format!("{} allocated · APFS clones may overcount · purgeable space excluded · not a free-space guarantee", termrock::ui::text::bytes(plan.estimate()))).wrap(),
         Prop::new("Denied", if denied == 0 { "none · every path passed the lexical, protected-root, user-data and symlink rules".to_owned() } else { format!("{denied} would be skipped at commit by the safety rules") }).tone(if denied > 0 { Tone::Warning } else { Tone::Muted }).wrap(),
     ];
     if !guarded.is_empty() {
@@ -1970,8 +1970,8 @@ mod context_tests {
     use crate::domain::fixtures::world_for;
     use crate::scenario::{Motion, Scenario};
     use crate::screens::pointer_tests::{cell_of, render_hits, secondary_open};
-    use junie_tui::core::focus::{Focus, FocusRing};
-    use junie_tui::shell::Request;
+    use termrock::core::focus::{Focus, FocusRing};
+    use termrock::shell::Request;
 
     fn world() -> World {
         world_for(Scenario::RustDirty, Motion::Full)
@@ -2412,10 +2412,10 @@ mod detail_scroll_tests {
     use crate::domain::fixtures::world_for;
     use crate::scenario::{Motion, Scenario};
     use crate::screens::pointer_tests::{cell_of, render_hits};
-    use junie_tui::core::focus::{Focus, FocusRing};
-    use junie_tui::core::hit::HitRegistry;
     use ratatui::crossterm::event::KeyModifiers;
     use ratatui::layout::Position;
+    use termrock::core::focus::{Focus, FocusRing};
+    use termrock::core::hit::HitRegistry;
 
     fn selectable_rows(page: &CleanupPage) -> Vec<usize> {
         (0..page.rows.len())

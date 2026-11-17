@@ -10,7 +10,7 @@ mod screens;
 mod sim;
 
 use clap::Parser;
-use junie_tui::cli::CommonArgs;
+use termrock::cli::CommonArgs;
 
 use crate::app::App;
 use crate::scenario::Scenario;
@@ -59,12 +59,12 @@ fn cli_after_help() -> String {
          Everything is simulated in memory; no stack command is ever executed.",
         concept = scenario_names(&Scenario::CONCEPT),
         parity = scenario_names(&Scenario::PARITY),
-        motion = junie_tui::cli::motion_help(NO_MOTION_ENV),
+        motion = termrock::cli::motion_help(NO_MOTION_ENV),
     )
 }
 
 fn main() -> std::io::Result<()> {
-    let cli: Cli = junie_tui::cli::parse(cli_after_help());
+    let cli: Cli = termrock::cli::parse(cli_after_help());
     let motion = cli.common.motion(NO_MOTION_ENV);
     let history = !std::env::var_os("HOLLA_NO_HISTORY").is_some_and(|v| v == "1");
     let mut app = App::launch(
@@ -74,5 +74,5 @@ fn main() -> std::io::Result<()> {
         cli.common.theme(),
         history,
     );
-    junie_tui::shell::run(&mut app)
+    termrock::shell::run(&mut app)
 }
