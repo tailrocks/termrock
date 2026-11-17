@@ -100,9 +100,9 @@ apps:
 | `work_contract_terminal_prepared_paint`, `work_contract_terminal_feed_and_copy_units` | `tests/regressions/work_budgets/terminal.rs` |
 | `work_contract_runtime_raw_filtered_events_yield`, `work_contract_runtime_flood_services_input`, `work_contract_runtime_frame_diff_and_bytes_written` | `src/runtime/raw_input_tests/work.rs` (lib unit tests: they drive the private `scan_next`, `service_turn`, `drain_ready_inputs` and `paint`) |
 | `work_contract_jackin_scripted_output_budget` | `apps/jackin/src/sim/link/tests/work.rs` (lib unit test over the real `SimLink` and `TerminalPane`) |
-| `work_contract_holla_idle_and_source_update`, `work_contract_holla_background_updates_keep_projection`, `work_contract_holla_file_preview_prefix` | `src/bin/holla/work_metrics_tests.rs` |
+| `work_contract_holla_idle_and_source_update`, `work_contract_holla_background_updates_keep_projection`, `work_contract_holla_file_preview_prefix` | `apps/holla/src/work_metrics_tests.rs` |
 | `work_contract_tablepro_idle_and_cell_edit` | `apps/tablepro/src/work_metrics_tests.rs` |
-| `work_contract_showcase_idle_and_switch` | `src/bin/showcase/work_metrics_tests.rs` |
+| `work_contract_showcase_idle_and_switch` | `apps/showcase/src/work_metrics_tests.rs` |
 | `work_contract_jackin_idle_and_roster_update`, `work_contract_jackin_account_update`, `work_contract_jackin_capsule_idle_frame` | `apps/jackin/tests/regressions/work_budgets.rs` |
 
 The app tests check each scenario with `assert_exact`: every listed metric must
@@ -459,8 +459,8 @@ Results are not committed. The report files and the summary stay in
 ```sh
 cargo nextest run -p junie-tui --features work-metrics --test regressions \
     --no-tests fail -E 'test(/^work_budgets::/)'
-cargo nextest run -p junie-tui --features work-metrics --bin holla --bin tablepro --bin showcase \
-    --no-tests fail -E 'test(/^work_metrics_tests::/)'
+cargo nextest run -p termrock-holla -p termrock-tablepro -p termrock-showcase \
+    --features work-metrics --bins --no-tests fail -E 'test(/^work_metrics_tests::/)'
 cargo nextest run -p jackin-console --features demo,work-metrics --test regressions \
     --no-tests fail -E 'test(/^work_budgets::/)'
 cargo nextest run -p junie-tui --features work-metrics --lib --no-tests fail \
@@ -471,7 +471,8 @@ cargo nextest run --profile performance --workspace --all-features --no-tests fa
 scripts/measure-performance.sh
 ```
 
-CI builds both Rust jobs with `--all-features`, so these tests already run in
-the existing `Rust / junie-tui` and `Rust / jackin-console` jobs. The product
+CI builds the Rust jobs with `--all-features`, so these tests already run in
+the `Rust / junie-tui`, `Rust / jackin-console` and `Rust / termrock-holla`,
+`-tablepro` and `-showcase` jobs. The product
 shape builds without `work-metrics`, where the tests compile away and
 `metrics_disabled_does_not_evaluate_arguments` runs instead.

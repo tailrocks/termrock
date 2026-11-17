@@ -4,12 +4,12 @@
 //! `pre_refactor/h03_picker/` and each checkpoint's dots become underscores.
 //!
 //! `activities_multi` calls `World::tick` 48 times, but that returns before
-//! `self.tick` increments when `!clock.running` (`src/bin/holla/sim/world.rs`).
+//! `self.tick` increments when `!clock.running` (`apps/holla/src/sim/world.rs`).
 //! `clock.running` is false for paused motion
-//! (`src/bin/holla/domain/fixtures.rs`). The pre-ticks therefore emit nothing
+//! (`apps/holla/src/domain/fixtures.rs`). The pre-ticks therefore emit nothing
 //! past tick 0. api dev's body is `$ mise run dev  (services/api)` and not the
 //! tick-41 listening line. Duration follows `world.tick`
-//! (`src/bin/holla/domain/activity.rs` `duration_ticks`) and stays `0 s`.
+//! (`apps/holla/src/domain/activity.rs` `duration_ticks`) and stays `0 s`.
 //! Reduced motion would keep changing that text.
 //!
 //! Live activities make Ctrl+Q a destructive dialog. `Dialog::destructive`

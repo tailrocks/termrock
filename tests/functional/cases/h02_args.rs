@@ -8,7 +8,7 @@
 //! `~/work/poly`.
 //!
 //! `ArgSpec::text` and `ArgSpec::choice` both set `secret: false`
-//! (`src/bin/holla/domain/action.rs`). No `ArgSpec` assignment sets
+//! (`apps/holla/src/domain/action.rs`). No `ArgSpec` assignment sets
 //! `secret: true`, so the form has no secret field. This scenario never
 //! reaches a secret script prompt either. Required text and choice are driven.
 //!

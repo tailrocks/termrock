@@ -2,9 +2,9 @@
 //!
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/h01_finder/` and each checkpoint's dots become underscores.
-//! Reduced motion sets every source `done_at` to 0 (`src/bin/holla/domain/parity.rs`),
+//! Reduced motion sets every source `done_at` to 0 (`apps/holla/src/domain/parity.rs`),
 //! so pending, ready, and failed exist only as earlier ticks. `--frame` renders
-//! one of those ticks with `--motion paused` (`src/bin/holla/main.rs`).
+//! one of those ticks with `--motion paused` (`apps/holla/src/main.rs`).
 
 use tui_test::TerminalSnapshot;
 
@@ -199,7 +199,7 @@ fn finder_discovery_keeps_the_selected_identity() {
     );
     assert_kept(&github_home);
     // `github.clone` is built inside `git_items`, which returns until `source_ready("git")`
-    // (`src/bin/holla/domain/catalog.rs`). Git's `done_at` is 40, so the clone row is absent here.
+    // (`apps/holla/src/domain/catalog.rs`). Git's `done_at` is 40, so the clone row is absent here.
     github.finish();
 
     let settled = launch(

@@ -5,7 +5,7 @@
 //! and Quick no-op (`true`). The deploy script asks for a secret password,
 //! then a public confirmation. `send_input` stores secret bytes but
 //! `echo_pending` rewrites that prompt with an empty answer
-//! (`src/bin/holla/domain/activity.rs`).
+//! (`apps/holla/src/domain/activity.rs`).
 //!
 //! The open secret prompt is a live activity, so the tab and running chip
 //! spin every tick. `App::visual` waits for a quiet frame that does not

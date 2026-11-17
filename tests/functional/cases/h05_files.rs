@@ -4,7 +4,7 @@
 //! `pre_refactor/h05_files/` and each checkpoint's dots become underscores.
 //! The checkpoint is the open `/Users/alex/work/app` directory, not the
 //! `link-to-app` symlink. `FilesPage::open_current` follows a symlink to its
-//! target (`src/bin/holla/screens/files.rs`), so that row is the wrong one.
+//! target (`apps/holla/src/screens/files.rs`), so that row is the wrong one.
 //! A same-size resize does not force a frame, and the 140ms press flash stays
 //! painted under reduced motion, so each shot nudges the width and comes back.
 //! The waits follow the reported size and `Files · ~/work/app`, not the
