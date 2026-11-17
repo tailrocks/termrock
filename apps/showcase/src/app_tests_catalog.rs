@@ -42,9 +42,10 @@ use termrock::widgets::dialog::{Dialog, DialogResult};
 use termrock::widgets::edit::{EditField, Validator};
 use termrock::widgets::form_dialog::{FormAction, FormDialog, FormField};
 use termrock::widgets::grid::{
-    CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, FinishEdit, GridAction,
-    GridCommitError, GridCommitFailure, GridCommitToken, GridDataError, GridEditError,
-    GridKeyError, GridRevision, GridRows, GridUndo, GridUndoKind, RowTotal,
+    CellChange, CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, DeletedRow, FinishEdit,
+    GridAction, GridChangeSet, GridCommitError, GridCommitFailure, GridCommitToken, GridDataError,
+    GridEditError, GridKeyError, GridRevision, GridRows, GridUndo, GridUndoKind, InsertedRow,
+    PendingChanges, RowTotal, UpdatedRow,
 };
 use termrock::widgets::info_dialog::InfoDialog;
 use termrock::widgets::input::{TextInput, TextInput as FinderQuery};
@@ -57,7 +58,7 @@ use termrock::widgets::nav_list::{NavItem, NavList};
 use termrock::widgets::option_editor::{
     ChoiceEditor, ColumnEditor, EditorConfig, OptionItem, Options,
 };
-use termrock::widgets::option_list::{Item, PopupRow};
+use termrock::widgets::option_list::{Item, OptionList, PopupRow, PopupSnapshot};
 use termrock::widgets::panel::ScrollPanel;
 use termrock::widgets::picker::{Picker, PickerAction, PickerItemsError, VisibleKey};
 use termrock::widgets::props::Prop;
@@ -758,25 +759,25 @@ fn grid_change_capture() {
     let deleted = grid.row_key(1).expect("row 1 has a key");
     let inserted = grid.row_key(3).expect("the new row has a key");
 
-    let pending = grid.pending();
+    let pending: &PendingChanges = grid.pending();
     assert_eq!(pending.cells().count(), 1);
     assert_eq!(pending.deleted().collect::<Vec<_>>(), vec![deleted]);
     assert_eq!(pending.inserted().collect::<Vec<_>>(), vec![inserted]);
     assert!(pending.is_deleted(deleted) && !pending.is_inserted(deleted));
     assert!(pending.is_inserted(inserted) && !pending.is_deleted(inserted));
 
-    let snapshot = grid.snapshot_changes();
+    let snapshot: GridChangeSet = grid.snapshot_changes();
     assert_eq!(snapshot.counts(), (1, 1, 1));
-    let updated = &snapshot.updated()[0];
+    let updated: &UpdatedRow = &snapshot.updated()[0];
     assert_eq!(Some(updated.key()), grid.row_key(0));
     assert_eq!(updated.before()[GRID_SEATS], CellValue::Int(3));
-    let change = &updated.cells()[0];
+    let change: &CellChange = &updated.cells()[0];
     assert_eq!(grid.columns()[change.column()].name, "seats");
     assert_eq!(change.after(), &CellValue::Int(40));
-    let insert = &snapshot.inserted()[0];
+    let insert: &InsertedRow = &snapshot.inserted()[0];
     assert_eq!(insert.key(), inserted);
     assert_eq!(insert.values().len(), grid.columns().len());
-    let delete = &snapshot.deleted()[0];
+    let delete: &DeletedRow = &snapshot.deleted()[0];
     assert_eq!(delete.before()[GRID_NAME], CellValue::Text("row1".into()));
 
     grid.record_cell(2, GRID_SEATS, CellValue::Int(9))
@@ -983,9 +984,9 @@ fn completion_popup_snapshot() {
     let buf = paint(area, |area, buf, ctx| {
         completion.render(area, buf, ctx);
         let inner = Rect::new(30, 8, 20, 4);
-        let snapshot = completion
-            .list
-            .snapshot(inner, completion.items(), |i| format!("row{i}"));
+        let list: &OptionList = &completion.list;
+        let snapshot: PopupSnapshot<String> =
+            list.snapshot(inner, completion.items(), |i| format!("row{i}"));
         let rows: &[PopupRow<String>] = snapshot.rows();
         assert_eq!(rows.len(), 4, "the snapshot holds only the visible rows");
         assert!(rows.iter().all(|row| row.enabled && !row.checked));

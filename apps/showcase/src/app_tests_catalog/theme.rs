@@ -1687,7 +1687,7 @@ fn measure_tiles() {
 
     // Growing tiles share the spare width; the last takes the remainder.
     let (a, b) = (Tile::new(5, &one), Tile::new(5, &one));
-    let grown = measure::tiles(20, &[&[a, b]], (2, 1));
+    let grown: measure::Tiled = measure::tiles(20, &[&[a, b]], (2, 1));
     assert_eq!(grown.rects, [Rect::new(0, 0, 9, 1), Rect::new(11, 0, 9, 1)]);
     assert_eq!(grown.size, Size::new(20, 1));
 

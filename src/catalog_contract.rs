@@ -262,8 +262,10 @@ const VARIANT_SETS: &[(&str, &str)] = &[("metrics::Metric", "ALL")];
 
 /// Why the identifiers a scenario reaches do not show API `id`, or `None` when
 /// they do. A member (method, variant, const, free fn, macro) must appear by
-/// name; its owning type need not, because a scenario often calls a method on a
-/// value that something else returned. A variant needs its enum beside it. A type is shown by its own name or by any of its methods,
+/// name. Its owning type need not appear when no other type exports that name,
+/// because a scenario often calls a method on a value that something else
+/// returned; a name that others share (`new`, `len`, `key`) needs the owner
+/// named too, or any other type's call would satisfy it. A variant needs its enum beside it. A type is shown by its own name or by any of its methods,
 /// variants, consts or trait items, since a scenario meets most types only
 /// through what returns them. Fields and trait items inherit their owner and
 /// never reach here as an API of their own. This is an identifier check, not behavioral proof.
@@ -296,7 +298,7 @@ fn unexercised(
             format!("neither the type `{own}` nor any of its methods, variants, consts or trait items appears")
         });
     }
-    let (_, member) = owner_and_member(id, inv);
+    let (owner, member) = owner_and_member(id, inv);
     let member = member.trim_end_matches('!');
     if kind == ApiKind::Variant
         && let Some((enum_id, _)) = id.rsplit_once("::")
@@ -311,6 +313,19 @@ fn unexercised(
         return (!shown).then(|| format!("`{qualified}` never appears"));
     }
     if tokens.contains(member) {
+        // A name that other exported types also use (`new`, `len`, `key`,
+        // `render`) is satisfied by any of their calls, so the owner must be
+        // named in the scenario as well. A name only this owner has stays
+        // shown by itself, since the value often comes back from a call.
+        if let Some(owner) = owner
+            && is_shared_member(id, owner, member, exports)
+            && !tokens.contains(&last(owner))
+        {
+            return Some(format!(
+                "`{member}` appears, but other types export a `{member}` too and the owner `{}` is never named",
+                last(owner)
+            ));
+        }
         return None;
     }
     if kind == ApiKind::Expansion
@@ -324,6 +339,25 @@ fn unexercised(
         return None;
     }
     Some(format!("`{member}` never appears"))
+}
+
+/// Whether another type exports a callable or const member named `member`.
+fn is_shared_member(
+    id: &str,
+    owner: &str,
+    member: &str,
+    exports: &BTreeMap<&str, ApiKind>,
+) -> bool {
+    let own_prefix = format!("{owner}::");
+    exports.iter().any(|(other, kind)| {
+        *other != id
+            && !other.starts_with(&own_prefix)
+            && matches!(
+                kind,
+                ApiKind::Function | ApiKind::Const | ApiKind::TraitItem
+            )
+            && other.rsplit("::").next() == Some(member)
+    })
 }
 
 fn mention_needed(id: &str, inv: &Inventory) -> String {
@@ -1461,7 +1495,7 @@ fn catalog_rejects_an_unwired_lane_file() {
     );
 }
 
-const TYPE_PROBE: &str = "\npub struct ProbeKind;\nimpl ProbeKind { pub fn ping(&self) {} }\npub enum ProbeEnum { Open, Close }\n";
+const TYPE_PROBE: &str = "\npub struct ProbeKind;\nimpl ProbeKind { pub fn ping(&self) {} pub fn solo(&self) {} }\npub struct ProbeOther;\nimpl ProbeOther { pub fn ping(&self) {} }\npub enum ProbeEnum { Open, Close }\n";
 
 /// The errors of a tree where clock.rs declares the probe APIs, a lane file
 /// proves `apis` through `NarrowLayout`, and that scenario's fn runs `body`
@@ -1477,7 +1511,7 @@ fn probe_errors(apis: &[&str], body: &str, items: &str) -> Vec<String> {
     s.catalog = replaced(
         &s.catalog,
         "static MEMBERS: &[Capability] = &[",
-        "static MEMBERS: &[Capability] = &[\n    Capability::ty(\"clock::ProbeKind\"),\n    Capability::function(\"clock::ProbeKind::ping\"),\n    Capability::ty(\"clock::ProbeEnum\"),\n    Capability::variant(\"clock::ProbeEnum::Open\"),\n    Capability::variant(\"clock::ProbeEnum::Close\"),",
+        "static MEMBERS: &[Capability] = &[\n    Capability::ty(\"clock::ProbeKind\"),\n    Capability::function(\"clock::ProbeKind::ping\"),\n    Capability::function(\"clock::ProbeKind::solo\"),\n    Capability::ty(\"clock::ProbeOther\"),\n    Capability::function(\"clock::ProbeOther::ping\"),\n    Capability::ty(\"clock::ProbeEnum\"),\n    Capability::variant(\"clock::ProbeEnum::Open\"),\n    Capability::variant(\"clock::ProbeEnum::Close\"),",
     );
     for api in apis {
         lane_file(&mut s, "lane_shell.rs").push_str(&lane_proof(api));
@@ -1541,10 +1575,24 @@ fn catalog_a_type_is_shown_by_its_name_or_by_one_of_its_members() {
 
 #[test]
 fn catalog_a_method_is_shown_by_its_name_alone() {
-    let named = probe_errors(&["clock::ProbeKind::ping"], "value().ping();", "");
+    let named = probe_errors(&["clock::ProbeKind::solo"], "value().solo();", "");
     assert!(unexercised_errors(&named).is_empty(), "{named:#?}");
-    let type_only = probe_errors(&["clock::ProbeKind::ping"], "let _ = ProbeKind;", "");
-    expect_error(&type_only, "`ping` never appears");
+    let type_only = probe_errors(&["clock::ProbeKind::solo"], "let _ = ProbeKind;", "");
+    expect_error(&type_only, "`solo` never appears");
+}
+
+#[test]
+fn catalog_a_method_name_another_type_shares_needs_its_owner_named() {
+    let api = ["clock::ProbeKind::ping"];
+    let bare = probe_errors(&api, "value().ping();", "");
+    expect_error(
+        &bare,
+        "`ping` appears, but other types export a `ping` too and the owner `ProbeKind` is never named",
+    );
+    let owned = probe_errors(&api, "let kind: ProbeKind = value();\n    kind.ping();", "");
+    assert!(unexercised_errors(&owned).is_empty(), "{owned:#?}");
+    let other_type = probe_errors(&api, "ProbeOther.ping();", "");
+    expect_error(&other_type, "the owner `ProbeKind` is never named");
 }
 
 #[test]

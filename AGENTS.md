@@ -169,7 +169,11 @@ workspaces, Docker, OpenShell, Codex).
   variant needs its own name, one of its methods, variants or trait items, or
   for a variant `Enum::Variant`) must be an identifier in a named scenario's
   body or in a fn, const or `impl` it reaches in the Showcase crate by call,
-  `use` line or path (`tests/support/scenario_reach.rs`). Strings and comments
+  `use` line or path (`tests/support/scenario_reach.rs`). A method or const
+  whose name another exported type also uses (`new`, `len`, `key`, `render`)
+  needs its owner type named in the scenario too, for example in a type
+  annotation on the value it returns, because any other type's call would
+  satisfy the bare name. Strings and comments
   do not count, and the check is still identifier matching, not behavioral
   proof. The one explicit exception is `VARIANT_SETS` in
   `src/catalog_contract.rs` (`Metric::ALL` stands for the variants it lists).
