@@ -1913,6 +1913,20 @@ pub enum HintAlign {
     Center,
 }
 
+impl crate::core::selection::CheckGlyphs for Glyphs {
+    fn check_on(&self) -> &'static str {
+        self.check_on
+    }
+
+    fn check_off(&self) -> &'static str {
+        self.check_off
+    }
+
+    fn check_mixed(&self) -> &'static str {
+        self.check_mixed
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Glyphs {
     pub focus_bar: &'static str,
@@ -2059,9 +2073,9 @@ impl Glyphs {
         sort_desc: "▾",
         ellipsis: "…",
         separator: " · ",
-        check_on: "[✓]",
-        check_off: "[ ]",
-        check_mixed: "[–]",
+        check_on: crate::core::selection::CHECK_ON,
+        check_off: crate::core::selection::CHECK_OFF,
+        check_mixed: crate::core::selection::CHECK_MIXED,
         tick: "✓",
         check_off_narrow: "□",
         dash: "–",
@@ -2494,6 +2508,12 @@ impl HintBarStyle {
         compact: false,
         pinned_keys: &["Esc", "?", "F1"],
     };
+}
+
+impl crate::core::hints::PinnedKeys for HintBarStyle {
+    fn pinned_keys(&self) -> &[&str] {
+        self.pinned_keys
+    }
 }
 
 impl Default for HintBarStyle {
