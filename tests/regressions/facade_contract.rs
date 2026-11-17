@@ -12,13 +12,13 @@ use syn::visit::Visit;
 
 /// The applications that import the facade only. Each pull request that moves an
 /// application onto the facade adds it here; the last one lists all four.
-const MIGRATED_APPS: &[&str] = &["tablepro", "holla"];
+const MIGRATED_APPS: &[&str] = &["tablepro", "holla", "showcase"];
 const IMPLEMENTATION: &str = "junie_tui";
 
 /// Sources that still sit outside their package directory while the app move
 /// lands in steps (docs/api-contract.md). Each entry is deleted by the pull
 /// request that moves that source into `apps/<app>/src`.
-const UNMOVED_SOURCES: [(&str, &str); 1] = [("showcase", "src/bin/showcase")];
+const UNMOVED_SOURCES: [(&str, &str); 0] = [];
 
 fn root() -> &'static Path {
     Path::new(env!("CARGO_MANIFEST_DIR"))

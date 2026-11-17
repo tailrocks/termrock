@@ -404,7 +404,7 @@ mod showcase_coverage {
     /// file is read, not included, because it names Showcase page types.
     fn coverage_pairs(name: &str) -> Vec<(String, String)> {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
-        let source = std::fs::read_to_string(root.join("src/bin/showcase/coverage.rs"))
+        let source = std::fs::read_to_string(root.join("apps/showcase/src/coverage.rs"))
             .expect("showcase coverage source reads");
         let file = syn::parse_file(&source).expect("coverage source parses");
         let table = file
@@ -582,7 +582,7 @@ mod showcase_coverage {
         (
             read("src/widgets/inspect_changes.rs"),
             read("src/catalog.rs"),
-            read("src/bin/showcase/pages/diff.rs"),
+            read("apps/showcase/src/pages/diff.rs"),
         )
     }
 
