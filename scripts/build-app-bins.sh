@@ -17,8 +17,8 @@ case $target in
 esac
 dir=$target/app-bins
 
-cargo build --locked --package junie-tui \
-    --bin showcase --bin tablepro --bin holla --target-dir "$dir"
+cargo build --locked --package termrock-showcase --package termrock-tablepro \
+    --package termrock-holla --target-dir "$dir"
 
 : "${NEXTEST_ENV:?run this script as a nextest setup script}"
 for name in showcase tablepro holla; do
