@@ -11,8 +11,8 @@ use jackin_console::fixtures::{Scenario, app_with_world, world_for};
 use jackin_console::screens::Go;
 use jackin_console::sim;
 use jackin_console::world::{DaemonHealth, Msg};
-use junie_tui::motion::Motion;
-use junie_tui::theme::{ColorLevel, Theme, Tone};
+use termrock::motion::Motion;
+use termrock::theme::{ColorLevel, Theme, Tone};
 
 fn squash(text: &str) -> String {
     text.split_whitespace().collect::<Vec<_>>().join(" ")

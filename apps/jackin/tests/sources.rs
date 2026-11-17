@@ -14,8 +14,8 @@ use jackin_console::launch::{LaunchFeed, LaunchTarget};
 use jackin_console::panes::{PaneBody, PaneRequest, PaneSpawn};
 use jackin_console::sim::SimBackend;
 use jackin_console::world::World;
-use junie_tui::theme::Tone;
-use junie_tui::widgets::file_browser::FileEntry;
+use termrock::theme::Tone;
+use termrock::widgets::file_browser::FileEntry;
 
 struct ListedSource;
 

@@ -28,11 +28,11 @@ use jackin_console::launch::{LaunchFeed, LaunchTarget};
 use jackin_console::panes::{PaneBody, PaneRequest, PaneSpawn};
 use jackin_console::sim::{self, SimBackend};
 use jackin_console::world::{Msg, SaveSuccess, World};
-use junie_tui::core::event::{Input, Key};
-use junie_tui::motion::Motion;
-use junie_tui::runtime::Application;
-use junie_tui::theme::{ColorLevel, Theme};
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use termrock::core::event::{Input, Key};
+use termrock::motion::Motion;
+use termrock::runtime::Application;
+use termrock::theme::{ColorLevel, Theme};
 
 type Answer = fn(&Effect, &World) -> Option<Msg>;
 
@@ -166,7 +166,7 @@ fn editor_save_status_asks_for_a_default_role() {
         "{hint}"
     );
     assert!(
-        junie_tui::ui::text::width(&fill_in(&hint, &[("name", &"x".repeat(20))])) <= 60,
+        termrock::ui::text::width(&fill_in(&hint, &[("name", &"x".repeat(20))])) <= 60,
         "the hint fits the status line at the longest name"
     );
 
@@ -179,7 +179,7 @@ fn editor_save_status_asks_for_a_default_role() {
         "abcdefghijklmnopqrstuvwxy",
     );
     assert_eq!(long, hint_for("abcdefghijklmnopqrs…"));
-    assert!(junie_tui::ui::text::width(&long) <= 56, "{long}");
+    assert!(termrock::ui::text::width(&long) <= 56, "{long}");
 
     let mut one_role = world_for(Scenario::OpenshellFixed);
     one_role.roles.truncate(1);

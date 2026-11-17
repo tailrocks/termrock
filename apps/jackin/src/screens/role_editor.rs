@@ -1,34 +1,34 @@
 use crate::screens::Jackin;
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::core::scroll::{ScrollState, TrackClick};
-use junie_tui::shell::Page;
-use junie_tui::theme::{StatusKind, Tone};
-use junie_tui::ui::ctx::{RenderCtx, fill, legible_on_fill};
-use junie_tui::ui::layout::{Stack, StackChild, StackScroll};
-use junie_tui::ui::text::{fit, plural, truncate};
-use junie_tui::widgets::button::{Button, row_layout_right};
-use junie_tui::widgets::choice::Checkbox;
-use junie_tui::widgets::dialog::Dialog;
-use junie_tui::widgets::form_dialog::{FieldValue, FormField, FormValues};
-use junie_tui::widgets::info_dialog::InfoDialog;
-use junie_tui::widgets::input::{InputAction, TextInput};
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::notice::Notice;
-use junie_tui::widgets::option_list::Item;
-use junie_tui::widgets::panel::Panel;
-use junie_tui::widgets::picker::Picker;
-use junie_tui::widgets::progress::spinner_frame;
-use junie_tui::widgets::props::Prop;
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::segments::Segment;
-use junie_tui::widgets::tabs::{TabAction, TabItem, Tabs};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 use ratatui::style::Modifier;
+use termrock::core::event::{Key, Outcome};
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::core::scroll::{ScrollState, TrackClick};
+use termrock::shell::Page;
+use termrock::theme::{StatusKind, Tone};
+use termrock::ui::ctx::{RenderCtx, fill, legible_on_fill};
+use termrock::ui::layout::{Stack, StackChild, StackScroll};
+use termrock::ui::text::{fit, plural, truncate};
+use termrock::widgets::button::{Button, row_layout_right};
+use termrock::widgets::choice::Checkbox;
+use termrock::widgets::dialog::Dialog;
+use termrock::widgets::form_dialog::{FieldValue, FormField, FormValues};
+use termrock::widgets::info_dialog::InfoDialog;
+use termrock::widgets::input::{InputAction, TextInput};
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::notice::Notice;
+use termrock::widgets::option_list::Item;
+use termrock::widgets::panel::Panel;
+use termrock::widgets::picker::Picker;
+use termrock::widgets::progress::spinner_frame;
+use termrock::widgets::props::Prop;
+use termrock::widgets::scrollbar;
+use termrock::widgets::segments::Segment;
+use termrock::widgets::tabs::{TabAction, TabItem, Tabs};
 
 use super::modals::{FormDialog, unsaved_dialog};
 use super::{Cx, Go, LayerTag, ModalResult, Screen};
@@ -952,7 +952,7 @@ impl RoleEditorScreen {
                     buf.set_string(
                         hx,
                         r.y,
-                        junie_tui::ui::reveal::cut(
+                        termrock::ui::reveal::cut(
                             Rect::new(hx, r.y, area.right().saturating_sub(hx), 1),
                             "Off by default · adds a Docker client and one engine rule",
                         ),
@@ -985,7 +985,7 @@ impl RoleEditorScreen {
                     buf.set_string(
                         r.x,
                         r.y + 3,
-                        junie_tui::ui::reveal::cut(
+                        termrock::ui::reveal::cut(
                             Rect::new(r.x, r.y + 3, area.right().saturating_sub(r.x), 1),
                             helps[i],
                         ),
@@ -1108,11 +1108,11 @@ impl RoleEditorScreen {
             ctx.clickable(rid, rect);
         }
         if n == 0 {
-            let e = junie_tui::widgets::empty::EmptyState::new("No environment entries")
+            let e = termrock::widgets::empty::EmptyState::new("No environment entries")
                 .hint("a adds one");
             let r = Rect::new(body.x + 2, body.y + 2, body.width.saturating_sub(4), 4);
             if body.height > 6 {
-                junie_tui::widgets::empty::render(r, buf, t, &e, bg);
+                termrock::widgets::empty::render(r, buf, t, &e, bg);
             }
         }
         if has_sb {
@@ -1169,7 +1169,7 @@ impl RoleEditorScreen {
             buf.set_string(
                 area.x + 2,
                 area.y,
-                junie_tui::ui::reveal::cut(
+                termrock::ui::reveal::cut(
                     Rect::new(area.x + 2, area.y, area.width.saturating_sub(4), 1),
                     &text,
                 ),
@@ -1529,7 +1529,7 @@ impl Page<Jackin> for RoleEditorScreen {
 
     fn on_blur(
         &mut self,
-        ch: junie_tui::core::focus::FocusChange,
+        ch: termrock::core::focus::FocusChange,
         _w: &mut World,
         _cx: &mut Cx,
     ) -> Outcome {
@@ -1766,13 +1766,13 @@ impl Page<Jackin> for RoleEditorScreen {
         format!("Roles › {} › edit", self.role)
     }
 
-    fn stakes(&mut self, _w: &World) -> junie_tui::ui::leave::Stakes {
+    fn stakes(&mut self, _w: &World) -> termrock::ui::leave::Stakes {
         self.sync();
         let n = self.change_count();
         if n > 0 {
-            junie_tui::ui::leave::Stakes::Unsaved { changes: n }
+            termrock::ui::leave::Stakes::Unsaved { changes: n }
         } else {
-            junie_tui::ui::leave::Stakes::Clean
+            termrock::ui::leave::Stakes::Clean
         }
     }
 

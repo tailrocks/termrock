@@ -3,7 +3,7 @@ name = "jackin-console"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.99"
-description = "The jackin console screens, built from the junie-tui components"
+description = "The jackin console screens, built from the termrock components"
 license = "MIT"
 
 [lib]
@@ -23,12 +23,12 @@ required-features = ["demo"]
 
 [features]
 default = []
-demo = ["dep:clap", "junie-tui/cli"]
+demo = ["dep:clap", "termrock/cli"]
 product = []
-work-metrics = ["junie-tui/work-metrics"]
+work-metrics = ["termrock/work-metrics"]
 
 [dependencies]
-junie-tui = { path = "../..", default-features = false, features = ["terminal"] }
+termrock = { path = "../../crates/termrock", default-features = false, features = ["terminal"] }
 clap = { workspace = true, optional = true }
 ratatui = { workspace = true }
 unicode-segmentation = "1"

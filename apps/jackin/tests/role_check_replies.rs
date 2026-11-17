@@ -16,11 +16,11 @@ use jackin_console::panes::{PaneBody, PaneRequest, PaneSpawn};
 use jackin_console::screens::Go;
 use jackin_console::sim::{self, SimBackend};
 use jackin_console::world::{Msg, World};
-use junie_tui::core::event::{Input, Key};
-use junie_tui::motion::Motion;
-use junie_tui::runtime::Application;
-use junie_tui::theme::{ColorLevel, Theme};
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use termrock::core::event::{Input, Key};
+use termrock::motion::Motion;
+use termrock::runtime::Application;
+use termrock::theme::{ColorLevel, Theme};
 
 const CHECK_TAKES_MS: i64 = 600;
 

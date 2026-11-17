@@ -1,4 +1,4 @@
-use junie_tui::shell::Router;
+use termrock::shell::Router;
 
 use crate::app::Route;
 use crate::screens::Screen;

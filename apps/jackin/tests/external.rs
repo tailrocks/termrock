@@ -7,16 +7,16 @@ use jackin_console::fixtures::{Scenario, app_for, world_for};
 use jackin_console::screens::Go;
 use jackin_console::sim;
 use jackin_console::world::{Msg, Snapshot};
-use junie_tui::core::event::{External, Input, Key, Outcome};
-use junie_tui::motion::Motion;
-use junie_tui::runtime::{
-    Application, ExternalPolicy, ExternalReceiver, ExternalSendError, ExternalSender,
-    bounded_external_channel, external_channel,
-};
-use junie_tui::theme::{ColorLevel, Theme};
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use termrock::core::event::{External, Input, Key, Outcome};
+use termrock::motion::Motion;
+use termrock::runtime::{
+    Application, ExternalPolicy, ExternalReceiver, ExternalSendError, ExternalSender,
+    bounded_external_channel, external_channel,
+};
+use termrock::theme::{ColorLevel, Theme};
 
 const STOPPED: &str = "jk-7f3a";
 

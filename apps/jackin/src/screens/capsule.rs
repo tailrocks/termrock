@@ -1,43 +1,43 @@
 use crate::domain::instance::InstanceId;
 use crate::screens::Jackin;
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::hit::{Axis, Bar};
-use junie_tui::core::id::{Part, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::core::response::Response;
-use junie_tui::core::selection::ClickPolicy;
-use junie_tui::shell::Page;
-use junie_tui::theme::{Theme, Tone};
-use junie_tui::ui::context::ContextConfig;
-use junie_tui::ui::ctx::{RenderCtx, fill};
-use junie_tui::ui::layer;
-use junie_tui::ui::layout::SplitDir;
-use junie_tui::ui::text::{clip, truncate, truncate_middle, width};
-use junie_tui::widgets::brand::Lockup;
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::dialog::Dialog;
-use junie_tui::widgets::empty::{self, EmptyState};
-use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::menu::{
-    ContextMenu, MenuAction, MenuBar, MenuBarAction, MenuItem, Placement,
-};
-use junie_tui::widgets::meter_list::{MeterList, MeterRow};
-use junie_tui::widgets::option_list::Item;
-use junie_tui::widgets::picker::Picker;
-use junie_tui::widgets::progress::{Meter, MeterVisual, spinner_frame};
-use junie_tui::widgets::props::{self, Prop};
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::segments::{self, Segment};
-use junie_tui::widgets::splitter::Splitter;
-use junie_tui::widgets::statusbar::{StatusBar, StatusItem};
-use junie_tui::widgets::tabs::{TabAction, TabItem, Tabs};
-use junie_tui::widgets::viewport_ops::ViewportOps;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::hit::{Axis, Bar};
+use termrock::core::id::{Part, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::core::response::Response;
+use termrock::core::selection::ClickPolicy;
+use termrock::shell::Page;
+use termrock::theme::{Theme, Tone};
+use termrock::ui::context::ContextConfig;
+use termrock::ui::ctx::{RenderCtx, fill};
+use termrock::ui::layer;
+use termrock::ui::layout::SplitDir;
+use termrock::ui::text::{clip, truncate, truncate_middle, width};
+use termrock::widgets::brand::Lockup;
+use termrock::widgets::button::Button;
+use termrock::widgets::dialog::Dialog;
+use termrock::widgets::empty::{self, EmptyState};
+use termrock::widgets::input::TextInput;
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::menu::{
+    ContextMenu, MenuAction, MenuBar, MenuBarAction, MenuItem, Placement,
+};
+use termrock::widgets::meter_list::{MeterList, MeterRow};
+use termrock::widgets::option_list::Item;
+use termrock::widgets::picker::Picker;
+use termrock::widgets::progress::{Meter, MeterVisual, spinner_frame};
+use termrock::widgets::props::{self, Prop};
+use termrock::widgets::scrollbar;
+use termrock::widgets::segments::{self, Segment};
+use termrock::widgets::splitter::Splitter;
+use termrock::widgets::statusbar::{StatusBar, StatusItem};
+use termrock::widgets::tabs::{TabAction, TabItem, Tabs};
+use termrock::widgets::viewport_ops::ViewportOps;
 
 use super::modals::{ChoiceDialog, InfoDialog, InfoResult};
 use super::{Cx, Go, LayerTag, ModalResult, Screen};
@@ -53,9 +53,9 @@ use crate::panes::{
     PaneKey, PaneKind, PaneKindTag, PaneNode, PaneNote, PaneRequest, PasteOutcome, Seam, nearest,
 };
 use crate::world::{Msg, World, job};
-use junie_tui::ui::layer::{DismissReason, Layer, LayerCx, LayerOut, LayerSpec};
-use junie_tui::ui::modal::modal_frame;
-use junie_tui::ui::text::plural;
+use termrock::ui::layer::{DismissReason, Layer, LayerCx, LayerOut, LayerSpec};
+use termrock::ui::modal::modal_frame;
+use termrock::ui::text::plural;
 
 pub const STRIP: WidgetId = WidgetId::of("capsule.strip");
 pub const MENUBAR: WidgetId = WidgetId::of("capsule.menubar");
@@ -644,13 +644,13 @@ impl CapsuleScreen {
             .daemon(w)
             .map(|d| d.workspace.clone())
             .unwrap_or_default();
-        let d = junie_tui::widgets::inspect_changes::InspectChanges::new(
+        let d = termrock::widgets::inspect_changes::InspectChanges::new(
             WidgetId::of("capsule.inspect"),
             &format!("Inspect changes · {ws}"),
             changes,
-            junie_tui::widgets::inspect_changes::InspectMode::Compact,
+            termrock::widgets::inspect_changes::InspectMode::Compact,
         )
-        .words(junie_tui::widgets::inspect_changes::ChangeWords {
+        .words(termrock::widgets::inspect_changes::ChangeWords {
             omitted: w.surfaces.vocabulary.changes_omitted.clone(),
             unread: w.surfaces.vocabulary.changes_unread.clone(),
         })
@@ -1720,7 +1720,7 @@ impl CapsuleScreen {
                     buf.set_string(
                         r.x + 2,
                         r.y,
-                        junie_tui::ui::reveal::cut(
+                        termrock::ui::reveal::cut(
                             Rect::new(r.x + 2, r.y, r.width.saturating_sub(6), 1),
                             &title,
                         ),
@@ -1741,9 +1741,9 @@ impl CapsuleScreen {
                     let range = term.scroll().visible_range();
                     meta = format!(
                         "{}–{} of {}",
-                        junie_tui::ui::text::thousands(range.start + 1),
-                        junie_tui::ui::text::thousands(range.end),
-                        junie_tui::ui::text::thousands(term.scroll().content_len)
+                        termrock::ui::text::thousands(range.start + 1),
+                        termrock::ui::text::thousands(range.end),
+                        termrock::ui::text::thousands(term.scroll().content_len)
                     );
                 }
                 if tab.zoomed.is_some() {
@@ -2154,7 +2154,7 @@ impl Page<Jackin> for CapsuleScreen {
                 let widths = [reconnect.width(), leave.width()];
                 let total = widths[0] + gap + widths[1];
                 let x = area.x + area.width.saturating_sub(total) / 2;
-                let rects = junie_tui::widgets::button::row_layout(
+                let rects = termrock::widgets::button::row_layout(
                     Rect::new(x, y, total.min(area.width), 1),
                     &widths,
                     gap,
@@ -2865,7 +2865,7 @@ impl CapsuleScreen {
         buf.set_string(
             row.x,
             row.y,
-            junie_tui::ui::reveal::cut(row, &format!(" {} ", note.text)),
+            termrock::ui::reveal::cut(row, &format!(" {} ", note.text)),
             style,
         );
     }
@@ -2897,7 +2897,7 @@ pub struct UsageDialog {
     pub accounts: Vec<AccountId>,
     pub tab: usize,
     pub tabbar_focus: bool,
-    pub scroll: junie_tui::core::scroll::ScrollState,
+    pub scroll: termrock::core::scroll::ScrollState,
     pub refreshing_until: Option<i64>,
     pub result: Option<ModalResult>,
     pub area: Rect,
@@ -2910,7 +2910,7 @@ impl UsageDialog {
             accounts,
             tab: 0,
             tabbar_focus: true,
-            scroll: junie_tui::core::scroll::ScrollState::default(),
+            scroll: termrock::core::scroll::ScrollState::default(),
             refreshing_until: None,
             result: None,
             area: Rect::ZERO,
@@ -2924,7 +2924,7 @@ impl Layer<ModalResult, World> for UsageDialog {
         true
     }
     fn spec(&self) -> LayerSpec {
-        LayerSpec::modal(junie_tui::ui::popup::Dismiss::LIGHT)
+        LayerSpec::modal(termrock::ui::popup::Dismiss::LIGHT)
             .initial_focus(WidgetId::of("capsule.usage"))
     }
 
@@ -3224,7 +3224,7 @@ impl Layer<ModalResult, World> for UsageDialog {
                 Line::Text(s, tone) => buf.set_string(
                     body.x,
                     yy,
-                    junie_tui::ui::reveal::cut(Rect::new(body.x, yy, body.width, 1), s),
+                    termrock::ui::reveal::cut(Rect::new(body.x, yy, body.width, 1), s),
                     Style::new().fg(t.tone(*tone)).bg(bg),
                 ),
                 Line::Meter(label, pct, value, tone) => {
@@ -3265,7 +3265,7 @@ impl Layer<ModalResult, World> for UsageDialog {
         buf.set_string(
             inner.x,
             inner.bottom().saturating_sub(1),
-            junie_tui::ui::reveal::cut(
+            termrock::ui::reveal::cut(
                 Rect::new(inner.x, inner.bottom().saturating_sub(1), inner.width, 1),
                 hint,
             ),

@@ -1,37 +1,37 @@
 use crate::domain::vocabulary::Vocabulary;
 use crate::screens::Jackin;
-use junie_tui::shell::Page;
 use std::collections::HashSet;
+use termrock::shell::Page;
 
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::hit::Axis;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::core::scroll::{ScrollState, TrackClick};
-use junie_tui::theme::{ButtonKind, StatusKind, Tone};
-use junie_tui::ui::ctx::{RenderCtx, fill, legible_on_fill};
-use junie_tui::ui::layout::{Split, SplitDir};
-use junie_tui::ui::master_detail::{MasterDetail, Mode};
-use junie_tui::ui::text::{fit, truncate, width};
-use junie_tui::widgets::button::{Button, ButtonRow, RowOverflow};
-use junie_tui::widgets::choice::RadioGroup;
-use junie_tui::widgets::dialog::Dialog;
-use junie_tui::widgets::empty::{self, EmptyState};
-use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::keyhint::{Hint, hint};
-use junie_tui::widgets::meter_list::{MeterList, MeterRow};
-use junie_tui::widgets::panel::{Panel, PanelFocus};
-use junie_tui::widgets::progress::{Meter, MeterLevel, MeterTone, MeterVisual, spinner_frame};
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::segments::Segment;
-use junie_tui::widgets::select::Select;
-use junie_tui::widgets::splitter::Splitter;
-use junie_tui::widgets::viewport::{Span, render_spans, wrap_spans};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::hit::Axis;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::PointerEvent;
+use termrock::core::scroll::{ScrollState, TrackClick};
+use termrock::theme::{ButtonKind, StatusKind, Tone};
+use termrock::ui::ctx::{RenderCtx, fill, legible_on_fill};
+use termrock::ui::layout::{Split, SplitDir};
+use termrock::ui::master_detail::{MasterDetail, Mode};
+use termrock::ui::text::{fit, truncate, width};
+use termrock::widgets::button::{Button, ButtonRow, RowOverflow};
+use termrock::widgets::choice::RadioGroup;
+use termrock::widgets::dialog::Dialog;
+use termrock::widgets::empty::{self, EmptyState};
+use termrock::widgets::input::TextInput;
+use termrock::widgets::keyhint::{Hint, hint};
+use termrock::widgets::meter_list::{MeterList, MeterRow};
+use termrock::widgets::panel::{Panel, PanelFocus};
+use termrock::widgets::progress::{Meter, MeterLevel, MeterTone, MeterVisual, spinner_frame};
+use termrock::widgets::scrollbar;
+use termrock::widgets::segments::Segment;
+use termrock::widgets::select::Select;
+use termrock::widgets::splitter::Splitter;
+use termrock::widgets::viewport::{Span, render_spans, wrap_spans};
 
 use super::modals::{BrowserResult, FormDialog, FormField, FormValues, OpFlow};
 use super::row_meta::{ClockStamp, Moment, RowMeta, clocks};
@@ -49,11 +49,11 @@ use crate::domain::agent::{Provider, UsageSurface};
 use crate::domain::onepassword::OpReference;
 use crate::domain::usage::{Freshness, OverallSummary, QuotaStatus, QuotaWindow, WindowUnit};
 use crate::world::{Msg, World, job};
-use junie_tui::ui::context::ContextAnchor;
-use junie_tui::ui::text::plural;
-use junie_tui::ui::text::thousands;
-use junie_tui::widgets::menu::MenuItem;
-use junie_tui::widgets::row_menu::RowMenu;
+use termrock::ui::context::ContextAnchor;
+use termrock::ui::text::plural;
+use termrock::ui::text::thousands;
+use termrock::widgets::menu::MenuItem;
+use termrock::widgets::row_menu::RowMenu;
 
 pub const TREE: WidgetId = WidgetId::of("accounts.tree");
 pub const INSPECTOR: WidgetId = WidgetId::of("accounts.inspector");
@@ -1778,7 +1778,7 @@ impl AccountsScreen {
                 for c in &s.comparable {
                     let mut text = format!("{} · {}   {} · {}–{}% remaining", c.surface.label(), c.label, plural(c.accounts, "account", "accounts"), c.min_remaining_pct, c.max_remaining_pct);
                     if let Some((u, l)) = c.summed {
-                        text.push_str(&format!(" · {} / {} {}", junie_tui::ui::text::thousands(u as usize), junie_tui::ui::text::thousands(l as usize), c.unit.label()));
+                        text.push_str(&format!(" · {} / {} {}", termrock::ui::text::thousands(u as usize), termrock::ui::text::thousands(l as usize), c.unit.label()));
                     }
                     if c.last_good_count > 0 {
                         text.push_str(&format!(" ({} last good)", c.last_good_count));
@@ -1789,7 +1789,7 @@ impl AccountsScreen {
                     lines.push(Line::Blank);
                     lines.push(Line::Heading("Not comparable".into(), String::new()));
                     let names: Vec<String> = s.not_comparable.iter().map(|n| format!("{} ({})", n.surface.label(), n.reason)).collect();
-                    for l in junie_tui::ui::text::wrap(&names.join(" · "), width_ as usize) {
+                    for l in termrock::ui::text::wrap(&names.join(" · "), width_ as usize) {
                         lines.push(Line::Text(l, Tone::Muted));
                     }
                 }
@@ -2045,7 +2045,7 @@ impl AccountsScreen {
                 match l {
                     Line::Prop(k, v, tone) => {
                         let vw = body.width.saturating_sub(label_w) as usize;
-                        let parts = junie_tui::ui::text::wrap(&v, vw.max(8));
+                        let parts = termrock::ui::text::wrap(&v, vw.max(8));
                         for (i, p) in parts.into_iter().enumerate() {
                             rendered.push(Line::Prop(
                                 if i == 0 { k.clone() } else { String::new() },
@@ -2055,7 +2055,7 @@ impl AccountsScreen {
                         }
                     }
                     Line::Text(v, tone) => {
-                        for p in junie_tui::ui::text::wrap(&v, body.width as usize) {
+                        for p in termrock::ui::text::wrap(&v, body.width as usize) {
                             rendered.push(Line::Text(p, tone));
                         }
                     }
@@ -2100,7 +2100,7 @@ impl AccountsScreen {
                     buf.set_string(
                         body.x + label_w,
                         y,
-                        junie_tui::ui::reveal::cut(
+                        termrock::ui::reveal::cut(
                             Rect::new(body.x + label_w, y, body.width.saturating_sub(label_w), 1),
                             value,
                         ),
@@ -2111,7 +2111,7 @@ impl AccountsScreen {
                     buf.set_string(
                         body.x,
                         y,
-                        junie_tui::ui::reveal::cut(Rect::new(body.x, y, body.width, 1), text),
+                        termrock::ui::reveal::cut(Rect::new(body.x, y, body.width, 1), text),
                         Style::new().fg(t.tone(*tone)).bg(bg),
                     );
                 }
@@ -2189,7 +2189,7 @@ impl AccountsScreen {
                     buf.set_string(
                         inner.x,
                         y,
-                        junie_tui::ui::reveal::cut(
+                        termrock::ui::reveal::cut(
                             Rect::new(inner.x, y, inner.width, 1),
                             &format!("{k}  {v}"),
                         ),
@@ -2208,7 +2208,7 @@ impl AccountsScreen {
                     buf.set_string(
                         inner.x,
                         y,
-                        junie_tui::ui::reveal::cut(Rect::new(inner.x, y, inner.width, 1), v),
+                        termrock::ui::reveal::cut(Rect::new(inner.x, y, inner.width, 1), v),
                         Style::new().fg(t.tone(*tone)).bg(bg),
                     );
                     y += 1;
@@ -2218,7 +2218,7 @@ impl AccountsScreen {
                     buf.set_string(
                         inner.x,
                         y,
-                        junie_tui::ui::reveal::cut(Rect::new(inner.x, y, inner.width, 1), &lead),
+                        termrock::ui::reveal::cut(Rect::new(inner.x, y, inner.width, 1), &lead),
                         t.primary().bg(bg),
                     );
                     let lw = width(&lead) as u16;
@@ -2266,7 +2266,7 @@ fn draw_status_line(
     x: u16,
     y: u16,
     w: u16,
-    t: &junie_tui::theme::Theme,
+    t: &termrock::theme::Theme,
     kind: StatusKind,
     spans: &[Span],
     bg: ratatui::style::Color,
@@ -3017,7 +3017,7 @@ impl Page<Jackin> for AccountsScreen {
 
     fn hints(&self, focus: Option<WidgetId>, w: &World) -> Vec<Hint> {
         if self.menu.is_open() {
-            return junie_tui::widgets::row_menu::hints();
+            return termrock::widgets::row_menu::hints();
         }
         if focus == Some(INSPECTOR) {
             return vec![
@@ -3049,7 +3049,7 @@ impl Page<Jackin> for AccountsScreen {
                 if reg {
                     v.push(hint("Space", "Default"));
                     if w.surfaces.fixed.is_none() {
-                        v.push(junie_tui::widgets::keyhint::toggle_hint(
+                        v.push(termrock::widgets::keyhint::toggle_hint(
                             "t", enabled, "Disable", "Enable",
                         ));
                     }

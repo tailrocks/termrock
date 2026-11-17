@@ -2,9 +2,9 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 
-use junie_tui::theme::Theme;
+use termrock::theme::Theme;
 
-use junie_tui::motion::Motion;
+use termrock::motion::Motion;
 
 pub const TICK_MS: u64 = 33;
 
@@ -78,7 +78,7 @@ fn put(buf: &mut Buffer, x: u16, y: u16, ch: char, st: Style) {
 }
 
 pub fn fill_canvas(buf: &mut Buffer, area: Rect, t: &Theme) {
-    junie_tui::ui::ctx::fill(buf, area, Style::new().bg(t.canvas).fg(t.text_primary));
+    termrock::ui::ctx::fill(buf, area, Style::new().bg(t.canvas).fg(t.text_primary));
 }
 
 pub fn dim_buffer(buf: &mut Buffer, area: Rect, steps: u8, t: &Theme) {
@@ -202,7 +202,7 @@ fn draw_hint(buf: &mut Buffer, area: Rect, key: &str, action: &str, t: &Theme) {
 }
 
 fn draw_pill_bottom(buf: &mut Buffer, area: Rect, t: &Theme) {
-    let lockup = junie_tui::widgets::brand::Lockup::new(crate::app::BRAND_MARK);
+    let lockup = termrock::widgets::brand::Lockup::new(crate::app::BRAND_MARK);
     let w = lockup.width();
     if area.height < 4 || area.width < w + 2 {
         return;

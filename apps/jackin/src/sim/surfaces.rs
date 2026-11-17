@@ -1,7 +1,7 @@
 use crate::domain::doctor::{DoctorCheck, DoctorReport};
 use crate::domain::role::{FindingArea, RoleCheckState, RoleFinding, RoleManifestDoc, RoleRecord};
 use crate::domain::workspace::RoleSource;
-use junie_tui::theme::StatusKind;
+use termrock::theme::StatusKind;
 
 const FILES: [&str; 5] = [
     "Dockerfile",

@@ -26,11 +26,11 @@ use jackin_console::launch::{
 use jackin_console::panes::{PaneBody, PaneRequest, PaneSpawn};
 use jackin_console::sim::{self, SimBackend};
 use jackin_console::world::{Msg, SaveWarning, World};
-use junie_tui::core::event::{Input, Outcome};
-use junie_tui::motion::Motion;
-use junie_tui::runtime::Application;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::widgets::steps::StepState;
+use termrock::core::event::{Input, Outcome};
+use termrock::motion::Motion;
+use termrock::runtime::Application;
+use termrock::theme::{ColorLevel, Theme};
+use termrock::widgets::steps::StepState;
 
 const WORK: &str = "acct-claude-work";
 
@@ -1112,10 +1112,7 @@ fn a_committed_launch_warning_is_carried_through_ready_and_survives_routine_stat
         app.world.committed_save_warning,
         Some(SaveWarning::DirectorySync)
     );
-    app.set_status(
-        "Routine refresh complete",
-        junie_tui::theme::Tone::Secondary,
-    );
+    app.set_status("Routine refresh complete", termrock::theme::Tone::Secondary);
     assert_eq!(status(&app), "Saved, durability uncertain");
 }
 

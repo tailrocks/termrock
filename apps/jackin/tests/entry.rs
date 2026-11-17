@@ -10,12 +10,12 @@ use jackin_console::backend::OpSession;
 use jackin_console::fixtures::{Scenario, app_for, app_with_world, entry_for, world_for};
 use jackin_console::panes::PanePolicy;
 use jackin_console::rain::INTRO_END;
-use junie_tui::core::event::{Input, Mouse, MouseKind};
-use junie_tui::motion::Motion;
-use junie_tui::runtime::Application;
-use junie_tui::shell::NativeClipboard;
-use junie_tui::theme::{ColorLevel, Theme};
 use ratatui::layout::Position;
+use termrock::core::event::{Input, Mouse, MouseKind};
+use termrock::motion::Motion;
+use termrock::runtime::Application;
+use termrock::shell::NativeClipboard;
+use termrock::theme::{ColorLevel, Theme};
 
 fn theme() -> Theme {
     Theme::for_level(ColorLevel::TrueColor)
@@ -420,7 +420,7 @@ fn a_field_copy_in_the_app_reaches_the_host_clipboard_without_osc52() {
     for c in ['a', 'c'] {
         Application::handle(
             &mut app,
-            Input::Key(junie_tui::core::event::Key {
+            Input::Key(termrock::core::event::Key {
                 code: ratatui::crossterm::event::KeyCode::Char(c),
                 mods: ratatui::crossterm::event::KeyModifiers::SUPER,
             }),

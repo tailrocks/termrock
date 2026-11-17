@@ -26,7 +26,7 @@ pub fn account(a: &mut Account) {
 /// form has no such source. The variable name is cut to 16 columns plus `…`,
 /// so the text stays within `Reason::TEXT_MAX`.
 pub fn env_edit_block(var: &str) -> EditBlocked {
-    let var = junie_tui::ui::text::truncate(var, 17);
+    let var = termrock::ui::text::truncate(var, 17);
     EditBlocked::new(
         &format!("reads {var} · remove it, then add an account"),
         "env account",

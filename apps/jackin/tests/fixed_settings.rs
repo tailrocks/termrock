@@ -8,11 +8,11 @@ use jackin_console::domain::fixed::Fixed;
 use jackin_console::domain::vocabulary::Vocabulary;
 use jackin_console::domain::workspace::{is_credential_reference, looks_secret};
 use jackin_console::fixtures::{Scenario, app_for};
-use junie_tui::core::event::Input;
-use junie_tui::motion::Motion;
-use junie_tui::runtime::Application;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::text::width;
+use termrock::core::event::Input;
+use termrock::motion::Motion;
+use termrock::runtime::Application;
+use termrock::theme::{ColorLevel, Theme};
+use termrock::ui::text::width;
 
 fn fixed() -> App {
     app_for(

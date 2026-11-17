@@ -4,8 +4,8 @@ mod common;
 
 use common::*;
 use jackin_console::fixtures::Scenario;
-use junie_tui::core::event::Input;
-use junie_tui::runtime::Application;
+use termrock::core::event::Input;
+use termrock::runtime::Application;
 
 fn entered(url: &str) -> String {
     let mut app = app(Scenario::Returning);
