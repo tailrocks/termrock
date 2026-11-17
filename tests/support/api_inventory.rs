@@ -7,6 +7,12 @@
 //! Canonical ids are `module::Type::member`. Tuple fields end in `::0`,
 //! `::1`. A re-export resolves to one canonical definition and every other
 //! reachable spelling is recorded as an alias.
+//!
+//! The walk can span several crates (#443). The first `CrateRoot` is the
+//! facade: its modules keep their plain paths and every id is spelled the way
+//! a consumer reaches the item from the facade. Any other crate is walked too,
+//! its modules live under `@<crate name>`, and an item of it is exported only
+//! through the facade's `pub use` of it.
 
 #![allow(dead_code)]
 
@@ -51,10 +57,25 @@ pub const MATRIX: &[Row] = &[
     },
 ];
 
+/// One crate of the walk: its name as other crates write it in a path (`termrock_text`) and the
+/// source directory that holds its `lib.rs`, relative to the tree root.
+#[derive(Clone, Copy, Debug)]
+pub struct CrateRoot<'a> {
+    pub name: &'a str,
+    pub dir: &'a str,
+}
+
+/// The single-crate walk of the repository root package.
+pub const ROOT_CRATE: &[CrateRoot<'static>] = &[CrateRoot {
+    name: "junie_tui",
+    dir: "src",
+}];
+
 /// Hand-checked ids that an item-position macro generates.
 #[derive(Clone, Debug)]
 pub struct Expansion {
-    /// `module::macro_name`, for example `core::id::parts`.
+    /// `module::macro_name`, for example `core::id::parts`. For a crate other than the facade the
+    /// module starts with `@<crate name>`, for example `@termrock_core::id::parts`.
     pub site: &'static str,
     pub ids: &'static [&'static str],
 }
@@ -67,6 +88,11 @@ pub struct SourceTree {
 
 impl SourceTree {
     pub fn from_dir(root: &Path, dir: &str) -> Self {
+        Self::from_dirs(root, &[dir])
+    }
+
+    /// Every `.rs` file under each of the `dirs` of `root`, without a `bin` directory.
+    pub fn from_dirs(root: &Path, dirs: &[&str]) -> Self {
         fn walk(root: &Path, dir: &Path, out: &mut BTreeMap<PathBuf, String>) {
             let mut entries: Vec<_> = std::fs::read_dir(dir)
                 .unwrap_or_else(|e| panic!("read {}: {e}", dir.display()))
@@ -85,8 +111,12 @@ impl SourceTree {
             }
         }
         let mut files = BTreeMap::new();
-        walk(root, &root.join(dir), &mut files);
-        files.retain(|path, _| !path.starts_with(format!("{dir}/bin")));
+        for dir in dirs {
+            let mut found = BTreeMap::new();
+            walk(root, &root.join(dir), &mut found);
+            found.retain(|path, _| !path.starts_with(format!("{dir}/bin")));
+            files.extend(found);
+        }
         Self { files }
     }
 
@@ -179,10 +209,11 @@ struct Walker<'a> {
     tree: &'a SourceTree,
     features: BTreeSet<&'static str>,
     manifest: &'a [Expansion],
+    /// Crate name to the key of its root module.
+    externs: BTreeMap<String, String>,
     modules: BTreeMap<String, Module>,
     defs: BTreeMap<String, Def>,
     impls: Vec<ImplRec>,
-    exported_macros: Vec<String>,
     files_read: BTreeSet<PathBuf>,
     test_only_files: BTreeSet<PathBuf>,
     test_cfg: bool,
@@ -194,6 +225,14 @@ fn join(module: &str, name: &str) -> String {
         name.to_owned()
     } else {
         format!("{module}::{name}")
+    }
+}
+
+/// The key of the root module of the crate that holds `module`.
+fn crate_root_of(module: &str) -> String {
+    match module.strip_prefix('@') {
+        Some(rest) => format!("@{}", rest.split("::").next().unwrap_or(rest)),
+        None => String::new(),
     }
 }
 
@@ -663,7 +702,13 @@ impl<'a> Walker<'a> {
                 }
                 if let Some(ident) = &item.ident {
                     if item.attrs.iter().any(|a| a.path().is_ident("macro_export")) {
-                        self.exported_macros.push(format!("{ident}!"));
+                        let root = crate_root_of(module);
+                        let def = Def {
+                            kind: ApiKind::Macro,
+                            members: BTreeMap::new(),
+                            is_trait: false,
+                        };
+                        self.declare(&root, &format!("{ident}!"), def, true);
                     }
                     return;
                 }
@@ -778,13 +823,26 @@ impl Walker<'_> {
         Some(current)
     }
 
+    /// What `name` means inside `module`. A macro is bound as `name!`, so it is found by its plain name too.
+    fn lookup(&self, module: &str, name: &str) -> Option<Target> {
+        let own = &self.modules.get(module)?.own;
+        own.get(name)
+            .or_else(|| own.get(&format!("{name}!")))
+            .map(|b| b.target.clone())
+    }
+
     fn resolve(&self, from: &str, segs: &[String]) -> Option<Target> {
         let (first, rest) = segs.split_first()?;
         let mut current = match first.as_str() {
-            "crate" => Target::Module(String::new()),
+            "crate" => Target::Module(crate_root_of(from)),
             "self" => Target::Module(from.to_owned()),
             "super" => Target::Module(self.module_parent(from, 1)?),
-            name => self.modules.get(from)?.own.get(name)?.target.clone(),
+            name => self.lookup(from, name).or_else(|| {
+                // A crate named in the walk is in scope everywhere, after the module's own names.
+                self.externs
+                    .get(name)
+                    .map(|root| Target::Module(root.clone()))
+            })?,
         };
         for seg in rest {
             current = match &current {
@@ -792,7 +850,7 @@ impl Walker<'_> {
                     if seg == "super" {
                         Target::Module(self.module_parent(m, 1)?)
                     } else {
-                        self.modules.get(m)?.own.get(seg)?.target.clone()
+                        self.lookup(m, seg)?
                     }
                 }
                 Target::Def(_) => return None,
@@ -888,23 +946,36 @@ impl Walker<'_> {
         }
     }
 
-    fn reachable_modules(&self) -> BTreeSet<String> {
-        let mut out = BTreeSet::new();
-        out.insert(String::new());
-        loop {
-            let before = out.len();
-            for (path, module) in &self.modules {
-                if let Some(parent) = &module.parent
-                    && module.public
-                    && out.contains(parent)
+    /// Every module a consumer can reach from the facade root, with each path it is spelled by there.
+    /// A module another crate defines gets the path of the `pub use` that exposes it.
+    fn facade_paths(&self) -> BTreeMap<String, BTreeSet<String>> {
+        fn visit(
+            walker: &Walker<'_>,
+            module: &str,
+            path: &str,
+            chain: &mut Vec<String>,
+            out: &mut BTreeMap<String, BTreeSet<String>>,
+        ) {
+            if !out
+                .entry(module.to_owned())
+                .or_default()
+                .insert(path.to_owned())
+            {
+                return;
+            }
+            chain.push(module.to_owned());
+            for (name, binding) in &walker.modules[module].own {
+                if let (Target::Module(child), true) = (&binding.target, binding.public)
+                    && !chain.contains(child)
                 {
-                    out.insert(path.clone());
+                    visit(walker, child, &join(path, name), chain, out);
                 }
             }
-            if out.len() == before {
-                return out;
-            }
+            chain.pop();
         }
+        let mut out = BTreeMap::new();
+        visit(self, "", "", &mut Vec::new(), &mut out);
+        out
     }
 }
 
@@ -921,27 +992,54 @@ pub fn build(
     manifest: &[Expansion],
     preferred: &BTreeSet<String>,
 ) -> Result<Inventory, Vec<String>> {
+    build_crates(tree, ROOT_CRATE, row, manifest, preferred)
+}
+
+/// `build` over several crates. The first of `crates` is the facade; the ids are the facade's spellings.
+pub fn build_crates(
+    tree: &SourceTree,
+    crates: &[CrateRoot<'_>],
+    row: &Row,
+    manifest: &[Expansion],
+    preferred: &BTreeSet<String>,
+) -> Result<Inventory, Vec<String>> {
+    let root_key = |index: usize| {
+        if index == 0 {
+            String::new()
+        } else {
+            format!("@{}", crates[index].name)
+        }
+    };
     let mut walker = Walker {
         tree,
         features: row.features.iter().copied().collect(),
         manifest,
+        externs: crates
+            .iter()
+            .enumerate()
+            .skip(1)
+            .map(|(index, c)| (c.name.to_owned(), root_key(index)))
+            .collect(),
         modules: BTreeMap::new(),
         defs: BTreeMap::new(),
         impls: Vec::new(),
-        exported_macros: Vec::new(),
         files_read: BTreeSet::new(),
         test_only_files: BTreeSet::new(),
         test_cfg: false,
         errors: Vec::new(),
     };
-    walker.modules.insert(
-        String::new(),
-        Module {
-            public: true,
-            ..Module::default()
-        },
-    );
-    walker.walk_file(Path::new("src/lib.rs"), "", Path::new("src"));
+    for (index, krate) in crates.iter().enumerate() {
+        let key = root_key(index);
+        walker.modules.insert(
+            key.clone(),
+            Module {
+                public: true,
+                ..Module::default()
+            },
+        );
+        let dir = Path::new(krate.dir);
+        walker.walk_file(&dir.join("lib.rs"), &key, dir);
+    }
     if !walker.errors.is_empty() {
         return Err(walker.errors);
     }
@@ -950,15 +1048,23 @@ pub fn build(
         return Err(walker.errors);
     }
 
-    let reachable = walker.reachable_modules();
+    let reachable = walker.facade_paths();
     let mut spellings: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
-    for module in &reachable {
+    for (module, paths) in &reachable {
         for (name, binding) in &walker.modules[module].own {
             if let (Target::Def(def), true) = (&binding.target, binding.public) {
-                spellings
-                    .entry(def.clone())
-                    .or_default()
-                    .insert(join(module, name));
+                // A macro is spelled `name!` however a `use` renames it.
+                let bang = if walker.defs[def].kind == ApiKind::Macro && !name.ends_with('!') {
+                    "!"
+                } else {
+                    ""
+                };
+                for path in paths {
+                    spellings
+                        .entry(def.clone())
+                        .or_default()
+                        .insert(format!("{}{bang}", join(path, name)));
+                }
             }
         }
     }
@@ -989,7 +1095,7 @@ pub fn build(
             .cloned()
             .collect(),
         public_modules: reachable
-            .iter()
+            .keys()
             .filter(|m| !m.is_empty())
             .cloned()
             .collect(),
@@ -1064,15 +1170,12 @@ pub fn build(
         }
     }
 
-    for id in &walker.exported_macros {
-        add(id.clone(), ApiKind::Macro, &mut inventory);
-    }
     for expansion in manifest {
         let (module, _) = expansion
             .site
             .rsplit_once("::")
             .unwrap_or(("", expansion.site));
-        if reachable.contains(module) || module.is_empty() {
+        if reachable.contains_key(module) || module.is_empty() {
             for id in expansion.ids {
                 add((*id).to_owned(), ApiKind::Expansion, &mut inventory);
             }
