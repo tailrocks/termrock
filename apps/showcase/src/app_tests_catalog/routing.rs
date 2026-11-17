@@ -28,7 +28,7 @@ use termrock::core::hints::{
     Binding, Bindings, HasHints, HintCx, TYPE_TO_JUMP, actions_bindings, keymap_bindings,
     nav_bindings, nav_hints,
 };
-use termrock::core::intent::{ActionKey, DismissReason, FocusVia, Intent, LayerEvent, Phase};
+use termrock::core::intent::{DismissReason, Intent, Phase};
 use termrock::core::keymap::{
     Actions, KeyBinding, KeyMap, KeyboardCapabilities, Nav, NavKeys, SELECT_ALL, binding_for,
     deliverable_binding_for, deliverable_binding_for_with, hint_key, intern, label_for, lookup,
@@ -1363,27 +1363,9 @@ fn hint_bindings() {
     );
 }
 
-/// The input vocabulary: action keys, phases, focus and dismissal reasons and
-/// the intents that carry them to a widget.
+/// The input vocabulary: phases, dismissal reasons and the pointer and
+/// wheel intents that carry them to a widget.
 fn intent_vocabulary() {
-    // Action keys: three well-known ones, and custom ones that hash by name.
-    assert_eq!(
-        [
-            ActionKey::CONFIRM.raw(),
-            ActionKey::CANCEL.raw(),
-            ActionKey::CLOSE.raw()
-        ],
-        [0, 1, 2]
-    );
-    let save = ActionKey::custom("save");
-    assert_eq!(save, ActionKey::custom("save"));
-    assert_ne!(save, ActionKey::custom("discard"));
-    assert!(
-        save.raw() >= 0x8000,
-        "custom keys stay clear of the built-ins"
-    );
-    assert_ne!(save, ActionKey::CONFIRM);
-
     // Every phase round-trips through the pointer event that carries it.
     let id = WidgetId::of("scenario.intent.target");
     let mut hits = HitRegistry::default();
@@ -1391,12 +1373,10 @@ fn intent_vocabulary() {
     hits.register_part_as(id, id, row, Rect::new(0, 0, 10, 4));
     let pos = Position::new(2, 1);
     let phases = [
-        Phase::Move,
         Phase::Press,
         Phase::Release,
         Phase::Click,
         Phase::Secondary,
-        Phase::SecondaryRelease,
         Phase::Middle,
         Phase::DragStart,
         Phase::Drag,
@@ -1435,7 +1415,7 @@ fn intent_vocabulary() {
         }
     );
 
-    // A wheel intent and the intents that name no part or position.
+    // A wheel intent names its axis, delta, part and position.
     let wheel = PointerEvent::wheel_on(&hits, id, Axis::Horizontal, 3, pos, KeyModifiers::NONE);
     let Intent::Wheel {
         axis,
@@ -1453,45 +1433,6 @@ fn intent_vocabulary() {
     );
     assert_eq!(wheel.intent.part(), Some(row));
     assert_eq!(wheel.intent.pos(), Some(pos));
-
-    let key = typed(KeyCode::Enter, KeyModifiers::NONE);
-    let positionless = [
-        Intent::Key(key),
-        Intent::Binding(ActionKey::CONFIRM),
-        Intent::Paste("pasted text"),
-        Intent::FocusIn(FocusVia::Keyboard),
-        Intent::FocusOut(Some(id)),
-        Intent::FocusOut(None),
-        Intent::Layer(LayerEvent::Opened),
-        Intent::Cancel,
-    ];
-    for intent in positionless {
-        assert_eq!(intent.part(), None, "{intent:?}");
-        assert_eq!(intent.pos(), None, "{intent:?}");
-    }
-    assert_ne!(
-        Intent::Binding(ActionKey::CANCEL),
-        Intent::Binding(ActionKey::CLOSE)
-    );
-    assert_ne!(Intent::Paste("a"), Intent::Paste("b"));
-
-    // Focus and layer events name how they came about.
-    for via in [
-        FocusVia::Keyboard,
-        FocusVia::Pointer,
-        FocusVia::Programmatic,
-        FocusVia::Restore,
-    ] {
-        assert_eq!(Intent::FocusIn(via), Intent::FocusIn(via));
-    }
-    assert_ne!(
-        Intent::FocusIn(FocusVia::Pointer),
-        Intent::FocusIn(FocusVia::Restore)
-    );
-    let dismissed = LayerEvent::Dismissed(DismissReason::OutsideClick);
-    assert_ne!(dismissed, LayerEvent::Dismissed(DismissReason::Esc));
-    assert_eq!(LayerEvent::Closed(save), LayerEvent::Closed(save));
-    assert_ne!(LayerEvent::Opened, LayerEvent::Closed(ActionKey::CLOSE));
 
     // The dismiss policy decides which reasons close a layer.
     let reasons = [
@@ -2086,7 +2027,7 @@ fn pointer_scroll_gestures() {
     );
     let moved = PointerEvent::new(
         &rig.hits,
-        Phase::Move,
+        Phase::Middle,
         bar.id,
         at(bar.track.x, bar.track.bottom() - 1),
         1,
@@ -2094,7 +2035,7 @@ fn pointer_scroll_gestures() {
     );
     assert!(
         scroll_input(&mut rig.view, &moved).is_none(),
-        "a move over the bar is not a scroll gesture"
+        "a middle click on the bar is not a scroll gesture"
     );
 }
 

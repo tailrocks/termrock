@@ -914,6 +914,13 @@ impl Theme {
         self.error_soft = White;
         self.danger_label = White;
         self.error_bg = Black;
+        self.selection_inactive = DarkGray;
+        self.warning = Gray;
+        self.info = Gray;
+        self.link = Gray;
+        self.syntax_keyword = Gray;
+        self.syntax_string = Gray;
+        self.syntax_literal = White;
         self.ladders = Ladders {
             canvas: flat(Black),
             surface: flat(Black),
@@ -2537,12 +2544,8 @@ fn downgrade(c: Color, level: ColorLevel) -> Color {
         ColorLevel::TrueColor => c,
         ColorLevel::Ansi256 => Color::Indexed(nearest_256(r, g, b)),
         ColorLevel::Ansi16 => nearest_16(r, g, b),
-        ColorLevel::Mono => match (r as u32 + g as u32 + b as u32) / 3 {
-            0..=40 => Color::Black,
-            41..=110 => Color::DarkGray,
-            111..=190 => Color::Gray,
-            _ => Color::White,
-        },
+        // The mono palette is named wholesale by `apply_mono`; no RGB band applies.
+        ColorLevel::Mono => c,
     }
 }
 
@@ -2601,5 +2604,64 @@ fn nearest_16(r: u8, g: u8, b: u8) -> Color {
                 Color::Blue
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// `downgrade_all` runs for `Mono` too. Before this change `apply_mono` left
+    /// seven colours unnamed and they came from the RGB mono band of
+    /// `downgrade`; the band was live. `apply_mono` now names all of them, with
+    /// the values the band produced, so the mono theme does not depend on
+    /// `downgrade` and the band is gone.
+    #[test]
+    fn mono_theme_is_assigned_by_apply_mono_alone() {
+        use Color::{DarkGray, Gray, White};
+        let mono = Theme::for_level(ColorLevel::Mono);
+
+        let mut direct = Theme::junie();
+        direct.level = ColorLevel::Mono;
+        direct.mods = StateModifiers::MONO;
+        direct.tint_selection = false;
+        direct.apply_mono();
+        assert_eq!(
+            mono, direct,
+            "no colour of the mono theme comes from the RGB downgrade"
+        );
+        assert!(
+            !format!("{mono:?}").contains("Rgb("),
+            "apply_mono leaves no truecolour value behind"
+        );
+
+        assert_eq!(
+            [
+                mono.warning,
+                mono.info,
+                mono.link,
+                mono.syntax_keyword,
+                mono.syntax_string,
+                mono.syntax_literal,
+                mono.selection_inactive,
+            ],
+            [Gray, Gray, Gray, Gray, Gray, White, DarkGray],
+            "the mono colours the removed RGB band used to produce"
+        );
+    }
+
+    #[test]
+    fn downgrade_leaves_non_rgb_colours_and_truecolor_alone() {
+        let rgb = Color::Rgb(12, 200, 90);
+        assert_eq!(downgrade(rgb, ColorLevel::TrueColor), rgb);
+        assert_eq!(downgrade(Color::Red, ColorLevel::Ansi16), Color::Red);
+        assert!(matches!(
+            downgrade(rgb, ColorLevel::Ansi256),
+            Color::Indexed(_)
+        ));
+        assert!(!matches!(
+            downgrade(rgb, ColorLevel::Ansi16),
+            Color::Rgb(..)
+        ));
     }
 }

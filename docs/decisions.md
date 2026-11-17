@@ -15,3 +15,69 @@ Build success demonstrates compilation for the selected workspace and configurat
 ## Scope discipline
 
 Future proposals remain deferred until a consumer and acceptance contract are identified. Upstream work remains an external dependency until released, pinned where appropriate, and verified in this repository. Do not silently broaden supported platforms, host operations, or interaction abstractions without isolated evidence.
+
+## 2026-11-17: Remove public items nothing produces or consumes (#353)
+
+Context: the #14 declared-API burn-down found public items with no producer
+and no consumer anywhere in the workspace. Each was kept as a `Nonvisual`
+`CapabilityException`, because "Compatibility and migration" above forbids a
+breaking change without a recorded decision. The human delegated the decision
+for #353. It was re-checked on `origin/main` (836bd0f8c) by searching `src`,
+`apps/{showcase,tablepro,holla,jackin}`, `crates/termrock`, `tests` (including
+`tests/consumers/*`), `examples` and `docs`. The facade re-exports whole
+modules only, so no facade item or consumer fixture names any of them. Their
+only references were the catalog, the exception lines and the tests written to
+satisfy those lines.
+
+Decision, by group. All are option (a), removal, except where noted.
+
+- `core::intent` vocabulary. `Intent::{Key, Binding, Paste, FocusIn, FocusOut,
+  Layer, Cancel}`, `FocusVia`, `LayerEvent`, `ActionKey` (with `CONFIRM`,
+  `CANCEL`, `CLOSE`, `custom`, `raw`) are removed. Hosts receive input through
+  `Response<A>` and key maps (`core::keymap`); no host dispatch path takes an
+  `Intent`, so there is no concrete host use to document (option b) and no
+  producer worth adding (option c). `Intent` keeps `Pointer` and `Wheel`, the
+  two variants `PointerRouter` builds. With `Paste(&str)` gone, `Intent` has no
+  lifetime parameter. `DismissReason` stays: `Layer::on_dismiss` and
+  `ShellLayers::dismiss` use it in every app.
+- `Phase::Move` and `Phase::SecondaryRelease` are removed. Wiring them
+  (option c) is not a small change. Hover is already complete through
+  `PointerState::on_move`; delivering a `Move` event to widgets adds a dispatch
+  per mouse motion that no widget reads. A secondary release already completes
+  as a `Click` on the row the secondary press started on, and a second event
+  for it would double-deliver to every consumer of that route. Tests that
+  used `Phase::Move` only as "a phase that is not a scroll gesture" now use
+  `Phase::Middle`.
+- `core::id::Part`: `ACTION`, `BADGE`, `BODY`, `BORDER`, `CHANGE`, `DETAIL`,
+  `EMPTY`, `GUTTER`, `HELP`, `LABEL`, `META`, `PLACEHOLDER`, `PREFIX`, `RULE`,
+  `SUMMARY` and `TEXT` are removed. No widget registers them as a hit region,
+  and `Part::custom(name)` already lets a host name any region of its own. The
+  numbers of the remaining parts are unchanged, so no `WidgetId` derived from a
+  part changes. `Part::ALL` shrinks from 36 to 20 entries.
+- `core::response::StateFlags` (the type, its 16 flags and its 11 methods) is
+  removed. Widgets style state through `VisualState` and
+  `Theme::interactive`, and `Response` carries no flag set.
+- `theme::downgrade`, Mono branch: the audit's claim did not hold, so this
+  group is a repair and a deletion rather than a removal of dead code.
+  `downgrade_all` runs for `ColorLevel::Mono` before `apply_mono`, and
+  `apply_mono` did not name seven colours (`warning`, `info`, `link`,
+  `syntax_keyword`, `syntax_string`, `syntax_literal`, `selection_inactive`).
+  Those came from the RGB band, so the branch was live. A test run before the
+  change showed the mono theme differing from a theme built by `apply_mono`
+  alone in exactly those fields. `apply_mono` now assigns them, with the values
+  the band produced (`Gray` ×5, `White`, `DarkGray`), so every colour of the
+  mono theme keeps its value and the band is deleted. `downgrade` is private;
+  the change is not an API change.
+
+Consequences: the declared-API catalog drops 68 entries, and
+`apps/showcase/src/coverage/lane_routing.rs` and `lane_state.rs` drop 24 and 44
+exception lines. The gate stays strict: nothing is allowlisted in their place.
+`catalog_contract.rs` still fails when an API has no disposition, and the
+scenarios `IntentVocabulary` and `StateIdentity` keep proving what remains.
+`Intent::part` and `Intent::pos` still return `Option`, because `Intent` is
+`#[non_exhaustive]` and a later variant may carry neither.
+
+Migration: see "Breaking changes in v0.1 and migration" in
+[the API contract](api-contract.md). A host that needs one of these ideas again
+adds it with a producer and a test through a real route in the same change,
+which is the bar the removed items did not meet.

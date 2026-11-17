@@ -588,7 +588,7 @@ pub struct PointerEvent {
 
     pub hit: Hit,
 
-    pub intent: Intent<'static>,
+    pub intent: Intent,
 
     pub bar: Option<Bar>,
 }
@@ -695,7 +695,6 @@ impl PointerEvent {
     pub fn mods(&self) -> KeyModifiers {
         match self.intent {
             Intent::Pointer { mods, .. } | Intent::Wheel { mods, .. } => mods,
-            _ => KeyModifiers::NONE,
         }
     }
 

@@ -125,33 +125,17 @@ parts! {
 
     CONTAINER = 0,
 
-    BORDER = 1,
-
     BACKDROP = 2,
-
-    GUTTER = 3,
 
     MARKER = 4,
 
     ICON = 5,
 
-    LABEL = 6,
-
-    META = 7,
-
-    HELP = 8,
-
     TITLE = 9,
-
-    BODY = 10,
 
     ACTIONS = 11,
 
     FIELD = 12,
-
-    TEXT = 13,
-
-    PLACEHOLDER = 14,
 
     ROW = 15,
 
@@ -163,35 +147,19 @@ parts! {
 
     THUMB = 19,
 
-    RULE = 20,
-
     TAB = 21,
 
     CLOSE = 22,
-
-    PREFIX = 23,
-
-    BADGE = 24,
 
     OVERFLOW = 25,
 
     NEW = 26,
 
-    EMPTY = 27,
-
     QUERY = 28,
 
     SEAM = 29,
 
-    SUMMARY = 30,
-
-    DETAIL = 31,
-
     KEY = 32,
-
-    ACTION = 33,
-
-    CHANGE = 34,
 
     ROW_NUMBER = 35,
 }

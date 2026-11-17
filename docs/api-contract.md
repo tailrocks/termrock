@@ -157,6 +157,17 @@ Version 0.1 is not a compatibility release. A consumer of an older checkout:
    The binary names `showcase`, `tablepro`, `holla` and `jackin-preview` and
    their command lines are unchanged.
 
+5. Stops using the public items that nothing in the library produced or
+   consumed (decision 2026-11-17 in [decisions](decisions.md)):
+
+   | Removed | Use instead |
+   | --- | --- |
+   | `Intent::{Key, Binding, Paste, FocusIn, FocusOut, Layer, Cancel}`, `FocusVia`, `LayerEvent`, `ActionKey` | Handle key input through `core::keymap` and `Response` actions. Keep a host-owned enum for host-level events. |
+   | `Intent<'a>` | `Intent` has no lifetime parameter; `PointerEvent::intent` is an `Intent`. |
+   | `Phase::Move`, `Phase::SecondaryRelease` | Hover is `PointerState::on_move`. A secondary release arrives as `Phase::Click`. |
+   | `Part::{ACTION, BADGE, BODY, BORDER, CHANGE, DETAIL, EMPTY, GUTTER, HELP, LABEL, META, PLACEHOLDER, PREFIX, RULE, SUMMARY, TEXT}` | `Part::custom("name")` for a region of the host's own. The numbers of the remaining parts are unchanged. |
+   | `StateFlags` | A host-owned `bitflags` type, or the `VisualState` and `Theme` modifiers the widgets already use. |
+
 A rename or removal of the implementation names is a separate, versioned
 decision.
 
