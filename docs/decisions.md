@@ -341,3 +341,58 @@ extracted by #444 to #448 waits.
   these findings under `tests/`, where SonarCloud reads them as test code, so `.sonarcloud.properties` now sets `sonar.test.inclusions`
   to `scripts/policy/**` plus every `tests/` directory. That keeps the
   classification they had; no finding is suppressed in the scripts.
+
+## 2026-11-18: The functional suite moves to `termrock-functional`, and the frozen oracle moves with it (#451)
+
+`crates/termrock-functional` owns `tests/functional`: the Showcase, TablePro and
+Holla journeys, the 121 `functional/` captures, the ten reference binaries and
+the 1,905-file `pre_refactor` oracle. The three options of #451 were weighed
+against evidence in this repository, not by opening a trial PR.
+
+- **What SonarCloud counts.** Its Automatic Analysis crashes on the number of
+  files in a language it analyses, not on binary captures. PR #326 changed 1,786
+  files, almost all `.pb`, and passed; the probe PRs #327, #328, #329 and #331
+  (1,100 to 1,740 modified baselines) all passed; PR #285 changed 1,172 files
+  (867 of them `.pb` or `.json`) and passed. #326 states it: "Sonar analyses
+  `.pb` baselines fine; what crashed it was the number of JSON receipts in one
+  PR". The files that count are `.rs`, `.py`, `.sh`, `.toml`, `.json`, `.md`,
+  `.yml` and `.tsv`. The oracle holds only `.pb` captures, two
+  `.tuiscotti-approval.lock` files and ten executables, so moving it adds no
+  analysed file.
+- **Option B (one rename-only data move): chosen.** The "about 50 files" rule is
+  a proxy for analysed files. Option A would be about 40 PRs of 48 `.pb` renames
+  each, every one waiting for a full CI cycle, plus a dual lookup in `support.rs`
+  that exists only to be deleted. Neither buys any Sonar safety.
+- **Option C (leave the oracle in place behind one path): rejected.** The
+  `g05_reference` receipt tests, `scripts/accept-changed-baselines.py` and the
+  cross-binary cases all treat `functional/`, `showcase/` and `pre_refactor/`
+  as one baseline tree under one root. Splitting that tree across two roots
+  forces every one of them to carry two roots, and it leaves a root `tests/`
+  directory that #452 must remove. All lookups now go through `BASELINES` in
+  `support.rs` (`oracle_baselines()`, `baseline_root()`), so a later relocation
+  is one constant and one `git mv`.
+- **Receipts stay as written.** `docs/testing/**` (about 300 JSON and TSV
+  receipts, 7,000 recorded paths) names `tests/functional/baselines/...` and
+  stays unchanged: rewriting it would add hundreds of analysed JSON files to a
+  PR, the failure #326 recorded. `g05_reference` strips the recorded
+  `tests/functional/baselines` prefix and resolves it under the new root, so the
+  receipts still prove every capture's digest chain. The three live
+  `docs/testing/reference-manifest*.json` files carry the new binary paths.
+- **Captures are byte-identical.** Every capture, receipt and binary moves with
+  `git mv`; `git ls-tree` blob ids at `origin/main` and at the head match for
+  every moved file that is not Rust source.
+- **The suite needs nothing from #448.** The only library items it names are
+  `clock::TestRequest`, `core::pointer::PointerConfig` and `shell::StatusLine`
+  (plus `metrics`, `runtime` and `core::event` in two cases). It now imports them
+  as `termrock::` through the facade, so the crate follows whatever layout #444
+  to #448 give the facade. #451 does not need to wait for #448.
+- **Shared harness.** `support.rs` and `bins.rs` are included by `apps/jackin`
+  and `crates/functional-cross` through `#[path]`, and the 37 `j*` cases by
+  `apps/jackin`. Those paths point into `crates/termrock-functional` once the
+  sources move.
+- **Staging.** One branch per step, each at about 40 analysed files:
+  `-a` routes every baseline lookup through `support.rs` (no move), `-b` moves
+  the captures and reference binaries with the guard pins, `-c` creates the
+  crate and moves the nine top-level files, `-d` to `-f` move the 124 non-`j`
+  cases, `-g` moves the 37 `j` cases. The moved `.pb` files and executables
+  are not analysed.

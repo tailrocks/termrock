@@ -544,7 +544,7 @@ for entry in entries:
     if mode == "040000" and kind == "tree":
         object_type = "tree"
     elif (mode, kind) in {("100644", "blob"), ("100755", "blob"), ("120000", "blob")}:
-        excluded = any(path.startswith(prefix) and "/" not in path[len(prefix):] and path[len(prefix):].endswith(".tui.pb") for prefix in ("tests/functional/baselines/functional/", "apps/jackin/tests/functional/baselines/functional/"))
+        excluded = any(path.startswith(prefix) and "/" not in path[len(prefix):] and path[len(prefix):].endswith(".tui.pb") for prefix in ("tests/functional/baselines/functional/", "crates/termrock-functional/tests/functional/baselines/functional/", "apps/jackin/tests/functional/baselines/functional/"))
         if excluded:
             continue
         object_type = "blob"
@@ -945,8 +945,11 @@ raw = Path(entries_path).read_bytes()
 entries = [(part.split(b"\t", 1)[1].decode("utf-8"), part.split(b"\t", 1)[0].decode("ascii").split()[2]) for part in raw.split(b"\0") if part]
 allowed = {
     ("tests/functional/reference-bins/aarch64-apple-darwin/holla", "e6c7debc7a4f36855d8c9d0b150b4ff0735dcf03"): 16835672,
+    ("crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/holla", "e6c7debc7a4f36855d8c9d0b150b4ff0735dcf03"): 16835672,
     ("tests/functional/reference-bins/aarch64-apple-darwin/showcase", "15d1adf929c8ce69d0e2eddca63a3fab1f40d9b4"): 20608024,
+    ("crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/showcase", "15d1adf929c8ce69d0e2eddca63a3fab1f40d9b4"): 20608024,
     ("tests/functional/reference-bins/aarch64-apple-darwin/pr2-3cbe13c/jackin", "7af05a2846a2843e357eb64454e82e51ecd7a36a"): 20601600,
+    ("crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/pr2-3cbe13c/jackin", "7af05a2846a2843e357eb64454e82e51ecd7a36a"): 20601600,
 }
 oids = [oid for _, oid in entries]
 statuses = Path(statuses_path).read_text().splitlines()
@@ -1014,7 +1017,7 @@ from pathlib import Path
 
 source_path, destination_path = sys.argv[1:]
 prefixes = (
-    "tests/functional/baselines/functional/",
+    "tests/functional/baselines/functional/", "crates/termrock-functional/tests/functional/baselines/functional/",
     "apps/jackin/tests/functional/baselines/functional/",
 )
 raw = Path(source_path).read_bytes()
@@ -1641,8 +1644,11 @@ materialize_tree() {
     blob_limit=$maximum_snapshot_blob_bytes
     case "$path:$object_id" in
       tests/functional/reference-bins/aarch64-apple-darwin/holla:e6c7debc7a4f36855d8c9d0b150b4ff0735dcf03) blob_limit=16835672 ;;
+      crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/holla:e6c7debc7a4f36855d8c9d0b150b4ff0735dcf03) blob_limit=16835672 ;;
       tests/functional/reference-bins/aarch64-apple-darwin/showcase:15d1adf929c8ce69d0e2eddca63a3fab1f40d9b4) blob_limit=20608024 ;;
+      crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/showcase:15d1adf929c8ce69d0e2eddca63a3fab1f40d9b4) blob_limit=20608024 ;;
       tests/functional/reference-bins/aarch64-apple-darwin/pr2-3cbe13c/jackin:7af05a2846a2843e357eb64454e82e51ecd7a36a) blob_limit=20601600 ;;
+      crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/pr2-3cbe13c/jackin:7af05a2846a2843e357eb64454e82e51ecd7a36a) blob_limit=20601600 ;;
     esac
     case "$mode:$type" in
       100644:blob|100755:blob)

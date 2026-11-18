@@ -29,7 +29,7 @@
   "binaries": {
     "tablepro-pr2": {
       "identity_name": "tablepro",
-      "path": "tests/functional/reference-bins/aarch64-apple-darwin/pr2-3cbe13c/tablepro",
+      "path": "crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/pr2-3cbe13c/tablepro",
       "sha256": "ebcc660347e420a9ea1879d1a54537ab08f5cbb750d88701ed5956899492e133",
       "built_from": "3cbe13ce922f7d0902bf42af418f3d012d8b537f",
       "build": {
@@ -41,7 +41,7 @@
       },
       "platforms": {
         "aarch64-apple-darwin": {
-          "path": "tests/functional/reference-bins/aarch64-apple-darwin/pr2-3cbe13c/tablepro",
+          "path": "crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/pr2-3cbe13c/tablepro",
           "sha256": "ebcc660347e420a9ea1879d1a54537ab08f5cbb750d88701ed5956899492e133",
           "built_from": "3cbe13ce922f7d0902bf42af418f3d012d8b537f",
           "reference_sha": "3cbe13ce922f7d0902bf42af418f3d012d8b537f",
@@ -55,7 +55,7 @@
     "candidate_gate_env": "FUNCTIONAL_CANDIDATE_GATE",
     "session_file": "session.json",
     "capture_scope": "Only pre_refactor/t03_plan/t03_plan_plan_narrow; AArch64 macOS; unsupported hosts fail closed",
-    "baseline_root": "tests/functional/baselines",
+    "baseline_root": "crates/termrock-functional/tests/functional/baselines",
     "automatic_acceptance": false
   }
 }
