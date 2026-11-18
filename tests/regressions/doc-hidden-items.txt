@@ -39,6 +39,9 @@ crates/termrock-feedback/src/statusbar.rs  StatusBar::intrinsic_width
 crates/termrock-feedback/src/statusbar.rs  StatusBar::item_widths
 crates/termrock-feedback/src/statusbar.rs  StatusBar::keep_masks
 crates/termrock-feedback/src/statusbar.rs  StatusItem::intrinsic_width
+crates/termrock-fields/src/chips.rs  ChipBar::intrinsic_width
+crates/termrock-fields/src/chips.rs  overflow_run_cells
+crates/termrock-fields/src/select.rs  Select::contains_id
 crates/termrock-metrics/src/lib.rs  state
 crates/termrock-metrics/src/state.rs  epoch_for_test
 crates/termrock-metrics/src/state.rs  set_for_test

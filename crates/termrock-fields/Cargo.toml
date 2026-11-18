@@ -1,0 +1,25 @@
+[package]
+name = "termrock-fields"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+description = "Line input, select and chips fields for the Termrock terminal UI library"
+license = "MIT"
+
+[lib]
+doctest = false
+
+[features]
+default = []
+work-metrics = ["termrock-controls/work-metrics", "termrock-core/work-metrics", "termrock-metrics/work-metrics", "termrock-overlays/work-metrics", "termrock-runtime/work-metrics"]
+
+[dependencies]
+ratatui = { workspace = true }
+termrock-controls = { workspace = true }
+termrock-core = { workspace = true }
+termrock-metrics = { workspace = true }
+termrock-overlays = { workspace = true }
+termrock-runtime = { workspace = true }
+termrock-text = { workspace = true }
+termrock-theme = { workspace = true }
+unicode-segmentation = "1"

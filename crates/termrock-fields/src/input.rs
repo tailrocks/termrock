@@ -3,28 +3,32 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::Modifier;
 
-use crate::core::edit::{EditEntry, EditKind, FieldKeys, FocusSelect, TextCmd};
-use crate::core::event::{Key, Outcome};
-use crate::core::focus::{BlurAction, request_focus_next};
-use crate::core::hints::{HasHints, HintCx};
-use crate::core::id::WidgetId;
-use crate::ui::ctx::RenderCtx;
-use crate::ui::edit_menu::{
+use ratatui::style::Color;
+use termrock_controls::keyhint::Hint;
+use termrock_core::edit::{EditEntry, EditKind, FieldKeys, FocusSelect, TextCmd};
+use termrock_core::event::{Key, Outcome};
+use termrock_core::field::edit::{
+    EditField, Editable, FieldError, LineLook, ValidateWhen, Validator,
+};
+use termrock_core::field::field_common::{
+    EditAction, PointerField, PointerSelect, paste_clipboard,
+};
+use termrock_core::focus::{BlurAction, request_focus_next};
+use termrock_core::hints::{HasHints, HintCx};
+use termrock_core::id::WidgetId;
+use termrock_overlays::edit_menu::{
     EditCaps, EditMenu, EditMenuHost, edit_menu_key, edit_menu_pointer, edit_menu_route,
     editable_target, point_editable,
 };
-use crate::ui::specimen::{Specimen, SpecimenState};
-use crate::ui::text::width;
-use crate::widgets::edit::{EditField, Editable, FieldError, LineLook, ValidateWhen, Validator};
-use crate::widgets::field_common::{EditAction, PointerField, PointerSelect, paste_clipboard};
-use crate::widgets::keyhint::Hint;
-use ratatui::style::Color;
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::specimen::{Specimen, SpecimenState};
+use termrock_text::cells::width;
 
-impl crate::ui::measure::Measure for TextInput {
+impl termrock_runtime::measure::Measure for TextInput {
     fn measure(
         &self,
         _avail: ratatui::layout::Size,
-        ctx: &crate::ui::ctx::RenderCtx,
+        ctx: &termrock_runtime::ctx::RenderCtx,
     ) -> ratatui::layout::Size {
         let t = ctx.theme;
         let suffix = if self.required {
@@ -140,7 +144,7 @@ impl TextInput {
             disabled: false,
             required: false,
             required_message: None,
-            required_text: crate::theme::Strings::DEFAULT.required,
+            required_text: termrock_theme::Strings::DEFAULT.required,
             help: String::new(),
             editing: false,
             snapshot: String::new(),
@@ -153,7 +157,7 @@ impl TextInput {
             wrap_label: false,
             blur_action: BlurAction::Commit,
             edit_entry: None,
-            entry: crate::theme::Theme::DEFAULT_EDIT_ENTRY,
+            entry: termrock_theme::Theme::DEFAULT_EDIT_ENTRY,
             focus_select: FocusSelect::default(),
             field_keys: None,
             focus_seen: false,
@@ -300,7 +304,7 @@ impl TextInput {
 
     pub fn text_keymap(
         mut self,
-        keymap: crate::core::keymap::KeyMap<crate::core::edit::TextCmd>,
+        keymap: termrock_core::keymap::KeyMap<termrock_core::edit::TextCmd>,
     ) -> Self {
         self.field.text_keymap = Some(keymap);
         self
@@ -332,18 +336,21 @@ impl TextInput {
         self.field.can_undo()
     }
 
-    pub fn hints(&self) -> Vec<crate::widgets::keyhint::Hint> {
-        use crate::widgets::keyhint::EDIT_FIELD;
+    pub fn hints(&self) -> Vec<termrock_controls::keyhint::Hint> {
+        use termrock_controls::keyhint::EDIT_FIELD;
 
         if let Some(m) = self.edit_menu.menu() {
-            return crate::core::hints::HasHints::hints(m, &crate::core::hints::HintCx::new(None));
+            return termrock_core::hints::HasHints::hints(
+                m,
+                &termrock_core::hints::HintCx::new(None),
+            );
         }
         if self.disabled {
             Vec::new()
         } else if self.wants_text_input() {
             EDIT_FIELD.to_vec()
         } else {
-            vec![crate::widgets::widget_hints::EDIT]
+            vec![termrock_controls::widget_hints::EDIT]
         }
     }
 
@@ -500,7 +507,7 @@ impl TextInput {
     fn label_lines(&self, cols: u16) -> Vec<String> {
         let room = cols.saturating_sub(Self::GUTTER) as usize;
         if self.wrap_label && room > 0 && width(&self.label) > room {
-            crate::ui::text::wrap(&self.label, room)
+            termrock_text::cells::wrap(&self.label, room)
         } else {
             vec![self.label.clone()]
         }
@@ -585,7 +592,7 @@ impl TextInput {
 
             EditAction::None if entry == EditEntry::Immediate => (Outcome::Ignored, None),
 
-            EditAction::None => (crate::widgets::field_common::unbound_key(key), None),
+            EditAction::None => (termrock_core::field::field_common::unbound_key(key), None),
             action => {
                 self.sync_required();
                 if self.field.apply(action, key).edited {
@@ -614,7 +621,7 @@ impl TextInput {
     }
 
     fn offset_at(&self, pos: Position) -> usize {
-        let glyphs = self.display_graphemes(true, crate::theme::Glyphs::UNICODE.mask);
+        let glyphs = self.display_graphemes(true, termrock_theme::Glyphs::UNICODE.mask);
         self.field.glyph_offset_at(pos, &glyphs)
     }
 
@@ -672,7 +679,7 @@ impl TextInput {
             if self.required_message.is_none()
                 && let Some(e) = self.field.error.as_mut()
             {
-                crate::theme::Strings::follow(e.message_mut(), old, required);
+                termrock_theme::Strings::follow(e.message_mut(), old, required);
             }
         }
         self.entry = self.edit_entry.unwrap_or(ctx.theme.edit_entry);
@@ -716,7 +723,7 @@ impl TextInput {
         let wrapped = self.label_lines(area.width);
         let label_rows = wrapped.len().max(1) as u16;
         let label_x = area.x + Self::GUTTER.min(area.width);
-        let label_style_for = |t: &crate::theme::Theme| {
+        let label_style_for = |t: &termrock_theme::Theme| {
             if self.disabled {
                 t.faint().bg(bg)
             } else {
@@ -752,16 +759,16 @@ impl TextInput {
             buf.set_string(
                 label_x,
                 area.y,
-                crate::ui::text::fit(&label, area.width.saturating_sub(2) as usize),
+                termrock_text::cells::fit(&label, area.width.saturating_sub(2) as usize),
                 label_style,
             );
         }
         if label_rows > 1 {
         } else if self.required && !self.disabled && name_w + 4 <= area.width as usize {
             let ink = if self.field.error.is_some() {
-                t.tone_on(crate::theme::Tone::Error, bg)
+                t.tone_on(termrock_theme::Tone::Error, bg)
             } else {
-                t.tone_on(crate::theme::Tone::Muted, bg)
+                t.tone_on(termrock_theme::Tone::Muted, bg)
             };
             buf.set_string(
                 area.x + 2 + name_w as u16 + 1,
@@ -794,7 +801,7 @@ impl TextInput {
             ctx.clickable(self.id, rect.intersection(area));
         }
         let fs = t.field_style(s);
-        crate::ui::ctx::fill(buf, field, fs);
+        termrock_runtime::ctx::fill(buf, field, fs);
         let gutter = t.gutter(s, fs.bg.unwrap_or(bg), false);
         buf.set_string(field.x, field.y, t.gutter_symbol(s), gutter);
         let trailing = if s.error { 2 } else { 0 };
@@ -822,7 +829,7 @@ impl TextInput {
         }
         let text = self.field.buffer.text();
         if text.is_empty() {
-            let p = crate::ui::reveal::fit(ctx, inner, &self.placeholder, s.focused);
+            let p = termrock_runtime::reveal::fit(ctx, inner, &self.placeholder, s.focused);
             buf.set_string(inner.x, inner.y, &p, t.placeholder(s));
             if s.editing && inner.width > 0 {
                 ctx.set_cursor(Position::new(inner.x, inner.y));
@@ -856,7 +863,7 @@ impl TextInput {
             ctx.selection(self.id);
         }
         if !self.disabled {
-            ctx.pointer_shape(self.id, crate::core::shape::PointerShape::Text);
+            ctx.pointer_shape(self.id, termrock_core::shape::PointerShape::Text);
         }
         if readout_w > 0 {
             let rx = field.right().saturating_sub(trailing + readout_w);
@@ -883,14 +890,14 @@ impl TextInput {
                 buf.set_string(
                     label_x,
                     msg_y,
-                    crate::ui::reveal::fit(ctx, msg, e, s.focused),
+                    termrock_runtime::reveal::fit(ctx, msg, e, s.focused),
                     t.error_fg().bg(bg),
                 );
             } else if !self.help.is_empty() {
                 buf.set_string(
                     label_x,
                     msg_y,
-                    crate::ui::reveal::fit(ctx, msg, &self.help, s.focused),
+                    termrock_runtime::reveal::fit(ctx, msg, &self.help, s.focused),
                     t.muted().bg(bg),
                 );
             }
@@ -898,7 +905,7 @@ impl TextInput {
     }
 }
 
-impl crate::core::focus::BlurTarget for TextInput {
+impl termrock_core::focus::BlurTarget for TextInput {
     fn blur_id(&self) -> WidgetId {
         self.id
     }
@@ -943,7 +950,7 @@ impl Editable for TextInput {
     }
 }
 
-impl crate::core::pointer::MouseTarget for TextInput {
+impl termrock_core::pointer::MouseTarget for TextInput {
     type Action = ();
 
     fn mouse_id(&self) -> WidgetId {
@@ -952,9 +959,9 @@ impl crate::core::pointer::MouseTarget for TextInput {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<()> {
-        use crate::core::intent::Phase;
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<()> {
+        use termrock_core::intent::Phase;
         let pos = ev.pos();
         if let Some(o) = edit_menu_pointer(self, ev) {
             return o.into();
@@ -963,14 +970,14 @@ impl crate::core::pointer::MouseTarget for TextInput {
             Some(Phase::Press) => self.on_press_count(pos, ev.count().max(1)).into(),
             Some(Phase::Drag) => self.on_drag(pos).into(),
             Some(Phase::Click) => self.on_click_count(pos, ev.count().max(1)).into(),
-            _ => crate::core::response::Response::ignored(),
+            _ => termrock_core::response::Response::ignored(),
         }
     }
 
     fn route(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> Option<crate::core::response::Response<()>> {
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> Option<termrock_core::response::Response<()>> {
         edit_menu_route(self, ev)
     }
 }
@@ -990,7 +997,7 @@ impl EditMenuHost for TextInput {
     fn edit_shortcut(&self, cmd: TextCmd) -> Option<String> {
         self.field.shortcut(cmd)
     }
-    fn edit_target(&self, ev: &crate::core::pointer::PointerEvent) -> bool {
+    fn edit_target(&self, ev: &termrock_core::pointer::PointerEvent) -> bool {
         editable_target(self, ev)
     }
     fn edit_point(&mut self, pos: Position) {
@@ -1072,7 +1079,7 @@ impl Specimen for TextInput {
 
         if v.editing && f.area.width > 3 {
             let field = f.area;
-            let text_w = crate::ui::text::width(f.field.buffer.text()) as u16;
+            let text_w = termrock_text::cells::width(f.field.buffer.text()) as u16;
             let x = (field.x + 2 + text_w).min(field.right().saturating_sub(2));
             if let Some(c) = buf.cell_mut(Position::new(x, field.y)) {
                 c.bg = ctx.theme.text_primary;
@@ -1091,11 +1098,11 @@ mod issue35_tests {
     use ratatui::layout::Rect;
 
     use super::*;
-    use crate::core::event::Key;
-    use crate::core::focus::FocusRing;
-    use crate::core::hit::HitRegistry;
-    use crate::theme::{ColorLevel, Theme};
-    use crate::ui::ctx::Interaction;
+    use termrock_core::event::Key;
+    use termrock_core::focus::FocusRing;
+    use termrock_core::hit::HitRegistry;
+    use termrock_runtime::ctx::Interaction;
+    use termrock_theme::{ColorLevel, Theme};
 
     const REQUIRED: &str = "Name is required";
 
