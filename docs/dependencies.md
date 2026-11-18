@@ -13,7 +13,7 @@ vendor or patch an upstream crate to get around a pin.
 | `tuiscotti` (`tuiscotti-latest`) | git rev `f1fb3f276b8d49948881c07b3bbc619840b6cc93` | Offline `FrozenStore` visual gate; bump to newest `main` rev deliberately when it moves. |
 | `toml` (dev-dependency) | `1.2.1` | Parses `.velnor/config.toml` in `tests/ci_default_branch.rs`, so the default-branch guard reads the real TOML grammar instead of a hand-written line scanner (#13). Latest release at last review; tests only, never linked into a library or app. |
 | velnor-actions | 0.1.78 (`mise.toml`) | Generates CI from `.velnor/config.toml`; see [CI](ci.md). |
-| mr-boxington (`mbx`) | 1.29.2 (`mise.toml`, `postinstall = "mbx setup --yes"`) | Cargo wrapper via mise (`[wrappers.cargo]`, `mr_boxington = true` on the rust tool); CI uses the velnor `mbx` compile driver. |
+| mr-boxington (`mbx`) | 1.30.0 (`mise.toml`, `postinstall = "mbx setup --yes"`) | Cargo wrapper via mise (`[wrappers.cargo]`, `mr_boxington = true` on the rust tool); CI uses the velnor `mbx` compile driver. |
 
 Reviewed 2026-11-05. Testing-stack rationale is in
 [functional testing](functional-testing.md).
