@@ -5,7 +5,7 @@ min_version = { hard = "2026.11.1", soft = "2026.11.1" }
 actionlint = "1.7.12"
 shellcheck = "0.11.0"
 zizmor = "1.32.0"
-jactionlint = "v2.6.0"
+jactionlint = "2.6.0"
 gh = "2.105.0"
 hk = "2.13.0"
 "github:tailrocks/velnor-new" = { version = "0.1.78", bin = "velnor-actions" }
