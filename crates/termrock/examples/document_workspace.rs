@@ -1,16 +1,16 @@
 //! A text-document consumer of `DocumentWorkspace` that prints every
 //! transition and the actions it returns, in the order a host handles them.
 //!
-//! Run it with `cargo run --example document_workspace`.
+//! Run it with `cargo run -p termrock --example document_workspace`.
 
 use std::borrow::Cow;
 
-use junie_tui::core::id::{ItemKey, WidgetId};
-use junie_tui::core::response::Response;
-use junie_tui::widgets::document_workspace::{
+use termrock::core::id::{ItemKey, WidgetId};
+use termrock::core::response::Response;
+use termrock::widgets::document_workspace::{
     CloseDecision, DocumentWorkspace, OpenKind, WorkspaceAction, WorkspaceDocument,
 };
-use junie_tui::widgets::tabs::Tabs;
+use termrock::widgets::tabs::Tabs;
 
 struct Note {
     title: String,

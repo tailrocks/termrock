@@ -471,7 +471,7 @@ variant of these enums stays a breaking change and is recorded here.
   close now offers Save, a preview open appends instead of replacing in place,
   and a close request that an edit has outgrown is refused and asked again. See
   [the audit note](audits/2026-11-15-document-workspace.md) and
-  `examples/document_workspace.rs`.
+  `crates/termrock/examples/document_workspace.rs`.
 - Keyed collections (#41). `core::list::KeyedRowSource` and `SourceStamp`
   extend `RowSource` with an authoritative key set and a revision, and
   `core::keyed::{KeyedState, KeyedVec}` reconcile cursor, selection, expansion,

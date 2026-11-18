@@ -61,6 +61,11 @@ also carries a `#[test]` for the outcome it shows
 | [`modal_focus`](crates/termrock/examples/modal_focus.rs) | A modal gets keys before the page, the page leaves the focus ring, and closing restores focus. | `cargo run -p termrock --example modal_focus` |
 | [`bounded_messages`](crates/termrock/examples/bounded_messages.rs) | External messages beyond the per-turn budget wait in a bounded queue; a full queue returns the message to the producer. | `cargo run -p termrock --example bounded_messages` |
 
+One more program, [`document_workspace`](crates/termrock/examples/document_workspace.rs),
+prints every transition and returned action of a text-document workspace. It
+carries no `#[test]`. Run it with
+`cargo run -p termrock --example document_workspace`.
+
 ## Generated-workflow snapshot bounds
 
 The generated-workflow guard accepts recursive Git tree listings up to 8 MiB and 8,192 entries, with a 16 MiB maximum per blob and a 512 MiB maximum total of materialized blob occurrences. The measured baseline HEAD contains 608 blobs totaling 191,075,553 raw Git blob bytes; its largest blob is 1,876,744 bytes. The limits apply to raw blob bytes, count repeated object IDs and symlink targets once per tree entry, and leave room above that measured snapshot. Future or historical snapshots beyond these limits are rejected.
