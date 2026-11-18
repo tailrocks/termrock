@@ -61,7 +61,7 @@ impl ExternalPolicy {
     pub const DEFAULT_MAX_MESSAGES: usize = 64;
     pub const DEFAULT_MAX_DURATION: Duration = Duration::from_millis(2);
 
-    /// Plumbing for the run loop in `junie-tui`: a zero message count read as one.
+    /// Plumbing for the run loop in `termrock-shell`: a zero message count read as one.
     #[doc(hidden)]
     pub fn normalized(self) -> Self {
         Self {
@@ -167,7 +167,7 @@ impl ExternalReceiver {
         self
     }
 
-    /// Plumbing for the run loop in `junie-tui`: the longest the loop may wait for input.
+    /// Plumbing for the run loop in `termrock-shell`: the longest the loop may wait for input.
     #[doc(hidden)]
     pub fn wait_latency(&self) -> Duration {
         self.latency
