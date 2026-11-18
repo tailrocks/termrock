@@ -28,15 +28,15 @@ supported imports, features, ownership rules and the v0.1 migration are in the
 Working consumers, each an independent package that compiles from its declared
 features alone (`bash scripts/check-consumers.sh` runs all four):
 
-- [`tests/consumers/minimal`](tests/consumers/minimal/src/lib.rs): no
+- [`crates/termrock/tests/consumers/minimal`](crates/termrock/tests/consumers/minimal/src/lib.rs): no
   features. A form of an input and a list; a validated input; typed grid
   actions in order; nested scroll views that bubble a key; and a bounded
   external-message channel that returns its overflow.
-- [`tests/consumers/keyed-modal`](tests/consumers/keyed-modal/src/lib.rs): a
+- [`crates/termrock/tests/consumers/keyed-modal`](crates/termrock/tests/consumers/keyed-modal/src/lib.rs): a
   keyed list borrowed from a provider, under a modal layer.
-- [`tests/consumers/terminal`](tests/consumers/terminal/src/lib.rs): the
+- [`crates/termrock/tests/consumers/terminal`](crates/termrock/tests/consumers/terminal/src/lib.rs): the
   `terminal` feature and the public viewport.
-- [`tests/consumers/jackin-host`](tests/consumers/jackin-host/src/lib.rs): a
+- [`crates/termrock/tests/consumers/jackin-host`](crates/termrock/tests/consumers/jackin-host/src/lib.rs): a
   host of `jackin-console` with the demo off.
 
 The applications are separate packages that import only the facade:

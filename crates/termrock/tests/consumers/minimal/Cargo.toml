@@ -7,5 +7,5 @@ publish = false
 [workspace]
 
 [dependencies]
-termrock = { path = "../../../crates/termrock", default-features = false }
+termrock = { path = "../../..", default-features = false }
 ratatui = "0.30"

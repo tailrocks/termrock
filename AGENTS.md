@@ -117,7 +117,7 @@ workspaces, Docker, OpenShell, Codex).
   implementation package. `tests/regressions/facade_contract.rs` enforces it.
   A new public module is added to the facade explicitly, and the facade keeps
   empty default features. The independent consumer fixtures under
-  `tests/consumers/` each have their own `[workspace]` and `Cargo.lock`; keep
+  `crates/termrock/tests/consumers/` each have their own `[workspace]` and `Cargo.lock`; keep
   them compiling from their declared features alone (`docs/api-contract.md`,
   `scripts/check-consumers.sh`).
 - Light dismiss is owned by the popup: a popup that closes on an outside

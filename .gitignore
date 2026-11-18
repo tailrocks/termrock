@@ -15,4 +15,4 @@ docs/refactoring-plan/evidence/*.tar.gz
 /snapshots.diff
 
 .claude/
-/tests/consumers/*/target
+/crates/termrock/tests/consumers/*/target

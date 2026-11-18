@@ -177,7 +177,7 @@ fn facade_scan_sees_each_way_to_name_the_implementation() {
 /// fails when the lockfile and the manifest disagree, and print `cargo tree`.
 fn resolved_packages(fixture: &str) -> Vec<String> {
     let lock = root()
-        .join("tests/consumers")
+        .join("crates/termrock/tests/consumers")
         .join(fixture)
         .join("Cargo.lock");
     let text = std::fs::read_to_string(&lock)

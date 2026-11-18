@@ -28,7 +28,7 @@ run() {
 }
 
 for fixture in "${fixtures[@]}"; do
-  manifest="$root/tests/consumers/$fixture/Cargo.toml"
+  manifest="$root/crates/termrock/tests/consumers/$fixture/Cargo.toml"
   echo "== $fixture: tests"
   run cargo nextest run --locked --no-tests fail \
     --manifest-path "$manifest" --target-dir "$target/$fixture"
