@@ -1,13 +1,11 @@
-mod common;
-
-use common::*;
-use junie_tui::clock::{Moment, TestRequest};
-use junie_tui::core::event::{External, Input, Mouse, MouseKind, Outcome};
-use junie_tui::core::focus::{Focus, FocusRing};
-use junie_tui::shell::{Cx, Request, StatusLine, background};
-use junie_tui::theme::Tone;
+use crate::common::*;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Position;
+use termrock::clock::{Moment, TestRequest};
+use termrock::core::event::{External, Input, Mouse, MouseKind, Outcome};
+use termrock::core::focus::{Focus, FocusRing};
+use termrock::shell::{Cx, Request, StatusLine, background};
+use termrock::theme::Tone;
 
 fn mouse(kind: MouseKind) -> Input {
     Input::Mouse(Mouse::new(kind, Position::new(1, 1)))
@@ -117,13 +115,13 @@ fn a_clock_step_request_does_not_clear_a_sticky_status() {
 mod payload {
     use std::time::Duration;
 
-    use junie_tui::core::event::{Input, Outcome};
-    use junie_tui::shell::{App, Shell, handle};
-    use junie_tui::theme::{ColorLevel, Theme, Tone};
-    use junie_tui::ui::ctx::RenderCtx;
-    use junie_tui::widgets::too_small::TooSmall;
     use ratatui::buffer::Buffer;
     use ratatui::layout::Rect;
+    use termrock::core::event::{Input, Outcome};
+    use termrock::shell::{App, Shell, handle};
+    use termrock::theme::{ColorLevel, Theme, Tone};
+    use termrock::ui::ctx::RenderCtx;
+    use termrock::widgets::too_small::TooSmall;
 
     pub struct Host {
         shell: Shell<u8>,
@@ -248,7 +246,7 @@ fn a_notice_never_replaces_the_message_on_screen() {
         ("error", |line| line.error("Discarded 1 change")),
         ("sticky", |line| line.sticky("Discarded 1 change")),
         ("progress", |line| {
-            line.progress(junie_tui::shell::JobKey::new("stop"), "Discarded 1 change")
+            line.progress(termrock::shell::JobKey::new("stop"), "Discarded 1 change")
         }),
     ];
     for (name, post) in shown {

@@ -3,9 +3,9 @@
 
 use std::collections::HashSet;
 
-use junie_tui::core::id::ItemKey;
-use junie_tui::core::keyed::{KeyedRecord, KeyedSourceError, KeyedState, KeyedVec, Reconcile};
-use junie_tui::core::list::{KeyedRowSource, RowSource, SourceStamp};
+use termrock::core::id::ItemKey;
+use termrock::core::keyed::{KeyedRecord, KeyedSourceError, KeyedState, KeyedVec, Reconcile};
+use termrock::core::list::{KeyedRowSource, RowSource, SourceStamp};
 
 pub fn k(n: u64) -> ItemKey {
     ItemKey::num(n)
@@ -408,7 +408,7 @@ fn keyed_vec_serves_keyed_records_and_a_state_reconciles_them() {
 
 #[test]
 fn row_selection_replace_swaps_the_rows_and_the_anchor_in_one_step() {
-    use junie_tui::core::selection::RowSelection;
+    use termrock::core::selection::RowSelection;
     let mut selection = RowSelection::new();
     selection.replace([4, 2], Some(2));
     assert_eq!(selection.len(), 2);
@@ -468,22 +468,22 @@ fn keyed_vec_owns_its_revisions() {
 mod widgets {
     use super::*;
     use crate::common::{chord, key, row};
-    use junie_tui::core::event::Outcome;
-    use junie_tui::core::focus::{BlurAction, BlurTarget, FocusRing};
-    use junie_tui::core::hit::HitRegistry;
-    use junie_tui::core::id::{Part, WidgetId};
-    use junie_tui::core::intent::Phase;
-    use junie_tui::core::pointer::PointerEvent;
-    use junie_tui::core::selection::SelectionMode;
-    use junie_tui::theme::{ColorLevel, Theme};
-    use junie_tui::ui::ctx::{Interaction, RenderCtx};
-    use junie_tui::widgets::list::{ListAction, ListBox, ListItem, SelectMode};
-    use junie_tui::widgets::table::{
-        Cell, Column, DataTable, KeyedTable, TableAction, TableEditSource, TableSource,
-    };
     use ratatui::buffer::Buffer;
     use ratatui::crossterm::event::{KeyCode, KeyModifiers};
     use ratatui::layout::{Constraint, Position, Rect};
+    use termrock::core::event::Outcome;
+    use termrock::core::focus::{BlurAction, BlurTarget, FocusRing};
+    use termrock::core::hit::HitRegistry;
+    use termrock::core::id::{Part, WidgetId};
+    use termrock::core::intent::Phase;
+    use termrock::core::pointer::PointerEvent;
+    use termrock::core::selection::SelectionMode;
+    use termrock::theme::{ColorLevel, Theme};
+    use termrock::ui::ctx::{Interaction, RenderCtx};
+    use termrock::widgets::list::{ListAction, ListBox, ListItem, SelectMode};
+    use termrock::widgets::table::{
+        Cell, Column, DataTable, KeyedTable, TableAction, TableEditSource, TableSource,
+    };
 
     const AREA: Rect = Rect::new(0, 0, 40, 10);
 
@@ -631,8 +631,8 @@ mod widgets {
                 self.0.source_key(i)
             }
         }
-        impl junie_tui::widgets::list::ListSource for Bad {
-            fn item(&self, i: usize) -> junie_tui::widgets::list::ListItemRef<'_> {
+        impl termrock::widgets::list::ListSource for Bad {
+            fn item(&self, i: usize) -> termrock::widgets::list::ListItemRef<'_> {
                 self.1[i].borrowed()
             }
         }
@@ -679,7 +679,7 @@ mod widgets {
     }
 
     fn nav_list() -> ListBox {
-        list(SelectMode::Single).click(junie_tui::core::selection::ClickPolicy::NAVIGATION)
+        list(SelectMode::Single).click(termrock::core::selection::ClickPolicy::NAVIGATION)
     }
 
     fn press_at(list: &mut ListBox, source: &KeyedVec<ListItem>, at: Position) {
@@ -762,7 +762,7 @@ mod widgets {
     fn keyed_list_click_after_a_source_swap_is_consumed() {
         let first = items(&[(1, "alpha"), (2, "bravo")]);
         let mut list =
-            list(SelectMode::Single).click(junie_tui::core::selection::ClickPolicy::NAVIGATION);
+            list(SelectMode::Single).click(termrock::core::selection::ClickPolicy::NAVIGATION);
         let frame = draw_list(&mut list, &first);
         let at = Position::new(6, 1);
         let id = frame.id_at(list.id, Part::ROW, at);
@@ -788,7 +788,7 @@ mod widgets {
     fn keyed_list_click_activates_the_clicked_key() {
         let store = items(&[(1, "alpha"), (2, "bravo")]);
         let mut list =
-            list(SelectMode::Single).click(junie_tui::core::selection::ClickPolicy::NAVIGATION);
+            list(SelectMode::Single).click(termrock::core::selection::ClickPolicy::NAVIGATION);
         let frame = draw_list(&mut list, &store);
         let at = Position::new(6, 1);
         let id = frame.id_at(list.id, Part::ROW, at);
@@ -1099,7 +1099,7 @@ mod widgets {
             fn columns(&self) -> &[Column] {
                 self.0.columns()
             }
-            fn cell(&self, r: usize, c: usize) -> junie_tui::widgets::table::CellRef<'_> {
+            fn cell(&self, r: usize, c: usize) -> termrock::widgets::table::CellRef<'_> {
                 self.0.cell(r, c)
             }
         }
@@ -1183,8 +1183,8 @@ mod widgets {
 
     #[test]
     fn keyed_table_validates_shape_and_keys() {
-        use junie_tui::core::data::DataError;
-        use junie_tui::widgets::table::KeyedTableError;
+        use termrock::core::data::DataError;
+        use termrock::widgets::table::KeyedTableError;
         let err = KeyedTable::try_new(columns(), [(k(1), vec![Cell::new("only one")])])
             .expect_err("ragged");
         assert!(matches!(err, KeyedTableError::Shape(DataError::Shape(_))));
@@ -1201,8 +1201,8 @@ mod widgets {
 
     #[test]
     fn keyed_table_rejects_rows_under_an_empty_schema() {
-        use junie_tui::core::data::DataError;
-        use junie_tui::widgets::table::KeyedTableError;
+        use termrock::core::data::DataError;
+        use termrock::widgets::table::KeyedTableError;
         let refused = Err(KeyedTableError::Shape(DataError::EmptySchemaWithRows));
         assert_eq!(
             KeyedTable::try_new(vec![], [(k(1), vec![])]).map(|_| ()),
@@ -1305,15 +1305,15 @@ mod trees {
     use super::widgets::{Frame, paint};
     use super::*;
     use crate::common::key;
-    use junie_tui::core::id::{Part, WidgetId};
-    use junie_tui::core::intent::Phase;
-    use junie_tui::core::list::SourceStamp;
-    use junie_tui::widgets::tree::{
-        KeyedTree, KeyedTreeNode, TreeAction, TreeNode, TreeNodeRef, TreeSource, TreeView,
-    };
     use ratatui::crossterm::event::KeyCode;
     use ratatui::layout::{Position, Rect};
     use std::collections::HashMap;
+    use termrock::core::id::{Part, WidgetId};
+    use termrock::core::intent::Phase;
+    use termrock::core::list::SourceStamp;
+    use termrock::widgets::tree::{
+        KeyedTree, KeyedTreeNode, TreeAction, TreeNode, TreeNodeRef, TreeSource, TreeView,
+    };
 
     const AREA: Rect = Rect::new(0, 0, 40, 10);
 
@@ -1523,7 +1523,7 @@ mod trees {
                 label,
                 meta: None,
                 glyph: None,
-                glyph_tone: junie_tui::theme::Tone::Muted,
+                glyph_tone: termrock::theme::Tone::Muted,
                 label_tone: None,
                 children,
                 lazy: false,
@@ -1797,22 +1797,22 @@ mod trees {
 mod details {
     use super::widgets::paint;
     use super::*;
-    use junie_tui::core::event::Outcome;
-    use junie_tui::core::focus::Focus;
-    use junie_tui::core::focus::FocusRing;
-    use junie_tui::core::hit::HitRegistry;
-    use junie_tui::core::id::WidgetId;
-    use junie_tui::core::intent::Phase;
-    use junie_tui::theme::{ColorLevel, Theme};
-    use junie_tui::ui::ctx::{Interaction, RenderCtx};
-    use junie_tui::ui::layout::Split;
-    use junie_tui::widgets::list_detail::{
-        DetailPane, Event, ListDetail, ListDetailSource, ListRow, ListRowRef, MasterRow, PaneHost,
-        SourceFrame,
-    };
     use ratatui::buffer::Buffer;
     use ratatui::crossterm::event::KeyCode;
     use ratatui::layout::{Position, Rect};
+    use termrock::core::event::Outcome;
+    use termrock::core::focus::Focus;
+    use termrock::core::focus::FocusRing;
+    use termrock::core::hit::HitRegistry;
+    use termrock::core::id::WidgetId;
+    use termrock::core::intent::Phase;
+    use termrock::theme::{ColorLevel, Theme};
+    use termrock::ui::ctx::{Interaction, RenderCtx};
+    use termrock::ui::layout::Split;
+    use termrock::widgets::list_detail::{
+        DetailPane, Event, ListDetail, ListDetailSource, ListRow, ListRowRef, MasterRow, PaneHost,
+        SourceFrame,
+    };
 
     const AREA: Rect = Rect::new(0, 0, 40, 10);
     const MASTER: WidgetId = WidgetId::of("kd.m");

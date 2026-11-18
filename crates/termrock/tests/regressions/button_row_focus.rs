@@ -1,13 +1,13 @@
-use junie_tui::core::event::Key;
-use junie_tui::core::focus::{Focus, FocusRing};
-use junie_tui::core::id::WidgetId;
-use junie_tui::widgets::button::{Button, ButtonRow, RowOverflow};
-use junie_tui::widgets::choice_dialog::ChoiceDialog;
-use junie_tui::widgets::dialog::Dialog;
-use junie_tui::widgets::form_dialog::{FormDialog, FormField};
-use junie_tui::widgets::input::TextInput;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
+use termrock::core::event::Key;
+use termrock::core::focus::{Focus, FocusRing};
+use termrock::core::id::WidgetId;
+use termrock::widgets::button::{Button, ButtonRow, RowOverflow};
+use termrock::widgets::choice_dialog::ChoiceDialog;
+use termrock::widgets::dialog::Dialog;
+use termrock::widgets::form_dialog::{FormDialog, FormField};
+use termrock::widgets::input::TextInput;
 
 use crate::common::{key, paint_in};
 

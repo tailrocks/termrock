@@ -2,19 +2,17 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::common::key;
-use junie_tui::core::focus::{Focus, FocusRing};
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::widgets::file_browser::{
-    FileBrowser, FileEntry, FileSource, FsSource, MemorySource,
-};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
+use termrock::core::focus::{Focus, FocusRing};
+use termrock::core::hit::HitRegistry;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::PointerEvent;
+use termrock::theme::{ColorLevel, Theme};
+use termrock::ui::ctx::{Interaction, RenderCtx};
+use termrock::widgets::file_browser::{FileBrowser, FileEntry, FileSource, FsSource, MemorySource};
 
 const ID: WidgetId = WidgetId::of("t.files");
 const SCREEN: Rect = Rect::new(0, 0, 100, 30);

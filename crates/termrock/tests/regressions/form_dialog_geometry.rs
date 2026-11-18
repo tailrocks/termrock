@@ -1,7 +1,7 @@
-use junie_tui::core::id::WidgetId;
-use junie_tui::widgets::form_dialog::{FormDialog, FormField};
-use junie_tui::widgets::input::TextInput;
 use ratatui::layout::{Position, Rect};
+use termrock::core::id::WidgetId;
+use termrock::widgets::form_dialog::{FormDialog, FormField};
+use termrock::widgets::input::TextInput;
 
 use crate::common::paint_in;
 

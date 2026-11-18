@@ -1,19 +1,17 @@
-mod common;
-
-use common::*;
-use junie_tui::core::focus::{Focus, FocusRing};
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::{DismissReason, Phase};
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::ui::layer::{Layer, LayerCx, LayerOut};
-use junie_tui::widgets::diff::{DiffFile, DiffHunk, DiffLine, DiffStatus, UnreadFile};
-use junie_tui::widgets::inspect_changes::{ChangeSet, InspectChanges, InspectMode, InspectOutcome};
+use crate::common::*;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
+use termrock::core::focus::{Focus, FocusRing};
+use termrock::core::hit::HitRegistry;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::{DismissReason, Phase};
+use termrock::core::pointer::PointerEvent;
+use termrock::theme::{ColorLevel, Theme};
+use termrock::ui::ctx::{Interaction, RenderCtx};
+use termrock::ui::layer::{Layer, LayerCx, LayerOut};
+use termrock::widgets::diff::{DiffFile, DiffHunk, DiffLine, DiffStatus, UnreadFile};
+use termrock::widgets::inspect_changes::{ChangeSet, InspectChanges, InspectMode, InspectOutcome};
 
 const ID: WidgetId = WidgetId::of("t.inspect");
 const SCREEN: Rect = Rect::new(0, 0, 120, 36);
@@ -175,7 +173,7 @@ fn the_frames_close_button_and_backdrop_dismiss_the_inspector() {
     for (returns_to_exit, expected) in
         [(true, InspectOutcome::Back), (false, InspectOutcome::Close)]
     {
-        for target in [junie_tui::ui::modal::CLOSE, junie_tui::ui::modal::BACKDROP] {
+        for target in [termrock::ui::modal::CLOSE, termrock::ui::modal::BACKDROP] {
             let mut ic = opened(returns_to_exit);
             assert_eq!(
                 click_on(&mut ic, target),
@@ -197,7 +195,7 @@ fn drawn(ic: &mut InspectChanges) -> (Buffer, HitRegistry) {
 }
 
 fn thumb(buf: &Buffer) -> (u16, u16, u16) {
-    let thumb = junie_tui::widgets::scrollbar::THUMB;
+    let thumb = termrock::widgets::scrollbar::THUMB;
     for x in 0..buf.area.width {
         let rows: Vec<u16> = (0..buf.area.height)
             .filter(|&y| buf[(x, y)].symbol() == thumb)
@@ -285,7 +283,7 @@ fn inspect_composite_tiny_render_has_no_off_parent_hits() {
                     }
                 }
                 for r in p.hits.regions() {
-                    if r.owner == junie_tui::ui::modal::BACKDROP {
+                    if r.owner == termrock::ui::modal::BACKDROP {
                         continue;
                     }
                     assert!(
@@ -326,7 +324,7 @@ fn inspect_composite_shrink_grow_retains_selection() {
     let tiny = render_in(&mut ic, outer, Rect::new(5, 3, 40, 3));
     for r in tiny.hits.regions() {
         assert!(
-            r.owner == junie_tui::ui::modal::BACKDROP || contains(ic.area, r.area),
+            r.owner == termrock::ui::modal::BACKDROP || contains(ic.area, r.area),
             "a hit survives outside the shrunk frame: {:?}",
             r.area
         );
@@ -387,7 +385,7 @@ fn inspect_composite_stacked_body_of_one_row_stays_in_the_frame() {
         }
         for r in p.hits.regions() {
             assert!(
-                r.owner == junie_tui::ui::modal::BACKDROP || contains(frame, r.area),
+                r.owner == termrock::ui::modal::BACKDROP || contains(frame, r.area),
                 "height {height}: hit {:?} escapes {frame:?}",
                 r.area
             );
@@ -403,7 +401,7 @@ mod showcase_coverage {
     /// Rows of one `&[(&str, &str)]` table in the Showcase coverage source. The
     /// file is read, not included, because it names Showcase page types.
     fn coverage_pairs(name: &str) -> Vec<(String, String)> {
-        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let root = crate::common::repository_root();
         let source = std::fs::read_to_string(root.join("apps/showcase/src/coverage.rs"))
             .expect("showcase coverage source reads");
         let file = syn::parse_file(&source).expect("coverage source parses");
@@ -575,7 +573,7 @@ mod showcase_coverage {
     }
 
     fn sources() -> (String, String, String) {
-        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let root = crate::common::repository_root();
         let read = |path: &str| {
             std::fs::read_to_string(root.join(path)).unwrap_or_else(|e| panic!("{path}: {e}"))
         };

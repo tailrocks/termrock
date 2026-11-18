@@ -1,10 +1,10 @@
 use crate::common::*;
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::keymap::{KeyBinding, KeyMap};
-use junie_tui::widgets::chips::{Chip, ChipAction, ChipBar, ChipCmd};
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::keymap::{KeyBinding, KeyMap};
+use termrock::widgets::chips::{Chip, ChipAction, ChipBar, ChipCmd};
 
 const CHIPS: WidgetId = WidgetId::of("add_hotkey.chips");
 const WIDTH: u16 = 60;

@@ -3,18 +3,18 @@
 //! `AsItem` is a `RowSource`, `ScrollPane::draw_*` needs no import and takes a
 //! `RenderCtx`, and `Dismiss::allows` keeps its table.
 
-use junie_tui::core::focus::FocusRing;
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::{ItemKey, WidgetId};
-use junie_tui::core::intent::DismissReason;
-use junie_tui::core::list::RowSource;
-use junie_tui::core::scroll::ScrollPane;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::ui::popup::Dismiss;
-use junie_tui::widgets::option_list::{AsItem, Item};
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
+use termrock::core::focus::FocusRing;
+use termrock::core::hit::HitRegistry;
+use termrock::core::id::{ItemKey, WidgetId};
+use termrock::core::intent::DismissReason;
+use termrock::core::list::RowSource;
+use termrock::core::scroll::ScrollPane;
+use termrock::theme::{ColorLevel, Theme};
+use termrock::ui::ctx::{Interaction, RenderCtx};
+use termrock::ui::popup::Dismiss;
+use termrock::widgets::option_list::{AsItem, Item};
 
 /// A row type of a downstream crate: it owns the type, the trait is foreign.
 struct Command {

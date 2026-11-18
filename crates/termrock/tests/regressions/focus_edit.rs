@@ -1,16 +1,16 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use junie_tui::core::id::WidgetId;
-use junie_tui::runtime::Application;
-use junie_tui::shell::{App, render};
-use junie_tui::widgets::code::CodeEditor;
-use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::textarea::TextArea;
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
+use termrock::core::id::WidgetId;
+use termrock::runtime::Application;
+use termrock::shell::{App, render};
+use termrock::widgets::code::CodeEditor;
+use termrock::widgets::input::TextInput;
+use termrock::widgets::textarea::TextArea;
 
 use crate::common::Host;
 

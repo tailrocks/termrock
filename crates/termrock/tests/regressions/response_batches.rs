@@ -1,23 +1,21 @@
 //! Compound widget inputs return every semantic action once, in order.
 
 use crate::common::*;
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::response::{
-    Actions, ActionsIntoIter, ActionsIter, Flow, Invalidate, Response,
-};
-use junie_tui::widgets::grid::{
-    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridRows, RowTotal,
-};
-use junie_tui::widgets::option_editor::{ColumnEditor, Options};
-use junie_tui::widgets::table::{Cell, Column, DataTable, TableAction};
-use junie_tui::widgets::tree::{BranchAction, TreeAction, TreeNode, TreeView};
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Constraint;
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::core::response::{Actions, ActionsIntoIter, ActionsIter, Flow, Invalidate, Response};
+use termrock::widgets::grid::{
+    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridRows, RowTotal,
+};
+use termrock::widgets::option_editor::{ColumnEditor, Options};
+use termrock::widgets::table::{Cell, Column, DataTable, TableAction};
+use termrock::widgets::tree::{BranchAction, TreeAction, TreeNode, TreeView};
 
 const ID: WidgetId = WidgetId::of("t.batch");
 
-fn text(s: &str) -> Vec<junie_tui::core::event::Key> {
+fn text(s: &str) -> Vec<termrock::core::event::Key> {
     s.chars().map(|c| key(KeyCode::Char(c))).collect()
 }
 

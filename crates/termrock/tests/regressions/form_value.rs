@@ -2,18 +2,18 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use crate::common::{chord, key, row};
-use junie_tui::core::edit::{EditEntry, FieldKeys};
-use junie_tui::core::focus::{BlurAction, Focus, FocusRing};
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::WidgetId;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::widgets::edit::ValidateWhen;
-use junie_tui::widgets::form_dialog::{FormAction, FormDialog, FormField, FormFieldKind};
-use junie_tui::widgets::input::{TextInput, ValidateOn};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Rect;
+use termrock::core::edit::{EditEntry, FieldKeys};
+use termrock::core::focus::{BlurAction, Focus, FocusRing};
+use termrock::core::hit::HitRegistry;
+use termrock::core::id::WidgetId;
+use termrock::theme::{ColorLevel, Theme};
+use termrock::ui::ctx::{Interaction, RenderCtx};
+use termrock::widgets::edit::ValidateWhen;
+use termrock::widgets::form_dialog::{FormAction, FormDialog, FormField, FormFieldKind};
+use termrock::widgets::input::{TextInput, ValidateOn};
 
 const FORM: WidgetId = WidgetId::of("t.form");
 const SECRET: WidgetId = WidgetId::of("t.form.secret");
@@ -331,7 +331,7 @@ fn form_value_set_value_builder_and_setter_share_one_path() {
 
 #[test]
 fn form_value_clear_keeps_a_live_filter_consumer_in_sync() {
-    use junie_tui::widgets::input::InputAction;
+    use termrock::widgets::input::InputAction;
 
     let id = WidgetId::of("t.filter");
     let mut filter = TextInput::new(id, "").edit_entry(EditEntry::Immediate);

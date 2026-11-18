@@ -1,7 +1,7 @@
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::content::draw_loading;
 use ratatui::layout::Rect;
 use ratatui::style::Color;
+use termrock::theme::{ColorLevel, Theme};
+use termrock::ui::content::draw_loading;
 
 use crate::common::{paint_with, row};
 

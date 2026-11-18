@@ -1,10 +1,10 @@
 use super::common::*;
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::widgets::nav_list::{NavAction, NavItem, NavList};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::widgets::nav_list::{NavAction, NavItem, NavList};
 
 const ID: WidgetId = WidgetId::of("t.nav.state");
 const AREA: Rect = Rect::new(0, 0, 30, 8);

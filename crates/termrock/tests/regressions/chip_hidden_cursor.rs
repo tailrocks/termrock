@@ -1,11 +1,11 @@
 use crate::common::*;
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::widgets::chips::{Chip, ChipAction, ChipBar};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::theme::{ColorLevel, Theme};
+use termrock::widgets::chips::{Chip, ChipAction, ChipBar};
 
 const CHIPS: WidgetId = WidgetId::of("hidden_cursor.chips");
 const WIDTH: u16 = 24;

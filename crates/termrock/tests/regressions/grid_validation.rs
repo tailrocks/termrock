@@ -2,20 +2,20 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::common::*;
-use junie_tui::core::event::Outcome;
-use junie_tui::core::focus::BlurAction;
-use junie_tui::core::id::WidgetId;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::widgets::grid::{
-    CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, FinishEdit, GridAction,
-    GridEditError, GridRows, RowTotal, default_validator,
-};
-use junie_tui::widgets::option_editor::EditorConfig;
-use junie_tui::widgets::option_editor::{ColumnEditor, OptionItem, Options};
-use junie_tui::widgets::table::{Cell, Column, DataTable};
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Constraint, Position, Rect};
 use ratatui::style::Color;
+use termrock::core::event::Outcome;
+use termrock::core::focus::BlurAction;
+use termrock::core::id::WidgetId;
+use termrock::theme::{ColorLevel, Theme};
+use termrock::widgets::grid::{
+    CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, FinishEdit, GridAction,
+    GridEditError, GridRows, RowTotal, default_validator,
+};
+use termrock::widgets::option_editor::EditorConfig;
+use termrock::widgets::option_editor::{ColumnEditor, OptionItem, Options};
+use termrock::widgets::table::{Cell, Column, DataTable};
 
 type Log = Rc<RefCell<Vec<String>>>;
 

@@ -1,14 +1,14 @@
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 use crate::common::*;
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::widgets::chips::{Chip, ChipAction, ChipBar};
-use junie_tui::widgets::toolbar::{ToolItem, Toolbar, ToolbarAction};
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
+use termrock::core::hit::HitRegistry;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::widgets::chips::{Chip, ChipAction, ChipBar};
+use termrock::widgets::toolbar::{ToolItem, Toolbar, ToolbarAction};
 
 const TOOLBAR: WidgetId = WidgetId::of("lifecycle.toolbar");
 const CHIPS: WidgetId = WidgetId::of("lifecycle.chips");

@@ -1,11 +1,11 @@
 //! A popup whose anchor a resize left off screen must still land on screen.
 
-use junie_tui::core::id::WidgetId;
-use junie_tui::ui::popup::{Overflow, Place, Placement, place_with};
-use junie_tui::widgets::completion::Completion;
-use junie_tui::widgets::menu::{ContextMenu, MenuItem};
-use junie_tui::widgets::option_list::Item;
 use ratatui::layout::Rect;
+use termrock::core::id::WidgetId;
+use termrock::ui::popup::{Overflow, Place, Placement, place_with};
+use termrock::widgets::completion::Completion;
+use termrock::widgets::menu::{ContextMenu, MenuItem};
+use termrock::widgets::option_list::Item;
 
 use crate::common::paint_in;
 

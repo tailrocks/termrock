@@ -1,10 +1,10 @@
 use super::common::*;
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::keymap::KeyBinding;
-use junie_tui::ui::scroll_view::{Axes, ScrollCmd, ScrollView};
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Rect, Size};
+use termrock::core::event::{Key, Outcome};
+use termrock::core::id::WidgetId;
+use termrock::core::keymap::KeyBinding;
+use termrock::ui::scroll_view::{Axes, ScrollCmd, ScrollView};
 
 const ID: WidgetId = WidgetId::of("t.scroll");
 const AREA: Rect = Rect::new(0, 0, 40, 4);

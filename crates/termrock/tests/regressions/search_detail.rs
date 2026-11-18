@@ -2,21 +2,21 @@
 //! and the keyboard, pointer and context paths, driven through the public API.
 
 use crate::common::{chord, key};
-use junie_tui::core::edit::{FieldKeys, TextCmd};
-use junie_tui::core::id::{ItemKey, WidgetId};
-use junie_tui::core::keyed::KeyedSourceError;
-use junie_tui::core::list::{KeyedRowSource, RowSource, SourceStamp};
-use junie_tui::core::response::Response;
-use junie_tui::core::selection::{Activate, ClickPolicy};
-use junie_tui::ui::context::{ContextAnchor, ContextRequest};
-use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::search_detail::{
+use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use ratatui::layout::Position;
+use termrock::core::edit::{FieldKeys, TextCmd};
+use termrock::core::id::{ItemKey, WidgetId};
+use termrock::core::keyed::KeyedSourceError;
+use termrock::core::list::{KeyedRowSource, RowSource, SourceStamp};
+use termrock::core::response::Response;
+use termrock::core::selection::{Activate, ClickPolicy};
+use termrock::ui::context::{ContextAnchor, ContextRequest};
+use termrock::widgets::input::TextInput;
+use termrock::widgets::search_detail::{
     MissingSelection, QueryPasteMode, QueryRequest, QueryToken, ResultRowKind, SearchAction,
     SearchCmd, SearchConfig, SearchError, SearchFocusMode, SearchPhase, SearchSession,
     SearchSource,
 };
-use ratatui::crossterm::event::{KeyCode, KeyModifiers};
-use ratatui::layout::Position;
 
 type Reply = Response<SearchAction>;
 
@@ -241,7 +241,7 @@ pub(crate) fn list() -> Vec<R> {
     ]
 }
 
-fn ctrl(c: char) -> junie_tui::core::event::Key {
+fn ctrl(c: char) -> termrock::core::event::Key {
     chord(KeyCode::Char(c), KeyModifiers::CONTROL)
 }
 
@@ -967,7 +967,7 @@ fn search_detail_separate_focus_gives_text_first_refusal() {
             .find(|(_, c)| *c == cmd)
             .map(|(b, _)| *b)
             .expect("bound by default");
-        let host = junie_tui::core::event::Key {
+        let host = termrock::core::event::Key {
             code: binding.code,
             mods: binding.mods,
         };
@@ -1000,13 +1000,10 @@ fn search_detail_paste_respects_detail_focus() {
 fn search_detail_keymap_is_overridable() {
     let mut s = session(SearchConfig::default().keymap(vec![
         (
-            junie_tui::core::keymap::KeyBinding::char('j'),
+            termrock::core::keymap::KeyBinding::char('j'),
             SearchCmd::Down,
         ),
-        (
-            junie_tui::core::keymap::KeyBinding::char('k'),
-            SearchCmd::Up,
-        ),
+        (termrock::core::keymap::KeyBinding::char('k'), SearchCmd::Up),
     ]));
     started(&mut s, list());
     s.on_key(&key(KeyCode::Char('j')), false, 5).quiet();

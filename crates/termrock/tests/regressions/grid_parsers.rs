@@ -1,13 +1,13 @@
 use crate::common::*;
-use junie_tui::core::focus::BlurAction;
-use junie_tui::core::id::WidgetId;
-use junie_tui::widgets::edit::parsers;
-use junie_tui::widgets::grid::{
+use ratatui::crossterm::event::KeyCode;
+use termrock::core::focus::BlurAction;
+use termrock::core::id::WidgetId;
+use termrock::widgets::edit::parsers;
+use termrock::widgets::grid::{
     CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridEditError, GridRows,
     RowTotal, default_validator,
 };
-use junie_tui::widgets::option_editor::{ColumnEditor, OptionItem, Options};
-use ratatui::crossterm::event::KeyCode;
+use termrock::widgets::option_editor::{ColumnEditor, OptionItem, Options};
 
 fn spec(kind: CellKind) -> ColumnSpec {
     ColumnSpec::new("c", kind).nullable(false)

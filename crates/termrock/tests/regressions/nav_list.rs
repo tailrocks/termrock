@@ -1,18 +1,16 @@
-mod common;
-
-use common::*;
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::widgets::nav_list::{NavItem, NavList};
-use junie_tui::widgets::rail::SidebarRail;
-use junie_tui::widgets::scrollbar;
+use crate::common::*;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyModifiers;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::Color;
+use termrock::core::hit::HitRegistry;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{MouseTarget, PointerEvent};
+use termrock::theme::{ColorLevel, Theme};
+use termrock::widgets::nav_list::{NavItem, NavList};
+use termrock::widgets::rail::SidebarRail;
+use termrock::widgets::scrollbar;
 
 const ID: WidgetId = WidgetId::of("t.nav");
 const AREA: Rect = Rect::new(0, 0, 30, 8);

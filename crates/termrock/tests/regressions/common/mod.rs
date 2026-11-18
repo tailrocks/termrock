@@ -2,19 +2,19 @@
 
 use std::time::Duration;
 
-use junie_tui::core::event::{External, Input, Key, Mouse, MouseKind, Outcome};
-use junie_tui::core::focus::FocusRing;
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::refusal::{Reason, raise, take_refusal};
-use junie_tui::shell::{App, Cx, Request, Shell, handle};
-use junie_tui::theme::{ColorLevel, Theme, Tone};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::widgets::too_small::TooSmall;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Color, Style};
+use termrock::core::event::{External, Input, Key, Mouse, MouseKind, Outcome};
+use termrock::core::focus::FocusRing;
+use termrock::core::hit::HitRegistry;
+use termrock::core::id::WidgetId;
+use termrock::core::refusal::{Reason, raise, take_refusal};
+use termrock::shell::{App, Cx, Request, Shell, handle};
+use termrock::theme::{ColorLevel, Theme, Tone};
+use termrock::ui::ctx::{Interaction, RenderCtx};
+use termrock::widgets::too_small::TooSmall;
 
 pub const WHY: &str = "Always off · the host decides";
 
@@ -113,7 +113,7 @@ impl Host {
             .map(|(text, tone)| (text.to_owned(), tone))
     }
 
-    pub fn stop_handle(&self) -> junie_tui::shell::StopHandle {
+    pub fn stop_handle(&self) -> termrock::shell::StopHandle {
         self.shell.stop_handle()
     }
 
@@ -310,4 +310,12 @@ pub fn assert_hits_inside(p: &Painted, owner: Rect, what: &str) {
             r.area
         );
     }
+}
+
+/// The repository root: `termrock` sits at `crates/termrock`, two levels below it.
+pub fn repository_root() -> &'static std::path::Path {
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(2)
+        .expect("termrock sits at crates/termrock")
 }

@@ -1,24 +1,22 @@
-mod common;
-
-use common::*;
+use crate::common::*;
 use std::time::Duration;
 
-use junie_tui::clock::TestRequest;
-use junie_tui::core::event::{Input, Outcome};
-use junie_tui::core::focus::FocusChange;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::refusal::{clear_refusal, raise, take_refusal};
-use junie_tui::runtime::Application;
-use junie_tui::shell::{App, Shell, render};
-use junie_tui::theme::{ColorLevel, Theme, Tone};
-use junie_tui::ui::ctx::RenderCtx;
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::too_small::TooSmall;
 use ratatui::Terminal;
 use ratatui::backend::{Backend, TestBackend};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
+use termrock::clock::TestRequest;
+use termrock::core::event::{Input, Outcome};
+use termrock::core::focus::FocusChange;
+use termrock::core::id::WidgetId;
+use termrock::core::refusal::{clear_refusal, raise, take_refusal};
+use termrock::runtime::Application;
+use termrock::shell::{App, Shell, render};
+use termrock::theme::{ColorLevel, Theme, Tone};
+use termrock::ui::ctx::RenderCtx;
+use termrock::widgets::button::Button;
+use termrock::widgets::too_small::TooSmall;
 
 #[test]
 fn the_shell_clears_an_untaken_refusal_at_the_end_of_each_input() {
@@ -359,7 +357,7 @@ fn the_same_tone_with_other_text_is_a_change() {
 
 #[test]
 fn a_fence_is_acknowledged_once_and_never_reaches_the_app() {
-    junie_tui::shell::clipboard::take_output();
+    termrock::shell::clipboard::take_output();
     let mut host = Host::new(Act::Nothing);
     host.test_requests(true);
 
@@ -368,7 +366,7 @@ fn a_fence_is_acknowledged_once_and_never_reaches_the_app() {
     assert_eq!(out, Outcome::Ignored);
     assert_eq!(host.inputs, 0, "the app never sees a fence");
     assert_eq!(
-        junie_tui::shell::clipboard::take_output(),
+        termrock::shell::clipboard::take_output(),
         [TestRequest::FENCE_ACK],
         "one acknowledgement per fence"
     );
@@ -387,7 +385,7 @@ fn the_fence_opt_in_follows_its_own_variable() {
 
 #[test]
 fn the_fence_alone_is_acknowledged_and_a_clock_step_stays_a_paste() {
-    junie_tui::shell::clipboard::take_output();
+    termrock::shell::clipboard::take_output();
     let mut host = Host::new(Act::Nothing);
     host.test_requests(false);
     host.fence_requests(true);
@@ -399,14 +397,14 @@ fn the_fence_alone_is_acknowledged_and_a_clock_step_stays_a_paste() {
     assert_eq!(host.inputs, 1, "only the step reaches the app, as text");
     assert!(host.stepped.is_empty());
     assert_eq!(
-        junie_tui::shell::clipboard::take_output(),
+        termrock::shell::clipboard::take_output(),
         [TestRequest::FENCE_ACK]
     );
 }
 
 #[test]
 fn a_clock_step_reaches_the_app_as_a_step_and_not_as_a_paste() {
-    junie_tui::shell::clipboard::take_output();
+    termrock::shell::clipboard::take_output();
     let mut host = Host::new(Act::Nothing);
     host.test_requests(true);
 
@@ -419,7 +417,7 @@ fn a_clock_step_reaches_the_app_as_a_step_and_not_as_a_paste() {
 
 #[test]
 fn test_requests_are_plain_pastes_unless_the_shell_accepts_them() {
-    junie_tui::shell::clipboard::take_output();
+    termrock::shell::clipboard::take_output();
     let mut host = Host::new(Act::Nothing);
     host.test_requests(false);
 
@@ -429,14 +427,14 @@ fn test_requests_are_plain_pastes_unless_the_shell_accepts_them() {
     assert_eq!(host.inputs, 2, "both reach the app as text");
     assert!(host.stepped.is_empty());
     assert_eq!(
-        junie_tui::shell::clipboard::take_output(),
+        termrock::shell::clipboard::take_output(),
         Vec::<String>::new()
     );
 }
 
 #[test]
 fn a_stop_handle_ends_the_loop_from_another_thread() {
-    use junie_tui::runtime::Application;
+    use termrock::runtime::Application;
 
     let host = Host::new(Act::Nothing);
     assert!(!host.should_quit());
@@ -454,23 +452,23 @@ fn a_stop_handle_ends_the_loop_from_another_thread() {
 
 mod keyboard_transition {
     use super::*;
-    use junie_tui::core::event::{Key, Mouse, MouseKind};
-    use junie_tui::core::focus::FocusRing;
-    use junie_tui::core::hit::HitRegistry;
-    use junie_tui::core::id::WidgetId;
-    use junie_tui::core::keymap::KeyBinding;
-    use junie_tui::core::pointer::{PointerEvent, PointerHost, PointerParts, PointerRouter};
-    use junie_tui::core::response::Response;
-    use junie_tui::shell::{
-        App, KeyHost, KeyRouter, PageKey, Shell, ShellAction, ShellKeys, handle,
-    };
-    use junie_tui::theme::{ColorLevel, Theme};
-    use junie_tui::ui::ctx::{FocusVisible, RenderCtx, fill};
-    use junie_tui::widgets::button::Button;
-    use junie_tui::widgets::too_small::TooSmall;
     use ratatui::buffer::Buffer;
     use ratatui::layout::{Position, Rect};
     use std::time::Duration;
+    use termrock::core::event::{Key, Mouse, MouseKind};
+    use termrock::core::focus::FocusRing;
+    use termrock::core::hit::HitRegistry;
+    use termrock::core::id::WidgetId;
+    use termrock::core::keymap::KeyBinding;
+    use termrock::core::pointer::{PointerEvent, PointerHost, PointerParts, PointerRouter};
+    use termrock::core::response::Response;
+    use termrock::shell::{
+        App, KeyHost, KeyRouter, PageKey, Shell, ShellAction, ShellKeys, handle,
+    };
+    use termrock::theme::{ColorLevel, Theme};
+    use termrock::ui::ctx::{FocusVisible, RenderCtx, fill};
+    use termrock::widgets::button::Button;
+    use termrock::widgets::too_small::TooSmall;
 
     const SIZE: Rect = Rect::new(0, 0, 60, 8);
     const SLOT: Rect = Rect::new(4, 3, 14, 1);
@@ -859,17 +857,17 @@ mod keyboard_transition {
 }
 
 mod layer_focus {
-    use junie_tui::core::event::{Key, Outcome};
-    use junie_tui::core::focus::{Focus, FocusChange, FocusRing};
-    use junie_tui::core::id::WidgetId;
-    use junie_tui::ui::ctx::RenderCtx;
-    use junie_tui::ui::layer::{
-        DismissReason, Dismissed, Layer, LayerCx, LayerOut, LayerSpec, LayerTag, ShellLayers,
-    };
-    use junie_tui::ui::modal::ModalStack;
-    use junie_tui::ui::popup::Dismiss;
     use ratatui::buffer::Buffer;
     use ratatui::layout::Rect;
+    use termrock::core::event::{Key, Outcome};
+    use termrock::core::focus::{Focus, FocusChange, FocusRing};
+    use termrock::core::id::WidgetId;
+    use termrock::ui::ctx::RenderCtx;
+    use termrock::ui::layer::{
+        DismissReason, Dismissed, Layer, LayerCx, LayerOut, LayerSpec, LayerTag, ShellLayers,
+    };
+    use termrock::ui::modal::ModalStack;
+    use termrock::ui::popup::Dismiss;
 
     const A: WidgetId = WidgetId::of("lf.a");
     const B: WidgetId = WidgetId::of("lf.b");
@@ -1130,7 +1128,7 @@ mod layer_focus {
 
     #[test]
     fn push_with_focus_policy_separates_open_from_close() {
-        use junie_tui::ui::modal::FocusOnOpen;
+        use termrock::ui::modal::FocusOnOpen;
 
         let mut stack: ModalStack<u8> = ModalStack::new();
         let mut focus = focused(A);

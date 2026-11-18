@@ -1,28 +1,26 @@
-mod common;
-
-use common::*;
-use junie_tui::core::event::Outcome;
-use junie_tui::core::focus::{Focus, FocusRing};
-use junie_tui::core::hints::{HasHints, HintCx};
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::refusal::{Control, Reason, clear_refusal};
-use junie_tui::shell::StatusLine;
-use junie_tui::theme::{ColorLevel, Theme, Tone};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::widgets::button::Button;
-use junie_tui::widgets::choice::{Checkbox, RadioGroup};
-use junie_tui::widgets::choice_dialog::ChoiceDialog;
-use junie_tui::widgets::dialog::{Dialog, DialogResult};
-use junie_tui::widgets::file_browser::{FileBrowser, FileEntry, MemorySource};
-use junie_tui::widgets::form_dialog::{FormDialog, FormField};
-use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::list::{ListBox, ListItem, SelectMode};
-use junie_tui::widgets::props::Prop;
-use junie_tui::widgets::select::{Select, SelectArrows};
+use crate::common::*;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
+use termrock::core::event::Outcome;
+use termrock::core::focus::{Focus, FocusRing};
+use termrock::core::hints::{HasHints, HintCx};
+use termrock::core::hit::HitRegistry;
+use termrock::core::id::WidgetId;
+use termrock::core::refusal::{Control, Reason, clear_refusal};
+use termrock::shell::StatusLine;
+use termrock::theme::{ColorLevel, Theme, Tone};
+use termrock::ui::ctx::{Interaction, RenderCtx};
+use termrock::widgets::button::Button;
+use termrock::widgets::choice::{Checkbox, RadioGroup};
+use termrock::widgets::choice_dialog::ChoiceDialog;
+use termrock::widgets::dialog::{Dialog, DialogResult};
+use termrock::widgets::file_browser::{FileBrowser, FileEntry, MemorySource};
+use termrock::widgets::form_dialog::{FormDialog, FormField};
+use termrock::widgets::input::TextInput;
+use termrock::widgets::list::{ListBox, ListItem, SelectMode};
+use termrock::widgets::props::Prop;
+use termrock::widgets::select::{Select, SelectArrows};
 
 #[test]
 fn a_fixed_checkbox_refuses_every_edit() {
@@ -254,7 +252,7 @@ fn a_refusal_posts_the_reason_alone_in_a_neutral_tone() {
 
 #[test]
 fn a_refusal_status_lasts_five_seconds() {
-    use junie_tui::clock::Moment;
+    use termrock::clock::Moment;
     let mut line = StatusLine::<()>::new();
     line.set_at(WHY, Tone::Secondary, Moment::ZERO);
     assert!(!line.expire(Moment::from_millis(4_999)));
@@ -265,9 +263,9 @@ fn a_refusal_status_lasts_five_seconds() {
 
 #[test]
 fn a_fixed_row_shows_the_focus_through_the_shared_row_painter() {
-    use junie_tui::theme::CursorStyle;
-    use junie_tui::ui::ctx::VisualState;
-    use junie_tui::ui::row::{RowLook, RowUi};
+    use termrock::theme::CursorStyle;
+    use termrock::ui::ctx::VisualState;
+    use termrock::ui::row::{RowLook, RowUi};
 
     let theme = Theme::for_level(ColorLevel::TrueColor);
     let paint = |look: RowLook, state: VisualState| {
@@ -473,7 +471,7 @@ fn ticks(list: &ListBox) -> [bool; 3] {
     [0, 1, 2].map(|i| list.is_checked(i))
 }
 
-fn shift(code: KeyCode) -> junie_tui::core::event::Key {
+fn shift(code: KeyCode) -> termrock::core::event::Key {
     chord(code, KeyModifiers::SHIFT)
 }
 
@@ -709,8 +707,8 @@ fn a_form_does_not_offer_a_fixed_action() {
 
 #[test]
 fn a_focused_menu_item_with_a_reason_keeps_the_cursor_fill() {
-    use junie_tui::ui::popup::Placement;
-    use junie_tui::widgets::menu::{ContextMenu, MenuItem};
+    use termrock::ui::popup::Placement;
+    use termrock::widgets::menu::{ContextMenu, MenuItem};
 
     let theme = Theme::for_level(ColorLevel::TrueColor);
     let cell = |items: Vec<MenuItem>, focus: usize, label: &str| {
@@ -773,7 +771,7 @@ fn a_focused_menu_item_with_a_reason_keeps_the_cursor_fill() {
 
 #[test]
 fn a_notice_with_a_payload_waits_for_the_clock_and_yields_to_a_message() {
-    use junie_tui::clock::Moment;
+    use termrock::clock::Moment;
     let mut line = StatusLine::<u8>::new();
     line.notice_with_at("refresh failed", Tone::Secondary, 3, Moment::ZERO);
     assert_eq!(line.payload(), Some(&3));

@@ -1,6 +1,6 @@
-use junie_tui::core::id::WidgetId;
-use junie_tui::widgets::nav_list::{NavItem, NavList};
 use ratatui::layout::Rect;
+use termrock::core::id::WidgetId;
+use termrock::widgets::nav_list::{NavItem, NavList};
 
 use crate::common::paint_in;
 

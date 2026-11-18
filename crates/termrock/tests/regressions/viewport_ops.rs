@@ -1,19 +1,17 @@
-mod common;
-
-use common::*;
-use junie_tui::core::focus::FocusRing;
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::hit::{Axis, Bar};
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::scroll::{HScroll, Scrollable, TrackClick};
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::ui::edit_menu::edit_menu_key;
-use junie_tui::widgets::scrollbar;
-use junie_tui::widgets::viewport::{CellPos, Line, Mark, Span, TextViewport, WorkCounters};
-use junie_tui::widgets::viewport_ops::ViewportOps;
+use crate::common::*;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
+use termrock::core::focus::FocusRing;
+use termrock::core::hit::HitRegistry;
+use termrock::core::hit::{Axis, Bar};
+use termrock::core::id::WidgetId;
+use termrock::core::scroll::{HScroll, Scrollable, TrackClick};
+use termrock::theme::{ColorLevel, Theme};
+use termrock::ui::ctx::{Interaction, RenderCtx};
+use termrock::ui::edit_menu::edit_menu_key;
+use termrock::widgets::scrollbar;
+use termrock::widgets::viewport::{CellPos, Line, Mark, Span, TextViewport, WorkCounters};
+use termrock::widgets::viewport_ops::ViewportOps;
 
 const ID: WidgetId = WidgetId::of("t.viewport");
 const AREA: Rect = Rect::new(0, 0, 40, 8);
@@ -253,12 +251,12 @@ fn a_text_viewport_drag_after_the_area_collapsed_is_ignored() {
     v.set_area(Rect::new(3, 2, 0, 0));
     assert_eq!(
         v.on_drag(Position::new(2, 2)),
-        junie_tui::core::event::Outcome::Ignored
+        termrock::core::event::Outcome::Ignored
     );
     v.set_area(AREA);
     assert_eq!(
         v.on_drag(Position::new(4, 2)),
-        junie_tui::core::event::Outcome::Ignored,
+        termrock::core::event::Outcome::Ignored,
         "the press ended with the area: a later drag selects nothing"
     );
     assert!(!v.has_selection());
@@ -278,19 +276,19 @@ fn the_app_scroll_policy_of_a_drawn_frame_reaches_the_input_of_a_view_drawn_from
     paint(&v, false);
     assert_eq!(
         ViewportOps::wheel(&mut v, Axis::Horizontal, 3),
-        junie_tui::core::event::Outcome::Changed,
+        termrock::core::event::Outcome::Changed,
         "the default policy scrolls sideways"
     );
     ViewportOps::wheel(&mut v, Axis::Horizontal, -9);
 
     draw(None, |buf, ctx| {
-        ctx.hscroll = junie_tui::core::scroll::HScroll::off();
+        ctx.hscroll = termrock::core::scroll::HScroll::off();
         v.draw(AREA, buf, ctx, ctx.theme.canvas, false);
     });
 
     assert_eq!(
         ViewportOps::wheel(&mut v, Axis::Horizontal, 3),
-        junie_tui::core::event::Outcome::Ignored,
+        termrock::core::event::Outcome::Ignored,
         "the policy of the frame turned sideways scrolling off for the input too"
     );
 }
@@ -400,12 +398,12 @@ fn the_horizontal_policy_each_text_view_was_drawn_with_decides_its_own_wheel() {
 
     assert_eq!(
         ViewportOps::wheel(&mut off, Axis::Horizontal, 3),
-        junie_tui::core::event::Outcome::Ignored,
+        termrock::core::event::Outcome::Ignored,
         "the first view was drawn with sideways scrolling off"
     );
     assert_eq!(
         ViewportOps::wheel(&mut on, Axis::Horizontal, 3),
-        junie_tui::core::event::Outcome::Changed,
+        termrock::core::event::Outcome::Changed,
         "the view drawn after it kept the default policy"
     );
 }
@@ -620,7 +618,7 @@ fn prepared_draw_preserves_model_but_notes_frame_policy() {
     });
     assert_eq!(
         ViewportOps::wheel(&mut v, Axis::Horizontal, 3),
-        junie_tui::core::event::Outcome::Ignored,
+        termrock::core::event::Outcome::Ignored,
         "the horizontal policy noted by a draw reaches the next wheel"
     );
 }

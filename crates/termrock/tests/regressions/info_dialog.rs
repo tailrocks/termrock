@@ -1,17 +1,15 @@
-mod common;
-
-use common::*;
-use junie_tui::core::focus::Focus;
-use junie_tui::core::focus::FocusRing;
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::WidgetId;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::widgets::info_dialog::InfoDialog;
-use junie_tui::widgets::props::Prop;
+use crate::common::*;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
+use termrock::core::focus::Focus;
+use termrock::core::focus::FocusRing;
+use termrock::core::hit::HitRegistry;
+use termrock::core::id::WidgetId;
+use termrock::theme::{ColorLevel, Theme};
+use termrock::ui::ctx::{Interaction, RenderCtx};
+use termrock::widgets::info_dialog::InfoDialog;
+use termrock::widgets::props::Prop;
 
 const ID: WidgetId = WidgetId::of("t.info");
 
@@ -102,17 +100,17 @@ fn walking_the_keyboard_onto_a_wrapped_last_prop_keeps_the_cursor_drawn() {
 
 mod dismiss {
     use super::*;
-    use junie_tui::core::edit::EditEntry;
-    use junie_tui::core::event::Outcome;
-    use junie_tui::core::hints::{HasHints, HintCx};
-    use junie_tui::ui::layer::{Layer, LayerCx, LayerTag, ShellLayers, Taken};
-    use junie_tui::ui::layers::LayerResult;
-    use junie_tui::ui::popup::Dismiss;
-    use junie_tui::widgets::choice_dialog::ChoiceDialog;
-    use junie_tui::widgets::form_dialog::{FormAction, FormDialog, FormField};
-    use junie_tui::widgets::info_dialog::InfoResult;
-    use junie_tui::widgets::input::TextInput;
-    use junie_tui::widgets::select::Select;
+    use termrock::core::edit::EditEntry;
+    use termrock::core::event::Outcome;
+    use termrock::core::hints::{HasHints, HintCx};
+    use termrock::ui::layer::{Layer, LayerCx, LayerTag, ShellLayers, Taken};
+    use termrock::ui::layers::LayerResult;
+    use termrock::ui::popup::Dismiss;
+    use termrock::widgets::choice_dialog::ChoiceDialog;
+    use termrock::widgets::form_dialog::{FormAction, FormDialog, FormField};
+    use termrock::widgets::info_dialog::InfoResult;
+    use termrock::widgets::input::TextInput;
+    use termrock::widgets::select::Select;
 
     const CHOICE: WidgetId = WidgetId::of("t.choice");
     const FORM: WidgetId = WidgetId::of("t.form");
@@ -145,7 +143,7 @@ mod dismiss {
         .dismiss(dismiss)
     }
 
-    fn escape() -> junie_tui::core::event::Key {
+    fn escape() -> termrock::core::event::Key {
         key(KeyCode::Esc)
     }
 
@@ -268,11 +266,11 @@ mod dismiss {
         let mut focus = focused(FORM.sub("driver"));
         d.on_key(&key(KeyCode::Enter), &mut focus, &ring);
         assert!(
-            matches!(&d.fields[1].kind, junie_tui::widgets::form_dialog::FormFieldKind::Select(s) if s.open)
+            matches!(&d.fields[1].kind, termrock::widgets::form_dialog::FormFieldKind::Select(s) if s.open)
         );
         d.on_key(&escape(), &mut focus, &ring);
         assert!(
-            matches!(&d.fields[1].kind, junie_tui::widgets::form_dialog::FormFieldKind::Select(s) if !s.open),
+            matches!(&d.fields[1].kind, termrock::widgets::form_dialog::FormFieldKind::Select(s) if !s.open),
             "Esc closes the popup"
         );
         assert!(d.events.is_empty());
@@ -364,14 +362,14 @@ mod dismiss {
         render(screen, &mut buf, &mut ctx);
         hits.regions()
             .iter()
-            .any(|r| r.id == junie_tui::ui::modal::CLOSE)
+            .any(|r| r.id == termrock::ui::modal::CLOSE)
     }
 
     #[test]
     fn dialog_escape_hints_match_policy() {
         let cx = HintCx::new(None);
         let has_esc =
-            |hints: Vec<junie_tui::widgets::keyhint::Hint>| hints.iter().any(|h| h.key == "Esc");
+            |hints: Vec<termrock::widgets::keyhint::Hint>| hints.iter().any(|h| h.key == "Esc");
         for (dismiss, shows) in [
             (Dismiss::NEVER, false),
             (Dismiss::ESCAPE, true),

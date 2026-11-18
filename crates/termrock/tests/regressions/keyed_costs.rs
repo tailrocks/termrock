@@ -3,18 +3,18 @@
 //! Work-count assertions live in `crates/termrock-conformance/tests/regressions/keyed_cost.rs`.
 
 use crate::common::*;
-use junie_tui::core::id::{ItemKey, WidgetId};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::widgets::completion::Completion;
-use junie_tui::widgets::option_editor::{
-    ChoiceEditor, ColumnEditor, EditorConfig, OptionItem, Options,
-};
-use junie_tui::widgets::option_list::Item;
-use junie_tui::widgets::select::Select;
-use junie_tui::{core::focus::FocusRing, core::hit::HitRegistry, theme::ColorLevel, theme::Theme};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
+use termrock::core::id::{ItemKey, WidgetId};
+use termrock::ui::ctx::{Interaction, RenderCtx};
+use termrock::widgets::completion::Completion;
+use termrock::widgets::option_editor::{
+    ChoiceEditor, ColumnEditor, EditorConfig, OptionItem, Options,
+};
+use termrock::widgets::option_list::Item;
+use termrock::widgets::select::Select;
+use termrock::{core::focus::FocusRing, core::hit::HitRegistry, theme::ColorLevel, theme::Theme};
 
 const SCREEN: Rect = Rect::new(0, 0, 80, 30);
 
@@ -94,8 +94,8 @@ fn choice_options(n: usize) -> Options {
 
 #[test]
 fn select_fixed_probe_matches_live_outcome() {
-    use junie_tui::core::event::Outcome;
     use ratatui::crossterm::event::KeyModifiers;
+    use termrock::core::event::Outcome;
     let keys = [
         key(KeyCode::Enter),
         key(KeyCode::Char(' ')),
@@ -116,13 +116,13 @@ fn select_fixed_probe_matches_live_outcome() {
         chord(KeyCode::Char('x'), KeyModifiers::CONTROL),
     ];
     let words = ["alpha", "bravo", "charlie"];
-    let make = |n: usize, open: bool, arrows: junie_tui::widgets::select::SelectArrows| {
+    let make = |n: usize, open: bool, arrows: termrock::widgets::select::SelectArrows| {
         let mut s = Select::new(WidgetId::of("s"), "S", &words[..n], 0);
         s.arrows = arrows;
         s.open = open;
         s
     };
-    use junie_tui::widgets::select::{SelectArrows, TabInOpen};
+    use termrock::widgets::select::{SelectArrows, TabInOpen};
     let mut checked = 0;
     for n in [0usize, 3] {
         for open in [false, true] {

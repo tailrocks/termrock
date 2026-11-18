@@ -5,15 +5,15 @@ use std::borrow::Cow;
 use std::cell::Cell;
 
 use crate::common::*;
-use junie_tui::core::id::{ItemKey, WidgetId};
-use junie_tui::core::response::Response;
-use junie_tui::widgets::code::CodeEditor;
-use junie_tui::widgets::document_workspace::{
+use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use termrock::core::id::{ItemKey, WidgetId};
+use termrock::core::response::Response;
+use termrock::widgets::code::CodeEditor;
+use termrock::widgets::document_workspace::{
     CloseDecision, CloseToken, DocumentWorkspace, OpenKind, OperationToken, WorkspaceAction,
     WorkspaceDocument, WorkspaceError,
 };
-use junie_tui::widgets::tabs::{TabAction, Tabs};
-use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use termrock::widgets::tabs::{TabAction, Tabs};
 
 const ID: WidgetId = WidgetId::of("t.workspace");
 
@@ -105,7 +105,7 @@ fn type_text(w: &mut DocumentWorkspace<TextDoc>, key: ItemKey, text: &str) {
     drop(resp);
 }
 
-fn key_of(code: KeyCode) -> junie_tui::core::event::Key {
+fn key_of(code: KeyCode) -> termrock::core::event::Key {
     chord(code, KeyModifiers::NONE)
 }
 

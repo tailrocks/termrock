@@ -1,13 +1,13 @@
 use crate::common::*;
-use junie_tui::core::data::{DataError, ShapeError};
-use junie_tui::core::id::WidgetId;
-use junie_tui::widgets::grid::{
-    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridDataError, GridRows, RowTotal,
-};
-use junie_tui::widgets::option_editor::{ColumnEditor, Options};
-use junie_tui::widgets::table::{Cell, Column, DataTable, TableAction};
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Constraint;
+use termrock::core::data::{DataError, ShapeError};
+use termrock::core::id::WidgetId;
+use termrock::widgets::grid::{
+    CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridDataError, GridRows, RowTotal,
+};
+use termrock::widgets::option_editor::{ColumnEditor, Options};
+use termrock::widgets::table::{Cell, Column, DataTable, TableAction};
 
 fn columns() -> Vec<Column> {
     vec![

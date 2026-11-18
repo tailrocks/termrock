@@ -1,13 +1,13 @@
 use super::common::*;
-use junie_tui::core::focus::FocusRing;
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::WidgetId;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::widgets::help::HelpOverlay;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
+use termrock::core::focus::FocusRing;
+use termrock::core::hit::HitRegistry;
+use termrock::core::id::WidgetId;
+use termrock::theme::{ColorLevel, Theme};
+use termrock::ui::ctx::{Interaction, RenderCtx};
+use termrock::widgets::help::HelpOverlay;
 
 const ID: WidgetId = WidgetId::of("t.help");
 const SENTINEL: &str = "#";

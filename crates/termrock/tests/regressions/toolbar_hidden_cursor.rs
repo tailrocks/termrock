@@ -1,9 +1,9 @@
 use crate::common::*;
-use junie_tui::core::id::WidgetId;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::widgets::toolbar::{ToolItem, Toolbar};
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
+use termrock::core::id::WidgetId;
+use termrock::theme::{ColorLevel, Theme};
+use termrock::widgets::toolbar::{ToolItem, Toolbar};
 
 const BAR: WidgetId = WidgetId::of("hidden_cursor.toolbar");
 const LABELS: [&str; 5] = ["Run", "Stop", "Format", "Explain", "Share"];

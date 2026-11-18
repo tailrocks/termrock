@@ -1,13 +1,13 @@
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
-use junie_tui::core::id::WidgetId;
-use junie_tui::widgets::choice_dialog::ChoiceDialog;
-use junie_tui::widgets::file_browser::{FileBrowser, FileEntry, MemorySource};
-use junie_tui::widgets::form_dialog::{FormDialog, FormField};
-use junie_tui::widgets::info_dialog::InfoDialog;
-use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::props::Prop;
 use ratatui::layout::Rect;
+use termrock::core::id::WidgetId;
+use termrock::widgets::choice_dialog::ChoiceDialog;
+use termrock::widgets::file_browser::{FileBrowser, FileEntry, MemorySource};
+use termrock::widgets::form_dialog::{FormDialog, FormField};
+use termrock::widgets::info_dialog::InfoDialog;
+use termrock::widgets::input::TextInput;
+use termrock::widgets::props::Prop;
 
 use crate::common::paint_in;
 

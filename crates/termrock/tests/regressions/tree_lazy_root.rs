@@ -2,10 +2,10 @@
 //! a lazy node anywhere else in the tree.
 
 use crate::common::*;
-use junie_tui::core::event::Outcome;
-use junie_tui::core::id::WidgetId;
-use junie_tui::widgets::tree::{TreeAction, TreeNode, TreeView};
 use ratatui::crossterm::event::KeyCode;
+use termrock::core::event::Outcome;
+use termrock::core::id::WidgetId;
+use termrock::widgets::tree::{TreeAction, TreeNode, TreeView};
 
 const ID: WidgetId = WidgetId::of("t.lazy_root");
 

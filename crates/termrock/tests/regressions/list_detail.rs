@@ -1,22 +1,20 @@
-mod common;
-
-use common::*;
-use junie_tui::core::event::{Key, Mouse, MouseKind, Outcome};
-use junie_tui::core::focus::{Focus, FocusRing};
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{PointerEvent, PointerHost, PointerParts, PointerRouter};
-use junie_tui::core::response::Response;
-use junie_tui::theme::ButtonKind;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::ui::layout::Split;
-use junie_tui::widgets::list_detail::{Action, Event, Frame, Line, ListDetail, ListRow};
-use junie_tui::widgets::scrollbar;
+use crate::common::*;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
+use termrock::core::event::{Key, Mouse, MouseKind, Outcome};
+use termrock::core::focus::{Focus, FocusRing};
+use termrock::core::hit::HitRegistry;
+use termrock::core::id::WidgetId;
+use termrock::core::intent::Phase;
+use termrock::core::pointer::{PointerEvent, PointerHost, PointerParts, PointerRouter};
+use termrock::core::response::Response;
+use termrock::theme::ButtonKind;
+use termrock::theme::{ColorLevel, Theme};
+use termrock::ui::ctx::{Interaction, RenderCtx};
+use termrock::ui::layout::Split;
+use termrock::widgets::list_detail::{Action, Event, Frame, Line, ListDetail, ListRow};
+use termrock::widgets::scrollbar;
 
 const MASTER: WidgetId = WidgetId::of("t.ld.master");
 const DETAIL: WidgetId = WidgetId::of("t.ld.detail");
@@ -34,7 +32,7 @@ fn lines() -> Vec<Line> {
             Line::Prop(
                 format!("key{n:02}"),
                 format!("value {n:02}"),
-                junie_tui::theme::Tone::Secondary,
+                termrock::theme::Tone::Secondary,
             )
         })
         .collect();
@@ -42,7 +40,7 @@ fn lines() -> Vec<Line> {
         v.push(Line::Item {
             mark: None,
             cols: [format!("item{n:02}"), "agent".into(), "meta".into()],
-            tone: junie_tui::theme::Tone::Secondary,
+            tone: termrock::theme::Tone::Secondary,
         });
     }
     v
@@ -478,21 +476,21 @@ fn long_lines() -> Vec<Line> {
         Line::Prop(
             "a very long property key that never fits".into(),
             "a value that is also long".into(),
-            junie_tui::theme::Tone::Secondary,
+            termrock::theme::Tone::Secondary,
         ),
         Line::Heading("A heading wider than the pane".into(), "meta text".into()),
         Line::Item {
-            mark: Some(junie_tui::theme::StatusKind::Ok),
+            mark: Some(termrock::theme::StatusKind::Ok),
             cols: [
                 "column zero".into(),
                 "column one".into(),
                 "column two".into(),
             ],
-            tone: junie_tui::theme::Tone::Secondary,
+            tone: termrock::theme::Tone::Secondary,
         },
         Line::Text(
             "plain text that wraps and wraps".into(),
-            junie_tui::theme::Tone::Secondary,
+            termrock::theme::Tone::Secondary,
         ),
     ]
 }
@@ -554,7 +552,7 @@ fn detail_composite_normal_geometry_is_compatible() {
     let lines = vec![Line::Prop(
         "key".into(),
         "value".into(),
-        junie_tui::theme::Tone::Secondary,
+        termrock::theme::Tone::Secondary,
     )];
     let p = paint_lines(outer, lines, 2, outer);
     let text = |y: u16| row(&p.buf, y);

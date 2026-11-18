@@ -3,32 +3,32 @@
 
 use crate::common::{chord, key, row};
 use crate::search_detail::{R, Results, acts, input, k, list, one_request};
-use junie_tui::core::edit::FieldKeys;
-use junie_tui::core::event::Key;
-use junie_tui::core::focus::{Focus, FocusChange, FocusRing};
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::{ItemKey, Part, WidgetId};
-use junie_tui::core::intent::Phase;
-use junie_tui::core::list::{KeyedRowSource, SourceStamp};
-use junie_tui::core::pointer::PointerEvent;
-use junie_tui::core::response::Response;
-use junie_tui::core::selection::ClickPolicy;
-use junie_tui::theme::{ButtonKind, ColorLevel, Theme, Tone};
-use junie_tui::ui::context::{ContextAnchor, ContextConfig, ContextSource};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::ui::layout::Split;
-use junie_tui::widgets::input::TextInput;
-use junie_tui::widgets::list_detail::{
+use ratatui::buffer::Buffer;
+use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use ratatui::layout::{Position, Rect};
+use termrock::core::edit::FieldKeys;
+use termrock::core::event::Key;
+use termrock::core::focus::{Focus, FocusChange, FocusRing};
+use termrock::core::hit::HitRegistry;
+use termrock::core::id::{ItemKey, Part, WidgetId};
+use termrock::core::intent::Phase;
+use termrock::core::list::{KeyedRowSource, SourceStamp};
+use termrock::core::pointer::PointerEvent;
+use termrock::core::response::Response;
+use termrock::core::selection::ClickPolicy;
+use termrock::theme::{ButtonKind, ColorLevel, Theme, Tone};
+use termrock::ui::context::{ContextAnchor, ContextConfig, ContextSource};
+use termrock::ui::ctx::{Interaction, RenderCtx};
+use termrock::ui::layout::Split;
+use termrock::widgets::input::TextInput;
+use termrock::widgets::list_detail::{
     Action, DetailPane, Line, ListDetailSource, ListRowRef, SourceFrame,
 };
-use junie_tui::widgets::search_detail::{
+use termrock::widgets::search_detail::{
     QueryRequest, QueryView, ResultRowKind, RowPaint, SearchAction, SearchConfig, SearchDetail,
     SearchDetailSource, SearchError, SearchFocusMode, SearchPaint, SearchPhase,
     paint_query_default,
 };
-use ratatui::buffer::Buffer;
-use ratatui::crossterm::event::{KeyCode, KeyModifiers};
-use ratatui::layout::{Position, Rect};
 
 const ID: WidgetId = WidgetId::of("sd");
 const QUERY: WidgetId = WidgetId::of("sd.q");
@@ -37,7 +37,7 @@ const NARROW: Rect = Rect::new(0, 0, 60, 14);
 
 impl ListDetailSource for Results {
     fn row(&self, visible: usize) -> ListRowRef<'_> {
-        use junie_tui::core::list::RowSource;
+        use termrock::core::list::RowSource;
         ListRowRef {
             mark: None,
             label: self.label(visible),
@@ -175,12 +175,12 @@ fn draw(
                         ResultRowKind::Cells => {
                             let mut x = row.rect.x + 2;
                             for cell in 0
-                                ..junie_tui::widgets::search_detail::SearchSource::cell_count(
+                                ..termrock::widgets::search_detail::SearchSource::cell_count(
                                     row.source, row.row,
                                 )
                             {
                                 let label =
-                                    junie_tui::widgets::search_detail::SearchSource::cell_label(
+                                    termrock::widgets::search_detail::SearchSource::cell_label(
                                         row.source, row.row, cell,
                                     );
                                 let on = row.selected_cell == Some(cell);
@@ -196,7 +196,7 @@ fn draw(
                             }
                         }
                         _ => {
-                            use junie_tui::core::list::RowSource;
+                            use termrock::core::list::RowSource;
                             let label = row.source.label(row.row);
                             buf.set_string(
                                 row.rect.x,
@@ -662,7 +662,7 @@ fn search_detail_secondary_click_selects_then_requests_through_context_config() 
         out,
         [
             SearchAction::SelectionChanged(Some(k(32))),
-            SearchAction::ContextRequested(junie_tui::ui::context::ContextRequest {
+            SearchAction::ContextRequested(termrock::ui::context::ContextRequest {
                 target: k(32),
                 anchor: ContextAnchor::Pointer(Position::new(rect.x + 1, rect.y)),
             }),
@@ -702,7 +702,7 @@ fn search_detail_is_a_context_source_for_generic_hosts() {
     let head_ev = PointerEvent::new(
         &frame.hits,
         Phase::Secondary,
-        ID.part(junie_tui::core::id::PartRef::item(Part::ROW, heading)),
+        ID.part(termrock::core::id::PartRef::item(Part::ROW, heading)),
         Position::new(1, 3),
         1,
         KeyModifiers::NONE,
@@ -1052,8 +1052,8 @@ impl SearchPaint<Results> for Hosted {
     }
 
     fn row(&mut self, mut row: RowPaint<'_, Results>, buf: &mut Buffer, _ctx: &mut RenderCtx) {
-        use junie_tui::core::list::RowSource;
-        use junie_tui::widgets::search_detail::SearchSource;
+        use termrock::core::list::RowSource;
+        use termrock::widgets::search_detail::SearchSource;
         self.rows.push((row.row, row.rect, row.selected));
         buf.set_string(
             row.rect.x,
@@ -1088,7 +1088,7 @@ impl SearchPaint<Results> for Hosted {
     }
 
     fn is_lead(&self, source: &Results, row: usize) -> bool {
-        use junie_tui::widgets::search_detail::SearchSource;
+        use termrock::widgets::search_detail::SearchSource;
         self.lead && source.row_kind(row) == ResultRowKind::Heading
     }
 }
@@ -1200,7 +1200,7 @@ fn search_detail_hosted_wheel_scrolls_the_list_and_the_preview() {
         PointerEvent::wheel_on(
             &frame.hits,
             id,
-            junie_tui::core::hit::Axis::Vertical,
+            termrock::core::hit::Axis::Vertical,
             delta,
             Position::new(2, 4),
             KeyModifiers::NONE,
@@ -1281,7 +1281,7 @@ fn review283_hosted_wheel_over_a_row_scrolls_the_list() {
     let ev = PointerEvent::wheel_on(
         &frame.hits,
         row_id,
-        junie_tui::core::hit::Axis::Vertical,
+        termrock::core::hit::Axis::Vertical,
         3,
         Position::new(rect.x + 1, rect.y),
         KeyModifiers::NONE,
