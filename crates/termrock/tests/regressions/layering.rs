@@ -447,6 +447,33 @@ fn layering_table_is_consistent() {
         &Layering::load().validate(),
     );
 }
+/// The repository root holds no package and no code (#439, #452): its manifest is virtual,
+/// and `src/`, `tests/` and `examples/` are gone. Everything lives under `crates/` and `apps/`.
+#[test]
+fn layering_the_root_is_a_virtual_manifest_without_code() {
+    let manifest = std::fs::read_to_string(root().join("Cargo.toml")).expect("read Cargo.toml");
+    let table: toml::Table = manifest.parse().expect("the root manifest is valid TOML");
+    assert!(
+        !table.contains_key("package"),
+        "the root Cargo.toml must have no [package]"
+    );
+    assert!(
+        table.contains_key("workspace"),
+        "the root Cargo.toml must be a workspace"
+    );
+    assert_eq!(
+        table["workspace"]["resolver"].as_str(),
+        Some("3"),
+        "a virtual manifest does not infer the resolver from an edition"
+    );
+    for dir in ["src", "tests", "examples"] {
+        assert!(
+            !root().join(dir).exists(),
+            "the repository root must have no `{dir}/` directory"
+        );
+    }
+}
+
 #[test]
 fn layering_crates_follow_the_table() {
     match crate_level(&Layering::load()) {
