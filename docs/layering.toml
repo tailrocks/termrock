@@ -120,11 +120,6 @@ functional = ["termrock"]
 # to the facade.
 [files]
 
-# metrics
-"src/metrics.rs" = "metrics"
-"src/metrics/measurement.rs" = "metrics"
-"src/metrics/state.rs" = "metrics"
-
 # text
 "src/core/text.rs" = "text"
 "src/core/text_index.rs" = "text"
@@ -326,6 +321,8 @@ functional = ["termrock"]
 "tests/support/scenario_reach.rs" = "catalog"
 
 # conformance
+# `src/metrics.rs` re-exports `termrock-metrics` and declares the three files below, so it goes with them until #449.
+"src/metrics.rs" = "conformance"
 "src/metrics/harness.rs" = "conformance"
 "src/metrics/report.rs" = "conformance"
 "src/metrics/tests.rs" = "conformance"

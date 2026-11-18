@@ -79,12 +79,12 @@ pub fn measure<T>(f: impl FnOnce() -> T) -> (T, WorkDelta) {
     (value, delta)
 }
 
-#[cfg(test)]
-pub(super) fn set_for_test(metric: Metric, value: u64) {
+#[doc(hidden)]
+pub fn set_for_test(metric: Metric, value: u64) {
     COUNTS.with(|cells| cells[metric as usize].set(value));
 }
 
-#[cfg(test)]
-pub(super) fn epoch_for_test(value: u64) {
+#[doc(hidden)]
+pub fn epoch_for_test(value: u64) {
     EPOCH.with(|epoch| epoch.set(value));
 }
