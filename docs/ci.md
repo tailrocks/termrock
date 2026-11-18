@@ -76,7 +76,7 @@ change the config and run `velnor-actions generate`.
   (see [functional testing](functional-testing.md)).
 - **Rust / termrock-consumer-minimal**, **-keyed-modal**, **-terminal** and
   **-jackin-host**, each with a **(product)** job — the four independent
-  consumer fixtures under `tests/consumers/`. Each is its own Cargo workspace
+  consumer fixtures under `crates/termrock/tests/consumers/`. Each is its own Cargo workspace
   with a committed lockfile, so Velnor builds it from its own directory and its
   declared features alone, apart from the repository workspace. These jobs are
   the CI gate for the feature contract of [API contract](api-contract.md);

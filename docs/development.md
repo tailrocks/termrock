@@ -25,7 +25,7 @@ profile selects the `functional` target of `junie-tui`, `jackin-console` and
 use `python3 scripts/run_functional.py` (see
 [functional testing](functional-testing.md)).
 
-The independent consumer fixtures under `tests/consumers/` are separate
+The independent consumer fixtures under `crates/termrock/tests/consumers/` are separate
 workspaces, so no workspace command covers them. Run
 `bash scripts/check-consumers.sh` to build and run all four, each in its own
 Cargo invocation and target directory.

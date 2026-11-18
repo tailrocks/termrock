@@ -37,7 +37,7 @@ does not exist in this tree yet.
 | `apps/jackin/tests/functional/` | The jackin journeys and their approved baselines (`baselines/functional/jackin_*.tui.pb`), on the shared harness `tests/functional/support.rs`. |
 | `crates/termrock/` | The facade: explicit re-exports, a small prelude and the feature set (`cli`, `terminal`, `product`, `work-metrics`). |
 | `tests/functional/` | The root crate's test estate: live PTY functional/integration tests plus the frozen visual gate. It launches the app binaries through `TERMROCK_TEST_<NAME>` (`bins.rs`, `scripts/run_functional.py`). See [functional testing](functional-testing.md). |
-| `tests/consumers/` | Four independent consumer fixtures, each its own workspace with a committed lockfile. See [API contract](api-contract.md). |
+| `crates/termrock/tests/consumers/` | Four independent consumer fixtures, each its own workspace with a committed lockfile. See [API contract](api-contract.md). |
 | `.velnor/config.toml` | Source of truth for generated CI (`.github/` is generated, never hand-edited). See [CI](ci.md). |
 
 ## Cargo features
@@ -486,9 +486,9 @@ variant of these enums stays a breaking change and is recorded here.
   collection through it (Showcase list-detail and Finder, TablePro
   connections, Jackin roles, Holla Finder). The facade prelude exports
   `KeyedRowSource` and `SourceStamp`. The independent consumer is
-  `tests/consumers/keyed-modal`, a package with its own workspace and lockfile
+  `crates/termrock/tests/consumers/keyed-modal`, a package with its own workspace and lockfile
   that depends on `termrock` with default features off; run it with
-  `cargo nextest run --locked --manifest-path tests/consumers/keyed-modal/Cargo.toml`.
+  `cargo nextest run --locked --manifest-path crates/termrock/tests/consumers/keyed-modal/Cargo.toml`.
   The work it avoids is counted by the #56 metrics `SourceRowsEnumerated`,
   `KeyIndexInserts`, `KeyLookups`, `WidthRowsMeasured`, `OverlayRowsSnapshotted`,
   `LabelsRead` and `PayloadBytesCloned` (see
