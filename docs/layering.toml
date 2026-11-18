@@ -149,8 +149,6 @@ functional = ["termrock"]
 "src/shell/router.rs" = "shell"
 "src/shell/status.rs" = "shell"
 
-# cli
-"src/cli.rs" = "cli"
 
 # conformance
 # `src/metrics.rs` re-exports `termrock-metrics` and declares the three files below, so it goes with them until #449.
