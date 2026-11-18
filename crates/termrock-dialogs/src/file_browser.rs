@@ -4,26 +4,28 @@ use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 
-use crate::core::event::{Key, Outcome};
-use crate::core::focus::{Focus, FocusChange, FocusRing};
-use crate::core::hit::Axis;
-use crate::core::id::{Part, WidgetId};
-use crate::core::intent::{DismissReason, Phase};
-use crate::core::keymap::{Actions, KeyBinding, KeyMap, hint_key, lookup};
-use crate::core::pointer::{MouseTarget, PointerEvent, scroll_input};
-use crate::core::response::Response;
-use crate::core::scroll::Scrollable;
-use crate::ui::ctx::RenderCtx;
-pub use crate::ui::layer::FileBrowserResult;
-use crate::ui::layer::{Layer, LayerCx, LayerOut, LayerResult, LayerSpec, Overlay, layer_out};
-use crate::ui::popup::{Dismiss, Placement};
-use crate::ui::text::truncate;
-use crate::widgets::breadcrumb::Breadcrumb;
-use crate::widgets::button::{Button, row_layout_right};
-use crate::widgets::choice::Checkbox;
-use crate::widgets::input::{InputAction, TextInput};
-use crate::widgets::keyhint::{Hint, hint};
-use crate::widgets::list::{ListBox, ListItem, SelectMode};
+use termrock_collections::list::{ListBox, ListItem, SelectMode};
+use termrock_controls::button::{Button, row_layout_right};
+use termrock_controls::choice::Checkbox;
+use termrock_controls::keyhint::{Hint, hint};
+use termrock_core::event::{Key, Outcome};
+use termrock_core::focus::{Focus, FocusChange, FocusRing};
+use termrock_core::hit::Axis;
+use termrock_core::id::{Part, WidgetId};
+use termrock_core::intent::{DismissReason, Phase};
+use termrock_core::keymap::{Actions, KeyBinding, KeyMap, hint_key, lookup};
+use termrock_core::pointer::{MouseTarget, PointerEvent, scroll_input};
+use termrock_core::response::Response;
+use termrock_core::scroll::Scrollable;
+use termrock_fields::input::{InputAction, TextInput};
+use termrock_navigation::breadcrumb::Breadcrumb;
+pub use termrock_overlays::layer::FileBrowserResult;
+use termrock_overlays::layer::{
+    Layer, LayerCx, LayerOut, LayerResult, LayerSpec, Overlay, layer_out,
+};
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::popup::{Dismiss, Placement};
+use termrock_text::cells::truncate;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FileEntry {
@@ -201,7 +203,7 @@ impl FileSource for FsSource {
             let is_dir = meta.as_ref().is_some_and(std::fs::Metadata::is_dir);
             let mut e = FileEntry::new(&path, is_dir);
             if let Some(m) = meta.filter(|m| m.is_file()) {
-                e.meta = crate::ui::text::bytes(m.len());
+                e.meta = termrock_text::cells::bytes(m.len());
             }
             out.push(e);
         }
@@ -940,8 +942,8 @@ impl FileBrowser {
 
     pub fn on_blur(&mut self, change: FocusChange) -> Outcome {
         match self.filter.as_mut() {
-            Some(f) => crate::core::focus::forward_blur(change, &mut [&mut self.path, f]),
-            None => crate::core::focus::forward_blur(change, &mut [&mut self.path]),
+            Some(f) => termrock_core::focus::forward_blur(change, &mut [&mut self.path, f]),
+            None => termrock_core::focus::forward_blur(change, &mut [&mut self.path]),
         }
     }
 
@@ -954,7 +956,7 @@ impl FileBrowser {
         } else {
             (84, 22)
         };
-        let (area, inner) = crate::ui::modal::Frame::new(w, h)
+        let (area, inner) = termrock_overlays::modal::Frame::new(w, h)
             .title(&self.title)
             .meta(None)
             .placement(Placement::Center)
@@ -1019,7 +1021,7 @@ impl FileBrowser {
                 buf.set_string(
                     x,
                     y,
-                    crate::ui::reveal::cut(room, &reason.text),
+                    termrock_runtime::reveal::cut(room, &reason.text),
                     t.muted().bg(bg),
                 );
             }
@@ -1050,7 +1052,7 @@ impl FileBrowser {
         }
         if let Some(c) = self.hidden_box.as_mut() {
             let room = row.width.saturating_sub(used + 1);
-            let cw = crate::ui::text::width(&c.label) as u16 + 6;
+            let cw = termrock_text::cells::width(&c.label) as u16 + 6;
             if room >= cw {
                 c.render(Rect::new(inner.x - 1, ay, cw, 1), buf, ctx, bg);
                 ctx.hits.register(c.id, c.area);

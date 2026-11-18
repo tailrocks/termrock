@@ -1,30 +1,32 @@
-use crate::core::event::{Key, Outcome};
-use crate::core::focus::{Focus, FocusChange, FocusRing};
-use crate::core::hints::{HasHints, HintCx};
-use crate::core::hit::Axis;
-use crate::core::id::WidgetId;
-use crate::core::intent::DismissReason;
-use crate::core::keymap::{Nav, NavKeys};
-use crate::core::pointer::PointerEvent;
-use crate::core::response::Response;
-use crate::core::scroll::{ScrollPane, Scrollable};
-use crate::theme::{Strings, Tone};
-use crate::ui::ctx::RenderCtx;
-pub use crate::ui::layer::FormAction;
-use crate::ui::layer::{Layer, LayerCx, LayerOut, LayerResult, LayerSpec, Overlay, layer_out};
-use crate::ui::popup::Dismiss;
-use crate::ui::text::truncate;
-use crate::widgets::button::{Button, row_layout_right, row_lines};
-use crate::widgets::choice::{Checkbox, RadioGroup};
-use crate::widgets::icon_button::IconButton;
-use crate::widgets::input::{InputAction, TextInput};
-use crate::widgets::keyhint::Hint;
-use crate::widgets::scrollbar;
-use crate::widgets::select::Select;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style};
+use termrock_controls::button::{Button, row_layout_right, row_lines};
+use termrock_controls::choice::{Checkbox, RadioGroup};
+use termrock_controls::icon_button::IconButton;
+use termrock_controls::keyhint::Hint;
+use termrock_controls::scrollbar;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::focus::{Focus, FocusChange, FocusRing};
+use termrock_core::hints::{HasHints, HintCx};
+use termrock_core::hit::Axis;
+use termrock_core::id::WidgetId;
+use termrock_core::intent::DismissReason;
+use termrock_core::keymap::{Nav, NavKeys};
+use termrock_core::pointer::PointerEvent;
+use termrock_core::response::Response;
+use termrock_core::scroll::{ScrollPane, Scrollable};
+use termrock_fields::input::{InputAction, TextInput};
+use termrock_fields::select::Select;
+pub use termrock_overlays::layer::FormAction;
+use termrock_overlays::layer::{
+    Layer, LayerCx, LayerOut, LayerResult, LayerSpec, Overlay, layer_out,
+};
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::popup::Dismiss;
+use termrock_text::cells::truncate;
+use termrock_theme::{Strings, Tone};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FieldValue {
@@ -206,7 +208,7 @@ impl FormField {
 impl HasHints for FormDialog {
     fn hints(&self, cx: &HintCx) -> Vec<Hint> {
         if self.is_editing() {
-            return crate::widgets::keyhint::EDIT_FIELD.to_vec();
+            return termrock_controls::keyhint::EDIT_FIELD.to_vec();
         }
         let mut v = vec![Hint::new("Tab", "Next field")];
         let button = self
@@ -229,9 +231,9 @@ impl HasHints for FormDialog {
 }
 
 pub struct FormDialog {
-    pub close_button: crate::widgets::icon_button::IconButton,
+    pub close_button: termrock_controls::icon_button::IconButton,
 
-    pub dismiss: crate::ui::popup::Dismiss,
+    pub dismiss: termrock_runtime::popup::Dismiss,
     pub id: WidgetId,
     pub title: String,
     pub meta: Option<String>,
@@ -257,29 +259,31 @@ pub struct FormDialog {
 
     pub nav: NavKeys,
 
-    pub button_row: crate::widgets::button::ButtonRow,
+    pub button_row: termrock_controls::button::ButtonRow,
 }
 
 impl FormDialog {
-    pub fn button_row(mut self, row: crate::widgets::button::ButtonRow) -> Self {
+    pub fn button_row(mut self, row: termrock_controls::button::ButtonRow) -> Self {
         self.button_row = row;
         self
     }
 
-    pub fn close_button(mut self, button: crate::widgets::icon_button::IconButton) -> Self {
+    pub fn close_button(mut self, button: termrock_controls::icon_button::IconButton) -> Self {
         self.close_button = button;
         self
     }
 
-    pub fn dismiss(mut self, dismiss: crate::ui::popup::Dismiss) -> Self {
+    pub fn dismiss(mut self, dismiss: termrock_runtime::popup::Dismiss) -> Self {
         self.dismiss = dismiss;
         self
     }
 
     pub fn new(id: WidgetId, title: &str, fields: Vec<FormField>) -> Self {
         Self {
-            dismiss: crate::ui::popup::Dismiss::ESCAPE,
-            close_button: crate::widgets::icon_button::IconButton::close(crate::ui::modal::CLOSE),
+            dismiss: termrock_runtime::popup::Dismiss::ESCAPE,
+            close_button: termrock_controls::icon_button::IconButton::close(
+                termrock_overlays::modal::CLOSE,
+            ),
             id,
             title: title.to_owned(),
             meta: None,
@@ -298,7 +302,7 @@ impl FormDialog {
             pop_on_save: true,
             strings: Strings::DEFAULT,
             nav: NavKeys::NO_VIM,
-            button_row: crate::widgets::button::ButtonRow::new(),
+            button_row: termrock_controls::button::ButtonRow::new(),
         }
     }
 
@@ -340,7 +344,7 @@ impl FormDialog {
     /// the value and configuration, never an old edit or popup session.
     ///
     /// Hiding a dirty [`TextInput`] mid-edit is a blur: its
-    /// [`BlurAction`](crate::core::focus::BlurAction) decides the outcome.
+    /// [`BlurAction`](termrock_core::focus::BlurAction) decides the outcome.
     /// `Cancel` reverts to the committed text and reports nothing; `Commit`
     /// and `Keep` retain the typed text and the form reports
     /// [`FormAction::Changed`] once, because the form's values changed under
@@ -504,7 +508,7 @@ impl FormDialog {
     }
 
     fn dismiss_escape(&mut self) -> Outcome {
-        crate::ui::layer::dismiss(self, DismissReason::Esc)
+        termrock_overlays::layer::dismiss(self, DismissReason::Esc)
             .map_or(Outcome::Consumed, |response| response.outcome())
     }
 
@@ -828,7 +832,7 @@ impl FormDialog {
         Outcome::Consumed
     }
 
-    pub fn on_blur(&mut self, ch: crate::core::focus::FocusChange) -> Outcome {
+    pub fn on_blur(&mut self, ch: termrock_core::focus::FocusChange) -> Outcome {
         self.reconcile_hidden_interactions();
         for f in self.fields.iter_mut().filter(|f| f.visible) {
             match &mut f.kind {
@@ -890,12 +894,12 @@ impl FormDialog {
         widths.push(self.cancel.width());
         widths.push(self.save.width());
         let footer_rows = row_lines(
-            crate::ui::modal::Frame::new(self.width, 0).inner_width(screen),
+            termrock_overlays::modal::Frame::new(self.width, 0).inner_width(screen),
             &widths,
             1,
         );
         let h = (2 + 2 + content + err + 1).saturating_add(footer_rows);
-        let (area, inner) = crate::ui::modal::Frame::new(self.width, h)
+        let (area, inner) = termrock_overlays::modal::Frame::new(self.width, h)
             .title(&self.title)
             .meta(self.meta.as_deref())
             .overlay(&*self)
@@ -1127,12 +1131,12 @@ impl Scrollable for FormDialog {
 impl FormDialog {
     pub fn pointer_in(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
+        ev: &termrock_core::pointer::PointerEvent,
         focus: &mut Focus,
-    ) -> crate::core::response::Response<()> {
-        use crate::core::intent::Phase;
-        use crate::core::pointer::MouseTarget;
-        use crate::core::response::Response;
+    ) -> termrock_core::response::Response<()> {
+        use termrock_core::intent::Phase;
+        use termrock_core::pointer::MouseTarget;
+        use termrock_core::response::Response;
         self.reconcile_hidden_interactions();
         self.resolve_hidden_focus(focus);
         for f in self.fields.iter_mut().filter(|f| f.visible) {
@@ -1170,7 +1174,7 @@ impl FormDialog {
             return Response::ignored();
         }
         if ev.on(self.id)
-            && let Some(r) = crate::core::pointer::scroll_input(self, ev)
+            && let Some(r) = termrock_core::pointer::scroll_input(self, ev)
         {
             return r;
         }
@@ -1277,10 +1281,10 @@ mod issue35_tests {
     use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 
     use super::*;
-    use crate::core::event::Key;
-    use crate::core::focus::{Focus, FocusRing};
-    use crate::core::id::WidgetId;
-    use crate::widgets::input::TextInput;
+    use termrock_core::event::Key;
+    use termrock_core::focus::{Focus, FocusRing};
+    use termrock_core::id::WidgetId;
+    use termrock_fields::input::TextInput;
 
     #[test]
     fn issue35_form_save_blocked_by_required_before_custom() {
