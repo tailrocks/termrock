@@ -1069,3 +1069,67 @@ the run loop"). Nothing about the blanket impl changed.
 - **`x02_suspend.rs`.** Its header named `src/runtime.rs` for job control; it
   now names `crates/termrock-session/src/runtime.rs` (where `job_control` is) and
   the loop's new file.
+
+## 2026-11-18: `termrock-catalog` holds the catalog and the #14 gate (#449)
+
+`termrock-catalog` is the catalog half of #449 (the conformance half waits for the
+shell crate of #448). `junie-tui` re-exports it as `pub use
+termrock_catalog::{catalog, docs}`, so `termrock::{catalog, docs}` and every id
+are unchanged (`catalog_api_ids_match_the_committed_digest` passes on the
+unchanged `tests/regressions/api-ids.sha256`).
+
+- **What moved.** `src/catalog.rs`, `src/docs.rs` and `src/catalog_contract.rs`
+  keep their names; `tests/support/api_inventory.rs` is `src/inventory.rs` and
+  `tests/support/scenario_reach.rs` is `src/scenario_reach.rs`. The move map had no
+  row for `scenario_reach.rs`; `docs/layering.toml [files]` already assigned it to
+  `catalog`, and `catalog_contract` was its only user. `inventory`,
+  `scenario_reach` and `catalog_contract` are `#[cfg(test)]` modules, so `syn`,
+  `toml` and `sha2` are dev-dependencies and the library has none of them. The
+  `#[path = "../tests/support/..."]` includes are `use crate::inventory` and
+  `use crate::scenario_reach`. `tests/picker_catalog.rs` and
+  `tests/terminal/session_catalog.rs` are the modules of the crate's single
+  `tests/regressions` target (`termrock-catalog::regressions`); the integration
+  target includes `src/inventory.rs` by `#[path]`, as `tests/picker_catalog.rs`
+  did. `picker_catalog` stops being a top-level target of `junie-tui`.
+- **Dependencies.** `docs.rs` is the only library code and names `core`,
+  `controls`, `grid`, `collections`, `fields` and `navigation`, all inside the
+  `catalog` row of `docs/layering.toml`; `catalog.rs` has no `crate::` path. The
+  test-only `termrock-metrics` dev-dependency (for `Metric::ALL`) is allowed by the
+  closure of `core`. No `catalog` feature exists on the crate. It declares
+  `work-metrics`, which forwards to the six dependencies that declare it (the
+  forwarding guard of stage B), and `junie-tui`'s `work-metrics` forwards to it.
+- **The repository root.** The gate reads `docs/`, `src/`, `apps/` and
+  `tests/regressions/` of the repository, so `root()` is the third ancestor of
+  `CARGO_MANIFEST_DIR` (`crates/termrock-catalog` is two levels down), not
+  `../..` appended to it, which would leave `..` inside every path the inventory
+  keys on. The facade is still chosen as before: the root package while
+  `src/lib.rs` exists, `crates/termrock/src` after it is gone. #452 must switch
+  that rule to `crates/termrock` unconditionally in the same PR that rewires the
+  facade (finding 2 of its plan); this PR keeps the rule so the digest is
+  computed from the tree it was computed from.
+- **`session_catalog` needs no `terminal` feature.** The issue asked to confirm
+  it. The test parses `src/terminal/session.rs` with `include_str!` and reads the
+  catalog; it links no terminal code, so it runs in the catalog crate under every
+  feature set. The `include_str!` path is the one thing #448 must update when it
+  moves `src/terminal/session.rs` into `termrock-terminal`; the compiler fails
+  loudly until it does.
+- **Layering.** The `src/catalog*.rs`, `src/docs.rs` and `tests/support/*` rows of
+  `[files]` are gone, and stage A no longer scans `tests/support` (the directory
+  no longer exists, and stage B checks the crate's dependencies from
+  `cargo metadata`).
+- **SonarCloud.** `.sonarcloud.properties` already excluded
+  `crates/termrock-catalog/src/catalog.rs` from copy-paste detection (#443); it
+  matches the moved file, and the old `src/catalog.rs` pattern is removed because
+  the file is gone. `catalog_contract.rs` (2.6k lines), `inventory.rs` (1.7k) and
+  `docs.rs` are not excluded and count as new code as renames do; they are not
+  tables of alike lines, but the new-code duplication gate is the thing to watch on
+  the draft.
+- **Command.** The catalog command is `cargo nextest run -p termrock-catalog -p
+  termrock-showcase --all-features --no-tests fail -E 'test(catalog_)'`
+  (`AGENTS.md`, `docs/ci.md`). The generated `Rust / termrock-catalog` jobs run the
+  crate under `--profile ci --all-features`; the source gate is slow on a loaded
+  machine (several `catalog_` tests take over a minute each because every one
+  rebuilds the inventory), so the crate's job is the one to watch against the
+  15-minute timeout.
+- **Void items of #449.** `test_alloc.rs` and `work.rs` do not move (decided in
+  #447 and the #449 design); nothing of the run loop became `pub`.

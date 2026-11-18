@@ -50,7 +50,7 @@ file will land in is `[files]` in `docs/layering.toml`.
 | Application host | `termrock-shell` | `Shell`, `App`, `Page`, router, chrome, footer, clipboard, reach harness, and (from #448) the `Application` trait with the run loop. | `src/shell/*`, `src/runtime.rs` |
 | Optional | `termrock-terminal` | Terminal emulator pane, viewport, session controller (feature `terminal`). | `src/terminal.rs`, `src/terminal/*` |
 | Optional | `termrock-cli` | `clap` argument types (feature `cli`). | `src/cli.rs` |
-| Proof | `termrock-catalog` | Declared-API catalog, docs tables, inventory gate (#14). | `catalog.rs`, `docs.rs`, `catalog_contract.rs`, `tests/support/api_inventory.rs` |
+| Proof | `termrock-catalog` | Declared-API catalog, docs tables, inventory gate (#14). | `catalog.rs`, `docs.rs`, `catalog_contract.rs`, `inventory.rs`, `scenario_reach.rs` |
 | Proof | `termrock-conformance` | Work-metrics harness and report, allocation counter, cross-crate regression tests. | `metrics/{harness,report,tests}.rs`, `test_alloc.rs`, the cross-module `*_tests.rs` files |
 | Facade | `termrock` | The public surface applications depend on: `pub use` of the crates above. | `crates/termrock` |
 | Applications | `apps/*` | Routes, demo or simulated data, composition. They import `termrock::` only and hold no shared widget behaviour. | `apps/showcase`, `apps/tablepro`, `apps/holla`, `apps/jackin` |

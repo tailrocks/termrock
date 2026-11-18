@@ -3,7 +3,7 @@
 //! `PROOFS` lists the APIs a callable scenario in `app_tests_catalog.rs`
 //! exercises. `EXCEPTIONS` lists APIs with no page demonstration (`Nonvisual`,
 //! or `Deferred` with a tracking issue) and the exact test that pins them.
-//! `src/catalog_contract.rs` checks both against the exported API: every public
+//! `crates/termrock-catalog/src/catalog_contract.rs` checks both against the exported API: every public
 //! API has exactly one proof or exception, and there is no third bucket.
 //! One line per record keeps a restack mechanical.
 //!
@@ -2524,8 +2524,8 @@ pub const EXCEPTIONS: &[CapabilityException] = &[
     CapabilityException { api: "widgets::picker::PickerItemsError::UnknownVisibleKey", kind: ExceptionKind::Nonvisual, reason: "Invalid item identities are exercised by picker validation tests; the showcase uses valid picker inputs.", regression_test: "crates/termrock-overlays/src/picker.rs::picker_rejects_ambiguous_and_unknown_keys_atomically", tracking_issue: None },
     CapabilityException { api: "widgets::picker::PickerKeyProfile::current", kind: ExceptionKind::Nonvisual, reason: "The page configures each picker through its builder and intentionally does not read the thread-local default profile.", regression_test: "crates/termrock-overlays/src/picker.rs::searchable_multi_profile_binding_is_visible_exact_and_preserves_space_input", tracking_issue: None },
     CapabilityException { api: "widgets::picker::PickerKeyProfile::install", kind: ExceptionKind::Nonvisual, reason: "The page configures each picker through its builder and intentionally does not change the thread-local default profile.", regression_test: "apps/showcase/src/app_tests_catalog.rs::catalog_picker_setters_and_accessors_behave", tracking_issue: None },
-    CapabilityException { api: "catalog::ALLOWLIST", kind: ExceptionKind::Nonvisual, reason: "The catalog's own table of APIs allowed to lack a Showcase page, and its record type; they are data read by the coverage tests and no page can show a table of ids.", regression_test: "src/catalog_contract.rs::catalog_allowlist_records_are_unique_exact_ids_with_a_reason", tracking_issue: None },
-    CapabilityException { api: "catalog::Allowed", kind: ExceptionKind::Nonvisual, reason: "The catalog's own table of APIs allowed to lack a Showcase page, and its record type; they are data read by the coverage tests and no page can show a table of ids.", regression_test: "src/catalog_contract.rs::catalog_allowlist_records_are_unique_exact_ids_with_a_reason", tracking_issue: None },
+    CapabilityException { api: "catalog::ALLOWLIST", kind: ExceptionKind::Nonvisual, reason: "The catalog's own table of APIs allowed to lack a Showcase page, and its record type; they are data read by the coverage tests and no page can show a table of ids.", regression_test: "crates/termrock-catalog/src/catalog_contract.rs::catalog_allowlist_records_are_unique_exact_ids_with_a_reason", tracking_issue: None },
+    CapabilityException { api: "catalog::Allowed", kind: ExceptionKind::Nonvisual, reason: "The catalog's own table of APIs allowed to lack a Showcase page, and its record type; they are data read by the coverage tests and no page can show a table of ids.", regression_test: "crates/termrock-catalog/src/catalog_contract.rs::catalog_allowlist_records_are_unique_exact_ids_with_a_reason", tracking_issue: None },
     CapabilityException { api: "metrics::measurement::Environment", kind: ExceptionKind::Nonvisual, reason: "The elapsed-time report of the performance measurements (#56): a benchmark artifact written by ignored release tests, with no screen a Showcase page could draw.", regression_test: "crates/termrock-metrics/src/measurement.rs::measurement_report_is_written_whole_under_its_file_name", tracking_issue: None },
     CapabilityException { api: "metrics::measurement::MeasurementReport", kind: ExceptionKind::Nonvisual, reason: "The elapsed-time report of the performance measurements (#56): a benchmark artifact written by ignored release tests, with no screen a Showcase page could draw.", regression_test: "crates/termrock-metrics/src/measurement.rs::measurement_report_is_written_whole_under_its_file_name", tracking_issue: None },
     CapabilityException { api: "metrics::measurement::MeasurementReport::file_name", kind: ExceptionKind::Nonvisual, reason: "The elapsed-time report of the performance measurements (#56): a benchmark artifact written by ignored release tests, with no screen a Showcase page could draw.", regression_test: "crates/termrock-metrics/src/measurement.rs::measurement_report_is_written_whole_under_its_file_name", tracking_issue: None },
@@ -2702,7 +2702,8 @@ mod tests {
 
     fn catalog_source() -> String {
         let root = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."));
-        std::fs::read_to_string(root.join("src/catalog.rs")).expect("catalog source reads")
+        std::fs::read_to_string(root.join("crates/termrock-catalog/src/catalog.rs"))
+            .expect("catalog source reads")
     }
 
     #[test]

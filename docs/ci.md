@@ -47,6 +47,12 @@ change the config and run `velnor-actions generate`.
   import path and has empty default features. The product job builds it with
   `--no-default-features --features product`. Its tests live in the shared
   `crates/termrock/tests/regressions` target.
+- **Rust / termrock-catalog** and **termrock-catalog (product)** — the
+  declared-API gate of #14: the source gate `catalog_contract` (the `catalog_`
+  tests, which also hold the committed id digest and the `doc-hidden-items.txt`
+  list) and the shared `regressions` target. The command that runs it with the
+  Showcase scenarios is `cargo nextest run -p termrock-catalog -p
+  termrock-showcase --all-features --no-tests fail -E 'test(catalog_)'`.
 - **Rust / functional-cross** and **Rust / functional-cross (product)** —
   the same five tasks for `crates/functional-cross`, which holds the
   cross-binary functional cases. Its `functional` target is selected by
