@@ -577,6 +577,7 @@ dependencies = [
  "termrock-editors",
  "termrock-feedback",
  "termrock-fields",
+ "termrock-grid",
  "termrock-layout",
  "termrock-metrics",
  "termrock-navigation",
@@ -1558,6 +1559,21 @@ dependencies = [
  "termrock-text",
  "termrock-theme",
  "unicode-segmentation",
+]
+
+[[package]]
+name = "termrock-grid"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "termrock-controls",
+ "termrock-core",
+ "termrock-feedback",
+ "termrock-metrics",
+ "termrock-overlays",
+ "termrock-runtime",
+ "termrock-text",
+ "termrock-theme",
 ]
 
 [[package]]

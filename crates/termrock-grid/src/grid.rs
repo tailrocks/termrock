@@ -5,33 +5,35 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Color, Modifier, Style};
 
-use crate::core::data::{DataError, ShapeError};
-use crate::core::event::{Key, Outcome};
-use crate::core::focus::BlurAction;
-use crate::core::hints::{Binding, Bindings, HasHints, HintCx, actions_bindings};
-use crate::core::hit::{Axis, PartMap};
-use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, hint_key, lookup};
-use crate::core::list::{Cursor, KeyStep, Moved, Navigable, RowFn, RowSource};
-use crate::core::pointer::PointerEvent;
-use crate::core::response::Response;
-use crate::core::scroll::{HScroll, ScrollPane, Scrollable};
-use crate::core::selection::{ClickPolicy, RowSelection, SelectGesture};
-use crate::theme::SyntaxTone;
-use crate::ui::columns::ColumnSizing;
-use crate::ui::context::{ContextAnchor, ContextRequest, ContextSource, row_rect};
-use crate::ui::ctx::{RenderCtx, VisualState, fill};
-use crate::ui::row::{MarkKind, RowLook, RowUi};
-use crate::ui::text::{fit, fit_right, truncate, truncate_middle, wider_than, width, width_capped};
-use crate::widgets::button::{Button, row_layout_right};
-use crate::widgets::edit::{EditExit, EditField, FieldError, Validator, parsers};
-use crate::widgets::keyhint::{EDIT_CELL, Hint, hint};
-use crate::widgets::option_editor::{
+use crate::table::{HeaderAction, HeaderLabels, SortDir, header_menu};
+use termrock_controls::button::{Button, row_layout_right};
+use termrock_controls::keyhint::{EDIT_CELL, Hint, hint};
+use termrock_controls::scrollbar;
+use termrock_controls::widget_hints::EDIT;
+use termrock_core::data::{DataError, ShapeError};
+use termrock_core::event::{Key, Outcome};
+use termrock_core::field::edit::{EditExit, EditField, FieldError, Validator, parsers};
+use termrock_core::focus::BlurAction;
+use termrock_core::hints::{Binding, Bindings, HasHints, HintCx, actions_bindings};
+use termrock_core::hit::{Axis, PartMap};
+use termrock_core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock_core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, hint_key, lookup};
+use termrock_core::list::{Cursor, KeyStep, Moved, Navigable, RowFn, RowSource};
+use termrock_core::pointer::PointerEvent;
+use termrock_core::response::Response;
+use termrock_core::scroll::{HScroll, ScrollPane, Scrollable};
+use termrock_core::selection::{ClickPolicy, RowSelection, SelectGesture};
+use termrock_overlays::context::{ContextAnchor, ContextRequest, ContextSource, row_rect};
+use termrock_overlays::option_editor::{
     Affordance, ChoiceEditor, ChoiceResult, ColumnEditor, EditorConfig,
 };
-use crate::widgets::scrollbar;
-use crate::widgets::table::{HeaderAction, HeaderLabels, SortDir, header_menu};
-use crate::widgets::widget_hints::EDIT;
+use termrock_runtime::columns::ColumnSizing;
+use termrock_runtime::ctx::{RenderCtx, VisualState, fill};
+use termrock_runtime::row::{MarkKind, RowLook, RowUi};
+use termrock_text::cells::{
+    fit, fit_right, truncate, truncate_middle, wider_than, width, width_capped,
+};
+use termrock_theme::SyntaxTone;
 
 #[path = "grid_changes.rs"]
 mod changes;
@@ -440,7 +442,7 @@ impl PendingChanges {
     }
 }
 
-pub use crate::theme::RowState;
+pub use termrock_theme::RowState;
 
 #[derive(Debug, Clone)]
 pub struct EditState {
@@ -664,18 +666,22 @@ enum GridDrag {
     },
 }
 
-impl crate::ui::measure::Measure for DataGrid {
+impl termrock_runtime::measure::Measure for DataGrid {
     fn measure(
         &self,
         _avail: ratatui::layout::Size,
-        _ctx: &crate::ui::ctx::RenderCtx,
+        _ctx: &termrock_runtime::ctx::RenderCtx,
     ) -> ratatui::layout::Size {
         let n = self.columns.len();
         let cols: u16 = (0..n).map(|c| self.col_w(c)).sum::<u16>() + n.saturating_sub(1) as u16;
         ratatui::layout::Size::new(cols + GRID_CHROME_W, self.len() as u16 + 2)
     }
 
-    fn min_width(&self, _avail: ratatui::layout::Size, _ctx: &crate::ui::ctx::RenderCtx) -> u16 {
+    fn min_width(
+        &self,
+        _avail: ratatui::layout::Size,
+        _ctx: &termrock_runtime::ctx::RenderCtx,
+    ) -> u16 {
         GRID_MIN_W
     }
 }
@@ -797,7 +803,7 @@ pub struct DataGrid {
     pub loading: bool,
     pub cell_errors: HashMap<(usize, usize), String>,
     pub row_errors: HashMap<usize, String>,
-    pub empty: crate::widgets::empty::EmptyState,
+    pub empty: termrock_feedback::empty::EmptyState,
     pub validator: CellParser,
     pub row_numbers: bool,
     pub area: Rect,
@@ -813,9 +819,9 @@ pub struct DataGrid {
     show_bar: bool,
     bar: [Button; 3],
 
-    strings: crate::theme::Strings,
+    strings: termrock_theme::Strings,
 
-    pub reveal: Option<crate::ui::reveal::Reveal>,
+    pub reveal: Option<termrock_runtime::reveal::Reveal>,
 
     pub horizontal: Option<HScroll>,
 
@@ -829,8 +835,8 @@ pub struct DataGrid {
 
     pub type_ahead_column: Option<usize>,
 
-    pub type_ahead_precedence: Option<crate::core::list::TypeAheadPrecedence>,
-    typeahead: crate::core::typeahead::TypeAhead,
+    pub type_ahead_precedence: Option<termrock_core::list::TypeAheadPrecedence>,
+    typeahead: termrock_core::typeahead::TypeAhead,
 
     pub width_sample_rows: usize,
 
@@ -934,8 +940,8 @@ impl Actions for GridCmd {
             (KeyBinding::char('U'), GridCmd::Discard),
             (KeyBinding::char('p'), GridCmd::PreviewSql),
             (KeyBinding::ctrl(']'), GridCmd::FollowReference),
-            (crate::core::keymap::SELECT_ALL[0], GridCmd::SelectAll),
-            (crate::core::keymap::SELECT_ALL[1], GridCmd::SelectAll),
+            (termrock_core::keymap::SELECT_ALL[0], GridCmd::SelectAll),
+            (termrock_core::keymap::SELECT_ALL[1], GridCmd::SelectAll),
         ]
     }
 }
@@ -976,7 +982,9 @@ impl DataGrid {
             loading: false,
             cell_errors: HashMap::new(),
             row_errors: HashMap::new(),
-            empty: crate::widgets::empty::EmptyState::new(crate::theme::Strings::DEFAULT.no_rows),
+            empty: termrock_feedback::empty::EmptyState::new(
+                termrock_theme::Strings::DEFAULT.no_rows,
+            ),
             validator: cell_validator(default_validator),
             row_numbers: true,
             area: Rect::ZERO,
@@ -991,12 +999,15 @@ impl DataGrid {
             bar: [
                 Button::subtle(
                     id.sub("preview"),
-                    crate::theme::Strings::DEFAULT.preview_sql,
+                    termrock_theme::Strings::DEFAULT.preview_sql,
                 ),
-                Button::subtle(id.sub("discard"), crate::theme::Strings::DEFAULT.discard),
-                Button::primary(id.sub("save"), crate::theme::Strings::DEFAULT.save_changes),
+                Button::subtle(id.sub("discard"), termrock_theme::Strings::DEFAULT.discard),
+                Button::primary(
+                    id.sub("save"),
+                    termrock_theme::Strings::DEFAULT.save_changes,
+                ),
             ],
-            strings: crate::theme::Strings::DEFAULT,
+            strings: termrock_theme::Strings::DEFAULT,
             reveal: None,
             horizontal: None,
             overflow_badges: true,
@@ -1229,7 +1240,7 @@ impl DataGrid {
     fn on_choices(
         &mut self,
         out: Outcome,
-        results: crate::core::response::Actions<ChoiceResult>,
+        results: termrock_core::response::Actions<ChoiceResult>,
     ) -> Response<GridAction> {
         let mut resp = Response::from(out);
         for result in results {
@@ -1262,7 +1273,7 @@ impl DataGrid {
 
     pub fn type_ahead_precedence(
         mut self,
-        precedence: crate::core::list::TypeAheadPrecedence,
+        precedence: termrock_core::list::TypeAheadPrecedence,
     ) -> Self {
         self.type_ahead_precedence = Some(precedence);
         self
@@ -1278,8 +1289,8 @@ impl DataGrid {
         self
     }
 
-    fn follow_strings(&mut self, s: crate::theme::Strings) {
-        use crate::theme::Strings;
+    fn follow_strings(&mut self, s: termrock_theme::Strings) {
+        use termrock_theme::Strings;
         let old = std::mem::replace(&mut self.strings, s);
         if old == s {
             return;
@@ -1307,7 +1318,7 @@ impl DataGrid {
         self
     }
 
-    pub fn empty(mut self, state: crate::widgets::empty::EmptyState) -> Self {
+    pub fn empty(mut self, state: termrock_feedback::empty::EmptyState) -> Self {
         self.empty = state;
         self
     }
@@ -1399,7 +1410,7 @@ impl DataGrid {
         self.sizing.set(c, need.min(cap) as u16);
     }
 
-    pub fn header_menu(&self, c: usize) -> Vec<(HeaderAction, crate::widgets::menu::MenuItem)> {
+    pub fn header_menu(&self, c: usize) -> Vec<(HeaderAction, termrock_overlays::menu::MenuItem)> {
         let sortable = self.columns.get(c).is_some_and(|col| col.sortable);
         let sorted = self.sort.and_then(|(sc, d)| (sc == c).then_some(d));
         header_menu(
@@ -1865,7 +1876,7 @@ impl DataGrid {
         if self.src_deleted(src) {
             Some(self.strings.grid_row_deleted.to_owned())
         } else if spec.read_only {
-            Some(crate::theme::Strings::fill(
+            Some(termrock_theme::Strings::fill(
                 self.strings.grid_read_only,
                 &[&spec.name],
             ))
@@ -2589,7 +2600,7 @@ impl DataGrid {
             &self.nav,
             self.type_ahead,
             self.type_ahead_precedence
-                .unwrap_or_else(crate::core::list::TypeAheadPrecedence::current),
+                .unwrap_or_else(termrock_core::list::TypeAheadPrecedence::current),
         ) {
             let col = self.type_ahead_column.unwrap_or(c);
             let texts: Vec<String> = self
@@ -2681,8 +2692,8 @@ impl DataGrid {
         }
     }
 
-    pub fn context_items(&self) -> Vec<(GridCmd, crate::widgets::menu::MenuItem)> {
-        use crate::ui::context::{ContextCmd, command_items};
+    pub fn context_items(&self) -> Vec<(GridCmd, termrock_overlays::menu::MenuItem)> {
+        use termrock_overlays::context::{ContextCmd, command_items};
         let row = self.cursor_src();
         let spec = self.columns.get(self.cursor.1);
         let read_only = (!self.editable)
@@ -2874,14 +2885,14 @@ impl DataGrid {
     }
 
     pub fn seam_id(&self, c: usize) -> WidgetId {
-        self.id.part(crate::ui::columns::seam_part(c))
+        self.id.part(termrock_runtime::columns::seam_part(c))
     }
 
     fn seam_of(&self, id: WidgetId) -> Option<usize> {
         self.id.item_of(id, Part::SEAM, 0..self.columns.len())
     }
 
-    pub fn header_menu_at(&self, ev: &crate::core::pointer::PointerEvent) -> Option<usize> {
+    pub fn header_menu_at(&self, ev: &termrock_core::pointer::PointerEvent) -> Option<usize> {
         if !ev.on(self.id) {
             return None;
         }
@@ -3259,7 +3270,7 @@ impl DataGrid {
     }
 
     pub fn rows_label(&self) -> String {
-        use crate::ui::text::thousands;
+        use termrock_text::cells::thousands;
         if self.rows.is_empty() {
             return "0 rows".into();
         }
@@ -3358,7 +3369,7 @@ impl DataGrid {
         }
     }
 
-    pub fn track_click(mut self, click: crate::core::scroll::TrackClick) -> Self {
+    pub fn track_click(mut self, click: termrock_core::scroll::TrackClick) -> Self {
         self.scroll.track_click = Some(click);
         self
     }
@@ -3463,7 +3474,7 @@ impl DataGrid {
                 Rect::new(
                     grid_area.x + 1,
                     header_y,
-                    crate::ui::text::width(&lbl) as u16,
+                    termrock_text::cells::width(&lbl) as u16,
                     1,
                 ),
             );
@@ -3524,18 +3535,18 @@ impl DataGrid {
                 ctx.hits.register_hover(hid, head);
             }
             if !col.type_label.is_empty() {
-                let tip = crate::ui::tooltip::Tip::new(&format!(
+                let tip = termrock_runtime::tooltip::Tip::new(&format!(
                     "{}{}{}",
                     col.name, t.glyphs.separator, col.type_label
                 ));
-                crate::ui::tooltip::show(ctx, hid, head, &tip, None);
+                termrock_runtime::tooltip::show(ctx, hid, head, &tip, None);
             } else if cut {
-                crate::ui::reveal::truncated(ctx, self.reveal, hid, head, &col.name);
+                termrock_runtime::reveal::truncated(ctx, self.reveal, hid, head, &col.name);
             }
             if self.sizing.resizable {
                 let hit = self.sizing.seam_rect(rect.right(), header_y, 2, grid_area);
                 let held = self.sizing.dragging() == Some(ci);
-                crate::ui::columns::render_seam(
+                termrock_runtime::columns::render_seam(
                     buf,
                     ctx,
                     (self.id, ci),
@@ -3558,13 +3569,13 @@ impl DataGrid {
             ctx.register_part(
                 self.id,
                 PartRef::OVERFLOW_AFTER,
-                Rect::new(x, header_y, crate::ui::text::width(&lbl) as u16, 1),
+                Rect::new(x, header_y, termrock_text::cells::width(&lbl) as u16, 1),
             );
         }
 
         if self.rows.is_empty() && !self.more {
             if self.loading {
-                crate::widgets::progress::render_spinner(
+                termrock_feedback::progress::render_spinner(
                     Rect::new(body.x + 3, body.y + body.height / 2, body.width, 1),
                     buf,
                     ctx,
@@ -3572,7 +3583,7 @@ impl DataGrid {
                     bg,
                 );
             } else {
-                crate::widgets::empty::render(body, buf, t, &self.empty, bg);
+                termrock_feedback::empty::render(body, buf, t, &self.empty, bg);
             }
             return;
         }
@@ -3590,7 +3601,7 @@ impl DataGrid {
 
         let flagged_msg = String::new();
         for (i, d) in self.scroll.visible_range().enumerate() {
-            crate::record_work!(VisibleRowsPainted, 1usize);
+            termrock_metrics::record_work!(VisibleRowsPainted, 1usize);
             let y = body.y + i as u16;
             let row_rect = Rect::new(
                 grid_area.x,
@@ -3613,9 +3624,9 @@ impl DataGrid {
                     format!(
                         "{} {}",
                         t.glyphs.arrows[1],
-                        crate::theme::Strings::fill(
+                        termrock_theme::Strings::fill(
                             t.strings.fetch_more,
-                            &[&crate::ui::text::thousands(self.rows.len())]
+                            &[&termrock_text::cells::thousands(self.rows.len())]
                         )
                     )
                 };
@@ -3698,7 +3709,7 @@ impl DataGrid {
                     let cur = e.field.buffer.cursor_pos().col;
                     let off = cur.saturating_sub(cw.saturating_sub(1));
                     let text = e.field.text();
-                    let shown = crate::ui::text::slice_cells(text, off, cw);
+                    let shown = termrock_text::cells::slice_cells(text, off, cw);
                     let mut ts = es
                         .add_modifier(Modifier::UNDERLINED)
                         .underline_color(t.accent);
@@ -3833,7 +3844,7 @@ impl DataGrid {
 
                     let full = v.text_ref();
                     if text != *full {
-                        crate::ui::reveal::truncated(
+                        termrock_runtime::reveal::truncated(
                             ctx,
                             self.reveal,
                             self.cell_id(d, ci),
@@ -3843,7 +3854,7 @@ impl DataGrid {
 
                         let cfg = self.reveal.unwrap_or(ctx.reveal);
                         if is_cursor && (cfg.hover || cfg.keyboard.is_some()) {
-                            crate::ui::reveal::peek(ctx, &full);
+                            termrock_runtime::reveal::peek(ctx, &full);
                         }
                     }
                     if ref_mark {
@@ -3882,7 +3893,7 @@ impl DataGrid {
 
         ctx.scrollable(self.id, area);
         if has_sb {
-            crate::ui::fade::scroll_edges(
+            termrock_runtime::fade::scroll_edges(
                 buf,
                 ctx,
                 Rect::new(
@@ -3990,10 +4001,15 @@ fn cmp_cells(a: &CellValue, b: &CellValue) -> std::cmp::Ordering {
 }
 
 pub fn cell_text(v: &CellValue, kind: CellKind, w: usize) -> String {
-    cell_text_with(v, kind, w, &crate::theme::Glyphs::UNICODE)
+    cell_text_with(v, kind, w, &termrock_theme::Glyphs::UNICODE)
 }
 
-pub fn cell_text_with(v: &CellValue, kind: CellKind, w: usize, g: &crate::theme::Glyphs) -> String {
+pub fn cell_text_with(
+    v: &CellValue,
+    kind: CellKind,
+    w: usize,
+    g: &termrock_theme::Glyphs,
+) -> String {
     match v {
         CellValue::Null => "NULL".into(),
         CellValue::Default => "DEFAULT".into(),
@@ -4022,7 +4038,7 @@ pub fn cell_text_with(v: &CellValue, kind: CellKind, w: usize, g: &crate::theme:
 
 const TEXT_CELL_CHARS: usize = 10_000;
 
-fn sanitized(s: &str, limit: usize, g: &crate::theme::Glyphs) -> (String, bool) {
+fn sanitized(s: &str, limit: usize, g: &termrock_theme::Glyphs) -> (String, bool) {
     let mut out = String::new();
     let mut chars = s.chars();
     for _ in 0..TEXT_CELL_CHARS {
@@ -4095,7 +4111,7 @@ pub(crate) fn header_style(
     }
 }
 
-impl crate::core::focus::BlurTarget for DataGrid {
+impl termrock_core::focus::BlurTarget for DataGrid {
     fn blur_id(&self) -> WidgetId {
         self.id
     }
@@ -4138,7 +4154,7 @@ impl Navigable for DataGrid {
     }
 }
 
-impl crate::core::pointer::MouseTarget for DataGrid {
+impl termrock_core::pointer::MouseTarget for DataGrid {
     type Action = GridAction;
 
     fn mouse_id(&self) -> WidgetId {
@@ -4147,8 +4163,8 @@ impl crate::core::pointer::MouseTarget for DataGrid {
 
     fn route(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> Option<crate::core::response::Response<GridAction>> {
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> Option<termrock_core::response::Response<GridAction>> {
         let owner = ev.owner();
         let mine = owner == self.id
             || self.bar_ids().contains(&owner)
@@ -4158,10 +4174,10 @@ impl crate::core::pointer::MouseTarget for DataGrid {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<GridAction> {
-        use crate::core::intent::Phase;
-        use crate::core::response::Response;
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<GridAction> {
+        use termrock_core::intent::Phase;
+        use termrock_core::response::Response;
 
         if let Some(c) = self.choice.as_mut()
             && ev.on(c.editor.id)
@@ -4172,7 +4188,7 @@ impl crate::core::pointer::MouseTarget for DataGrid {
         }
 
         if (ev.on(self.id) || ev.wheel().is_some())
-            && let Some(r) = crate::core::pointer::scroll_input(self, ev)
+            && let Some(r) = termrock_core::pointer::scroll_input(self, ev)
         {
             return r.lift();
         }
