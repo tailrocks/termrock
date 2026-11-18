@@ -2,10 +2,10 @@
 //!
 //! The terminal session, the external channel, the raw-input sources and
 //! policies and the panic bridge live in `termrock-session` and are re-exported
-//! here at their old paths. `Application` and the loop code stay in this crate
-//! until #448 moves them into `termrock-shell` beside `App`: with both in one
-//! crate `impl<A: App> Application for A` is legal, and with `Application` in
-//! `termrock-session` it is not (E0210, `docs/decisions.md`).
+//! here at their old paths. `Application` and the loop code live in this crate
+//! beside `App`: with both in one crate `impl<A: App> Application for A` is
+//! legal, and with `Application` in `termrock-session` it is not (E0210,
+//! `docs/decisions.md`).
 
 use std::io::Write;
 use std::time::{Duration, Instant};
