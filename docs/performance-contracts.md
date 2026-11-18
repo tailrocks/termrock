@@ -118,8 +118,10 @@ list, table, tree and scroll tests there use ceilings
 today's behaviour of an unfixed path says so beside it. Lowering it when the
 owning issue lands is the intended change.
 
-The app tests share `junie_tui::metrics::harness::Harness`, which drives an
-`Application` through its real input and render path and writes the report.
+The app tests share `termrock::metrics::harness::Harness` (defined in
+`termrock-conformance` and re-exported by the facade under `work-metrics`), which
+drives an `Application` through its real input and render path and writes the
+report.
 
 ### Measured counts
 

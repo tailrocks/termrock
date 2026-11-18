@@ -8,10 +8,11 @@ use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 
-use super::report::ScenarioReport;
-use super::{Metric, WorkDelta};
-use crate::core::event::{ClientPlatform, Input, Key, PlatformPin};
-use crate::runtime::Application;
+use termrock_core::event::{ClientPlatform, Input, Key, PlatformPin};
+use termrock_metrics::{Metric, WorkDelta};
+use termrock_shell::runtime::Application;
+
+use crate::report::ScenarioReport;
 
 pub struct Harness<A: Application> {
     pub app: A,
