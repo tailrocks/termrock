@@ -990,6 +990,7 @@ dependencies = [
  "termrock-catalog",
  "termrock-cli",
  "termrock-collections",
+ "termrock-conformance",
  "termrock-controls",
  "termrock-core",
  "termrock-dialogs",
@@ -2207,6 +2208,16 @@ dependencies = [
  "termrock-text",
  "termrock-theme",
  "termrock-viewport",
+]
+
+[[package]]
+name = "termrock-conformance"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "termrock-core",
+ "termrock-metrics",
+ "termrock-shell",
 ]
 
 [[package]]

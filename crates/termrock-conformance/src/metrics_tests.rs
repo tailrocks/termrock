@@ -1,6 +1,10 @@
-use super::*;
-use crate::record_work;
 use termrock_metrics::state::{epoch_for_test, set_for_test};
+use termrock_metrics::{
+    METRIC_COUNT, Metric, MetricsError, WorkDelta, WorkSnapshot, measure, record, record_work,
+    reset, snapshot, suspended,
+};
+
+use crate::harness;
 
 #[test]
 fn metrics_delta_counts_units_between_snapshots() {
@@ -203,13 +207,13 @@ fn metrics_check_exact_flags_undercounts_overcounts_and_unlisted_work() {
 
 struct LabelApp;
 
-impl crate::runtime::Application for LabelApp {
-    fn handle(&mut self, _: crate::core::event::Input) -> crate::core::event::Outcome {
-        crate::core::event::Outcome::Changed
+impl termrock_shell::runtime::Application for LabelApp {
+    fn handle(&mut self, _: termrock_core::event::Input) -> termrock_core::event::Outcome {
+        termrock_core::event::Outcome::Changed
     }
 
     fn render(&mut self, frame: &mut ratatui::Frame) {
-        let label = crate::core::keymap::KeyBinding::new(
+        let label = termrock_core::keymap::KeyBinding::new(
             ratatui::crossterm::event::KeyCode::Char('k'),
             ratatui::crossterm::event::KeyModifiers::SUPER,
         )
@@ -228,7 +232,7 @@ impl crate::runtime::Application for LabelApp {
 
 #[test]
 fn harness_frames_do_not_depend_on_the_host_platform() {
-    let host = crate::core::event::ClientPlatform::current();
+    let host = termrock_core::event::ClientPlatform::current();
     let mut f = harness::Harness::new(LabelApp, (10, 1));
     f.tick();
     assert!(
@@ -238,7 +242,7 @@ fn harness_frames_do_not_depend_on_the_host_platform() {
     );
     drop(f);
     assert_eq!(
-        crate::core::event::ClientPlatform::current(),
+        termrock_core::event::ClientPlatform::current(),
         host,
         "dropping the harness restores the host platform"
     );
@@ -249,10 +253,10 @@ struct CountingApp {
     frames: usize,
 }
 
-impl crate::runtime::Application for CountingApp {
-    fn handle(&mut self, _: crate::core::event::Input) -> crate::core::event::Outcome {
+impl termrock_shell::runtime::Application for CountingApp {
+    fn handle(&mut self, _: termrock_core::event::Input) -> termrock_core::event::Outcome {
         self.handled += 1;
-        crate::core::event::Outcome::Changed
+        termrock_core::event::Outcome::Changed
     }
 
     fn render(&mut self, _frame: &mut ratatui::Frame) {
@@ -283,7 +287,7 @@ fn harness_send_draws_after_every_input_and_warm_runs_that_many_ticks() {
         (3, 3),
         "each warm tick handles and draws"
     );
-    h.send(crate::core::event::Input::Tick);
+    h.send(termrock_core::event::Input::Tick);
     assert_eq!(
         (h.app.handled, h.app.frames),
         (4, 4),

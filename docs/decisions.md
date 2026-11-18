@@ -1323,3 +1323,46 @@ the run loop"). Nothing about the blanket impl changed.
 - **`x02_suspend.rs`.** Its header named `src/runtime.rs` for job control; it
   now names `crates/termrock-session/src/runtime.rs` (where `job_control` is) and
   the loop's new file.
+
+## 2026-11-19: `termrock-conformance` holds the harness and report (#449)
+
+`termrock-conformance` is the second half of #449. This part moves
+`metrics/harness.rs`, `metrics/report.rs` and `metrics/tests.rs`; the cross-crate
+regression tests follow in the next part. The crate is `crates/termrock-conformance`
+with `harness`, `report` and a `#[cfg(test)] mod metrics_tests` (the old
+`metrics/tests.rs`), all under `work-metrics`. `Harness<A: Application>` needs
+`termrock-shell`, so it cannot sit with the counters in `termrock-metrics`.
+
+- **The facade keeps its spelling.** `src/metrics.rs` is now
+  `#[cfg(feature = "work-metrics")] pub use termrock_conformance::{harness, report};`
+  beside the `termrock_metrics` re-exports, so `termrock::metrics::harness::*`
+  and `termrock::metrics::report::*` resolve as before and every API id is
+  unchanged. `junie-tui` declares the dependency as optional and enables it from
+  `work-metrics` (`dep:termrock-conformance`, `termrock-conformance/work-metrics`);
+  no library crate depends on `termrock-conformance`, and `termrock` reaches it
+  only through `junie-tui`'s `work-metrics`. `docs/layering.toml` gains
+  `conformance` in the `junie-tui` row of `[allow]`: `junie-tui` is the
+  transitional implementation of the facade, whose row already lists it, and
+  #452 deletes the row with the package. `src/metrics.rs` moves from `conformance`
+  to `termrock` in `[files]`, because it only re-exports now.
+- **Dependencies.** Normal: `ratatui`, `termrock-core`, `termrock-metrics` and
+  `termrock-shell`, which is all the harness names. No other library crate is a
+  normal dependency; the regression tests that follow add the rest as
+  dev-dependencies. `work-metrics` forwards to the three that declare it (the
+  forwarding guard of stage B).
+- **No allocation counter.** As decided in #447 the counter is a `#[cfg(test)]`
+  module of `termrock-editors`, so `termrock-conformance` has no allocator and no
+  `alloc_budgets.rs`. Never install a `#[global_allocator]` in this crate's
+  shared `regressions` target.
+- **The performance profile.** The counter-core operand is
+  `binary_id(=termrock-conformance) & test(/^metrics_tests::/)`; the inventory row
+  and its six `T` lines follow, and the source file is
+  `crates/termrock-conformance/src/metrics_tests.rs`. Same 19 tests; only the
+  binary id and the module prefix changed.
+- **Coverage strings.** Ten `regression_test:` strings of
+  `apps/showcase/src/coverage.rs` (the `metrics::harness`, `metrics::measure`,
+  `metrics::reset`, `metrics::snapshot` and `metrics::suspended` exceptions) named
+  `src/metrics/tests.rs`; `scripts/rewrite-regression-paths.py` rewrote them.
+- **Tests.** The unit tests implement `Application` for local types
+  (`LabelApp`, `CountingApp`), which stays legal; never add `impl App for` them
+  (the blanket impl of `termrock-shell` would then overlap).

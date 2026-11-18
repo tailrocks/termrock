@@ -1,13 +1,13 @@
 # Required cost-contract suites for the `performance` nextest profile (#56).
 # S <TAB> family <TAB> nextest binary id <TAB> test matcher (- selects the whole binary) <TAB> source file
 # T <TAB> a test the suite must contain, as nextest names it (module path inside the binary)
-S	counter core (thread isolation, epochs, overflow, budgets)	junie-tui	/^metrics::/	src/metrics/tests.rs
-T	metrics::tests::metrics_delta_counts_units_between_snapshots
-T	metrics::tests::metrics_delta_rejects_other_thread
-T	metrics::tests::metrics_delta_rejects_reset
-T	metrics::tests::metrics_delta_rejects_a_counter_that_went_backwards
-T	metrics::tests::metrics_record_panics_on_counter_overflow
-T	metrics::tests::metrics_check_exact_flags_undercounts_overcounts_and_unlisted_work
+S	counter core (thread isolation, epochs, overflow, budgets)	termrock-conformance	/^metrics_tests::/	crates/termrock-conformance/src/metrics_tests.rs
+T	metrics_tests::metrics_delta_counts_units_between_snapshots
+T	metrics_tests::metrics_delta_rejects_other_thread
+T	metrics_tests::metrics_delta_rejects_reset
+T	metrics_tests::metrics_delta_rejects_a_counter_that_went_backwards
+T	metrics_tests::metrics_record_panics_on_counter_overflow
+T	metrics_tests::metrics_check_exact_flags_undercounts_overcounts_and_unlisted_work
 S	timing report schema and statistics	termrock-metrics	/^measurement::/	crates/termrock-metrics/src/measurement.rs
 T	measurement::tests::measurement_required_fields_are_all_present
 T	measurement::tests::measurement_unavailable_values_are_null_not_zero
