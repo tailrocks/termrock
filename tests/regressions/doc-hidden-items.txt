@@ -35,6 +35,10 @@ crates/termrock-core/src/selection.rs  CHECK_MIXED
 crates/termrock-core/src/selection.rs  CHECK_OFF
 crates/termrock-core/src/selection.rs  CHECK_ON
 crates/termrock-core/src/selection.rs  CheckGlyphs
+crates/termrock-feedback/src/statusbar.rs  StatusBar::intrinsic_width
+crates/termrock-feedback/src/statusbar.rs  StatusBar::item_widths
+crates/termrock-feedback/src/statusbar.rs  StatusBar::keep_masks
+crates/termrock-feedback/src/statusbar.rs  StatusItem::intrinsic_width
 crates/termrock-metrics/src/lib.rs  state
 crates/termrock-metrics/src/state.rs  epoch_for_test
 crates/termrock-metrics/src/state.rs  set_for_test

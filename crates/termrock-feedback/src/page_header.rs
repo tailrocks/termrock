@@ -2,9 +2,9 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 
-use crate::theme::{Theme, Tone};
-use crate::ui::measure::terminal_extent;
-use crate::ui::text::width;
+use termrock_runtime::measure::terminal_extent;
+use termrock_text::cells::width;
+use termrock_theme::{Theme, Tone};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PageHeader {
@@ -88,8 +88,10 @@ impl PageHeader {
             let left = usize::from(area.width).saturating_sub(title_w.saturating_add(2 * inset));
             if left > 0 {
                 let sx = x.saturating_add(terminal_extent(title_w));
-                let s =
-                    crate::ui::reveal::cut(Rect::new(sx, area.y, terminal_extent(left), 1), status);
+                let s = termrock_runtime::reveal::cut(
+                    Rect::new(sx, area.y, terminal_extent(left), 1),
+                    status,
+                );
                 used = used.saturating_add(width(&s));
                 buf.set_string(sx, area.y, s, ink(t, *tone));
             }
@@ -117,7 +119,12 @@ impl PageHeader {
             return 1;
         }
         let row = Rect::new(x, area.y + 1, area.width.saturating_sub(2 * self.inset), 1);
-        buf.set_string(x, row.y, crate::ui::reveal::cut(row, sub), ink(t, *tone));
+        buf.set_string(
+            x,
+            row.y,
+            termrock_runtime::reveal::cut(row, sub),
+            ink(t, *tone),
+        );
         2
     }
 }
@@ -159,7 +166,7 @@ impl Heading {
         buf.set_string(
             area.x,
             area.y,
-            crate::ui::reveal::cut(Rect::new(area.x, area.y, area.width, 1), &self.text),
+            termrock_runtime::reveal::cut(Rect::new(area.x, area.y, area.width, 1), &self.text),
             ink,
         );
         if let Some(meta) = &self.meta {
@@ -176,11 +183,11 @@ impl Heading {
     }
 }
 
-impl crate::ui::measure::Measure for PageHeader {
+impl termrock_runtime::measure::Measure for PageHeader {
     fn measure(
         &self,
         _avail: ratatui::layout::Size,
-        _ctx: &crate::ui::ctx::RenderCtx,
+        _ctx: &termrock_runtime::ctx::RenderCtx,
     ) -> ratatui::layout::Size {
         let inset = usize::from(self.inset);
         let used =
@@ -202,11 +209,11 @@ impl crate::ui::measure::Measure for PageHeader {
     }
 }
 
-impl crate::ui::measure::Measure for Heading {
+impl termrock_runtime::measure::Measure for Heading {
     fn measure(
         &self,
         _avail: ratatui::layout::Size,
-        _ctx: &crate::ui::ctx::RenderCtx,
+        _ctx: &termrock_runtime::ctx::RenderCtx,
     ) -> ratatui::layout::Size {
         let meta = self
             .meta
