@@ -335,3 +335,9 @@ extracted by #444 to #448 waits.
   contract examples.
 - Not weakened: no check was removed or loosened, and the same commands run
   from the new locations.
+- SonarCloud classified the moved scripts as main code and failed the Security
+  Rating on New Code at E (path traversal, argument injection and publicly
+  writable directory findings in the guard harnesses). They raised none of
+  these findings under `tests/`, where SonarCloud reads them as test code, so `.sonarcloud.properties` now sets `sonar.test.inclusions`
+  to `scripts/policy/**` plus every `tests/` directory. That keeps the
+  classification they had; no finding is suppressed in the scripts.
