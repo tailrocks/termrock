@@ -11,6 +11,7 @@ mod collection_edit_lifecycle;
 mod collection_menu_lifecycle;
 #[path = "../common/mod.rs"]
 mod common;
+mod core_extension_points;
 mod data_shape;
 mod deferred_api_calls;
 mod document_workspace;
