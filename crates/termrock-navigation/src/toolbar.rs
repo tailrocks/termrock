@@ -3,18 +3,18 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier};
 
-use crate::core::event::{Key, Outcome};
-use crate::core::hit::Axis;
-use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::core::keymap::NavKeys;
-use crate::core::list::{Cursor, Navigable, RowFn, RowSource};
-use crate::theme::{ButtonKind, Kind};
-use crate::ui::ctx::RenderCtx;
-use crate::ui::measure::terminal_extent;
-use crate::ui::text::width;
-use crate::ui::tooltip::Tip;
-use crate::widgets::icon_button::IconButton;
-use crate::widgets::menu::{ContextMenu, MenuAction, MenuItem};
+use termrock_controls::icon_button::IconButton;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::hit::Axis;
+use termrock_core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock_core::keymap::NavKeys;
+use termrock_core::list::{Cursor, Navigable, RowFn, RowSource};
+use termrock_overlays::menu::{ContextMenu, MenuAction, MenuItem};
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::measure::terminal_extent;
+use termrock_runtime::tooltip::Tip;
+use termrock_text::cells::width;
+use termrock_theme::{ButtonKind, Kind};
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ToolItem {
@@ -396,7 +396,8 @@ impl Toolbar {
             .saturating_add(seps.saturating_mul(1 + gap))
     }
 
-    pub(crate) fn intrinsic_width(&self) -> usize {
+    #[doc(hidden)]
+    pub fn intrinsic_width(&self) -> usize {
         self.total_width(&self.item_widths())
     }
 
@@ -577,7 +578,7 @@ impl Toolbar {
             };
             let look = t.interactive(Kind::Button(kind), s, t.plane_of(bg));
             let st = look.style;
-            crate::ui::ctx::fill(buf, r, st);
+            termrock_runtime::ctx::fill(buf, r, st);
             buf.set_string(x, y, look.gutter, look.gutter_style);
             let mut cx = x + 1;
             if let Some(on) = it.on {
@@ -610,7 +611,7 @@ impl Toolbar {
                     Some(sc) => Tip::new(tip).shortcut(sc),
                     None => Tip::new(tip),
                 };
-                crate::ui::tooltip::show(ctx, iid, r, &tip, None);
+                termrock_runtime::tooltip::show(ctx, iid, r, &tip, None);
             }
             if let Some(sx) = fit[i].sep {
                 buf.set_string(
@@ -674,7 +675,7 @@ impl Toolbar {
         let mut x = x0;
         let mut out = Vec::new();
         for (i, &w) in widths.iter().enumerate() {
-            crate::record_work!(FitVisits, 1usize);
+            termrock_metrics::record_work!(FitVisits, 1usize);
             if w > usize::from(limit.saturating_sub(x)) {
                 break;
             }
@@ -731,13 +732,13 @@ impl Navigable for Toolbar {
     }
 }
 
-impl crate::ui::specimen::Specimen for Toolbar {
+impl termrock_runtime::specimen::Specimen for Toolbar {
     fn specimen_id(&self) -> WidgetId {
         self.id
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         match state {
             Rest | Hover | Pressed | Focused | FocusedHover | Disabled | Narrow => {
                 self.items.len() > 1
@@ -750,7 +751,7 @@ impl crate::ui::specimen::Specimen for Toolbar {
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
@@ -779,7 +780,7 @@ impl crate::ui::specimen::Specimen for Toolbar {
         {
             it.on = Some(true);
         }
-        let area = if state == crate::ui::specimen::SpecimenState::Overflow {
+        let area = if state == termrock_runtime::specimen::SpecimenState::Overflow {
             Rect {
                 width: area.width.min(t.width().saturating_sub(1)),
                 ..area
@@ -791,7 +792,7 @@ impl crate::ui::specimen::Specimen for Toolbar {
     }
 }
 
-impl crate::core::pointer::MouseTarget for Toolbar {
+impl termrock_core::pointer::MouseTarget for Toolbar {
     type Action = ToolbarAction;
 
     fn mouse_id(&self) -> WidgetId {
@@ -800,18 +801,18 @@ impl crate::core::pointer::MouseTarget for Toolbar {
 
     fn route(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> Option<crate::core::response::Response<ToolbarAction>> {
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> Option<termrock_core::response::Response<ToolbarAction>> {
         let menu = self.menu_open() && ev.on(self.menu_id());
         (ev.on(self.id) || menu).then(|| self.pointer(ev))
     }
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<ToolbarAction> {
-        if !ev.is(crate::core::intent::Phase::Click) {
-            return crate::core::response::Response::ignored();
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<ToolbarAction> {
+        if !ev.is(termrock_core::intent::Phase::Click) {
+            return termrock_core::response::Response::ignored();
         }
         self.on_click(ev.id).into()
     }

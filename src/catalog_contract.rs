@@ -1423,6 +1423,7 @@ const MOVED_KEEPING_SPELLING: &[(&str, &str)] = &[
     ),
     ("core::hints::range", "widgets::keyhint::range"),
     ("core::hints::toggle_hint", "widgets::keyhint::toggle_hint"),
+    ("shell::Breadcrumb", "widgets::breadcrumb::Breadcrumb"),
     ("shell::LayerTag", "ui::layer::LayerTag"),
     ("theme::CardHeading", "widgets::panel::CardHeading"),
     ("theme::RowState", "widgets::grid::RowState"),

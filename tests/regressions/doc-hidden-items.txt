@@ -49,6 +49,9 @@ crates/termrock-layout/src/master_detail.rs  MasterDetail::forget_geometry
 crates/termrock-metrics/src/lib.rs  state
 crates/termrock-metrics/src/state.rs  epoch_for_test
 crates/termrock-metrics/src/state.rs  set_for_test
+crates/termrock-navigation/src/breadcrumb.rs  Breadcrumb::first_shown
+crates/termrock-navigation/src/breadcrumb.rs  Breadcrumb::intrinsic_width
+crates/termrock-navigation/src/toolbar.rs  Toolbar::intrinsic_width
 crates/termrock-overlays/src/context.rs  row_rect
 crates/termrock-overlays/src/layer.rs  layer_out
 crates/termrock-overlays/src/menu.rs  ContextMenu::contains_id

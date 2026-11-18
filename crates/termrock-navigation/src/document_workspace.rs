@@ -45,9 +45,9 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::core::response::Response;
-use crate::widgets::tabs::{TabItem, Tabs};
+use crate::tabs::{TabItem, Tabs};
+use termrock_core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock_core::response::Response;
 
 static NEXT_DOCUMENT_KEY: AtomicU64 = AtomicU64::new(0);
 

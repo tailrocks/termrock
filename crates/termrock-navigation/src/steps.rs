@@ -2,16 +2,16 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 
-use crate::core::event::{Key, Outcome};
-use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::core::keymap::NavKeys;
-use crate::core::list::{Cursor, Navigable, RowSource};
-use crate::core::scroll::{ScrollPane, Scrollable};
-use crate::ui::ctx::{RenderCtx, VisualState};
-use crate::ui::list_core::ListCore;
-use crate::ui::row::{RowLook, RowUi};
-use crate::ui::specimen::{Specimen, SpecimenState};
-use crate::ui::text::{paint_clipped, paint_truncated};
+use termrock_collections::list_core::ListCore;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock_core::keymap::NavKeys;
+use termrock_core::list::{Cursor, Navigable, RowSource};
+use termrock_core::scroll::{ScrollPane, Scrollable};
+use termrock_runtime::ctx::{RenderCtx, VisualState};
+use termrock_runtime::row::{RowLook, RowUi};
+use termrock_runtime::specimen::{Specimen, SpecimenState};
+use termrock_text::cells::{paint_clipped, paint_truncated};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub enum StepState {
@@ -115,12 +115,12 @@ impl StepRail {
         }
     }
 
-    pub fn content(mut self, content: crate::ui::content::ContentState) -> Self {
+    pub fn content(mut self, content: termrock_collections::content::ContentState) -> Self {
         self.core.content = content;
         self
     }
 
-    pub fn track_click(mut self, click: crate::core::scroll::TrackClick) -> Self {
+    pub fn track_click(mut self, click: termrock_core::scroll::TrackClick) -> Self {
         self.core.scroll.track_click = Some(click);
         self
     }
@@ -269,7 +269,7 @@ impl StepRail {
                     })
                     .remove_modifier(Modifier::BOLD),
                 );
-                off += crate::ui::text::width(&num) + 1;
+                off += termrock_text::cells::width(&num) + 1;
             }
             let label_style = match step.state {
                 StepState::Queued => st.fg(t.text_muted),
@@ -295,7 +295,7 @@ impl StepRail {
             let avail = usize::from(row.width).saturating_sub(off + 1);
             let mw = meta
                 .as_ref()
-                .map(|m| crate::ui::text::width(m))
+                .map(|m| termrock_text::cells::width(m))
                 .unwrap_or(0);
             let show_meta = mw > 0 && avail >= mw + 12;
             let lw = if show_meta { avail - mw - 2 } else { avail };
@@ -319,7 +319,7 @@ impl StepRail {
             let _ = frontier;
         }
         if has_sb {
-            crate::ui::fade::scroll_edges_except(
+            termrock_runtime::fade::scroll_edges_except(
                 buf,
                 ctx,
                 Rect::new(
@@ -344,17 +344,17 @@ impl StepRail {
     }
 }
 
-impl crate::ui::measure::Measure for StepRail {
+impl termrock_runtime::measure::Measure for StepRail {
     fn measure(&self, _avail: ratatui::layout::Size, _ctx: &RenderCtx) -> ratatui::layout::Size {
         let lead = 3 + if self.numbered { 3 } else { 0 };
         let width = self
             .steps
             .iter()
             .map(|step| {
-                let label = crate::ui::text::width(&step.label);
+                let label = termrock_text::cells::width(&step.label);
                 let need = match step.shown_meta() {
                     Some(m) => {
-                        let mw = crate::ui::text::width(&m);
+                        let mw = termrock_text::cells::width(&m);
                         label
                             .saturating_add(mw)
                             .saturating_add(2)
@@ -367,8 +367,8 @@ impl crate::ui::measure::Measure for StepRail {
             .max()
             .unwrap_or(0);
         ratatui::layout::Size::new(
-            crate::ui::measure::terminal_extent(width),
-            crate::ui::measure::terminal_extent(self.steps.len()),
+            termrock_runtime::measure::terminal_extent(width),
+            termrock_runtime::measure::terminal_extent(self.steps.len()),
         )
     }
 }
@@ -394,7 +394,7 @@ impl Navigable for StepRail {
     }
 }
 
-impl crate::core::pointer::MouseTarget for StepRail {
+impl termrock_core::pointer::MouseTarget for StepRail {
     type Action = ();
 
     fn mouse_id(&self) -> WidgetId {
@@ -403,15 +403,15 @@ impl crate::core::pointer::MouseTarget for StepRail {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<()> {
-        use crate::core::intent::Phase;
-        if let Some(r) = crate::core::pointer::scroll_input(self, ev) {
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<()> {
+        use termrock_core::intent::Phase;
+        if let Some(r) = termrock_core::pointer::scroll_input(self, ev) {
             return r;
         }
         match ev.index_of(Part::ROW) {
             Some(row) if ev.is(Phase::Click) => self.on_click(row).into(),
-            _ => crate::core::response::Response::ignored(),
+            _ => termrock_core::response::Response::ignored(),
         }
     }
 }

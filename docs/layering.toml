@@ -124,15 +124,6 @@ functional = ["termrock"]
 # Re-exports `termrock-text` at `core::text`; the buffer itself is in the crate.
 "src/core/text.rs" = "text"
 
-# navigation
-"src/widgets/breadcrumb.rs" = "navigation"
-"src/widgets/document_workspace.rs" = "navigation"
-"src/widgets/nav_list.rs" = "navigation"
-"src/widgets/rail.rs" = "navigation"
-"src/widgets/steps.rs" = "navigation"
-"src/widgets/tabs.rs" = "navigation"
-"src/widgets/toolbar.rs" = "navigation"
-
 # grid
 "src/widgets/collection_edit_tests.rs" = "grid"
 "src/widgets/grid.rs" = "grid"
