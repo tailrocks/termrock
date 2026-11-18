@@ -536,3 +536,22 @@ a `regressions` target of `termrock-core` that nothing else in the workspace
 needs to know about (`main.rs` holds one `mod` line per file, as the root
 target does). The `[files]` entry of `src/core/text.rs` is gone: the file is a
 one-line `pub use` of `termrock-text`.
+
+## 2026-11-18: `termrock-theme` takes `RowState` with `Theme::change_glyph` (#444)
+
+`impl Theme { change_glyph(&self, RowState) }` sat in `widgets/grid.rs`: an
+inherent impl on a type of another crate once `Theme` is its own crate (the same
+E0116 as `ScrollPane::draw_*`, see "Three coherence breaks of `termrock-core`").
+`RowState` is a five-variant enum with no behaviour of its own, so it moves into
+`termrock-theme` beside `change_glyph`, following the earlier move of
+`VisualState` and `CardHeading` (#441). `widgets::grid::RowState` re-exports it,
+and the ids `widgets::grid::RowState*` and `theme::Theme::change_glyph` keep
+their spelling through the canonical-spelling pin of #443; the id digest does
+not change. A trait would have changed the id and needed an import at every
+call (`t.change_glyph(row)`).
+
+`termrock-theme` depends on `termrock-core` and `ratatui` only; it implements
+core's hidden `PinnedKeys` (for `HintBarStyle`) and `CheckGlyphs` (for `Glyphs`),
+which is the reason those traits are `#[doc(hidden)] pub` and not private
+(#441). `cargo tree -p termrock-theme -e normal` lists `termrock-core`,
+`termrock-metrics` and `termrock-text` and nothing above them.
