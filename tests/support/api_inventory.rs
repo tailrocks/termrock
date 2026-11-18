@@ -240,6 +240,21 @@ fn is_pub(vis: &Visibility) -> bool {
     matches!(vis, Visibility::Public(_))
 }
 
+/// True for an item a consumer can name and rustdoc lists. `#[doc(hidden)] pub` is how an item crosses a
+/// crate boundary of the split (#439) without joining the declared API (#444).
+fn exported(vis: &Visibility, attrs: &[Attribute]) -> bool {
+    is_pub(vis) && !is_doc_hidden(attrs)
+}
+
+fn is_doc_hidden(attrs: &[Attribute]) -> bool {
+    attrs.iter().any(|attr| {
+        attr.path().is_ident("doc")
+            && attr
+                .parse_args::<syn::Ident>()
+                .is_ok_and(|ident| ident == "hidden")
+    })
+}
+
 impl<'a> Walker<'a> {
     fn eval_meta(&self, meta: &Meta) -> Result<bool, String> {
         match meta {
@@ -455,7 +470,7 @@ impl<'a> Walker<'a> {
             if !this.enabled(&field.attrs, what) {
                 continue;
             }
-            if only_pub && !is_pub(&field.vis) {
+            if only_pub && !exported(&field.vis, &field.attrs) {
                 continue;
             }
             let name = field
@@ -478,7 +493,7 @@ impl<'a> Walker<'a> {
                     return;
                 }
                 let child = join(module, &name);
-                let public = is_pub(&item.vis);
+                let public = exported(&item.vis, &item.attrs);
                 self.modules.insert(
                     child.clone(),
                     Module {
@@ -537,7 +552,7 @@ impl<'a> Walker<'a> {
                     members,
                     is_trait: false,
                 };
-                self.declare(module, &name, def, is_pub(&item.vis));
+                self.declare(module, &name, def, exported(&item.vis, &item.attrs));
             }
             Item::Enum(item) => {
                 let name = item.ident.to_string();
@@ -566,11 +581,13 @@ impl<'a> Walker<'a> {
                     members,
                     is_trait: false,
                 };
-                self.declare(module, &name, def, is_pub(&item.vis));
+                self.declare(module, &name, def, exported(&item.vis, &item.attrs));
             }
             Item::Union(item) => {
                 let name = item.ident.to_string();
-                if self.enabled(&item.attrs, &join(module, &name)) && is_pub(&item.vis) {
+                if self.enabled(&item.attrs, &join(module, &name))
+                    && exported(&item.vis, &item.attrs)
+                {
                     self.errors.push(format!(
                         "unsupported public union `{}`",
                         join(module, &name)
@@ -600,7 +617,7 @@ impl<'a> Walker<'a> {
                     members,
                     is_trait: true,
                 };
-                self.declare(module, &name, def, is_pub(&item.vis));
+                self.declare(module, &name, def, exported(&item.vis, &item.attrs));
             }
             Item::Type(item) => self.simple(
                 module,
@@ -634,7 +651,7 @@ impl<'a> Walker<'a> {
                 if !self.enabled(&item.attrs, &join(module, "use")) {
                     return;
                 }
-                let public = is_pub(&item.vis);
+                let public = exported(&item.vis, &item.attrs);
                 let mut entries = Vec::new();
                 flatten_use(&item.tree, Vec::new(), public, &mut entries);
                 self.modules
@@ -665,16 +682,18 @@ impl<'a> Walker<'a> {
                 if trait_path.is_none() {
                     for member in &item.items {
                         match member {
-                            ImplItem::Fn(f) if is_pub(&f.vis) && self.enabled(&f.attrs, &what) => {
+                            ImplItem::Fn(f)
+                                if exported(&f.vis, &f.attrs) && self.enabled(&f.attrs, &what) =>
+                            {
                                 members.push((f.sig.ident.to_string(), ApiKind::Function));
                             }
                             ImplItem::Const(c)
-                                if is_pub(&c.vis) && self.enabled(&c.attrs, &what) =>
+                                if exported(&c.vis, &c.attrs) && self.enabled(&c.attrs, &what) =>
                             {
                                 members.push((c.ident.to_string(), ApiKind::Const));
                             }
                             ImplItem::Type(t)
-                                if is_pub(&t.vis) && self.enabled(&t.attrs, &what) =>
+                                if exported(&t.vis, &t.attrs) && self.enabled(&t.attrs, &what) =>
                             {
                                 members.push((t.ident.to_string(), ApiKind::TraitItem));
                             }
@@ -750,7 +769,7 @@ impl<'a> Walker<'a> {
             members: BTreeMap::new(),
             is_trait: false,
         };
-        self.declare(module, name, def, is_pub(vis));
+        self.declare(module, name, def, exported(vis, attrs));
     }
 }
 
