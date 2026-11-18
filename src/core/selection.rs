@@ -23,16 +23,38 @@ pub enum TriState {
     All,
 }
 
+pub(crate) const CHECK_ON: &str = "[✓]";
+pub(crate) const CHECK_OFF: &str = "[ ]";
+pub(crate) const CHECK_MIXED: &str = "[–]";
+
+/// The three check strings of a glyph set, implemented by the theme's `Glyphs`.
+///
+/// `TriState::glyph_in` reads them through this trait so that `core` does not
+/// name `theme`. The trait is public only so it can appear in that bound; it is
+/// not reachable by path.
+mod check_glyphs {
+    pub trait CheckGlyphs {
+        fn check_on(&self) -> &'static str;
+        fn check_off(&self) -> &'static str;
+        fn check_mixed(&self) -> &'static str;
+    }
+}
+pub(crate) use check_glyphs::CheckGlyphs;
+
 impl TriState {
     pub fn glyph(self) -> &'static str {
-        self.glyph_in(&crate::theme::Glyphs::UNICODE)
+        match self {
+            TriState::None => CHECK_OFF,
+            TriState::Mixed => CHECK_MIXED,
+            TriState::All => CHECK_ON,
+        }
     }
 
-    pub fn glyph_in(self, g: &crate::theme::Glyphs) -> &'static str {
+    pub fn glyph_in(self, g: &impl CheckGlyphs) -> &'static str {
         match self {
-            TriState::None => g.check_off,
-            TriState::Mixed => g.check_mixed,
-            TriState::All => g.check_on,
+            TriState::None => g.check_off(),
+            TriState::Mixed => g.check_mixed(),
+            TriState::All => g.check_on(),
         }
     }
 }

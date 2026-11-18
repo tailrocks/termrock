@@ -1280,15 +1280,69 @@ fn catalog_without_a_preferred_spelling_the_definition_path_wins() {
     );
 }
 
+/// Definitions that moved to a lower module while their old public path stayed
+/// the catalog's spelling (#441): `(defined at, spelled in the catalog as)`.
+/// Without the catalog the walk would pick the definition's own path, so this
+/// table is what the preferred-spelling pin has to undo.
+const MOVED_KEEPING_SPELLING: &[(&str, &str)] = &[
+    ("core::hints::ARROWS", "widgets::keyhint::ARROWS"),
+    (
+        "core::hints::CONTEXT_MENU",
+        "widgets::keyhint::CONTEXT_MENU",
+    ),
+    ("core::hints::DELETE", "widgets::keyhint::DELETE"),
+    ("core::hints::EDIT_CELL", "widgets::keyhint::EDIT_CELL"),
+    ("core::hints::EDIT_CODE", "widgets::keyhint::EDIT_CODE"),
+    ("core::hints::EDIT_FIELD", "widgets::keyhint::EDIT_FIELD"),
+    ("core::hints::EDIT_TEXT", "widgets::keyhint::EDIT_TEXT"),
+    ("core::hints::Hint", "widgets::keyhint::Hint"),
+    (
+        "core::hints::HintPriority",
+        "widgets::keyhint::HintPriority",
+    ),
+    ("core::hints::LEFT_RIGHT", "widgets::keyhint::LEFT_RIGHT"),
+    ("core::hints::UP_DOWN", "widgets::keyhint::UP_DOWN"),
+    (
+        "core::hints::deliverable_line",
+        "widgets::keyhint::deliverable_line",
+    ),
+    ("core::hints::hint", "widgets::keyhint::hint"),
+    (
+        "core::hints::modifier_click",
+        "widgets::keyhint::modifier_click",
+    ),
+    (
+        "core::hints::normalize_key",
+        "widgets::keyhint::normalize_key",
+    ),
+    ("core::hints::range", "widgets::keyhint::range"),
+    ("core::hints::toggle_hint", "widgets::keyhint::toggle_hint"),
+    ("theme::CardHeading", "widgets::panel::CardHeading"),
+    ("theme::VisualState", "ui::ctx::VisualState"),
+];
+
+fn respelled(id: &str) -> String {
+    for (home, spelled) in MOVED_KEEPING_SPELLING {
+        if id == *home {
+            return (*spelled).to_owned();
+        }
+        if let Some(rest) = id.strip_prefix(home).and_then(|r| r.strip_prefix("::")) {
+            return format!("{spelled}::{rest}");
+        }
+    }
+    id.to_owned()
+}
+
 #[test]
 fn catalog_the_catalog_spelling_leaves_the_repository_ids_unchanged() {
     let s = Sources::load();
     let with_catalog = rows(&s).expect("inventory builds");
     let bare = rows_preferring(&s, &BTreeSet::new()).expect("inventory builds");
     for ((name, inv), (_, bare)) in with_catalog.iter().zip(&bare) {
+        let expected: BTreeSet<String> = bare.exports.keys().map(|id| respelled(id)).collect();
         assert_eq!(
-            inv.exports.keys().collect::<Vec<_>>(),
-            bare.exports.keys().collect::<Vec<_>>(),
+            inv.exports.keys().cloned().collect::<BTreeSet<_>>(),
+            expected,
             "row {name}"
         );
     }

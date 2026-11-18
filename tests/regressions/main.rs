@@ -19,6 +19,7 @@ mod file_browser_paths;
 mod focus_edit;
 mod form_dialog_geometry;
 mod form_value;
+mod foundation_paths;
 mod grapheme_paint;
 mod grid_parsers;
 mod grid_validation;
