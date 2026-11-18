@@ -1,6 +1,6 @@
 pub mod catalog;
 #[cfg(feature = "cli")]
-pub mod cli;
+pub use termrock_cli as cli;
 pub mod core;
 pub mod docs;
 pub mod metrics;

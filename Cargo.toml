@@ -14,6 +14,7 @@ members = [
     "apps/showcase",
     "apps/tablepro",
     "crates/termrock",
+    "crates/termrock-cli",
     "crates/termrock-controls",
     "crates/termrock-core",
     "crates/termrock-feedback",
@@ -34,6 +35,7 @@ default-members = [
     "apps/showcase",
     "apps/tablepro",
     "crates/termrock",
+    "crates/termrock-cli",
     "crates/termrock-controls",
     "crates/termrock-core",
     "crates/termrock-feedback",
@@ -53,6 +55,7 @@ clap = { version = "4.6", features = ["derive"] }
 ratatui = { version = "0.30", features = ["crossterm_0_29"] }
 serde_json = "1"
 sha2 = "0.10.9"
+termrock-cli = { path = "crates/termrock-cli", version = "0.1.0" }
 termrock-controls = { path = "crates/termrock-controls", version = "0.1.0" }
 termrock-core = { path = "crates/termrock-core", version = "0.1.0" }
 termrock-feedback = { path = "crates/termrock-feedback", version = "0.1.0" }
@@ -69,7 +72,7 @@ tuiscotti-latest = { package = "tuiscotti", git = "https://github.com/tailrocks/
 
 [features]
 default = ["cli", "terminal"]
-cli = ["dep:clap", "termrock-core/cli"]
+cli = ["dep:termrock-cli"]
 terminal = ["dep:termrock-terminal"]
 product = ["terminal"]
 work-metrics = ["termrock-controls/work-metrics", "termrock-core/work-metrics", "termrock-feedback/work-metrics", "termrock-metrics/work-metrics", "termrock-overlays/work-metrics", "termrock-runtime/work-metrics", "termrock-session/work-metrics", "termrock-terminal?/work-metrics", "termrock-viewport/work-metrics"]
@@ -86,11 +89,11 @@ path = "tests/functional/main.rs"
 required-features = ["cli", "terminal"]
 
 [dependencies]
-clap = { workspace = true, optional = true }
 ratatui = { workspace = true }
 unicode-width = "0.2.3"
 unicode-segmentation = "1"
 serde_json = { workspace = true }
+termrock-cli = { workspace = true, optional = true }
 termrock-controls = { workspace = true }
 termrock-core = { workspace = true }
 termrock-feedback = { workspace = true }

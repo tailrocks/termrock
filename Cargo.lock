@@ -990,13 +990,13 @@ dependencies = [
 name = "junie-tui"
 version = "0.1.0"
 dependencies = [
- "clap",
  "libc",
  "ratatui",
  "serde_json",
  "sha2 0.10.9",
  "syn 3.0.10",
  "termpane",
+ "termrock-cli",
  "termrock-controls",
  "termrock-core",
  "termrock-feedback",
@@ -2163,6 +2163,15 @@ version = "0.1.0"
 dependencies = [
  "junie-tui",
  "ratatui",
+]
+
+[[package]]
+name = "termrock-cli"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "termrock-core",
+ "termrock-theme",
 ]
 
 [[package]]

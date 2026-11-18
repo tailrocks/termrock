@@ -208,9 +208,6 @@ functional = ["termrock"]
 "src/shell/router.rs" = "shell"
 "src/shell/status.rs" = "shell"
 
-# cli
-"src/cli.rs" = "cli"
-
 # catalog
 "src/catalog.rs" = "catalog"
 "src/catalog_contract.rs" = "catalog"
