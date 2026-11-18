@@ -2,12 +2,12 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::Color;
 
-use crate::core::event::Outcome;
-use crate::core::id::WidgetId;
-use crate::theme::Kind;
-use crate::ui::ctx::{RenderCtx, VisualState};
-use crate::ui::layout::{Split, SplitDir};
-use crate::ui::measure::terminal_extent;
+use crate::layout::{Split, SplitDir};
+use termrock_core::event::Outcome;
+use termrock_core::id::WidgetId;
+use termrock_runtime::ctx::{RenderCtx, VisualState};
+use termrock_runtime::measure::terminal_extent;
+use termrock_theme::Kind;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum SeamDoubleClick {
@@ -129,8 +129,8 @@ impl Splitter {
         ctx.pointer_shape(
             self.id,
             match self.dir {
-                SplitDir::Horizontal => crate::core::shape::PointerShape::ColResize,
-                SplitDir::Vertical => crate::core::shape::PointerShape::RowResize,
+                SplitDir::Horizontal => termrock_core::shape::PointerShape::ColResize,
+                SplitDir::Vertical => termrock_core::shape::PointerShape::RowResize,
             },
         );
     }
@@ -201,17 +201,17 @@ impl Splitter {
     }
 }
 
-impl crate::ui::specimen::Specimen for Splitter {
+impl termrock_runtime::specimen::Specimen for Splitter {
     fn specimen_id(&self) -> WidgetId {
         self.id
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         matches!(state, Rest | Hover | Pressed)
     }
 
-    fn specimen_height(&self, _state: crate::ui::specimen::SpecimenState) -> u16 {
+    fn specimen_height(&self, _state: termrock_runtime::specimen::SpecimenState) -> u16 {
         match self.dir {
             SplitDir::Horizontal => 3,
             SplitDir::Vertical => 1,
@@ -220,7 +220,7 @@ impl crate::ui::specimen::Specimen for Splitter {
 
     fn specimen(
         &self,
-        _state: crate::ui::specimen::SpecimenState,
+        _state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,

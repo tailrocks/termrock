@@ -866,3 +866,13 @@ was listed before the move.
   `viewport_specimen` stays a hidden `pub` module of `termrock-viewport`,
   because `diff` reads `SAMPLE_ROWS` from it across the crate boundary; the
   `pub(crate)` re-export in `widgets/mod.rs` is gone.
+- **`termrock-layout`** (`ui::{layout, master_detail, pane_tree}`,
+  `widgets::splitter`). It depends on `termrock-{controls, overlays, viewport}`
+  and the foundations. Every `impl` in the four files is a foreign trait
+  (`Actions`, `Specimen`) on a local type, and nothing outside them implements a
+  trait for a moved type, so there is no coherence break.
+  `MasterDetail::forget_geometry` is called by `list_detail`, which stays in
+  `junie-tui` until the collections branches, so it is `#[doc(hidden)] pub` and
+  listed in `tests/regressions/doc-hidden-items.txt`. The crate has no
+  `work-metrics` feature because none of its code records work, so the root
+  `work-metrics` feature does not forward to it.

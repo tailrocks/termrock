@@ -231,7 +231,7 @@ pub struct Stack {
 
     pub scrollbar_gap: u16,
 
-    pub track_click: crate::core::scroll::TrackClick,
+    pub track_click: termrock_core::scroll::TrackClick,
 }
 
 impl Default for Stack {
@@ -241,20 +241,20 @@ impl Default for Stack {
             overflow: Overflow::Scroll,
             min_child_rows: 1,
             scrollbar_gap: 1,
-            track_click: crate::core::scroll::TrackClick::Page,
+            track_click: termrock_core::scroll::TrackClick::Page,
         }
     }
 }
 
 #[derive(Debug, Clone, Default)]
 pub struct StackScroll {
-    pub scroll: crate::core::scroll::ScrollState,
+    pub scroll: termrock_core::scroll::ScrollState,
 
     kept: Option<usize>,
 
     track: Rect,
 
-    click: crate::core::scroll::TrackClick,
+    click: termrock_core::scroll::TrackClick,
 }
 
 impl StackScroll {
@@ -264,20 +264,26 @@ impl StackScroll {
 
     pub fn on_scrollbar(&mut self, pos: Position) -> bool {
         !self.track.is_empty()
-            && crate::widgets::scrollbar::press_with(self.track, pos, &mut self.scroll, self.click)
+            && termrock_controls::scrollbar::press_with(
+                self.track,
+                pos,
+                &mut self.scroll,
+                self.click,
+            )
     }
 
     pub fn on_scrollbar_drag(&mut self, pos: Position) -> bool {
-        !self.track.is_empty() && crate::widgets::scrollbar::drag(self.track, pos, &mut self.scroll)
+        !self.track.is_empty()
+            && termrock_controls::scrollbar::drag(self.track, pos, &mut self.scroll)
     }
 
     pub fn pointer(
         &mut self,
-        id: crate::core::id::WidgetId,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> Option<crate::core::event::Outcome> {
-        use crate::core::event::Outcome;
-        use crate::core::intent::Phase;
+        id: termrock_core::id::WidgetId,
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> Option<termrock_core::event::Outcome> {
+        use termrock_core::event::Outcome;
+        use termrock_core::intent::Phase;
         if !ev.on(id) {
             return None;
         }
@@ -290,9 +296,9 @@ impl StackScroll {
         };
         if let Some((axis, delta)) = ev.wheel() {
             return Some(match axis {
-                crate::core::hit::Axis::Vertical if !self.scroll.overflows() => Outcome::Ignored,
-                crate::core::hit::Axis::Vertical => moved(self.on_wheel(delta)),
-                crate::core::hit::Axis::Horizontal => Outcome::Ignored,
+                termrock_core::hit::Axis::Vertical if !self.scroll.overflows() => Outcome::Ignored,
+                termrock_core::hit::Axis::Vertical => moved(self.on_wheel(delta)),
+                termrock_core::hit::Axis::Horizontal => Outcome::Ignored,
             });
         }
         ev.bar?;
@@ -343,7 +349,7 @@ impl Stack {
         self.scrollbar_gap = cols;
         self
     }
-    pub fn track_click(mut self, click: crate::core::scroll::TrackClick) -> Self {
+    pub fn track_click(mut self, click: termrock_core::scroll::TrackClick) -> Self {
         self.track_click = click;
         self
     }
@@ -473,13 +479,20 @@ impl Stack {
         layout: &StackLayout,
         area: Rect,
         buf: &mut ratatui::buffer::Buffer,
-        ctx: &mut crate::ui::ctx::RenderCtx,
-        id: crate::core::id::WidgetId,
+        ctx: &mut termrock_runtime::ctx::RenderCtx,
+        id: termrock_core::id::WidgetId,
         state: &StackScroll,
     ) {
         if let Some(track) = layout.track {
             ctx.scrollable(id, area);
-            crate::widgets::scrollbar::render_vertical(track, buf, ctx, id, &state.scroll, false);
+            termrock_controls::scrollbar::render_vertical(
+                track,
+                buf,
+                ctx,
+                id,
+                &state.scroll,
+                false,
+            );
         }
     }
 }
@@ -495,10 +508,10 @@ pub enum SplitCmd {
     Down,
 }
 
-impl crate::core::keymap::Actions for SplitCmd {
-    fn default_keymap() -> crate::core::keymap::KeyMap<Self> {
-        use crate::core::keymap::KeyBinding;
+impl termrock_core::keymap::Actions for SplitCmd {
+    fn default_keymap() -> termrock_core::keymap::KeyMap<Self> {
         use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+        use termrock_core::keymap::KeyBinding;
         let alt = KeyModifiers::ALT.union(KeyModifiers::SHIFT);
         let ctrl = KeyModifiers::CONTROL.union(KeyModifiers::SHIFT);
         let arrows = [
@@ -524,14 +537,14 @@ impl crate::core::keymap::Actions for SplitCmd {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SplitKeys {
-    pub keymap: crate::core::keymap::KeyMap<SplitCmd>,
+    pub keymap: termrock_core::keymap::KeyMap<SplitCmd>,
 
     pub step: u16,
 }
 
 impl Default for SplitKeys {
     fn default() -> Self {
-        use crate::core::keymap::Actions;
+        use termrock_core::keymap::Actions;
         Self {
             keymap: SplitCmd::default_keymap(),
             step: 2,
@@ -540,7 +553,7 @@ impl Default for SplitKeys {
 }
 
 impl SplitKeys {
-    pub fn keymap(mut self, keymap: crate::core::keymap::KeyMap<SplitCmd>) -> Self {
+    pub fn keymap(mut self, keymap: termrock_core::keymap::KeyMap<SplitCmd>) -> Self {
         self.keymap = keymap;
         self
     }
@@ -550,9 +563,9 @@ impl SplitKeys {
         self
     }
 
-    pub fn delta(&self, key: &crate::core::event::Key, dir: SplitDir) -> Option<i16> {
+    pub fn delta(&self, key: &termrock_core::event::Key, dir: SplitDir) -> Option<i16> {
         let step = self.step.min(i16::MAX as u16) as i16;
-        match (crate::core::keymap::lookup(&self.keymap, key)?, dir) {
+        match (termrock_core::keymap::lookup(&self.keymap, key)?, dir) {
             (SplitCmd::Left, SplitDir::Horizontal) | (SplitCmd::Up, SplitDir::Vertical) => {
                 Some(-step)
             }
@@ -565,13 +578,13 @@ impl SplitKeys {
 
     pub fn apply(
         &self,
-        key: &crate::core::event::Key,
+        key: &termrock_core::event::Key,
         split: &mut Split,
         dir: SplitDir,
         area: Rect,
         gap: u16,
-    ) -> Option<crate::core::event::Outcome> {
-        use crate::core::event::Outcome;
+    ) -> Option<termrock_core::event::Outcome> {
+        use termrock_core::event::Outcome;
         let delta = self.delta(key, dir)?;
         if split.maximized != Maximized::None {
             return Some(Outcome::Consumed);
@@ -586,9 +599,9 @@ impl SplitKeys {
         })
     }
 
-    pub fn hint(&self, dir: SplitDir) -> Option<crate::widgets::keyhint::Hint> {
-        use crate::core::keymap::{deliverable_binding_for, hint_key, intern};
+    pub fn hint(&self, dir: SplitDir) -> Option<termrock_controls::keyhint::Hint> {
         use ratatui::crossterm::event::KeyCode;
+        use termrock_core::keymap::{deliverable_binding_for, hint_key, intern};
         let (a, b, ka, kb, pair) = match dir {
             SplitDir::Horizontal => (
                 SplitCmd::Left,
@@ -621,7 +634,7 @@ impl SplitKeys {
             Some(k) => k,
             None => hint_key(&self.keymap, a).or_else(|| hint_key(&self.keymap, b))?,
         };
-        Some(crate::widgets::keyhint::hint(key, "Resize"))
+        Some(termrock_controls::keyhint::hint(key, "Resize"))
     }
 }
 

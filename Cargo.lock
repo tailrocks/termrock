@@ -1002,6 +1002,7 @@ dependencies = [
  "termrock-editors",
  "termrock-feedback",
  "termrock-fields",
+ "termrock-layout",
  "termrock-metrics",
  "termrock-overlays",
  "termrock-runtime",
@@ -2246,6 +2247,20 @@ dependencies = [
  "sha2 0.10.9",
  "termrock",
  "unicode-segmentation",
+]
+
+[[package]]
+name = "termrock-layout"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "termrock-controls",
+ "termrock-core",
+ "termrock-overlays",
+ "termrock-runtime",
+ "termrock-text",
+ "termrock-theme",
+ "termrock-viewport",
 ]
 
 [[package]]

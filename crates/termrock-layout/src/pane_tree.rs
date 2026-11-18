@@ -3,15 +3,15 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Margin, Rect, Size};
 use ratatui::style::Color;
 
-use crate::core::event::{Key, Outcome};
-use crate::core::id::WidgetId;
-use crate::core::intent::Phase;
-use crate::core::keymap::{Actions, KeyBinding, KeyMap, hint_key, lookup};
-use crate::core::pointer::PointerEvent;
-use crate::ui::ctx::RenderCtx;
-use crate::ui::layout::{Maximized, Split, SplitDir, SplitKeys};
-use crate::widgets::keyhint::{Hint, hint};
-use crate::widgets::splitter::Splitter;
+use crate::layout::{Maximized, Split, SplitDir, SplitKeys};
+use crate::splitter::Splitter;
+use termrock_controls::keyhint::{Hint, hint};
+use termrock_core::event::{Key, Outcome};
+use termrock_core::id::WidgetId;
+use termrock_core::intent::Phase;
+use termrock_core::keymap::{Actions, KeyBinding, KeyMap, hint_key, lookup};
+use termrock_core::pointer::PointerEvent;
+use termrock_runtime::ctx::RenderCtx;
 
 pub type PaneId = u64;
 
@@ -854,14 +854,14 @@ impl PaneTree {
 
             let name = title(pid);
             let meta = if zoomed { Some("zoomed") } else { None };
-            let mut panel = crate::widgets::panel::Panel::framed(Some(&name)).focused(focused);
+            let mut panel = termrock_viewport::panel::Panel::framed(Some(&name)).focused(focused);
             panel.bg_override = Some(bg);
             if let Some(m) = meta {
                 panel = panel.meta(m);
             }
             panel.render(r, buf, t);
             if hovered && !focused && r.width > 4 {
-                let w = crate::ui::text::width(&name) as u16 + 2;
+                let w = termrock_text::cells::width(&name) as u16 + 2;
                 for x in r.x + 2..(r.x + 2 + w).min(r.right().saturating_sub(2)) {
                     buf[(x, r.y)].set_style(t.primary().bg(bg));
                 }
@@ -1018,29 +1018,29 @@ impl PaneTree {
     }
 }
 
-impl crate::ui::specimen::Specimen for PaneTree {
+impl termrock_runtime::specimen::Specimen for PaneTree {
     fn specimen_id(&self) -> WidgetId {
         self.id
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         matches!(state, Rest | Hover | Focused | Selected)
     }
 
-    fn specimen_height(&self, _state: crate::ui::specimen::SpecimenState) -> u16 {
+    fn specimen_height(&self, _state: termrock_runtime::specimen::SpecimenState) -> u16 {
         4
     }
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
         bg: Color,
     ) {
-        use crate::ui::specimen::SpecimenState;
+        use termrock_runtime::specimen::SpecimenState;
         let mut tree = PaneTree::new(self.id, 1).min_size(4, 3);
         tree.split(1, 2, SplitDir::Horizontal, false);
         tree.focused = 1;

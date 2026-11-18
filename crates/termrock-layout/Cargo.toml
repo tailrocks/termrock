@@ -1,0 +1,20 @@
+[package]
+name = "termrock-layout"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+description = "Split and stack layout, master-detail, pane tree and splitter for the Termrock terminal UI library"
+license = "MIT"
+
+[lib]
+doctest = false
+
+[dependencies]
+ratatui = { workspace = true }
+termrock-controls = { workspace = true }
+termrock-core = { workspace = true }
+termrock-overlays = { workspace = true }
+termrock-runtime = { workspace = true }
+termrock-text = { workspace = true }
+termrock-theme = { workspace = true }
+termrock-viewport = { workspace = true }

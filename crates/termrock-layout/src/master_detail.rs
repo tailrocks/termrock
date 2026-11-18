@@ -3,16 +3,16 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 use ratatui::style::Color;
 
-use crate::core::event::{Key, Outcome};
-use crate::core::focus::Focus;
-use crate::core::id::WidgetId;
-use crate::core::intent::Phase;
-use crate::core::pointer::PointerEvent;
-use crate::ui::ctx::RenderCtx;
-use crate::ui::layout::{Split, SplitDir, SplitKeys};
-use crate::widgets::keyhint::{Hint, hint};
-use crate::widgets::menu::MenuItem;
-use crate::widgets::splitter::Splitter;
+use crate::layout::{Split, SplitDir, SplitKeys};
+use crate::splitter::Splitter;
+use termrock_controls::keyhint::{Hint, hint};
+use termrock_core::event::{Key, Outcome};
+use termrock_core::focus::Focus;
+use termrock_core::id::WidgetId;
+use termrock_core::intent::Phase;
+use termrock_core::pointer::PointerEvent;
+use termrock_overlays::menu::MenuItem;
+use termrock_runtime::ctx::RenderCtx;
 
 pub const SPLIT_MIN: u16 = 108;
 
@@ -150,7 +150,7 @@ impl MasterDetail {
         ))
     }
 
-    pub fn collapsed_mode(&self, focus: &crate::ui::ctx::Interaction) -> Mode {
+    pub fn collapsed_mode(&self, focus: &termrock_runtime::ctx::Interaction) -> Mode {
         let open = self.drawer && !focus.focused(self.master);
         let detail_focused = focus.focus.is_some_and(|f| self.in_detail(f)) && !focus.focus_hidden;
         if detail_focused || open {
@@ -301,7 +301,8 @@ impl MasterDetail {
     /// Drops the last frame's geometry. A host calls this when it renders
     /// into no space at all, so keys and drags cannot resize a split that is
     /// not on screen.
-    pub(crate) fn forget_geometry(&mut self) {
+    #[doc(hidden)]
+    pub fn forget_geometry(&mut self) {
         self.last = MdLayout::default();
         self.container = Rect::ZERO;
     }
@@ -400,29 +401,29 @@ fn share_widths(
     })
 }
 
-impl crate::ui::specimen::Specimen for MasterDetail {
+impl termrock_runtime::specimen::Specimen for MasterDetail {
     fn specimen_id(&self) -> WidgetId {
         self.seam.id
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         matches!(state, Rest | Hover | Pressed | Narrow)
     }
 
-    fn specimen_height(&self, _state: crate::ui::specimen::SpecimenState) -> u16 {
+    fn specimen_height(&self, _state: termrock_runtime::specimen::SpecimenState) -> u16 {
         3
     }
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
         bg: Color,
     ) {
-        use crate::ui::specimen::SpecimenState;
+        use termrock_runtime::specimen::SpecimenState;
         let t = ctx.theme;
         let mut md = self.clone();
         md.summary_rows = 1;
@@ -445,7 +446,7 @@ impl crate::ui::specimen::Specimen for MasterDetail {
                 buf.set_string(
                     r.x,
                     r.y,
-                    crate::ui::text::truncate(text, r.width as usize),
+                    termrock_text::cells::truncate(text, r.width as usize),
                     style,
                 );
             }

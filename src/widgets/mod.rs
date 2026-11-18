@@ -20,7 +20,6 @@ pub mod nav_list;
 pub mod props;
 pub mod rail;
 pub mod search_detail;
-pub mod splitter;
 pub mod steps;
 pub mod table;
 mod table_specimen;
@@ -45,5 +44,6 @@ pub use termrock_feedback::{
     empty, meter_list, notice, page_header, progress, statusbar, too_small,
 };
 pub use termrock_fields::{chips, input, select};
+pub use termrock_layout::splitter;
 pub use termrock_overlays::{completion, menu, option_editor, option_list, picker, row_menu};
 pub use termrock_viewport::{panel, viewport, viewport_ops};
