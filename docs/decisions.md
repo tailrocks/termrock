@@ -499,3 +499,41 @@ follows the evidence and this entry records the differences.
 No `termrock::` path, type identity or catalog id changed. The allowlist lost
 every `src/ui/**` and `src/widgets/**` row and the two `ui::layers` test rows;
 the core and theme rows (#441) and the two `test_alloc` rows (#449) remain.
+
+## 2026-11-18: `termrock-metrics` and `termrock-text`, and the hidden-item rule (#444)
+
+The first two foundation crates are out. These choices differ from the issue's
+wording or settle what it left open.
+
+- **`#[doc(hidden)] pub` has no id, and is pinned.** An item that must cross a
+  crate boundary is `pub` and `#[doc(hidden)]`, as #441 planned, and the
+  inventory gives it no id, so the id digest does not grow. A hidden item can
+  still be named by a consumer, so the attribute alone would let a new public
+  item skip the catalog. `tests/regressions/doc-hidden-items.txt` therefore
+  lists every hidden item of the walked crates (`<file>  <item>`), and
+  `catalog_doc_hidden_items_are_a_reviewed_list` fails on any difference;
+  `UPDATE_DOC_HIDDEN=1` rewrites it. The attribute is for plumbing that crosses
+  a boundary, never for something an app should call: apps and examples may not
+  use a listed item. The scan does not check that last part; the facade tests
+  that name no implementation package and review of the list carry it.
+- **A manifest macro may sit at another crate's root.** `metrics!` moved to the
+  root of `termrock-metrics`, so its `EXPANSIONS` site is
+  `@termrock_metrics::metrics`, reachable once the facade re-exports any item of
+  that crate. A public re-export of an item such a macro writes
+  (`pub use termrock_metrics::Metric`) is not an unresolved re-export.
+- **`src/metrics.rs` maps to `conformance`.** It keeps the old paths and declares
+  `harness`, `report` and `tests`, which are #449's files, so it goes to
+  `conformance` with them until #449 moves the harness; the counters themselves
+  are in `termrock-metrics` (`layering` stage B now runs).
+- **`termrock-text` has a `test-support` feature.** The line-index work counters
+  (`text_index::work`) were `cfg(test)` of the old package and the editors' cost
+  tests in `junie-tui` read them. The feature is off by default and enabled only
+  by `junie-tui`'s `[dev-dependencies]`, so `cargo tree -e normal,build` shows
+  only `default` for it, and a normal build, the facade, the Showcase and the
+  consumers never compile the counters. A workspace build with test targets
+  unifies the feature across that build, so another package's test binary links
+  the counters too (thread-local increments, no change to what any contract
+  asserts); `junie-tui`'s own tests see exactly the set `cfg(test)` gave them.
+- **`core/text/tests.rs` moves with the buffer** into `termrock-text` except
+  `text_revision_follows_undo_and_redo`, which drives `core::edit` and stays in
+  `junie-tui` until `termrock-core` exists (#444 core).

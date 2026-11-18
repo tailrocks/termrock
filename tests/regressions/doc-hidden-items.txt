@@ -1,0 +1,15 @@
+crates/termrock-metrics/src/lib.rs  state
+crates/termrock-metrics/src/state.rs  epoch_for_test
+crates/termrock-metrics/src/state.rs  set_for_test
+crates/termrock-text/src/buffer.rs  TextBuffer::line_at_offset
+crates/termrock-text/src/buffer.rs  TextBuffer::line_view
+crates/termrock-text/src/cells.rs  MappedCell
+crates/termrock-text/src/cells.rs  MappedRow
+crates/termrock-text/src/cells.rs  TAB_SPACES
+crates/termrock-text/src/cells.rs  TextClip
+crates/termrock-text/src/cells.rs  expand_tabs
+crates/termrock-text/src/cells.rs  paint_clipped
+crates/termrock-text/src/cells.rs  paint_graphemes
+crates/termrock-text/src/cells.rs  paint_truncated
+crates/termrock-text/src/cells.rs  wrap_mapped
+crates/termrock-text/src/lib.rs  text_index
