@@ -240,6 +240,146 @@ fn is_pub(vis: &Visibility) -> bool {
     matches!(vis, Visibility::Public(_))
 }
 
+/// True for an item a consumer can name and rustdoc lists. `#[doc(hidden)] pub` is how an item crosses a
+/// crate boundary of the split (#439) without joining the declared API (#444).
+fn exported(vis: &Visibility, attrs: &[Attribute]) -> bool {
+    is_pub(vis) && !is_doc_hidden(attrs)
+}
+
+fn is_doc_hidden(attrs: &[Attribute]) -> bool {
+    attrs.iter().any(|attr| {
+        attr.path().is_ident("doc")
+            && attr
+                .parse_args::<syn::Ident>()
+                .is_ok_and(|ident| ident == "hidden")
+    })
+}
+
+fn hidden_pub(vis: &Visibility, attrs: &[Attribute]) -> bool {
+    is_pub(vis) && is_doc_hidden(attrs)
+}
+
+/// Every `#[doc(hidden)] pub` item, field, variant, method and exported macro of `source`, spelled
+/// `Owner::name` inside its file. The inventory gives such an item no id (#444), so this list is
+/// what a reviewer sees of them: a hidden item nameable by a consumer carries no catalog entry.
+pub fn doc_hidden_items(source: &str) -> Result<Vec<String>, String> {
+    let file = syn::parse_file(source).map_err(|e| e.to_string())?;
+    let mut out = Vec::new();
+    hidden_in_items(&file.items, "", &mut out);
+    out.sort();
+    out.dedup();
+    Ok(out)
+}
+
+fn hidden_in_items(items: &[Item], owner: &str, out: &mut Vec<String>) {
+    let at = |name: &str| {
+        if owner.is_empty() {
+            name.to_owned()
+        } else {
+            format!("{owner}::{name}")
+        }
+    };
+    for item in items {
+        match item {
+            Item::Fn(i) if hidden_pub(&i.vis, &i.attrs) => out.push(at(&i.sig.ident.to_string())),
+            Item::Const(i) if hidden_pub(&i.vis, &i.attrs) => out.push(at(&i.ident.to_string())),
+            Item::Static(i) if hidden_pub(&i.vis, &i.attrs) => out.push(at(&i.ident.to_string())),
+            Item::Type(i) if hidden_pub(&i.vis, &i.attrs) => out.push(at(&i.ident.to_string())),
+            Item::Union(i) if hidden_pub(&i.vis, &i.attrs) => out.push(at(&i.ident.to_string())),
+            Item::Macro(i) if is_doc_hidden(&i.attrs) => {
+                if let Some(name) = &i.ident
+                    && i.attrs.iter().any(|a| a.path().is_ident("macro_export"))
+                {
+                    out.push(at(&format!("{name}!")));
+                }
+            }
+            Item::Struct(i) => {
+                let name = i.ident.to_string();
+                if hidden_pub(&i.vis, &i.attrs) {
+                    out.push(at(&name));
+                } else if is_pub(&i.vis) {
+                    for (index, field) in i.fields.iter().enumerate() {
+                        if hidden_pub(&field.vis, &field.attrs) {
+                            let field_name = field
+                                .ident
+                                .as_ref()
+                                .map_or_else(|| index.to_string(), ToString::to_string);
+                            out.push(at(&format!("{name}::{field_name}")));
+                        }
+                    }
+                }
+            }
+            Item::Enum(i) => {
+                let name = i.ident.to_string();
+                if hidden_pub(&i.vis, &i.attrs) {
+                    out.push(at(&name));
+                } else if is_pub(&i.vis) {
+                    for variant in &i.variants {
+                        if is_doc_hidden(&variant.attrs) {
+                            out.push(at(&format!("{name}::{}", variant.ident)));
+                        }
+                    }
+                }
+            }
+            Item::Trait(i) => {
+                let name = i.ident.to_string();
+                if hidden_pub(&i.vis, &i.attrs) {
+                    out.push(at(&name));
+                } else if is_pub(&i.vis) {
+                    for member in &i.items {
+                        let (attrs, member_name) = match member {
+                            TraitItem::Fn(f) => (&f.attrs, f.sig.ident.to_string()),
+                            TraitItem::Const(c) => (&c.attrs, c.ident.to_string()),
+                            TraitItem::Type(t) => (&t.attrs, t.ident.to_string()),
+                            _ => continue,
+                        };
+                        if is_doc_hidden(attrs) {
+                            out.push(at(&format!("{name}::{member_name}")));
+                        }
+                    }
+                }
+            }
+            Item::Mod(i) => {
+                let name = i.ident.to_string();
+                if hidden_pub(&i.vis, &i.attrs) {
+                    out.push(at(&name));
+                } else if let Some((_, content)) = &i.content {
+                    hidden_in_items(content, &at(&name), out);
+                }
+            }
+            Item::Use(i) if hidden_pub(&i.vis, &i.attrs) => {
+                let mut entries = Vec::new();
+                flatten_use(&i.tree, Vec::new(), true, &mut entries);
+                for entry in entries {
+                    out.push(at(&format!("use {}", entry.path.join("::"))));
+                }
+            }
+            Item::Impl(i) if i.trait_.is_none() => {
+                let self_ty = match &*i.self_ty {
+                    syn::Type::Path(p) => p
+                        .path
+                        .segments
+                        .last()
+                        .map_or_else(|| "?".to_owned(), |s| s.ident.to_string()),
+                    _ => "?".to_owned(),
+                };
+                for member in &i.items {
+                    let (vis, attrs, member_name) = match member {
+                        ImplItem::Fn(f) => (&f.vis, &f.attrs, f.sig.ident.to_string()),
+                        ImplItem::Const(c) => (&c.vis, &c.attrs, c.ident.to_string()),
+                        ImplItem::Type(t) => (&t.vis, &t.attrs, t.ident.to_string()),
+                        _ => continue,
+                    };
+                    if hidden_pub(vis, attrs) {
+                        out.push(at(&format!("{self_ty}::{member_name}")));
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
 impl<'a> Walker<'a> {
     fn eval_meta(&self, meta: &Meta) -> Result<bool, String> {
         match meta {
@@ -455,7 +595,7 @@ impl<'a> Walker<'a> {
             if !this.enabled(&field.attrs, what) {
                 continue;
             }
-            if only_pub && !is_pub(&field.vis) {
+            if only_pub && !exported(&field.vis, &field.attrs) {
                 continue;
             }
             let name = field
@@ -478,7 +618,7 @@ impl<'a> Walker<'a> {
                     return;
                 }
                 let child = join(module, &name);
-                let public = is_pub(&item.vis);
+                let public = exported(&item.vis, &item.attrs);
                 self.modules.insert(
                     child.clone(),
                     Module {
@@ -537,7 +677,7 @@ impl<'a> Walker<'a> {
                     members,
                     is_trait: false,
                 };
-                self.declare(module, &name, def, is_pub(&item.vis));
+                self.declare(module, &name, def, exported(&item.vis, &item.attrs));
             }
             Item::Enum(item) => {
                 let name = item.ident.to_string();
@@ -566,11 +706,13 @@ impl<'a> Walker<'a> {
                     members,
                     is_trait: false,
                 };
-                self.declare(module, &name, def, is_pub(&item.vis));
+                self.declare(module, &name, def, exported(&item.vis, &item.attrs));
             }
             Item::Union(item) => {
                 let name = item.ident.to_string();
-                if self.enabled(&item.attrs, &join(module, &name)) && is_pub(&item.vis) {
+                if self.enabled(&item.attrs, &join(module, &name))
+                    && exported(&item.vis, &item.attrs)
+                {
                     self.errors.push(format!(
                         "unsupported public union `{}`",
                         join(module, &name)
@@ -600,7 +742,7 @@ impl<'a> Walker<'a> {
                     members,
                     is_trait: true,
                 };
-                self.declare(module, &name, def, is_pub(&item.vis));
+                self.declare(module, &name, def, exported(&item.vis, &item.attrs));
             }
             Item::Type(item) => self.simple(
                 module,
@@ -634,7 +776,7 @@ impl<'a> Walker<'a> {
                 if !self.enabled(&item.attrs, &join(module, "use")) {
                     return;
                 }
-                let public = is_pub(&item.vis);
+                let public = exported(&item.vis, &item.attrs);
                 let mut entries = Vec::new();
                 flatten_use(&item.tree, Vec::new(), public, &mut entries);
                 self.modules
@@ -665,16 +807,18 @@ impl<'a> Walker<'a> {
                 if trait_path.is_none() {
                     for member in &item.items {
                         match member {
-                            ImplItem::Fn(f) if is_pub(&f.vis) && self.enabled(&f.attrs, &what) => {
+                            ImplItem::Fn(f)
+                                if exported(&f.vis, &f.attrs) && self.enabled(&f.attrs, &what) =>
+                            {
                                 members.push((f.sig.ident.to_string(), ApiKind::Function));
                             }
                             ImplItem::Const(c)
-                                if is_pub(&c.vis) && self.enabled(&c.attrs, &what) =>
+                                if exported(&c.vis, &c.attrs) && self.enabled(&c.attrs, &what) =>
                             {
                                 members.push((c.ident.to_string(), ApiKind::Const));
                             }
                             ImplItem::Type(t)
-                                if is_pub(&t.vis) && self.enabled(&t.attrs, &what) =>
+                                if exported(&t.vis, &t.attrs) && self.enabled(&t.attrs, &what) =>
                             {
                                 members.push((t.ident.to_string(), ApiKind::TraitItem));
                             }
@@ -750,7 +894,7 @@ impl<'a> Walker<'a> {
             members: BTreeMap::new(),
             is_trait: false,
         };
-        self.declare(module, name, def, is_pub(vis));
+        self.declare(module, name, def, exported(vis, attrs));
     }
 }
 

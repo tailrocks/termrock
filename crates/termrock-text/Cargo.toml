@@ -1,0 +1,21 @@
+[package]
+name = "termrock-text"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+description = "Cell width, truncation, wrapping and text buffers for the Termrock terminal UI library"
+license = "MIT"
+
+[lib]
+doctest = false
+
+[features]
+default = []
+# Work counters of the line index, for the tests of the crates above this one.
+test-support = []
+
+[dependencies]
+ratatui = { workspace = true }
+termrock-metrics = { workspace = true }
+unicode-segmentation = "1"
+unicode-width = "0.2.3"

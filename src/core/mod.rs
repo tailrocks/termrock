@@ -18,5 +18,4 @@ pub mod scroll;
 pub mod selection;
 pub mod shape;
 pub mod text;
-pub(crate) mod text_index;
 pub mod typeahead;
