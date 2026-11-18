@@ -1,8 +1,8 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 
-use crate::theme::{BadgeKind, HintAlign, Theme, Tone};
-use crate::widgets::keyhint::{self, Hint};
+use crate::keyhint::{self, Hint};
+use termrock_theme::{BadgeKind, HintAlign, Theme, Tone};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct HintLayer {
@@ -48,11 +48,11 @@ impl HintLayer {
     }
 }
 
-impl crate::ui::measure::Measure for HintLayer {
+impl termrock_runtime::measure::Measure for HintLayer {
     fn measure(
         &self,
         _avail: ratatui::layout::Size,
-        ctx: &crate::ui::ctx::RenderCtx,
+        ctx: &termrock_runtime::ctx::RenderCtx,
     ) -> ratatui::layout::Size {
         let status = self.status.as_ref().map(|(text, tone)| match tone {
             Tone::Error => format!("! {text}"),
@@ -67,17 +67,17 @@ impl crate::ui::measure::Measure for HintLayer {
 pub struct HintBar;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct HintKeys(Vec<Option<crate::core::event::Key>>);
+pub struct HintKeys(Vec<Option<termrock_core::event::Key>>);
 
 impl HintKeys {
     pub fn register(
-        ctx: &mut crate::ui::ctx::RenderCtx,
+        ctx: &mut termrock_runtime::ctx::RenderCtx,
         buf: &mut Buffer,
         hints: &[keyhint::Hint],
         spots: Vec<(usize, Rect)>,
     ) -> Self {
-        use crate::core::id::{ItemKey, Part, PartRef};
         use ratatui::style::{Modifier, Style};
+        use termrock_core::id::{ItemKey, Part, PartRef};
         let mut keys = vec![None; hints.len()];
         for (i, cell) in spots {
             let Some(key) = hints
@@ -100,23 +100,23 @@ impl HintKeys {
 
     pub fn clicked(
         &self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> Option<crate::core::event::Key> {
-        if !ev.on(HintBar::ID) || !ev.is(crate::core::intent::Phase::Click) {
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> Option<termrock_core::event::Key> {
+        if !ev.on(HintBar::ID) || !ev.is(termrock_core::intent::Phase::Click) {
             return None;
         }
-        let i = ev.index_of(crate::core::id::Part::KEY)?;
+        let i = ev.index_of(termrock_core::id::Part::KEY)?;
         self.0.get(i).copied().flatten()
     }
 }
 
 impl HintBar {
-    pub const ID: crate::core::id::WidgetId = crate::core::id::WidgetId::of("hintbar");
+    pub const ID: termrock_core::id::WidgetId = termrock_core::id::WidgetId::of("hintbar");
 
     pub fn render_ctx(
         area: Rect,
         buf: &mut Buffer,
-        ctx: &mut crate::ui::ctx::RenderCtx,
+        ctx: &mut termrock_runtime::ctx::RenderCtx,
         layer: &HintLayer,
     ) -> HintKeys {
         let spots = Self::render_at(area, buf, ctx.theme, layer);
@@ -129,7 +129,7 @@ impl HintBar {
         t: &Theme,
         layer: &HintLayer,
     ) -> Vec<(usize, Rect)> {
-        let style = crate::theme::HintBarStyle {
+        let style = termrock_theme::HintBarStyle {
             align: layer.align.unwrap_or(t.hintbar.align),
             ..t.hintbar
         };
@@ -151,7 +151,7 @@ impl HintBar {
     }
 
     pub fn render(area: Rect, buf: &mut Buffer, t: &Theme, layer: &HintLayer) -> usize {
-        let style = crate::theme::HintBarStyle {
+        let style = termrock_theme::HintBarStyle {
             align: layer.align.unwrap_or(t.hintbar.align),
             ..t.hintbar
         };
@@ -168,25 +168,25 @@ impl HintBar {
     }
 }
 
-impl crate::ui::specimen::Specimen for HintLayer {
-    fn specimen_id(&self) -> crate::core::id::WidgetId {
-        crate::core::id::WidgetId::of("hintbar.specimen")
+impl termrock_runtime::specimen::Specimen for HintLayer {
+    fn specimen_id(&self) -> termrock_core::id::WidgetId {
+        termrock_core::id::WidgetId::of("hintbar.specimen")
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         matches!(state, Rest | Overflow | Error | Editing | Narrow)
     }
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
-        ctx: &mut crate::ui::ctx::RenderCtx,
+        ctx: &mut termrock_runtime::ctx::RenderCtx,
         bg: ratatui::style::Color,
     ) {
-        use crate::ui::specimen::SpecimenState::*;
+        use termrock_runtime::specimen::SpecimenState::*;
         let mut layer = self.clone();
         match state {
             Overflow => {
@@ -199,7 +199,7 @@ impl crate::ui::specimen::Specimen for HintLayer {
             Editing => layer.badge = Some(("EDIT", BadgeKind::Edit)),
             _ => {}
         }
-        crate::ui::ctx::fill(buf, area, ratatui::style::Style::new().bg(bg));
+        termrock_runtime::ctx::fill(buf, area, ratatui::style::Style::new().bg(bg));
         HintBar::render(area, buf, ctx.theme, &layer);
     }
 }

@@ -2,12 +2,12 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 
-use crate::core::id::WidgetId;
-use crate::theme::Tone;
-use crate::ui::ctx::RenderCtx;
-use crate::ui::measure::terminal_extent;
-use crate::ui::text::width;
-use crate::widgets::button::{Button, ButtonRow, RowAlign, place_lines};
+use crate::button::{Button, ButtonRow, RowAlign, place_lines};
+use termrock_core::id::WidgetId;
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::measure::terminal_extent;
+use termrock_text::cells::width;
+use termrock_theme::Tone;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ActionRow {
@@ -117,7 +117,7 @@ impl ActionRow {
                 _ => end.saturating_sub(start),
             };
             let slot = Rect::new(start, owner.y, room, 1).intersection(owner);
-            crate::ui::text::paint_truncated(buf, slot, 0, text, ink);
+            termrock_text::cells::paint_truncated(buf, slot, 0, text, ink);
         }
         rects
     }

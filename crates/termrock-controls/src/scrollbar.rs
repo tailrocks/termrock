@@ -1,10 +1,10 @@
 use ratatui::layout::{Position, Rect};
 
-use crate::core::event::Outcome;
-use crate::core::id::WidgetId;
-use crate::core::pointer::{BarPhase, PointerEvent};
-use crate::core::scroll::{ScrollState, TrackClick};
-use crate::theme::Glyphs;
+use termrock_core::event::Outcome;
+use termrock_core::id::WidgetId;
+use termrock_core::pointer::{BarPhase, PointerEvent};
+use termrock_core::scroll::{ScrollState, TrackClick};
+use termrock_theme::Glyphs;
 
 pub use termrock_runtime::scrollbar::{
     h_id_for, id_for, render_divider, render_horizontal, render_horizontal_with, render_vertical,
@@ -106,7 +106,7 @@ pub fn drag_h(track: Rect, pos: Position, scroll: &mut ScrollState) -> bool {
 }
 
 pub fn apply(
-    bar: &crate::core::hit::Bar,
+    bar: &termrock_core::hit::Bar,
     pos: Position,
     pressed: bool,
     scroll: &mut ScrollState,
@@ -115,13 +115,13 @@ pub fn apply(
 }
 
 pub fn apply_with(
-    bar: &crate::core::hit::Bar,
+    bar: &termrock_core::hit::Bar,
     pos: Position,
     pressed: bool,
     scroll: &mut ScrollState,
     click: TrackClick,
 ) -> bool {
-    use crate::core::hit::Axis;
+    use termrock_core::hit::Axis;
     match (bar.axis, pressed) {
         (Axis::Vertical, true) => press_with(bar.track, pos, scroll, click),
         (Axis::Vertical, false) => drag(bar.track, pos, scroll),

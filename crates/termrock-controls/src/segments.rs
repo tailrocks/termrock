@@ -2,11 +2,11 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier};
 
-use crate::core::id::WidgetId;
-use crate::theme::Tone;
-use crate::ui::ctx::RenderCtx;
-use crate::ui::fitting::removal_order;
-use crate::ui::measure::terminal_extent;
+use termrock_core::id::WidgetId;
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::fitting::removal_order;
+use termrock_runtime::measure::terminal_extent;
+use termrock_theme::Tone;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Segment {
@@ -60,14 +60,14 @@ impl Segment {
 const SEP: usize = 2;
 
 /// Natural width of both segment groups, saturating at `u16::MAX`.
-pub fn width(left: &[Segment], right: &[Segment], t: &crate::theme::Theme) -> u16 {
+pub fn width(left: &[Segment], right: &[Segment], t: &termrock_theme::Theme) -> u16 {
     terminal_extent(intrinsic_width(left, right, t))
 }
 
-fn intrinsic_width(left: &[Segment], right: &[Segment], t: &crate::theme::Theme) -> usize {
+fn intrinsic_width(left: &[Segment], right: &[Segment], t: &termrock_theme::Theme) -> usize {
     left.iter()
         .chain(right)
-        .map(|s| crate::ui::text::width(&s.shown()).saturating_add(SEP))
+        .map(|s| termrock_text::cells::width(&s.shown()).saturating_add(SEP))
         .fold(0usize, usize::saturating_add)
         .saturating_sub(SEP)
         .saturating_add(2 * usize::from(t.spacing.chrome_edge))
@@ -75,12 +75,12 @@ fn intrinsic_width(left: &[Segment], right: &[Segment], t: &crate::theme::Theme)
 
 /// Narrowest width that still shows the strongest segment, saturating at
 /// `u16::MAX`.
-pub fn min_width(left: &[Segment], right: &[Segment], t: &crate::theme::Theme) -> u16 {
+pub fn min_width(left: &[Segment], right: &[Segment], t: &termrock_theme::Theme) -> u16 {
     let strongest = left
         .iter()
         .chain(right)
         .max_by_key(|s| s.priority)
-        .map_or(0, |s| crate::ui::text::width(&s.shown()));
+        .map_or(0, |s| termrock_text::cells::width(&s.shown()));
     terminal_extent(
         strongest
             .saturating_add(2 + 1)
@@ -90,7 +90,8 @@ pub fn min_width(left: &[Segment], right: &[Segment], t: &crate::theme::Theme) -
 
 /// What a layout shows: each segment's display text and width, measured once,
 /// and which ones survive. `left` entries come first, then `right`.
-pub(crate) struct Plan {
+#[doc(hidden)]
+pub struct Plan {
     pub shown: Vec<String>,
     pub widths: Vec<usize>,
     pub keep: Vec<bool>,
@@ -102,9 +103,13 @@ pub(crate) struct Plan {
 /// before a left one, the rightmost right segment first and the leftmost left
 /// segment first. One sort fixes that order and running totals replace a survivor
 /// scan per removal. The totals are exact in `u128`.
-pub(crate) fn plan(left: &[Segment], right: &[Segment], edge: u16, avail: u16) -> Plan {
+#[doc(hidden)]
+pub fn plan(left: &[Segment], right: &[Segment], edge: u16, avail: u16) -> Plan {
     let shown: Vec<String> = left.iter().chain(right).map(Segment::shown).collect();
-    let widths: Vec<usize> = shown.iter().map(|s| crate::ui::text::width(s)).collect();
+    let widths: Vec<usize> = shown
+        .iter()
+        .map(|s| termrock_text::cells::width(s))
+        .collect();
     let mut keep = vec![true; shown.len()];
     let edges = 2 * u128::from(edge);
     let avail = u128::from(avail);
@@ -115,7 +120,7 @@ pub(crate) fn plan(left: &[Segment], right: &[Segment], edge: u16, avail: u16) -
     let mut kept: u128 = widths
         .iter()
         .map(|&w| {
-            crate::record_work!(FitVisits, 1usize);
+            termrock_metrics::record_work!(FitVisits, 1usize);
             w as u128 + SEP as u128
         })
         .sum();
@@ -138,7 +143,7 @@ pub(crate) fn plan(left: &[Segment], right: &[Segment], edge: u16, avail: u16) -
         )
         .collect();
     for gone in removal_order(&keys) {
-        crate::record_work!(FitVisits, 1usize);
+        termrock_metrics::record_work!(FitVisits, 1usize);
         keep[gone] = false;
         kept -= widths[gone] as u128 + SEP as u128;
         if need(kept, true) <= avail {
@@ -181,7 +186,7 @@ pub fn render(
             Some(id) => {
                 let mut vs = ctx.state(id);
                 vs.focused = false;
-                t.interactive(crate::theme::Kind::Title, vs, t.plane_of(bg))
+                t.interactive(termrock_theme::Kind::Title, vs, t.plane_of(bg))
                     .style
             }
             None => ratatui::style::Style::new().bg(bg),
@@ -200,7 +205,7 @@ pub fn render(
         if let Some((g, tone)) = &s.lead {
             let ink = t.legible(t.tone(*tone), st.bg.unwrap_or(bg));
             buf.set_style(
-                Rect::new(x + pad, area.y, crate::ui::text::width(g) as u16, 1),
+                Rect::new(x + pad, area.y, termrock_text::cells::width(g) as u16, 1),
                 ratatui::style::Style::new()
                     .fg(ink)
                     .remove_modifier(Modifier::BOLD),
@@ -209,7 +214,7 @@ pub fn render(
         if let Some(id) = s.id {
             ctx.clickable(
                 id,
-                Rect::new(x, area.y, crate::ui::text::width(&text) as u16, 1),
+                Rect::new(x, area.y, termrock_text::cells::width(&text) as u16, 1),
             );
         }
     };
@@ -255,7 +260,7 @@ pub fn render(
         } else {
             rx.saturating_sub(1).max(area.x + edge)
         };
-        crate::ui::reveal::overflow(
+        termrock_runtime::reveal::overflow(
             ctx,
             buf,
             Rect::new(at, area.y, 1, 1),
@@ -265,13 +270,13 @@ pub fn render(
     }
 }
 
-impl crate::ui::specimen::Specimen for Segment {
+impl termrock_runtime::specimen::Specimen for Segment {
     fn specimen_id(&self) -> WidgetId {
         self.id.unwrap_or(WidgetId::of("segments.specimen"))
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         match state {
             Rest | Narrow => true,
             Hover | Pressed => self.id.is_some(),
@@ -281,13 +286,13 @@ impl crate::ui::specimen::Specimen for Segment {
 
     fn specimen(
         &self,
-        _state: crate::ui::specimen::SpecimenState,
+        _state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
         bg: Color,
     ) {
-        crate::ui::ctx::fill(buf, area, ratatui::style::Style::new().bg(bg));
+        termrock_runtime::ctx::fill(buf, area, ratatui::style::Style::new().bg(bg));
         render(area, buf, ctx, std::slice::from_ref(self), &[], bg);
     }
 }

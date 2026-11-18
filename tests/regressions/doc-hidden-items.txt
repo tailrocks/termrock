@@ -1,3 +1,10 @@
+crates/termrock-controls/src/button.rs  Button::intrinsic_width
+crates/termrock-controls/src/button.rs  place_lines
+crates/termrock-controls/src/button.rs  wrap_lines
+crates/termrock-controls/src/keyhint.rs  cost
+crates/termrock-controls/src/keyhint.rs  fit
+crates/termrock-controls/src/segments.rs  Plan
+crates/termrock-controls/src/segments.rs  plan
 crates/termrock-core/src/edit.rs  clipboard::store
 crates/termrock-core/src/event.rs  pin::PlatformPin
 crates/termrock-core/src/event.rs  pin::PlatformPin::new
