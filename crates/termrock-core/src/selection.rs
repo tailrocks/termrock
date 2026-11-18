@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 
-use crate::core::event::{ClientPlatform, Key};
+use crate::event::{ClientPlatform, Key};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum SelectionMode {
@@ -23,23 +23,24 @@ pub enum TriState {
     All,
 }
 
-pub(crate) const CHECK_ON: &str = "[✓]";
-pub(crate) const CHECK_OFF: &str = "[ ]";
-pub(crate) const CHECK_MIXED: &str = "[–]";
+#[doc(hidden)]
+pub const CHECK_ON: &str = "[✓]";
+#[doc(hidden)]
+pub const CHECK_OFF: &str = "[ ]";
+#[doc(hidden)]
+pub const CHECK_MIXED: &str = "[–]";
 
 /// The three check strings of a glyph set, implemented by the theme's `Glyphs`.
 ///
 /// `TriState::glyph_in` reads them through this trait so that `core` does not
-/// name `theme`. The trait is public only so it can appear in that bound; it is
-/// not reachable by path.
-mod check_glyphs {
-    pub trait CheckGlyphs {
-        fn check_on(&self) -> &'static str;
-        fn check_off(&self) -> &'static str;
-        fn check_mixed(&self) -> &'static str;
-    }
+/// name `theme`. It is `#[doc(hidden)]` so that `theme`, another crate, can
+/// implement it without it joining the declared API.
+#[doc(hidden)]
+pub trait CheckGlyphs {
+    fn check_on(&self) -> &'static str;
+    fn check_off(&self) -> &'static str;
+    fn check_mixed(&self) -> &'static str;
 }
-pub(crate) use check_glyphs::CheckGlyphs;
 
 impl TriState {
     pub fn glyph(self) -> &'static str {

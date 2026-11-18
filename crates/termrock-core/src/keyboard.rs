@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 
-use crate::core::event::{Input, Key};
+use crate::event::{Input, Key};
 
 pub const DISAMBIGUATE: u8 = 0b1;
 
@@ -255,7 +255,7 @@ impl AltKeys {
     pub const OPTION_IS_ALT_TERM_PROGRAMS: [&'static str; 1] = ["wezterm"];
 
     pub fn from_env(
-        platform: crate::core::event::ClientPlatform,
+        platform: crate::event::ClientPlatform,
         get: impl Fn(&str) -> Option<String>,
     ) -> Self {
         match get(Self::ENV)
@@ -288,7 +288,7 @@ impl AltKeys {
             3 => Self::UntilSeen,
             4 => Self::WithProtocol,
             _ => {
-                let d = Self::from_env(crate::core::event::ClientPlatform::current(), |k| {
+                let d = Self::from_env(crate::event::ClientPlatform::current(), |k| {
                     std::env::var(k).ok()
                 });
                 set_alt_keys(d);

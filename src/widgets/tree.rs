@@ -13,7 +13,7 @@ use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::core::keyed::{KeyedSourceError, KeyedState};
 use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup, unassigned_chord};
 use crate::core::list::{
-    Cursor, KeyStep, KeyedRowSource, Moved, Navigable, RowSource, SourceStamp,
+    Cursor, KeyStep, KeyedRowSource, Moved, Navigable, RowItem, RowSource, SourceStamp,
 };
 use crate::core::pointer::PointerEvent;
 use crate::core::response::Response;
@@ -1445,15 +1445,12 @@ impl Scrollable for TreeView {
     }
 }
 
-impl RowSource for [FlatRow] {
-    fn len(&self) -> usize {
-        <[FlatRow]>::len(self)
+impl RowItem for FlatRow {
+    fn label(&self) -> &str {
+        &self.label
     }
-    fn enabled(&self, i: usize) -> bool {
-        !self[i].note
-    }
-    fn label(&self, i: usize) -> &str {
-        &self[i].label
+    fn enabled(&self) -> bool {
+        !self.note
     }
 }
 

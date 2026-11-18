@@ -8,8 +8,8 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::core::id::ItemKey;
-use crate::core::list::{KeyedRowSource, RowSource, SourceStamp};
+use crate::id::ItemKey;
+use crate::list::{KeyedRowSource, RowSource, SourceStamp};
 
 /// What one reconciliation changed.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -192,7 +192,7 @@ impl KeyedState {
             Some(_) => None,
             None => {
                 let n = source.source_len();
-                crate::record_work!(SourceRowsEnumerated, n);
+                termrock_metrics::record_work!(SourceRowsEnumerated, n);
                 let mut set = HashSet::with_capacity(n);
                 for index in 0..n {
                     let key = source.source_key(index);
@@ -211,7 +211,7 @@ impl KeyedState {
         };
         let known = authoritative.as_ref().or(reuse).expect("one set exists");
         let n = source.len();
-        crate::record_work!(SourceRowsEnumerated, n);
+        termrock_metrics::record_work!(SourceRowsEnumerated, n);
         let mut visible = Vec::with_capacity(n);
         let mut positions = HashMap::with_capacity(n);
         let mut enabled = HashSet::new();
@@ -375,7 +375,8 @@ impl KeyedState {
     /// Starts an edit of a visible, enabled row against the payload revision
     /// `data`, for an edit that opens in the same event as a commit that moved
     /// the provider's revision on purpose.
-    pub(crate) fn begin_edit_at(&mut self, key: ItemKey, data: u64) -> bool {
+    #[doc(hidden)]
+    pub fn begin_edit_at(&mut self, key: ItemKey, data: u64) -> bool {
         if self.stamp.is_none() || !self.enabled.contains(&key) || self.edit_key() == Some(key) {
             return false;
         }
@@ -434,7 +435,8 @@ impl KeyedState {
     /// row, so it is refused when that press was dropped meanwhile (the source
     /// was reordered, replaced or the layout moved). A click with no press at
     /// all, such as one that is not pointer-driven, is accepted.
-    pub(crate) fn release_click(&mut self, key: ItemKey, layout_generation: u64) -> bool {
+    #[doc(hidden)]
+    pub fn release_click(&mut self, key: ItemKey, layout_generation: u64) -> bool {
         if self.press.is_some() {
             return self.release_press(key, layout_generation);
         }
@@ -444,8 +446,9 @@ impl KeyedState {
     /// A new press or a release ends the gesture a dropped press belonged to
     /// (the router sends a release only instead of a click), so no later click
     /// can be the one the dropped press was waiting for.
-    pub(crate) fn note_pointer(&mut self, phase: Option<crate::core::intent::Phase>) {
-        use crate::core::intent::Phase;
+    #[doc(hidden)]
+    pub fn note_pointer(&mut self, phase: Option<crate::intent::Phase>) {
+        use crate::intent::Phase;
         if matches!(phase, Some(Phase::Press | Phase::Release)) {
             self.press_lost = false;
         }
@@ -468,7 +471,8 @@ impl KeyedState {
 
 static NEXT_INSTANCE: AtomicU64 = AtomicU64::new(1);
 
-pub(crate) fn fresh_instance() -> ItemKey {
+#[doc(hidden)]
+pub fn fresh_instance() -> ItemKey {
     let id = NEXT_INSTANCE
         .try_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1))
         .expect("provider instance ids exhausted");

@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 
-use crate::ui::text::width;
+use termrock_text::cells::width;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Reason {

@@ -63,7 +63,8 @@ pub struct HitMark {
 }
 
 impl HitMark {
-    pub(crate) fn regions_len(&self) -> usize {
+    #[doc(hidden)]
+    pub fn regions_len(&self) -> usize {
         self.regions
     }
 }
@@ -255,7 +256,8 @@ impl HitRegistry {
         self.bars.iter().rev().find(|b| b.id == id).copied()
     }
 
-    pub(crate) fn logical_bar(&self, id: WidgetId) -> Option<Bar> {
+    #[doc(hidden)]
+    pub fn logical_bar(&self, id: WidgetId) -> Option<Bar> {
         self.logical_bars.iter().rev().find(|b| b.id == id).copied()
     }
 
@@ -488,7 +490,8 @@ impl HitRegistry {
         }
     }
 
-    pub(crate) fn clip_mark(&mut self, mark: HitMark, viewport: Rect) {
+    #[doc(hidden)]
+    pub fn clip_mark(&mut self, mark: HitMark, viewport: Rect) {
         self.clip_since(mark.regions, viewport);
         let from = mark.bars.min(self.bars.len());
         let bars: Vec<Bar> = self.bars.drain(from..).collect();
@@ -561,7 +564,8 @@ struct PartEntry {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub(crate) struct PartMap {
+#[doc(hidden)]
+pub struct PartMap {
     entries: Vec<PartEntry>,
 }
 

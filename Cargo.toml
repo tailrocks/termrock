@@ -14,6 +14,7 @@ members = [
     "apps/showcase",
     "apps/tablepro",
     "crates/termrock",
+    "crates/termrock-core",
     "crates/termrock-metrics",
     "crates/termrock-text",
     "crates/functional-cross",
@@ -26,6 +27,7 @@ default-members = [
     "apps/showcase",
     "apps/tablepro",
     "crates/termrock",
+    "crates/termrock-core",
     "crates/termrock-metrics",
     "crates/termrock-text",
     "crates/functional-cross",
@@ -37,6 +39,7 @@ clap = { version = "4.6", features = ["derive"] }
 ratatui = { version = "0.30", features = ["crossterm_0_29"] }
 serde_json = "1"
 sha2 = "0.11.0"
+termrock-core = { path = "crates/termrock-core", version = "0.1.0" }
 termrock-metrics = { path = "crates/termrock-metrics", version = "0.1.0" }
 termrock-text = { path = "crates/termrock-text", version = "0.1.0" }
 tui-test = { package = "tuiscotti-tui-test", version = "=0.2.1" }
@@ -44,10 +47,10 @@ tuiscotti-latest = { package = "tuiscotti", git = "https://github.com/tailrocks/
 
 [features]
 default = ["cli", "terminal"]
-cli = ["dep:clap"]
+cli = ["dep:clap", "termrock-core/cli"]
 terminal = ["dep:termpane"]
 product = ["terminal"]
-work-metrics = ["termrock-metrics/work-metrics"]
+work-metrics = ["termrock-core/work-metrics", "termrock-metrics/work-metrics"]
 
 [lib]
 name = "junie_tui"
@@ -62,6 +65,7 @@ ratatui = { workspace = true }
 unicode-width = "0.2.3"
 unicode-segmentation = "1"
 serde_json = { workspace = true }
+termrock-core = { workspace = true }
 termrock-metrics = { workspace = true }
 termrock-text = { workspace = true }
 

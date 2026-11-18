@@ -988,6 +988,7 @@ dependencies = [
  "sha2 0.11.1",
  "syn 3.0.10",
  "termpane",
+ "termrock-core",
  "termrock-metrics",
  "termrock-text",
  "toml 1.2.1+spec-1.1.0",
@@ -2145,6 +2146,16 @@ version = "0.1.0"
 dependencies = [
  "junie-tui",
  "ratatui",
+]
+
+[[package]]
+name = "termrock-core"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "ratatui",
+ "termrock-metrics",
+ "termrock-text",
 ]
 
 [[package]]

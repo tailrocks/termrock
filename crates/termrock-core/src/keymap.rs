@@ -1,4 +1,4 @@
-use crate::core::event::{ClientPlatform, Key};
+use crate::event::{ClientPlatform, Key};
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -10,8 +10,8 @@ pub struct KeyboardCapabilities {
 impl KeyboardCapabilities {
     pub fn current() -> Self {
         Self {
-            alt: crate::core::keyboard::alt_delivered(),
-            super_key: crate::core::keyboard::super_delivered(),
+            alt: crate::keyboard::alt_delivered(),
+            super_key: crate::keyboard::super_delivered(),
         }
     }
 }
@@ -134,7 +134,7 @@ impl NavKeys {
 
 impl Default for NavKeys {
     fn default() -> Self {
-        crate::core::list::NavProfile::current().nav()
+        crate::list::NavProfile::current().nav()
     }
 }
 

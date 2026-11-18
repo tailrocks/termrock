@@ -1,0 +1,21 @@
+[package]
+name = "termrock-core"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+description = "Ids, events, intents, key maps, list and scroll state for the Termrock terminal UI library"
+license = "MIT"
+
+[lib]
+doctest = false
+
+[features]
+default = []
+cli = ["dep:clap"]
+work-metrics = ["termrock-metrics/work-metrics"]
+
+[dependencies]
+clap = { workspace = true, optional = true }
+ratatui = { workspace = true }
+termrock-metrics = { workspace = true }
+termrock-text = { workspace = true }

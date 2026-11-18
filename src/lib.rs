@@ -5,7 +5,7 @@ pub mod clock;
 pub mod core;
 pub mod docs;
 pub mod metrics;
-pub mod motion;
+pub use termrock_core::motion;
 pub mod runtime;
 pub mod shell;
 #[cfg(feature = "terminal")]
