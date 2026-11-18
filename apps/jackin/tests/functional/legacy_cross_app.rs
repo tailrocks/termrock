@@ -840,11 +840,20 @@ fn jackin_cli_help_and_invalid_scenario() {
     wait_for_exit(&invalid, 2);
 }
 
+/// Wait for `marker` on the screen of a process that prints and exits (a CLI
+/// help or an argument error), or for the exit with the final screen.
+///
+/// The exit is read before the screen. The session publishes the exit only
+/// after its reader has fed the last output to the terminal, so a screen
+/// captured after the exit holds all of it. The other order captures first and
+/// asks later: output and exit that land between the two calls (a slow capture
+/// under load) return a screen from before the text.
 fn output_screen(app: &App, marker: &str) -> TerminalSnapshot {
     let deadline = Instant::now() + Duration::from_secs(8);
     loop {
+        let exited = !app.child_running();
         let screen = app.screen();
-        if text(&screen).contains(marker) || !app.child_running() {
+        if text(&screen).contains(marker) || exited {
             return screen;
         }
         assert!(
