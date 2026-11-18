@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 set -euo pipefail
 umask 022
-repo_root=$(cd "$(dirname "$0")/.." && pwd -P)
+repo_root=$(cd "$(dirname "$0")/../.." && pwd -P)
 case "$(uname -s):$(uname -m)" in
   Darwin:arm64|Darwin:aarch64)
     platform=macos-arm64

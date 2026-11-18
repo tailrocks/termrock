@@ -3,14 +3,14 @@
 # SPDX-License-Identifier: Apache-2.0
 set -euo pipefail
 
-repo_root=$(cd "$(dirname "$0")/.." && pwd -P)
+repo_root=$(cd "$(dirname "$0")/../.." && pwd -P)
 test_root=$(mktemp -d "${TMPDIR:-/tmp}/policy-lifecycle-source-snapshot.XXXXXX")
 trap 'rm -rf "$test_root"' EXIT
 git_command=$(command -v git)
 if [[ "$git_command" != /* ]]; then
   git_command="$(pwd -P)/$git_command"
 fi
-source "$repo_root/tests/policy-git-object-lifecycle.sh"
+source "$repo_root/scripts/policy/policy-git-object-lifecycle.sh"
 
 create_repository() {
   local name=$1

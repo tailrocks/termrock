@@ -144,13 +144,13 @@ snapshot, then resolves those tools through the private qualified lock and
 cache. It does not run Mise with checkout configuration or trust state.
 
 Run the public checker regression matrix with
-`bash tests/check-generated-workflows.sh all`. It uses real Git for snapshot
+`bash scripts/policy/check-generated-workflows.sh all`. It uses real Git for snapshot
 and ref behavior and controls the external network boundary with deterministic
 fixtures. Its valid-snapshot cases stop at the expected bootstrap response; the
 matrix does not run private Mise lock/install, Cargo qualification, Velnor, or
 the final generated-workflow comparison.
 
-Run `bash tests/check-python-inventory.sh` for the Python runtime inventory's
+Run `bash scripts/policy/check-python-inventory.sh` for the Python runtime inventory's
 filesystem checks.
 
 Qualify the actual pinned toolchain and generator by explicitly running
@@ -167,7 +167,7 @@ On macOS the real-toolchain harness runs two warm public hooks under
 request is denied. On other hosts, the caller must enforce or observe a
 no-egress boundary to qualify offline behavior.
 
-After setup, run `bash tests/check-installed-generated-workflow-guard.sh` to
+After setup, run `bash scripts/policy/check-installed-generated-workflow-guard.sh` to
 exercise real installed hooks with the qualified Mise/Velnor artifacts. It
 uses a shallow source without the approved seed commit, checks `git commit
 --only`, linked and split indexes, matching commit and push cases, and confirms
@@ -177,7 +177,7 @@ preserves logs and manifests when `BASELINE_GUARD_EVIDENCE_DIR` names an output
 directory; its evidence records whether network isolation was enforced by the
 harness.
 
-Run `bash tests/check-install-generated-workflow-guard-recovery.sh` for the
+Run `bash scripts/policy/check-install-generated-workflow-guard-recovery.sh` for the
 installer's lock and artifact recovery. It runs the real installer against a
 sandbox Git worktree whose checker and pinned Mise tool are local stubs and
 whose only download boundary is a local fixture serving the pinned fake Mise

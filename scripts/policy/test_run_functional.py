@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "run_functional.py"
+SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "run_functional.py"
 SPEC = importlib.util.spec_from_file_location("run_functional", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
 run_functional = importlib.util.module_from_spec(SPEC)

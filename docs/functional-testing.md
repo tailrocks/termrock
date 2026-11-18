@@ -53,7 +53,7 @@ budget; `--cargo-profile dev|release` selects the Cargo profile of the build and
 of the run. The launcher rebuilds each value (integers, a fixed alphabet, a
 profile table) instead of forwarding raw arguments, so an argument cannot inject
 an option into Cargo or nextest.
-`python3 -m unittest tests/test_run_functional.py` covers the launcher,
+`python3 -m unittest scripts/policy/test_run_functional.py` covers the launcher,
 including `functional_launcher_refuses_failed_build_with_old_artifact`.
 In CI the nextest setup script `app-bins` exports the same variables for the
 root `functional` target (it never overrides a value already exported).
@@ -83,7 +83,7 @@ exported all three, as `scripts/run_functional.py` does, it builds nothing and
 uses those paths for `TCB_BIN_<NAME>` too. A binary built without the feature
 the test target was compiled with fails
 `s06_meters::option_work_counters_card_follows_the_build` with a message that
-names the cause, and `python3 -m unittest tests/test_build_app_bins.py` covers the
+names the cause, and `python3 -m unittest scripts/policy/test_build_app_bins.py` covers the
 script's choice.
 
 Filter one journey during development, without hiding missing tests:

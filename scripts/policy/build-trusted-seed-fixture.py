@@ -530,7 +530,7 @@ def validate_and_import(repo_root, checker, seed_repository):
             fail("metadata pack exceeds its reviewed object byte bound")
         baseline_pack, _ = read_relative(
             repo_fd,
-            "tests/fixtures/trusted-seed-baselines.pack",
+            "scripts/policy/fixtures/trusted-seed-baselines.pack",
             "trusted seed baseline pack",
             1024 * 1024,
         )

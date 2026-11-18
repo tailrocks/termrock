@@ -4,7 +4,7 @@
 #
 # Materializes the untracked trusted-seed sentinel `scripts/trusted-seed-cargo.lock`
 # from the tracked, digest-pinned metadata pack (scripts/trusted-seed-metadata.pack).
-# The sentinel is deliberately untracked in Git (tests/policy-git-object-lifecycle.sh
+# The sentinel is deliberately untracked in Git (scripts/policy/policy-git-object-lifecycle.sh
 # asserts it is untracked yet present), so a fresh clone has to restore the exact
 # reviewed bytes before any harness or the installer can consume them.
 #

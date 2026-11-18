@@ -210,7 +210,7 @@ policy_lifecycle_prepare_git_fixture() {
 
 policy_lifecycle_self_test() {
   set -euo pipefail
-  repo_root=$(cd "$(dirname "$0")/.." && pwd -P)
+  repo_root=$(cd "$(dirname "$0")/../.." && pwd -P)
   test_root=$(mktemp -d "${TMPDIR:-/tmp}/policy-git-object-lifecycle.XXXXXX")
   trap 'rm -rf "$test_root"' EXIT
   git_command=$(command -v git)
@@ -219,14 +219,14 @@ policy_lifecycle_self_test() {
   fi
   policy_source_repository="$test_root/control-source"
   mkdir -p "$test_root"
-  cp -p "$repo_root/tests/policy-git-object-lifecycle.sh" "$test_root/policy-git-object-lifecycle.fixed.sh"
+  cp -p "$repo_root/scripts/policy/policy-git-object-lifecycle.sh" "$test_root/policy-git-object-lifecycle.fixed.sh"
   fixed_helper_sha=$(policy_lifecycle_hash_file "$test_root/policy-git-object-lifecycle.fixed.sh")
   # Restore the untracked trusted-seed sentinel before the first source snapshot
   # so the preflight cannot be blamed for changing the source checkout, and so
   # the untracked-yet-present expectation below is satisfied in a fresh clone.
   bash "$repo_root/scripts/materialize-trusted-seed-cargo-lock.sh" || return $?
   policy_lifecycle_source_snapshot "$repo_root" > "$test_root/source.before.json"
-  if ! BASELINE_GUARD_E2E_FOCUS=cargo-local-lock-policy BASELINE_GUARD_POLICY_CASE=positive-local-local-removal BASELINE_GUARD_POLICY_PREFLIGHT_ONLY=1 BASELINE_GUARD_POLICY_CONTROL_EXPORT="$policy_source_repository" /bin/bash "$repo_root/tests/check-installed-generated-workflow-guard.sh" > "$test_root/preflight.log" 2>&1; then
+  if ! BASELINE_GUARD_E2E_FOCUS=cargo-local-lock-policy BASELINE_GUARD_POLICY_CASE=positive-local-local-removal BASELINE_GUARD_POLICY_PREFLIGHT_ONLY=1 BASELINE_GUARD_POLICY_CONTROL_EXPORT="$policy_source_repository" /bin/bash "$repo_root/scripts/policy/check-installed-generated-workflow-guard.sh" > "$test_root/preflight.log" 2>&1; then
     cat "$test_root/preflight.log" >&2
     printf 'policy-git-object-lifecycle: actual harness candidate/control preflight failed\n' >&2
     return 1
@@ -302,8 +302,8 @@ PY
     printf 'policy-git-object-lifecycle: receiver-import mutant did not reach the missing-object update-ref failure or changed refs\n' >&2
     return 1
   fi
-  source "$repo_root/tests/policy-git-object-lifecycle.sh"
-  if [[ "$(policy_lifecycle_hash_file "$repo_root/tests/policy-git-object-lifecycle.sh")" != "$fixed_helper_sha" ]] || ! cmp -s "$repo_root/tests/policy-git-object-lifecycle.sh" "$test_root/policy-git-object-lifecycle.fixed.sh"; then
+  source "$repo_root/scripts/policy/policy-git-object-lifecycle.sh"
+  if [[ "$(policy_lifecycle_hash_file "$repo_root/scripts/policy/policy-git-object-lifecycle.sh")" != "$fixed_helper_sha" ]] || ! cmp -s "$repo_root/scripts/policy/policy-git-object-lifecycle.sh" "$test_root/policy-git-object-lifecycle.fixed.sh"; then
     printf 'policy-git-object-lifecycle: fixed shared helper was not restored byte-for-byte after the private mutation\n' >&2
     return 1
   fi
@@ -352,7 +352,7 @@ PY
   printf 'control_commit=%s\n' "$policy_control_head"
   printf 'control_tree=%s\n' "$policy_control_tree"
   printf 'first_positive_commit=%s\n' "$policy_local_fixture_head"
-  printf 'broken_shared_helper=private mutated copy of tests/policy-git-object-lifecycle.sh\n'
+  printf 'broken_shared_helper=private mutated copy of scripts/policy/policy-git-object-lifecycle.sh\n'
   printf 'broken_helper_mutation=omit the bare receiver control fetch only\n'
   printf 'broken_helper_original_sha256=%s\n' "$fixed_helper_sha"
   printf 'broken_helper_mutated_sha256=%s\n' "$broken_helper_sha"
