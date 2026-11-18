@@ -35,7 +35,11 @@ fn sha256_file(path: &Path) -> String {
         }
         digest.update(&buffer[..read]);
     }
-    format!("{:x}", digest.finalize())
+    digest
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
 }
 
 fn manifest() -> Value {
