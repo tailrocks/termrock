@@ -1,12 +1,12 @@
-use junie_tui::core::focus::{Focus, FocusRing};
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::WidgetId;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::ui::master_detail::{DetailSize, MasterDetail, MdLayout, Mode};
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::Color;
+use termrock_core::focus::{Focus, FocusRing};
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::WidgetId;
+use termrock_layout::master_detail::{DetailSize, MasterDetail, MdLayout, Mode};
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_theme::{ColorLevel, Theme};
 
 const MASTER: WidgetId = WidgetId::of("t.mdb.master");
 const DETAIL: WidgetId = WidgetId::of("t.mdb.detail");

@@ -1,9 +1,9 @@
-use junie_tui::core::event::MouseKind;
-use junie_tui::core::id::WidgetId;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::layout::{Split, SplitDir};
-use junie_tui::ui::pane_tree::{PaneNode, PaneTree};
 use ratatui::layout::{Position, Rect};
+use termrock_core::event::MouseKind;
+use termrock_core::id::WidgetId;
+use termrock_layout::layout::{Split, SplitDir};
+use termrock_layout::pane_tree::{PaneNode, PaneTree};
+use termrock_theme::{ColorLevel, Theme};
 
 use crate::pane_rig::Rig;
 

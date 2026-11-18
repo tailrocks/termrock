@@ -1,16 +1,16 @@
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::focus::FocusRing;
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::ui::popup::backdrop_id;
-use junie_tui::widgets::tabs::{TabAction, TabItem, Tabs};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
+use termrock_core::event::{Key, Outcome};
+use termrock_core::focus::FocusRing;
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::WidgetId;
+use termrock_core::intent::Phase;
+use termrock_core::pointer::{MouseTarget, PointerEvent};
+use termrock_navigation::tabs::{TabAction, TabItem, Tabs};
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_runtime::popup::backdrop_id;
+use termrock_theme::{ColorLevel, Theme};
 
 const ID: WidgetId = WidgetId::of("t.tabs44");
 const AREA: Rect = Rect::new(0, 0, 24, 3);

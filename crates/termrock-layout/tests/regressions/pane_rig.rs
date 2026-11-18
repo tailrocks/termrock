@@ -1,13 +1,13 @@
-use junie_tui::core::event::{Mouse, MouseKind, Outcome};
-use junie_tui::core::focus::{Focus, FocusRing};
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::pointer::{PointerEvent, PointerHost, PointerParts, PointerRouter};
-use junie_tui::core::response::Response;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::ui::pane_tree::{PaneId, PaneTree};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
+use termrock_core::event::{Mouse, MouseKind, Outcome};
+use termrock_core::focus::{Focus, FocusRing};
+use termrock_core::hit::HitRegistry;
+use termrock_core::pointer::{PointerEvent, PointerHost, PointerParts, PointerRouter};
+use termrock_core::response::Response;
+use termrock_layout::pane_tree::{PaneId, PaneTree};
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_theme::{ColorLevel, Theme};
 
 pub struct Rig {
     pub tree: PaneTree,
