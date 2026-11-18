@@ -5,7 +5,7 @@ use std::sync::{Arc, OnceLock};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-use super::text_index::{LineIndex, LineView};
+use crate::text_index::{LineIndex, LineView};
 
 static NEXT_TEXT_REVISION: AtomicU64 = AtomicU64::new(1);
 
@@ -108,11 +108,13 @@ impl TextBuffer {
             .as_ref()
     }
 
-    pub(crate) fn line_view(&self, line: usize) -> Option<LineView<'_>> {
+    #[doc(hidden)]
+    pub fn line_view(&self, line: usize) -> Option<LineView<'_>> {
         self.index().view(&self.text, line)
     }
 
-    pub(crate) fn line_at_offset(&self, offset: usize) -> usize {
+    #[doc(hidden)]
+    pub fn line_at_offset(&self, offset: usize) -> usize {
         self.index().line_of(offset)
     }
 

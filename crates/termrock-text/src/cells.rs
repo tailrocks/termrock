@@ -6,9 +6,11 @@ use ratatui::style::Style;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-pub(crate) const TAB_SPACES: &str = "    ";
+#[doc(hidden)]
+pub const TAB_SPACES: &str = "    ";
 
-pub(crate) fn expand_tabs(text: &str) -> std::borrow::Cow<'_, str> {
+#[doc(hidden)]
+pub fn expand_tabs(text: &str) -> std::borrow::Cow<'_, str> {
     if text.contains('\t') {
         text.replace('\t', TAB_SPACES).into()
     } else {
@@ -25,8 +27,8 @@ pub fn capitalize(s: &str) -> String {
 }
 
 pub fn width(s: &str) -> usize {
-    crate::record_work!(IntrinsicWidthCalls, 1usize);
-    crate::record_work!(TextBytesMeasured, s.len());
+    termrock_metrics::record_work!(IntrinsicWidthCalls, 1usize);
+    termrock_metrics::record_work!(TextBytesMeasured, s.len());
     UnicodeWidthStr::width(s)
 }
 
@@ -94,7 +96,8 @@ pub fn truncate(s: &str, max: usize) -> String {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum TextClip {
+#[doc(hidden)]
+pub enum TextClip {
     Clip,
     Ellipsis,
 }
@@ -129,7 +132,8 @@ fn clusters_fit(source: &str, budget: usize) -> bool {
 /// cluster is styled across all of its cells with its own style. A dropped wide
 /// cluster leaves blank cells after the ellipsis: `ab界界` in 4 cells paints
 /// `ab…` and one blank cell, because later clusters do not shift back.
-pub(crate) fn paint_graphemes(
+#[doc(hidden)]
+pub fn paint_graphemes(
     buf: &mut Buffer,
     owner: Rect,
     offset: (usize, usize),
@@ -182,18 +186,14 @@ pub(crate) fn paint_graphemes(
 /// Paints `source` as whole clusters from column `col` of `owner`'s top row,
 /// dropping what does not fit and never writing outside `owner`. Returns the
 /// cells consumed.
-pub(crate) fn paint_clipped(
-    buf: &mut Buffer,
-    owner: Rect,
-    col: usize,
-    source: &str,
-    ink: Style,
-) -> usize {
+#[doc(hidden)]
+pub fn paint_clipped(buf: &mut Buffer, owner: Rect, col: usize, source: &str, ink: Style) -> usize {
     paint_graphemes(buf, owner, (col, 0), source, TextClip::Clip, |_, _| ink)
 }
 
 /// Like [`paint_clipped`], with a one-cell ellipsis when `source` is cut.
-pub(crate) fn paint_truncated(
+#[doc(hidden)]
+pub fn paint_truncated(
     buf: &mut Buffer,
     owner: Rect,
     col: usize,
@@ -468,13 +468,15 @@ pub fn wrap_with(s: &str, w: usize, opts: WrapOpts) -> Vec<String> {
 /// stands for. `bytes` is empty for continuation indent, which maps to the
 /// boundary before the row's first real grapheme.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct MappedCell {
+#[doc(hidden)]
+pub struct MappedCell {
     pub columns: Range<usize>,
     pub bytes: Range<usize>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct MappedRow {
+#[doc(hidden)]
+pub struct MappedRow {
     pub text: String,
     pub cells: Vec<MappedCell>,
     /// Source byte after the row's last grapheme, or where an empty row sits.
@@ -482,7 +484,8 @@ pub(crate) struct MappedRow {
 }
 
 /// The same line breaking as [`wrap_with`], with each row's source provenance.
-pub(crate) fn wrap_mapped(s: &str, w: usize, opts: WrapOpts) -> Vec<MappedRow> {
+#[doc(hidden)]
+pub fn wrap_mapped(s: &str, w: usize, opts: WrapOpts) -> Vec<MappedRow> {
     wrap_rows(s, w, opts, true)
 }
 

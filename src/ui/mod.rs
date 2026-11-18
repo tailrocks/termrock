@@ -27,5 +27,5 @@ pub mod reveal;
 pub mod row;
 pub mod scroll_view;
 pub mod specimen;
-pub mod text;
+pub use termrock_text::cells as text;
 pub mod tooltip;

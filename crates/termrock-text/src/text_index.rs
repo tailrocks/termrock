@@ -4,8 +4,8 @@ use std::sync::OnceLock;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-#[cfg(test)]
-pub(crate) mod work {
+#[cfg(any(test, feature = "test-support"))]
+pub mod work {
     use std::cell::Cell;
 
     thread_local! {
@@ -60,7 +60,7 @@ struct Graphemes {
 
 impl Graphemes {
     fn build(text: &str, range: &Range<usize>) -> Self {
-        #[cfg(test)]
+        #[cfg(any(test, feature = "test-support"))]
         work::table_built();
         let line = &text[range.clone()];
         let mut starts = Vec::new();
@@ -81,7 +81,7 @@ impl Graphemes {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct GraphemeAt<'a> {
+pub struct GraphemeAt<'a> {
     pub offset: usize,
     pub text: &'a str,
     pub col: usize,
@@ -89,7 +89,7 @@ pub(crate) struct GraphemeAt<'a> {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct LineView<'a> {
+pub struct LineView<'a> {
     line: &'a str,
     start: usize,
     table: &'a Graphemes,
@@ -126,7 +126,7 @@ impl<'a> LineView<'a> {
 
 impl LineIndex {
     pub fn build(text: &str) -> Self {
-        #[cfg(test)]
+        #[cfg(any(test, feature = "test-support"))]
         work::index_built(text.len());
         let mut start = 0;
         let mut max_width = 0;

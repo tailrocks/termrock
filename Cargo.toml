@@ -15,6 +15,7 @@ members = [
     "apps/tablepro",
     "crates/termrock",
     "crates/termrock-metrics",
+    "crates/termrock-text",
     "crates/functional-cross",
 ]
 default-members = [
@@ -25,6 +26,7 @@ default-members = [
     "apps/tablepro",
     "crates/termrock",
     "crates/termrock-metrics",
+    "crates/termrock-text",
     "crates/functional-cross",
 ]
 
@@ -34,6 +36,7 @@ ratatui = { version = "0.30", features = ["crossterm_0_29"] }
 serde_json = "1"
 sha2 = "0.10.9"
 termrock-metrics = { path = "crates/termrock-metrics", version = "0.1.0" }
+termrock-text = { path = "crates/termrock-text", version = "0.1.0" }
 tui-test = { package = "tuiscotti-tui-test", version = "=0.2.1" }
 tuiscotti-latest = { package = "tuiscotti", git = "https://github.com/tailrocks/tuiscotti", rev = "f1fb3f276b8d49948881c07b3bbc619840b6cc93" }
 
@@ -63,6 +66,7 @@ unicode-width = "0.2.3"
 unicode-segmentation = "1"
 serde_json = { workspace = true }
 termrock-metrics = { workspace = true }
+termrock-text = { workspace = true }
 
 [target.'cfg(unix)'.dependencies]
 
@@ -73,6 +77,7 @@ syn = { version = "=3.0.10", features = ["full", "visit"] }
 toml = "=1.2.1"
 
 tui-test = { workspace = true }
+termrock-text = { workspace = true, features = ["test-support"] }
 
 tuiscotti-latest = { workspace = true }
 serde_json = { workspace = true }
