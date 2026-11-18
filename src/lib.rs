@@ -1,18 +1,4 @@
-#[cfg(feature = "cli")]
-pub use termrock_cli as cli;
-pub mod core;
-pub mod metrics;
-pub use termrock_catalog::{catalog, docs};
-pub use termrock_core::motion;
-pub use termrock_session::clock;
-pub use termrock_shell as shell;
-pub use termrock_shell::reach_tests;
-pub use termrock_shell::runtime;
-#[cfg(feature = "terminal")]
-pub use termrock_terminal as terminal;
-pub use termrock_theme as theme;
-pub mod ui;
-pub mod widgets;
+//! Deprecated: `termrock` is the import path. This package re-exports it so that
+//! existing `junie_tui::` imports keep compiling (`docs/api-contract.md`).
 
-// Transitional: `crate::record_work!` keeps resolving for the files that have not moved yet (#452 removes this).
-pub use termrock_metrics::record_work;
+pub use termrock::*;
