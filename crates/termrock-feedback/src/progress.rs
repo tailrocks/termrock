@@ -2,9 +2,9 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Rect, Size};
 use ratatui::style::Color;
 
-use crate::ui::ctx::RenderCtx;
-use crate::ui::measure::terminal_extent;
-use crate::ui::text::width;
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::measure::terminal_extent;
+use termrock_text::cells::width;
 
 pub const SPINNER: [&str; 10] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
@@ -55,7 +55,7 @@ impl BarLayout {
         if !has_label {
             return area.x;
         }
-        let text = crate::ui::text::truncate(label, label_w);
+        let text = termrock_text::cells::truncate(label, label_w);
         buf.set_string(area.x, area.y, text, ctx.theme.primary().bg(bg));
         area.x + terminal_extent(label_w) + 2
     }
@@ -117,7 +117,7 @@ pub fn render_bar_with(
     let filled = ((track_w as f64) * ratio).round() as u16;
 
     let fill_color = match status {
-        ProgressStatus::Active => t.tone(crate::theme::Tone::Active),
+        ProgressStatus::Active => t.tone(termrock_theme::Tone::Active),
         ProgressStatus::Done => t.success,
         ProgressStatus::Error => t.error,
         ProgressStatus::Paused => t.text_muted,
@@ -291,7 +291,7 @@ impl Meter {
             )
     }
 
-    fn paint(&self, t: &crate::theme::Theme, bg: Color) -> MeterPaint {
+    fn paint(&self, t: &termrock_theme::Theme, bg: Color) -> MeterPaint {
         use ratatui::style::{Modifier, Style};
         let level_color = |l: MeterLevel| match l {
             MeterLevel::Low => t.info,
@@ -384,7 +384,8 @@ impl Meter {
             suffix_style = suffix_style.add_modifier(ratatui::style::Modifier::BOLD);
         }
         if !has_run {
-            let text = crate::ui::text::truncate(&value, area.width.saturating_sub(2) as usize);
+            let text =
+                termrock_text::cells::truncate(&value, area.width.saturating_sub(2) as usize);
             buf.set_string(area.x, area.y, &text, text_style);
             let sx = area.x + width(&text) as u16;
             if sx + 2 <= area.right() {
@@ -400,7 +401,7 @@ impl Meter {
                     buf.set_string(
                         area.x,
                         area.y,
-                        crate::ui::text::truncate(&value, area.width as usize),
+                        termrock_text::cells::truncate(&value, area.width as usize),
                         text_style,
                     );
                     return;
@@ -430,7 +431,7 @@ impl Meter {
                     buf.set_string(
                         area.x,
                         area.y,
-                        crate::ui::text::truncate(&value, area.width as usize),
+                        termrock_text::cells::truncate(&value, area.width as usize),
                         text_style,
                     );
                     return;
@@ -467,12 +468,12 @@ impl Meter {
                     buf.set_string(area.x + i, area.y, " ", cell_style(i));
                 }
                 let text_area = Rect::new(area.x + 1, area.y, bar_w - 2, 1);
-                crate::ui::text::paint_graphemes(
+                termrock_text::cells::paint_graphemes(
                     buf,
                     text_area,
                     (0, 0),
                     &value,
-                    crate::ui::text::TextClip::Ellipsis,
+                    termrock_text::cells::TextClip::Ellipsis,
                     |_, col| cell_style(1 + col as u16),
                 );
                 buf.set_string(area.x + bar_w, area.y, suffix, suffix_style);
@@ -483,7 +484,7 @@ impl Meter {
 
 const MIN_TRACK: u16 = 6;
 
-impl crate::ui::measure::Measure for Meter {
+impl termrock_runtime::measure::Measure for Meter {
     fn measure(&self, _avail: Size, ctx: &RenderCtx) -> Size {
         let t = ctx.theme;
         let value = match self.tone {
@@ -574,7 +575,7 @@ pub fn render_spinner(area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, label: 
         return;
     }
     let t = ctx.theme;
-    let glyph = crate::ui::text::paint_clipped(
+    let glyph = termrock_text::cells::paint_clipped(
         buf,
         area,
         0,
@@ -584,7 +585,7 @@ pub fn render_spinner(area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, label: 
             .bg(bg),
     );
     if glyph > 0 {
-        crate::ui::text::paint_truncated(
+        termrock_text::cells::paint_truncated(
             buf,
             area,
             glyph + 1,
@@ -701,7 +702,7 @@ impl Tally {
                 if room == 0 {
                     return x - area.x;
                 }
-                let s = crate::ui::text::truncate(&s, room);
+                let s = termrock_text::cells::truncate(&s, room);
                 buf.set_string(x, area.y, &s, style.bg(bg));
                 x += width(&s) as u16;
             }
@@ -710,15 +711,15 @@ impl Tally {
     }
 }
 
-const SAMPLE_ID: crate::core::id::WidgetId = crate::core::id::WidgetId::of("progress-sample");
+const SAMPLE_ID: termrock_core::id::WidgetId = termrock_core::id::WidgetId::of("progress-sample");
 
-impl crate::ui::specimen::Specimen for ProgressBar {
-    fn specimen_id(&self) -> crate::core::id::WidgetId {
+impl termrock_runtime::specimen::Specimen for ProgressBar {
+    fn specimen_id(&self) -> termrock_core::id::WidgetId {
         SAMPLE_ID
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         match state {
             Rest | Empty | Loading | Error | Narrow => true,
 
@@ -729,13 +730,13 @@ impl crate::ui::specimen::Specimen for ProgressBar {
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
         bg: Color,
     ) {
-        use crate::ui::specimen::SpecimenState::*;
+        use termrock_runtime::specimen::SpecimenState::*;
         let mut b = self.clone();
         match state {
             Empty => b.ratio = b.ratio.map(|_| 0.0),
@@ -748,25 +749,25 @@ impl crate::ui::specimen::Specimen for ProgressBar {
     }
 }
 
-impl crate::ui::specimen::Specimen for Meter {
-    fn specimen_id(&self) -> crate::core::id::WidgetId {
+impl termrock_runtime::specimen::Specimen for Meter {
+    fn specimen_id(&self) -> termrock_core::id::WidgetId {
         SAMPLE_ID
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         matches!(state, Rest | Empty | Loading | Error | Overflow | Narrow)
     }
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
         bg: Color,
     ) {
-        use crate::ui::specimen::SpecimenState::*;
+        use termrock_runtime::specimen::SpecimenState::*;
         let mut m = self.clone();
         match state {
             Empty => {

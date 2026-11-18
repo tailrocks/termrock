@@ -2,8 +2,8 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::Style;
 
-use crate::theme::Theme;
-use crate::ui::text::{paint_clipped, truncate, width};
+use termrock_text::cells::{paint_clipped, truncate, width};
+use termrock_theme::Theme;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TooSmall<'a> {

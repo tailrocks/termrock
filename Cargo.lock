@@ -999,6 +999,7 @@ dependencies = [
  "termpane",
  "termrock-controls",
  "termrock-core",
+ "termrock-feedback",
  "termrock-metrics",
  "termrock-runtime",
  "termrock-session",
@@ -2184,6 +2185,19 @@ dependencies = [
  "termrock-metrics",
  "termrock-text",
  "unicode-segmentation",
+]
+
+[[package]]
+name = "termrock-feedback"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "termrock-controls",
+ "termrock-core",
+ "termrock-metrics",
+ "termrock-runtime",
+ "termrock-text",
+ "termrock-theme",
 ]
 
 [[package]]

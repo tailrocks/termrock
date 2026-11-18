@@ -2,11 +2,11 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 
-use crate::core::id::WidgetId;
-use crate::theme::{Theme, Tone};
-use crate::ui::ctx::RenderCtx;
-use crate::ui::measure::terminal_extent;
-use crate::ui::text::{truncate, wrap};
+use termrock_core::id::WidgetId;
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::measure::terminal_extent;
+use termrock_text::cells::{truncate, wrap};
+use termrock_theme::{Theme, Tone};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum NoticeKind {
@@ -156,7 +156,7 @@ impl Notice {
         }
         let (glyph, gs) = self.kind.glyph(t);
         let glyph_cell = Rect::new(area.x, area.y, area.width.min(2), 1);
-        crate::ui::text::paint_clipped(buf, glyph_cell, 0, glyph, gs.bg(bg));
+        termrock_text::cells::paint_clipped(buf, glyph_cell, 0, glyph, gs.bg(bg));
         if area.width <= 2 {
             return 1;
         }
@@ -172,7 +172,7 @@ impl Notice {
 
         let reveal = |y: u16, text: &str, max: usize| {
             if max > 0 && y > area.y && y <= area.bottom() && wrap(text, w.max(1)).len() > max {
-                crate::ui::reveal::queue_cut(Rect::new(x, y - 1, w as u16, 1), text);
+                termrock_runtime::reveal::queue_cut(Rect::new(x, y - 1, w as u16, 1), text);
             }
         };
         let message = Style::new().fg(t.tone(self.kind.message_tone()));
@@ -194,13 +194,13 @@ impl Notice {
         }
         if let Some(h) = &self.hint {
             let row = Rect::new(x, y, w as u16, 1);
-            put(&mut y, &crate::ui::reveal::cut(row, h), t.muted());
+            put(&mut y, &termrock_runtime::reveal::cut(row, h), t.muted());
         }
         y.min(area.bottom()) - area.y
     }
 }
 
-impl crate::ui::measure::Measure for Notice {
+impl termrock_runtime::measure::Measure for Notice {
     fn measure(&self, _avail: ratatui::layout::Size, _ctx: &RenderCtx) -> ratatui::layout::Size {
         let text = [
             Some(&self.message),
@@ -209,7 +209,7 @@ impl crate::ui::measure::Measure for Notice {
         ]
         .into_iter()
         .flatten()
-        .map(|s| crate::ui::text::width(s))
+        .map(|s| termrock_text::cells::width(s))
         .max()
         .unwrap_or(0);
         let width = terminal_extent(text.saturating_add(2));
@@ -219,17 +219,17 @@ impl crate::ui::measure::Measure for Notice {
 
 const SAMPLE_ID: WidgetId = WidgetId::of("notice-sample");
 
-impl crate::ui::specimen::Specimen for Notice {
+impl termrock_runtime::specimen::Specimen for Notice {
     fn specimen_id(&self) -> WidgetId {
         SAMPLE_ID
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         matches!(state, Rest | Error | Overflow | Narrow)
     }
 
-    fn specimen_height(&self, _state: crate::ui::specimen::SpecimenState) -> u16 {
+    fn specimen_height(&self, _state: termrock_runtime::specimen::SpecimenState) -> u16 {
         terminal_extent(
             self.message_lines
                 .max(1)
@@ -244,13 +244,13 @@ impl crate::ui::specimen::Specimen for Notice {
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
         bg: Color,
     ) {
-        use crate::ui::specimen::SpecimenState::*;
+        use termrock_runtime::specimen::SpecimenState::*;
         let mut n = self.clone();
         match state {
             Error => n.kind = NoticeKind::Error,

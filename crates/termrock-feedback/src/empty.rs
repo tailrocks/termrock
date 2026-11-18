@@ -2,11 +2,11 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::Color;
 
-use crate::core::id::WidgetId;
-use crate::theme::Theme;
-use crate::ui::ctx::RenderCtx;
-use crate::ui::measure::terminal_extent;
-use crate::widgets::button::{Button, place_lines};
+use termrock_controls::button::{Button, place_lines};
+use termrock_core::id::WidgetId;
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::measure::terminal_extent;
+use termrock_theme::Theme;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum EmptyKind {
@@ -80,10 +80,10 @@ impl EmptyState {
     pub fn on_key(
         &self,
         focus: WidgetId,
-        key: &crate::core::event::Key,
-    ) -> (crate::core::event::Outcome, Option<&EmptyAction>) {
+        key: &termrock_core::event::Key,
+    ) -> (termrock_core::event::Outcome, Option<&EmptyAction>) {
         let Some(a) = self.actions.iter().find(|a| a.id == focus) else {
-            return (crate::core::event::Outcome::Ignored, None);
+            return (termrock_core::event::Outcome::Ignored, None);
         };
         let (o, act) = Button::secondary(a.id, &a.label).on_key(key);
         (o, act.then_some(a))
@@ -106,7 +106,9 @@ pub fn render_ctx(area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, e: &EmptySt
     let hint_rows = e
         .hint
         .as_ref()
-        .map(|h| crate::ui::text::wrap(h, area.width.saturating_sub(4).max(8) as usize).len() + 1)
+        .map(|h| {
+            termrock_text::cells::wrap(h, area.width.saturating_sub(4).max(8) as usize).len() + 1
+        })
         .unwrap_or(0);
     let total = terminal_extent(1usize.saturating_add(hint_rows));
     let y = text
@@ -151,7 +153,7 @@ pub fn render(area: Rect, buf: &mut Buffer, t: &Theme, e: &EmptyState, bg: Color
     let hint_lines: Vec<String> = e
         .hint
         .as_ref()
-        .map(|h| crate::ui::text::wrap(h, area.width.saturating_sub(4).max(8) as usize))
+        .map(|h| termrock_text::cells::wrap(h, area.width.saturating_sub(4).max(8) as usize))
         .unwrap_or_default();
     let total = terminal_extent(
         1 + if hint_lines.is_empty() {
@@ -165,8 +167,12 @@ pub fn render(area: Rect, buf: &mut Buffer, t: &Theme, e: &EmptyState, bg: Color
         if y >= area.bottom() {
             return;
         }
-        let s = crate::ui::text::truncate(s, area.width as usize);
-        let x = area.x + area.width.saturating_sub(crate::ui::text::width(&s) as u16) / 2;
+        let s = termrock_text::cells::truncate(s, area.width as usize);
+        let x = area.x
+            + area
+                .width
+                .saturating_sub(termrock_text::cells::width(&s) as u16)
+                / 2;
         buf.set_string(x, y, &s, style.bg(bg));
     };
     match e.kind {
@@ -175,8 +181,12 @@ pub fn render(area: Rect, buf: &mut Buffer, t: &Theme, e: &EmptyState, bg: Color
             let title = format!("! {}", e.title);
             put(buf, y0, &title, t.error_fg());
 
-            let s = crate::ui::text::truncate(&title, area.width as usize);
-            let x = area.x + area.width.saturating_sub(crate::ui::text::width(&s) as u16) / 2;
+            let s = termrock_text::cells::truncate(&title, area.width as usize);
+            let x = area.x
+                + area
+                    .width
+                    .saturating_sub(termrock_text::cells::width(&s) as u16)
+                    / 2;
             if y0 < area.bottom() {
                 buf.set_string(
                     x,
@@ -206,7 +216,7 @@ pub fn height(e: &EmptyState, width: u16) -> u16 {
     let hint = e
         .hint
         .as_ref()
-        .map(|h| crate::ui::text::wrap(h, width.saturating_sub(4).max(8) as usize).len() + 1)
+        .map(|h| termrock_text::cells::wrap(h, width.saturating_sub(4).max(8) as usize).len() + 1)
         .unwrap_or(0);
     let actions = if e.actions.is_empty() { 0 } else { 2 };
     terminal_extent(hint.saturating_add(1 + actions))
@@ -230,7 +240,7 @@ impl EmptyState {
     }
 
     fn title_width(&self) -> usize {
-        crate::ui::text::width(&self.title).saturating_add(if self.kind == EmptyKind::Error {
+        termrock_text::cells::width(&self.title).saturating_add(if self.kind == EmptyKind::Error {
             2
         } else {
             0
@@ -238,12 +248,12 @@ impl EmptyState {
     }
 }
 
-impl crate::ui::measure::Measure for EmptyState {
+impl termrock_runtime::measure::Measure for EmptyState {
     fn measure(&self, _avail: ratatui::layout::Size, ctx: &RenderCtx) -> ratatui::layout::Size {
         let hint = self
             .hint
             .as_deref()
-            .map(|h| crate::ui::text::width(h).saturating_add(4))
+            .map(|h| termrock_text::cells::width(h).saturating_add(4))
             .unwrap_or(0);
         let buttons = self.action_row_width(ctx.theme.spacing.button_gap);
         let width = terminal_extent(self.title_width().max(hint).max(buttons));
@@ -251,7 +261,7 @@ impl crate::ui::measure::Measure for EmptyState {
     }
 
     fn min_width(&self, avail: ratatui::layout::Size, ctx: &RenderCtx) -> u16 {
-        let w = crate::ui::text::width;
+        let w = termrock_text::cells::width;
         let full = self.measure(avail, ctx).width;
         let hint = self.hint.as_deref().map_or(0, |h| {
             let word = h.split_whitespace().map(w).max().unwrap_or(0);
@@ -266,13 +276,13 @@ impl crate::ui::measure::Measure for EmptyState {
 
 const HINT_MIN: u16 = 24;
 
-impl crate::ui::specimen::Specimen for EmptyState {
+impl termrock_runtime::specimen::Specimen for EmptyState {
     fn specimen_id(&self) -> WidgetId {
         self.actions.first().map_or(SAMPLE_ID, |a| a.id)
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         match state {
             Rest | Error | Overflow | Narrow => true,
             Hover | Pressed | Focused | FocusedHover => !self.actions.is_empty(),
@@ -280,19 +290,19 @@ impl crate::ui::specimen::Specimen for EmptyState {
         }
     }
 
-    fn specimen_height(&self, _state: crate::ui::specimen::SpecimenState) -> u16 {
+    fn specimen_height(&self, _state: termrock_runtime::specimen::SpecimenState) -> u16 {
         height(self, 24) + u16::from(self.hint.is_some())
     }
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
         bg: Color,
     ) {
-        use crate::ui::specimen::SpecimenState::*;
+        use termrock_runtime::specimen::SpecimenState::*;
         let mut e = self.clone();
         match state {
             Error => e.kind = EmptyKind::Error,
