@@ -125,15 +125,9 @@ functional = ["termrock"]
 "src/core/text.rs" = "text"
 
 # dialogs
-"src/ui/layers.rs" = "dialogs"
-"src/ui/leave.rs" = "dialogs"
-"src/widgets/choice_dialog.rs" = "dialogs"
-"src/widgets/dialog.rs" = "dialogs"
 "src/widgets/file_browser.rs" = "dialogs"
 "src/widgets/form_dialog.rs" = "dialogs"
 "src/widgets/form_dialog/tests.rs" = "dialogs"
-"src/widgets/help.rs" = "dialogs"
-"src/widgets/info_dialog.rs" = "dialogs"
 "src/widgets/inspect_changes.rs" = "dialogs"
 
 # shell

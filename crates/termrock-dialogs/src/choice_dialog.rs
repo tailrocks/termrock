@@ -1,33 +1,35 @@
-use crate::core::event::{Key, Outcome};
-use crate::core::focus::{Focus, FocusRing};
-use crate::core::hints::{HasHints, HintCx};
-use crate::core::id::WidgetId;
-use crate::core::intent::DismissReason;
-use crate::core::keymap::{Nav, NavKeys};
-use crate::core::pointer::PointerEvent;
-use crate::core::response::Response;
-use crate::theme::{ButtonKind, Strings, Tone};
-use crate::ui::ctx::RenderCtx;
-use crate::ui::layer::{Layer, LayerCx, LayerOut, LayerResult, LayerSpec, Overlay, layer_out};
-use crate::ui::popup::Dismiss;
-use crate::ui::specimen::{Specimen, SpecimenState};
-use crate::ui::text::truncate;
-use crate::widgets::button::{Button, row_layout_right, row_lines};
-use crate::widgets::choice::RadioGroup;
-use crate::widgets::icon_button::IconButton;
-use crate::widgets::keyhint::Hint;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Position;
 use ratatui::layout::Rect;
 use ratatui::style::Color;
 use ratatui::style::Style;
+use termrock_controls::button::{Button, row_layout_right, row_lines};
+use termrock_controls::choice::RadioGroup;
+use termrock_controls::icon_button::IconButton;
+use termrock_controls::keyhint::Hint;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::focus::{Focus, FocusRing};
+use termrock_core::hints::{HasHints, HintCx};
+use termrock_core::id::WidgetId;
+use termrock_core::intent::DismissReason;
+use termrock_core::keymap::{Nav, NavKeys};
+use termrock_core::pointer::PointerEvent;
+use termrock_core::response::Response;
+use termrock_overlays::layer::{
+    Layer, LayerCx, LayerOut, LayerResult, LayerSpec, Overlay, layer_out,
+};
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::popup::Dismiss;
+use termrock_runtime::specimen::{Specimen, SpecimenState};
+use termrock_text::cells::truncate;
+use termrock_theme::{ButtonKind, Strings, Tone};
 
 #[derive(Clone)]
 pub struct ChoiceDialog {
-    pub close_button: crate::widgets::icon_button::IconButton,
+    pub close_button: termrock_controls::icon_button::IconButton,
 
-    pub dismiss: crate::ui::popup::Dismiss,
+    pub dismiss: termrock_runtime::popup::Dismiss,
     pub title: String,
     pub lines: Vec<(String, Tone)>,
     pub radio: RadioGroup,
@@ -47,7 +49,7 @@ pub struct ChoiceDialog {
 
     pub nav: NavKeys,
 
-    pub button_row: crate::widgets::button::ButtonRow,
+    pub button_row: termrock_controls::button::ButtonRow,
 
     pub double_click_confirms: bool,
 
@@ -83,7 +85,7 @@ impl HasHints for ChoiceDialog {
 }
 
 impl ChoiceDialog {
-    pub fn button_row(mut self, row: crate::widgets::button::ButtonRow) -> Self {
+    pub fn button_row(mut self, row: termrock_controls::button::ButtonRow) -> Self {
         self.button_row = row;
         self
     }
@@ -93,20 +95,22 @@ impl ChoiceDialog {
         self
     }
 
-    pub fn close_button(mut self, button: crate::widgets::icon_button::IconButton) -> Self {
+    pub fn close_button(mut self, button: termrock_controls::icon_button::IconButton) -> Self {
         self.close_button = button;
         self
     }
 
-    pub fn dismiss(mut self, dismiss: crate::ui::popup::Dismiss) -> Self {
+    pub fn dismiss(mut self, dismiss: termrock_runtime::popup::Dismiss) -> Self {
         self.dismiss = dismiss;
         self
     }
 
     pub fn new(id: WidgetId, title: &str, label: &str, options: &[&str], selected: usize) -> Self {
         Self {
-            dismiss: crate::ui::popup::Dismiss::ESCAPE,
-            close_button: crate::widgets::icon_button::IconButton::close(crate::ui::modal::CLOSE),
+            dismiss: termrock_runtime::popup::Dismiss::ESCAPE,
+            close_button: termrock_controls::icon_button::IconButton::close(
+                termrock_overlays::modal::CLOSE,
+            ),
             title: title.to_owned(),
             lines: vec![],
             radio: RadioGroup::new(id.sub("radio"), label, options, selected),
@@ -123,7 +127,7 @@ impl ChoiceDialog {
             option_tones: vec![],
             strings: Strings::DEFAULT,
             nav: NavKeys::default(),
-            button_row: crate::widgets::button::ButtonRow::new(),
+            button_row: termrock_controls::button::ButtonRow::new(),
             double_click_confirms: true,
             refused: false,
         }
@@ -251,7 +255,7 @@ impl ChoiceDialog {
             return Outcome::Changed;
         }
         match key.code {
-            KeyCode::Esc => crate::ui::layer::dismiss(self, DismissReason::Esc)
+            KeyCode::Esc => termrock_overlays::layer::dismiss(self, DismissReason::Esc)
                 .map_or(Outcome::Consumed, |response| response.outcome()),
             KeyCode::Tab => {
                 focus.next(ring);
@@ -298,7 +302,7 @@ impl ChoiceDialog {
         }
         let widths: Vec<u16> = self.buttons.iter().map(|b| b.width()).collect();
         let footer_rows = row_lines(
-            crate::ui::modal::Frame::new(self.width, 0).inner_width(screen),
+            termrock_overlays::modal::Frame::new(self.width, 0).inner_width(screen),
             &widths,
             1,
         );
@@ -306,9 +310,9 @@ impl ChoiceDialog {
 
         let flash = ctx.interaction.flash;
         if self.refused {
-            ctx.interaction.flash = Some(crate::ui::modal::SURFACE);
+            ctx.interaction.flash = Some(termrock_overlays::modal::SURFACE);
         }
-        let (area, inner) = crate::ui::modal::Frame::new(self.width, h)
+        let (area, inner) = termrock_overlays::modal::Frame::new(self.width, h)
             .title(&self.title)
             .meta(None)
             .overlay(&*self)
@@ -380,7 +384,7 @@ impl ChoiceDialog {
         }
         for i in 0..self.radio.options.len() {
             if let Some(r) = self.radio.areas.get(i) {
-                let part = crate::widgets::choice::RadioGroup::option_part(i);
+                let part = termrock_controls::choice::RadioGroup::option_part(i);
                 let id = self.radio.option_id(i);
                 ctx.hits.register_part_as(id, self.radio.id, part, *r);
             }
@@ -394,12 +398,12 @@ impl ChoiceDialog {
 impl ChoiceDialog {
     pub fn pointer_in(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
+        ev: &termrock_core::pointer::PointerEvent,
         focus: &mut Focus,
-    ) -> crate::core::response::Response<()> {
-        use crate::core::intent::Phase;
-        use crate::core::pointer::MouseTarget;
-        use crate::core::response::Response;
+    ) -> termrock_core::response::Response<()> {
+        use termrock_core::intent::Phase;
+        use termrock_core::pointer::MouseTarget;
+        use termrock_core::response::Response;
         if ev.wheel().is_some() {
             return Response::ignored();
         }
@@ -417,7 +421,7 @@ impl ChoiceDialog {
                     && !self.radio.disabled
                     && !self.buttons.is_empty()
                     && ev
-                        .index_of(crate::core::id::Part::ROW)
+                        .index_of(termrock_core::id::Part::ROW)
                         .is_some_and(|i| i == self.radio.selected)
                 {
                     return self.fire_default().into();

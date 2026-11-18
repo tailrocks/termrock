@@ -3,26 +3,26 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 use ratatui::style::Modifier;
 
-use crate::core::event::{Key, Outcome};
-use crate::core::hints::{HasHints, HintCx};
-use crate::core::hit::Axis;
-use crate::core::id::WidgetId;
-use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
-use crate::core::pointer::{MouseTarget, PointerEvent};
-use crate::core::response::Response;
-use crate::core::scroll::{ScrollPane, Scrollable};
-use crate::ui::ctx::RenderCtx;
-use crate::ui::layer::{
+use ratatui::layout::Position;
+use termrock_controls::button::Button;
+use termrock_controls::icon_button::IconButton;
+use termrock_controls::keyhint::Hint;
+use termrock_controls::scrollbar;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::hints::{HasHints, HintCx};
+use termrock_core::hit::Axis;
+use termrock_core::id::WidgetId;
+use termrock_core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
+use termrock_core::pointer::{MouseTarget, PointerEvent};
+use termrock_core::response::Response;
+use termrock_core::scroll::{ScrollPane, Scrollable};
+use termrock_overlays::layer::{
     DismissReason, Layer, LayerCx, LayerOut, LayerResult, LayerSpec, Overlay, layer_out,
 };
-use crate::ui::modal::Frame;
-use crate::ui::popup::{Dismiss, Placement};
-use crate::ui::text::{truncate, width};
-use crate::widgets::button::Button;
-use crate::widgets::icon_button::IconButton;
-use crate::widgets::keyhint::Hint;
-use crate::widgets::scrollbar;
-use ratatui::layout::Position;
+use termrock_overlays::modal::Frame;
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::popup::{Dismiss, Placement};
+use termrock_text::cells::{truncate, width};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HelpCmd {
@@ -61,13 +61,13 @@ impl HelpSection {
 
     pub fn row(mut self, keys: impl Into<String>, action: impl Into<String>) -> Self {
         let keys = keys.into();
-        if crate::core::keyboard::label_deliverable(&keys) {
+        if termrock_core::keyboard::label_deliverable(&keys) {
             self.rows.push((keys, action.into()));
         }
         self
     }
 
-    pub fn bindings(mut self, bindings: &[crate::core::hints::Binding]) -> Self {
+    pub fn bindings(mut self, bindings: &[termrock_core::hints::Binding]) -> Self {
         for b in bindings.iter().filter(|b| !b.action.is_empty()) {
             match self.rows.iter_mut().find(|(_, a)| *a == b.action) {
                 Some((keys, _)) => {
@@ -88,9 +88,9 @@ impl HelpSection {
 }
 
 pub struct HelpOverlay {
-    pub close_button: crate::widgets::icon_button::IconButton,
+    pub close_button: termrock_controls::icon_button::IconButton,
 
-    pub dismiss: crate::ui::popup::Dismiss,
+    pub dismiss: termrock_runtime::popup::Dismiss,
     pub id: WidgetId,
     pub scope: String,
     pub sections: Vec<(String, Vec<(String, String)>)>,
@@ -111,7 +111,7 @@ pub struct HelpOverlay {
 
     pub done: Button,
 
-    strings: crate::theme::Strings,
+    strings: termrock_theme::Strings,
 }
 
 impl std::fmt::Debug for HelpOverlay {
@@ -140,7 +140,7 @@ impl HasHints for HelpOverlay {
 }
 
 impl HelpOverlay {
-    pub fn close_button(mut self, button: crate::widgets::icon_button::IconButton) -> Self {
+    pub fn close_button(mut self, button: termrock_controls::icon_button::IconButton) -> Self {
         self.close_button = button;
         self
     }
@@ -157,8 +157,10 @@ impl HelpOverlay {
 
     pub fn new(id: WidgetId, scope: &str, sections: Vec<(&str, Vec<(&str, &str)>)>) -> Self {
         Self {
-            dismiss: crate::ui::popup::Dismiss::LIGHT,
-            close_button: crate::widgets::icon_button::IconButton::close(crate::ui::modal::CLOSE),
+            dismiss: termrock_runtime::popup::Dismiss::LIGHT,
+            close_button: termrock_controls::icon_button::IconButton::close(
+                termrock_overlays::modal::CLOSE,
+            ),
             id,
             scope: scope.to_owned(),
             sections: sections
@@ -167,7 +169,7 @@ impl HelpOverlay {
                     (
                         t.to_owned(),
                         rows.into_iter()
-                            .filter(|(k, _)| crate::core::keyboard::label_deliverable(k))
+                            .filter(|(k, _)| termrock_core::keyboard::label_deliverable(k))
                             .map(|(k, a)| (k.to_owned(), a.to_owned()))
                             .collect(),
                     )
@@ -176,13 +178,13 @@ impl HelpOverlay {
             scroll: ScrollPane::default(),
             area: Rect::ZERO,
             closed: false,
-            title: crate::theme::Strings::DEFAULT.help_title.into(),
+            title: termrock_theme::Strings::DEFAULT.help_title.into(),
             hint: String::new(),
             nav: NavKeys::default(),
             keymap: HelpCmd::default_keymap(),
             max_percent: 80,
-            done: Button::secondary(id.sub("done"), crate::theme::Strings::DEFAULT.done),
-            strings: crate::theme::Strings::DEFAULT,
+            done: Button::secondary(id.sub("done"), termrock_theme::Strings::DEFAULT.done),
+            strings: termrock_theme::Strings::DEFAULT,
         }
     }
 
@@ -203,7 +205,7 @@ impl HelpOverlay {
 
     pub fn on_click(&mut self, id: WidgetId) -> Outcome {
         if id == self.done.id && self.done.on_click()
-            || id == crate::ui::modal::CLOSE && self.dismiss.shows_close()
+            || id == termrock_overlays::modal::CLOSE && self.dismiss.shows_close()
         {
             self.closed = true;
             return Outcome::Changed;
@@ -216,7 +218,7 @@ impl HelpOverlay {
         self
     }
 
-    pub fn dismiss(mut self, dismiss: crate::ui::popup::Dismiss) -> Self {
+    pub fn dismiss(mut self, dismiss: termrock_runtime::popup::Dismiss) -> Self {
         self.dismiss = dismiss;
         self
     }
@@ -252,10 +254,10 @@ impl HelpOverlay {
         let screen = screen.intersection(*buf.area());
         let s = ctx.theme.strings;
         let old = std::mem::replace(&mut self.strings, s);
-        crate::theme::Strings::follow(&mut self.title, old.help_title, s.help_title);
-        crate::theme::Strings::follow(&mut self.hint, old.help_footer, s.help_footer);
+        termrock_theme::Strings::follow(&mut self.title, old.help_title, s.help_title);
+        termrock_theme::Strings::follow(&mut self.hint, old.help_footer, s.help_footer);
         self.scroll.begin(ctx.track_click);
-        crate::theme::Strings::follow(&mut self.done.label, old.done, s.done);
+        termrock_theme::Strings::follow(&mut self.done.label, old.done, s.done);
         if screen.is_empty() {
             self.area = Rect::ZERO;
             self.clear_body();
@@ -294,7 +296,7 @@ impl HelpOverlay {
                     b.push((k.clone(), String::new(), false));
                     continue;
                 }
-                for (i, line) in crate::ui::text::wrap(a, cols.action)
+                for (i, line) in termrock_text::cells::wrap(a, cols.action)
                     .into_iter()
                     .enumerate()
                 {
@@ -359,7 +361,7 @@ impl HelpOverlay {
                 let lw = width(&label) as u16;
 
                 let reserve = if self.dismiss.shows_close() {
-                    crate::ui::modal::CLOSE_WIDTH + 1
+                    termrock_overlays::modal::CLOSE_WIDTH + 1
                 } else {
                     0
                 };
@@ -432,7 +434,7 @@ impl Scrollable for HelpOverlay {
     }
 }
 
-impl crate::core::pointer::MouseTarget for HelpOverlay {
+impl termrock_core::pointer::MouseTarget for HelpOverlay {
     type Action = ();
 
     fn mouse_id(&self) -> WidgetId {
@@ -441,25 +443,26 @@ impl crate::core::pointer::MouseTarget for HelpOverlay {
 
     fn route(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> Option<crate::core::response::Response<()>> {
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> Option<termrock_core::response::Response<()>> {
         let owner = ev.owner();
-        let mine = owner == self.id || owner == self.done.id || owner == crate::ui::modal::CLOSE;
+        let mine =
+            owner == self.id || owner == self.done.id || owner == termrock_overlays::modal::CLOSE;
         mine.then(|| MouseTarget::pointer(self, ev))
     }
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<()> {
-        use crate::core::response::Response;
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<()> {
+        use termrock_core::response::Response;
         if ev.wheel().is_some() && !ev.on(self.id) {
             return Response::ignored();
         }
-        if let Some(r) = crate::core::pointer::scroll_input(self, ev) {
+        if let Some(r) = termrock_core::pointer::scroll_input(self, ev) {
             return r;
         }
-        if ev.is(crate::core::intent::Phase::Click) {
+        if ev.is(termrock_core::intent::Phase::Click) {
             return self.on_click(ev.id).into();
         }
         Response::ignored()

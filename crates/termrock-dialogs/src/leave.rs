@@ -1,10 +1,10 @@
 use ratatui::crossterm::event::KeyCode;
 
-use crate::core::event::Key;
-use crate::core::id::WidgetId;
-use crate::theme::Strings;
-use crate::widgets::button::Button;
-use crate::widgets::dialog::{Dialog, DialogResult};
+use crate::dialog::{Dialog, DialogResult};
+use termrock_controls::button::Button;
+use termrock_core::event::Key;
+use termrock_core::id::WidgetId;
+use termrock_theme::Strings;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum Stakes {
