@@ -741,9 +741,9 @@ dependencies = [
 name = "functional-cross"
 version = "0.1.0"
 dependencies = [
- "junie-tui",
  "serde_json",
  "sha2 0.11.1",
+ "termrock",
  "tuiscotti",
  "tuiscotti-tui-test",
 ]
@@ -981,39 +981,16 @@ dependencies = [
 name = "junie-tui"
 version = "0.1.0"
 dependencies = [
- "libc",
  "ratatui",
  "serde_json",
  "sha2 0.11.1",
  "syn 3.0.10",
  "termpane",
- "termrock-catalog",
- "termrock-cli",
- "termrock-collections",
- "termrock-conformance",
- "termrock-controls",
- "termrock-core",
- "termrock-dialogs",
- "termrock-editors",
- "termrock-feedback",
- "termrock-fields",
- "termrock-grid",
- "termrock-layout",
- "termrock-metrics",
- "termrock-navigation",
- "termrock-overlays",
- "termrock-runtime",
- "termrock-session",
- "termrock-shell",
- "termrock-terminal",
+ "termrock",
  "termrock-text",
- "termrock-theme",
- "termrock-viewport",
  "toml 1.2.1+spec-1.1.0",
  "tuiscotti",
  "tuiscotti-tui-test",
- "unicode-segmentation",
- "unicode-width",
 ]
 
 [[package]]
@@ -2162,8 +2139,29 @@ dependencies = [
 name = "termrock"
 version = "0.1.0"
 dependencies = [
- "junie-tui",
  "ratatui",
+ "termrock-catalog",
+ "termrock-cli",
+ "termrock-collections",
+ "termrock-conformance",
+ "termrock-controls",
+ "termrock-core",
+ "termrock-dialogs",
+ "termrock-editors",
+ "termrock-feedback",
+ "termrock-fields",
+ "termrock-grid",
+ "termrock-layout",
+ "termrock-metrics",
+ "termrock-navigation",
+ "termrock-overlays",
+ "termrock-runtime",
+ "termrock-session",
+ "termrock-shell",
+ "termrock-terminal",
+ "termrock-text",
+ "termrock-theme",
+ "termrock-viewport",
 ]
 
 [[package]]
