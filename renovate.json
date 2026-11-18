@@ -38,6 +38,15 @@
       "groupName": "rust toolchain"
     },
     {
+      "description": "These mise tools publish v-prefixed release tags that Renovate would otherwise write verbatim; the velnor resolver needs bare X.Y.Z, so strip the prefix and ignore tags that are not plain X.Y.Z.",
+      "matchDepNames": [
+        "jactionlint",
+        "mr-boxington",
+        "github:tailrocks/velnor-new"
+      ],
+      "extractVersion": "^v(?<version>\\d+\\.\\d+\\.\\d+)$"
+    },
+    {
       "matchDepNames": [
         "github:tailrocks/velnor-new"
       ],
