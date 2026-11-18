@@ -1,10 +1,10 @@
 use std::io::Write;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use junie_tui::runtime::TerminalSession;
 use ratatui::crossterm::event::{self, Event, KeyCode};
 use ratatui::crossterm::terminal::{disable_raw_mode, enable_raw_mode, is_raw_mode_enabled};
 use ratatui::widgets::Paragraph;
+use termrock::runtime::TerminalSession;
 
 use super::bins::SHOWCASE;
 use super::support::{App, Launch, Point, find, text, try_launch};
@@ -291,16 +291,16 @@ fn a_session_gives_the_terminal_back_and_takes_it_again_through_its_own_calls() 
 /// longest an external message can wait: the receiver's own latency.
 struct LatencyProbe {
     start: std::time::Instant,
-    receiver: junie_tui::runtime::ExternalReceiver,
+    receiver: termrock::runtime::ExternalReceiver,
     delivered_ms: Option<u128>,
 }
 
-impl junie_tui::runtime::Application for LatencyProbe {
-    fn handle(&mut self, input: junie_tui::core::event::Input) -> junie_tui::core::event::Outcome {
-        if matches!(input, junie_tui::core::event::Input::External(_)) {
+impl termrock::runtime::Application for LatencyProbe {
+    fn handle(&mut self, input: termrock::core::event::Input) -> termrock::core::event::Outcome {
+        if matches!(input, termrock::core::event::Input::External(_)) {
             self.delivered_ms = Some(self.start.elapsed().as_millis());
         }
-        junie_tui::core::event::Outcome::Changed
+        termrock::core::event::Outcome::Changed
     }
 
     fn render(&mut self, frame: &mut ratatui::Frame) {
@@ -316,7 +316,7 @@ impl junie_tui::runtime::Application for LatencyProbe {
         std::time::Duration::from_secs(60)
     }
 
-    fn external(&self) -> Option<&junie_tui::runtime::ExternalReceiver> {
+    fn external(&self) -> Option<&termrock::runtime::ExternalReceiver> {
         Some(&self.receiver)
     }
 }
@@ -346,7 +346,7 @@ fn an_external_message_waits_for_the_receivers_latency() {
         .ok()
         .and_then(|mode| mode.strip_prefix("latency:").map(str::to_owned))
     {
-        let (tx, receiver) = junie_tui::runtime::external_channel();
+        let (tx, receiver) = termrock::runtime::external_channel();
         let receiver = receiver.latency(std::time::Duration::from_millis(
             ms.parse().expect("latency in ms"),
         ));
@@ -359,7 +359,7 @@ fn an_external_message_waits_for_the_receivers_latency() {
             std::thread::sleep(std::time::Duration::from_millis(100));
             tx.send(1_u8);
         });
-        junie_tui::runtime::run(&mut app).expect("the event loop runs");
+        termrock::runtime::run(&mut app).expect("the event loop runs");
         say(&format!(
             "delivered after {} ms",
             app.delivered_ms.expect("a message arrived")

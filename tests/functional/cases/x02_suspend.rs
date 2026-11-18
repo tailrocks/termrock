@@ -11,9 +11,9 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
-use junie_tui::runtime::{TerminalSession, job_control};
 use ratatui::crossterm::event::{self, Event, KeyCode};
 use ratatui::widgets::Paragraph;
+use termrock::runtime::{TerminalSession, job_control};
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, Launch, SHOWCASE, text, try_launch};
