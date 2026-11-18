@@ -408,8 +408,7 @@ wording or settle what it left open.
 - **`core/text/tests.rs` moves with the buffer** into `termrock-text` except
   `text_revision_follows_undo_and_redo`, which drives `core::edit` and stays in
   `junie-tui` until `termrock-core` exists (#444 core).
-||||||| parent of 2cdaa723e (refactor(core): extract termrock-core and close the three coherence breaks (#444))
-=======
+
 ## 2026-11-18: Three coherence breaks of `termrock-core`, and how they close (#444)
 
 Context: an experiment that moved `core` into its own crate failed in
