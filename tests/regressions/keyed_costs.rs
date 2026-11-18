@@ -1,6 +1,6 @@
 //! Deterministic cost tests for collection projections and overlay paint.
 //!
-//! Work-count assertions live in `src/widgets/keyed_cost_tests.rs`.
+//! Work-count assertions live in `crates/termrock-conformance/tests/regressions/keyed_cost.rs`.
 
 use crate::common::*;
 use junie_tui::core::id::{ItemKey, WidgetId};

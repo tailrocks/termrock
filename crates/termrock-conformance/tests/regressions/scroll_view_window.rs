@@ -4,15 +4,15 @@ use ratatui::layout::{Position, Rect, Size};
 use ratatui::style::{Color, Style};
 use ratatui::widgets::Padding;
 
-use crate::core::event::{Key, Outcome};
-use crate::core::focus::FocusRing;
-use crate::core::hit::{HitRegion, HitRegistry};
-use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::theme::{ColorLevel, Theme};
-use crate::ui::ctx::{Interaction, RenderCtx};
-use crate::ui::scroll_view::{Axes, ScrollView, ScrollWork, VisibleWindow};
-use crate::widgets::scrollbar::id_for;
-use crate::widgets::select::Select;
+use termrock_controls::scrollbar::id_for;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::focus::FocusRing;
+use termrock_core::hit::{HitRegion, HitRegistry};
+use termrock_core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock_fields::select::Select;
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_theme::{ColorLevel, Theme};
+use termrock_viewport::scroll_view::{Axes, ScrollView, ScrollWork, VisibleWindow};
 
 const VIEW: WidgetId = WidgetId::of("scroll_window.view");
 const ROWS: WidgetId = WidgetId::of("scroll_window.rows");

@@ -7,36 +7,36 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Rect, Size};
 use ratatui::widgets::Padding;
 
-use crate::core::event::Key;
-use crate::core::focus::FocusRing;
-use crate::core::hit::HitRegistry;
-use crate::core::id::WidgetId;
-use crate::theme::{ButtonKind, ColorLevel, Theme, Tone};
-use crate::ui::ctx::{Interaction, RenderCtx};
-use crate::ui::layout::SplitDir;
-use crate::ui::measure::{Measure, Tile, tiles};
-use crate::ui::scroll_view::ScrollView;
-use crate::widgets::action_row::ActionRow;
-use crate::widgets::brand::Lockup;
-use crate::widgets::breadcrumb::Breadcrumb;
-use crate::widgets::button::{Button, ButtonRow, RowOverflow, row_layout, row_lines};
-use crate::widgets::chips::{Chip, ChipBar, overflow_run};
-use crate::widgets::choice::{Checkbox, RadioGroup, Toggle};
-use crate::widgets::detail_card::DetailCard;
-use crate::widgets::empty::EmptyState;
-use crate::widgets::icon_button::IconButton;
-use crate::widgets::keyhint::{self, Hint};
-use crate::widgets::meter_list::{MeterList, MeterRow};
-use crate::widgets::notice::Notice;
-use crate::widgets::page_header::{Heading, PageHeader};
-use crate::widgets::progress::Meter;
-use crate::widgets::props::{self, Prop};
-use crate::widgets::segments::{self, Segment};
-use crate::widgets::splitter::Splitter;
-use crate::widgets::statusbar::{StatusBar, StatusItem};
-use crate::widgets::steps::{Step, StepRail};
-use crate::widgets::tabs::Tabs;
-use crate::widgets::toolbar::{ToolItem, Toolbar, ToolbarAction};
+use termrock_collections::detail_card::DetailCard;
+use termrock_collections::props::{self, Prop};
+use termrock_controls::action_row::ActionRow;
+use termrock_controls::brand::Lockup;
+use termrock_controls::button::{Button, ButtonRow, RowOverflow, row_layout, row_lines};
+use termrock_controls::choice::{Checkbox, RadioGroup, Toggle};
+use termrock_controls::icon_button::IconButton;
+use termrock_controls::keyhint::{self, Hint};
+use termrock_controls::segments::{self, Segment};
+use termrock_core::event::Key;
+use termrock_core::focus::FocusRing;
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::WidgetId;
+use termrock_feedback::empty::EmptyState;
+use termrock_feedback::meter_list::{MeterList, MeterRow};
+use termrock_feedback::notice::Notice;
+use termrock_feedback::page_header::{Heading, PageHeader};
+use termrock_feedback::progress::Meter;
+use termrock_feedback::statusbar::{StatusBar, StatusItem};
+use termrock_fields::chips::{Chip, ChipBar, overflow_run};
+use termrock_layout::layout::SplitDir;
+use termrock_layout::splitter::Splitter;
+use termrock_navigation::breadcrumb::Breadcrumb;
+use termrock_navigation::steps::{Step, StepRail};
+use termrock_navigation::tabs::Tabs;
+use termrock_navigation::toolbar::{ToolItem, Toolbar, ToolbarAction};
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_runtime::measure::{Measure, Tile, tiles};
+use termrock_theme::{ButtonKind, ColorLevel, Theme, Tone};
+use termrock_viewport::scroll_view::ScrollView;
 
 const ID: WidgetId = WidgetId::of("intrinsic");
 const MAX: u16 = u16::MAX;
@@ -454,7 +454,7 @@ fn intrinsic_normal_layout_parity() {
 
     let crumbs = Breadcrumb::new(ID, vec!["Home".into(), "Docs".into(), "Guide".into()]);
     frame(80, 1, |_, ctx| {
-        let sep = crate::ui::text::width(&format!(" {} ", ctx.theme.glyphs.overflow_right));
+        let sep = termrock_text::cells::width(&format!(" {} ", ctx.theme.glyphs.overflow_right));
         assert_eq!(
             usize::from(crumbs.measure(Size::new(80, 1), ctx).width),
             4 + 4 + 5 + 2 * sep

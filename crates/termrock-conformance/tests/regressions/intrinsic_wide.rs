@@ -1,13 +1,13 @@
 //! Pure checks of the wide intrinsic helpers. They read the true totals that a
 //! public measurement saturates, without laying out a huge collection.
 
-use crate::core::id::WidgetId;
-use crate::theme::Tone;
-use crate::widgets::breadcrumb::Breadcrumb;
-use crate::widgets::button::{Button, wrap_lines};
-use crate::widgets::chips::{Chip, ChipBar, overflow_run_cells};
-use crate::widgets::statusbar::{StatusBar, StatusItem};
-use crate::widgets::toolbar::{ToolItem, Toolbar};
+use termrock_controls::button::{Button, wrap_lines};
+use termrock_core::id::WidgetId;
+use termrock_feedback::statusbar::{StatusBar, StatusItem};
+use termrock_fields::chips::{Chip, ChipBar, overflow_run_cells};
+use termrock_navigation::breadcrumb::Breadcrumb;
+use termrock_navigation::toolbar::{ToolItem, Toolbar};
+use termrock_theme::Tone;
 
 const ID: WidgetId = WidgetId::of("intrinsic.wide");
 
@@ -55,7 +55,7 @@ fn intrinsic_button_width_is_wide_before_it_is_saturated() {
 
 #[test]
 fn intrinsic_props_row_count_saturates() {
-    use crate::widgets::props::{Prop, PropsList, measure};
+    use termrock_collections::props::{Prop, PropsList, measure};
     let props: Vec<Prop> = (0..70_000).map(|_| Prop::new("k", "v")).collect();
     assert_eq!(measure(&props, 80), u16::MAX);
     let list = PropsList::new(ID, props);
