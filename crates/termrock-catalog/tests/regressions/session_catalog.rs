@@ -3,10 +3,10 @@
 
 use std::collections::BTreeSet;
 
-use junie_tui::catalog;
 use syn::{ImplItem, Item, TraitItem, Type, Visibility};
+use termrock_catalog::catalog;
 
-const SOURCE: &str = include_str!("../../src/terminal/session.rs");
+const SOURCE: &str = include_str!("../../../../src/terminal/session.rs");
 
 fn public(vis: &Visibility) -> bool {
     matches!(vis, Visibility::Public(_))
@@ -85,7 +85,7 @@ fn session_controller_api_is_catalogued() {
         .collect();
     assert!(
         missing.is_empty(),
-        "add these lines to src/catalog.rs:\n{}",
+        "add these lines to crates/termrock-catalog/src/catalog.rs:\n{}",
         missing
             .iter()
             .map(|id| format!("    Capability::function(\"{id}\"),"))

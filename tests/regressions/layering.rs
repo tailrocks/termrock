@@ -218,8 +218,9 @@ struct Tree {
 }
 
 impl Tree {
-    /// Every `.rs` file under `src/`, plus the shared test support that
-    /// `src/catalog_contract.rs` includes through `#[path]`.
+    /// Every `.rs` file under `src/`. The test support that `catalog_contract` used to include
+    /// through `#[path]` (`tests/support/*`) moved into `termrock-catalog` (#449), where stage B
+    /// checks its dependencies.
     fn load() -> Self {
         fn walk(root: &Path, dir: &Path, out: &mut BTreeMap<String, String>) {
             let mut entries: Vec<_> = std::fs::read_dir(dir)
@@ -240,9 +241,7 @@ impl Tree {
             }
         }
         let mut files = BTreeMap::new();
-        for dir in ["src", "tests/support"] {
-            walk(root(), &root().join(dir), &mut files);
-        }
+        walk(root(), &root().join("src"), &mut files);
         Self { files }
     }
 }

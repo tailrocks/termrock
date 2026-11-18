@@ -1,0 +1,29 @@
+[package]
+name = "termrock-catalog"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+description = "Declared-API catalog, generated documentation tables and the #14 inventory gate for the Termrock terminal UI library"
+license = "MIT"
+
+[lib]
+doctest = false
+
+[features]
+default = []
+work-metrics = ["termrock-collections/work-metrics", "termrock-controls/work-metrics", "termrock-core/work-metrics", "termrock-fields/work-metrics", "termrock-grid/work-metrics", "termrock-navigation/work-metrics"]
+
+[dependencies]
+ratatui = { workspace = true }
+termrock-collections = { workspace = true }
+termrock-controls = { workspace = true }
+termrock-core = { workspace = true }
+termrock-fields = { workspace = true }
+termrock-grid = { workspace = true }
+termrock-navigation = { workspace = true }
+
+[dev-dependencies]
+sha2 = { workspace = true }
+syn = { version = "=3.0.10", features = ["full", "visit"] }
+termrock-metrics = { workspace = true }
+toml = "=1.2.1"
