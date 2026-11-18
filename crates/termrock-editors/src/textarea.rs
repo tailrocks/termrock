@@ -3,39 +3,45 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Color, Modifier};
 
-use crate::core::edit::{EditEntry, EditKind, FieldKeys, FocusSelect, TextCmd};
-use crate::core::event::{Key, Outcome};
-use crate::core::focus::{BlurAction, request_focus_next};
-use crate::core::hints::{HasHints, HintCx};
-use crate::core::hit::Axis;
-use crate::core::id::WidgetId;
-use crate::core::keymap::{Nav, NavKeys};
-use crate::core::scroll::{HScroll, ScrollPane, Scrollable};
-use crate::core::text::CursorPos;
-use crate::ui::ctx::RenderCtx;
-use crate::ui::edit_menu::{
+use termrock_controls::keyhint::Hint;
+use termrock_controls::scrollbar;
+use termrock_core::edit::{EditEntry, EditKind, FieldKeys, FocusSelect, TextCmd};
+use termrock_core::event::{Key, Outcome};
+use termrock_core::field::edit::{EditField, Editable};
+use termrock_core::field::field_common::{
+    EditAction, PointerField, PointerSelect, paste_clipboard,
+};
+use termrock_core::focus::{BlurAction, request_focus_next};
+use termrock_core::hints::{HasHints, HintCx};
+use termrock_core::hit::Axis;
+use termrock_core::id::WidgetId;
+use termrock_core::keymap::{Nav, NavKeys};
+use termrock_core::scroll::{HScroll, ScrollPane, Scrollable};
+use termrock_fields::input::InputAction;
+use termrock_overlays::edit_menu::{
     EditCaps, EditMenu, EditMenuHost, edit_menu_key, edit_menu_pointer, edit_menu_route,
     editable_target, point_editable,
 };
-use crate::ui::text::width;
-use crate::widgets::edit::{EditField, Editable};
-use crate::widgets::field_common::{EditAction, PointerField, PointerSelect, paste_clipboard};
-use crate::widgets::input::InputAction;
-use crate::widgets::keyhint::Hint;
-use crate::widgets::scrollbar;
+use termrock_runtime::ctx::RenderCtx;
+use termrock_text::buffer::CursorPos;
+use termrock_text::cells::width;
 
-impl crate::ui::measure::Measure for TextArea {
+impl termrock_runtime::measure::Measure for TextArea {
     fn measure(
         &self,
         _avail: ratatui::layout::Size,
-        _ctx: &crate::ui::ctx::RenderCtx,
+        _ctx: &termrock_runtime::ctx::RenderCtx,
     ) -> ratatui::layout::Size {
         let longest = self.field.buffer.max_line_width() as u16;
         let label = width(&self.label) as u16 + 2;
         ratatui::layout::Size::new((longest + 5).max(label), self.height())
     }
 
-    fn min_width(&self, _avail: ratatui::layout::Size, _ctx: &crate::ui::ctx::RenderCtx) -> u16 {
+    fn min_width(
+        &self,
+        _avail: ratatui::layout::Size,
+        _ctx: &termrock_runtime::ctx::RenderCtx,
+    ) -> u16 {
         let message = self
             .field
             .error
@@ -128,7 +134,7 @@ impl TextArea {
             snapshot_revision: 0,
             nav: NavKeys::default(),
             edit_entry: None,
-            entry: crate::theme::Theme::DEFAULT_EDIT_ENTRY,
+            entry: termrock_theme::Theme::DEFAULT_EDIT_ENTRY,
             focus_select: FocusSelect::CaretEnd,
             esc_reverts: false,
             field_keys: None,
@@ -165,7 +171,7 @@ impl TextArea {
 
     pub fn text_keymap(
         mut self,
-        keymap: crate::core::keymap::KeyMap<crate::core::edit::TextCmd>,
+        keymap: termrock_core::keymap::KeyMap<termrock_core::edit::TextCmd>,
     ) -> Self {
         self.field.text_keymap = Some(keymap);
         self
@@ -195,11 +201,14 @@ impl TextArea {
             && self.field.buffer.text() != self.snapshot
     }
 
-    pub fn hints(&self) -> Vec<crate::widgets::keyhint::Hint> {
-        use crate::widgets::keyhint::{EDIT_TEXT, hint};
+    pub fn hints(&self) -> Vec<termrock_controls::keyhint::Hint> {
+        use termrock_controls::keyhint::{EDIT_TEXT, hint};
 
         if let Some(m) = self.edit_menu.menu() {
-            return crate::core::hints::HasHints::hints(m, &crate::core::hints::HintCx::new(None));
+            return termrock_core::hints::HasHints::hints(
+                m,
+                &termrock_core::hints::HintCx::new(None),
+            );
         }
         if self.disabled {
             Vec::new()
@@ -208,7 +217,7 @@ impl TextArea {
         } else if self.editing {
             EDIT_TEXT.to_vec()
         } else {
-            vec![crate::widgets::widget_hints::EDIT, hint("↑↓", "Scroll")]
+            vec![termrock_controls::widget_hints::EDIT, hint("↑↓", "Scroll")]
         }
     }
 
@@ -264,7 +273,7 @@ impl TextArea {
         self
     }
     pub fn error(mut self, e: Option<&str>) -> Self {
-        self.field.error = e.map(crate::widgets::edit::FieldError::from);
+        self.field.error = e.map(termrock_core::field::edit::FieldError::from);
         self
     }
     pub fn help(mut self, h: &str) -> Self {
@@ -279,7 +288,7 @@ impl TextArea {
     pub fn begin_edit(&mut self) {
         if !self.disabled {
             if !self.editing {
-                crate::record_work!(PayloadBytesCloned, self.field.buffer.text().len());
+                termrock_metrics::record_work!(PayloadBytesCloned, self.field.buffer.text().len());
                 self.snapshot = self.field.buffer.text().to_owned();
                 self.snapshot_revision = self.field.buffer.revision();
                 self.focus_edit = false;
@@ -385,7 +394,7 @@ impl TextArea {
                     (Outcome::Changed, None)
                 }
 
-                _ => (crate::widgets::field_common::unbound_key(key), None),
+                _ => (termrock_core::field::field_common::unbound_key(key), None),
             },
             action => {
                 if self.field.apply(action, key).edited {
@@ -515,7 +524,7 @@ impl TextArea {
         buf.set_string(
             area.x + 2.min(area.width),
             area.y,
-            crate::ui::text::truncate(&self.label, area.width.saturating_sub(2) as usize),
+            termrock_text::cells::truncate(&self.label, area.width.saturating_sub(2) as usize),
             label_style,
         );
 
@@ -537,11 +546,11 @@ impl TextArea {
             ctx.selection(self.id);
         }
         if !self.disabled {
-            ctx.pointer_shape(self.id, crate::core::shape::PointerShape::Text);
+            ctx.pointer_shape(self.id, termrock_core::shape::PointerShape::Text);
         }
         ctx.scrollable(self.id, body);
         let fs = t.field_style(s);
-        crate::ui::ctx::fill(buf, body, fs);
+        termrock_runtime::ctx::fill(buf, body, fs);
         let gutter = t.gutter(s, fs.bg.unwrap_or(bg), false);
         for y in body.top()..body.bottom() {
             buf.set_string(body.x, y, t.gutter_symbol(s), gutter);
@@ -583,12 +592,15 @@ impl TextArea {
         self.follow_cursor = false;
         if text.is_empty() {
             let w = inner.width as usize;
-            let wrapped =
-                crate::ui::text::wrap_with(&self.placeholder, w, crate::ui::text::WrapOpts::PLAIN);
+            let wrapped = termrock_text::cells::wrap_with(
+                &self.placeholder,
+                w,
+                termrock_text::cells::WrapOpts::PLAIN,
+            );
             let n = (inner.height as usize).max(1).min(wrapped.len());
             for (i, line) in wrapped.iter().take(n).enumerate() {
                 let line = if i + 1 == n && wrapped.len() > n {
-                    crate::ui::text::truncate(&wrapped[i..].join(" "), w)
+                    termrock_text::cells::truncate(&wrapped[i..].join(" "), w)
                 } else {
                     line.clone()
                 };
@@ -605,7 +617,7 @@ impl TextArea {
                 let Some(view) = self.field.buffer.line_view(li) else {
                     continue;
                 };
-                crate::record_work!(VisibleRowsPainted, 1usize);
+                termrock_metrics::record_work!(VisibleRowsPainted, 1usize);
                 let y = inner.y + (li - first) as u16;
                 let line_width = self.field.buffer.line_width(li).unwrap_or(0);
                 let clipped_right = line_width > self.hscroll + inner.width as usize;
@@ -678,39 +690,39 @@ impl TextArea {
             } else {
                 String::new()
             };
-            let pos = crate::ui::text::truncate(&pos, area.width.saturating_sub(3) as usize);
+            let pos = termrock_text::cells::truncate(&pos, area.width.saturating_sub(3) as usize);
             let pos_w = if pos.is_empty() {
                 0
             } else {
-                crate::ui::text::width(&pos) as u16 + 3
+                termrock_text::cells::width(&pos) as u16 + 3
             };
             let msg_w = area.width.saturating_sub(2 + pos_w) as usize;
             if let Some(e) = &self.field.error {
                 buf.set_string(
                     area.x + 2,
                     fy,
-                    crate::ui::text::truncate(e, msg_w),
+                    termrock_text::cells::truncate(e, msg_w),
                     t.error_fg().bg(bg),
                 );
             } else if !self.help.is_empty() {
                 buf.set_string(
                     area.x + 2,
                     fy,
-                    crate::ui::text::truncate(&self.help, msg_w),
+                    termrock_text::cells::truncate(&self.help, msg_w),
                     t.muted().bg(bg),
                 );
             }
             if !pos.is_empty() {
                 let px = area
                     .right()
-                    .saturating_sub(crate::ui::text::width(&pos) as u16 + 1);
+                    .saturating_sub(termrock_text::cells::width(&pos) as u16 + 1);
                 buf.set_string(px, fy, &pos, t.faint().bg(bg));
             }
         }
     }
 }
 
-impl crate::core::focus::BlurTarget for TextArea {
+impl termrock_core::focus::BlurTarget for TextArea {
     fn blur_id(&self) -> WidgetId {
         self.id
     }
@@ -756,13 +768,13 @@ impl Editable for TextArea {
     }
 }
 
-impl crate::ui::specimen::Specimen for TextArea {
+impl termrock_runtime::specimen::Specimen for TextArea {
     fn specimen_id(&self) -> WidgetId {
         self.id
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         match state {
             Rest | Hover | Focused | FocusedHover | Editing | Error | Disabled | Empty
             | Overflow | Narrow => true,
@@ -770,19 +782,19 @@ impl crate::ui::specimen::Specimen for TextArea {
         }
     }
 
-    fn specimen_height(&self, _state: crate::ui::specimen::SpecimenState) -> u16 {
+    fn specimen_height(&self, _state: termrock_runtime::specimen::SpecimenState) -> u16 {
         self.height()
     }
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
         bg: Color,
     ) {
-        use crate::ui::specimen::SpecimenState;
+        use termrock_runtime::specimen::SpecimenState;
         let mut a = self.clone();
         a.help.clear();
         let v = state.visual();
@@ -836,7 +848,7 @@ impl Scrollable for TextArea {
     }
 }
 
-impl crate::core::pointer::MouseTarget for TextArea {
+impl termrock_core::pointer::MouseTarget for TextArea {
     type Action = ();
 
     fn mouse_id(&self) -> WidgetId {
@@ -845,13 +857,13 @@ impl crate::core::pointer::MouseTarget for TextArea {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<()> {
-        use crate::core::intent::Phase;
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<()> {
+        use termrock_core::intent::Phase;
         if let Some(o) = edit_menu_pointer(self, ev) {
             return o.into();
         }
-        if let Some(r) = crate::core::pointer::scroll_input(self, ev) {
+        if let Some(r) = termrock_core::pointer::scroll_input(self, ev) {
             return r;
         }
         let pos = ev.pos();
@@ -859,14 +871,14 @@ impl crate::core::pointer::MouseTarget for TextArea {
             Some(Phase::Press) => self.on_press_count(pos, ev.count().max(1)).into(),
             Some(Phase::Drag) => self.on_drag(pos).into(),
             Some(Phase::Click) => self.on_click_count(pos, ev.count().max(1)).into(),
-            _ => crate::core::response::Response::ignored(),
+            _ => termrock_core::response::Response::ignored(),
         }
     }
 
     fn route(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> Option<crate::core::response::Response<()>> {
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> Option<termrock_core::response::Response<()>> {
         edit_menu_route(self, ev)
     }
 }
@@ -886,7 +898,7 @@ impl EditMenuHost for TextArea {
     fn edit_shortcut(&self, cmd: TextCmd) -> Option<String> {
         self.field.shortcut(cmd)
     }
-    fn edit_target(&self, ev: &crate::core::pointer::PointerEvent) -> bool {
+    fn edit_target(&self, ev: &termrock_core::pointer::PointerEvent) -> bool {
         editable_target(self, ev)
     }
     fn edit_point(&mut self, pos: Position) {

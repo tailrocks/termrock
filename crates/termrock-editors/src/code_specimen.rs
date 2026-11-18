@@ -2,10 +2,10 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::Color;
 
-use crate::core::id::WidgetId;
-use crate::ui::ctx::RenderCtx;
-use crate::ui::specimen::{Specimen, SpecimenState};
-use crate::widgets::code::{CodeEditor, Diagnostic, Severity};
+use crate::code::{CodeEditor, Diagnostic, Severity};
+use termrock_core::id::WidgetId;
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::specimen::{Specimen, SpecimenState};
 
 const SAMPLE_ROWS: u16 = 3;
 

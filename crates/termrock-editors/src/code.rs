@@ -6,31 +6,31 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Color, Modifier, Style};
 
-use crate::core::edit::{EditEntry, EditKind, FieldKeys, TextCmd};
-use crate::core::event::{Key, Outcome};
-use crate::core::focus::request_focus_next;
-use crate::core::hit::Axis;
-use crate::core::id::WidgetId;
-use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
-use crate::core::scroll::{HScroll, ScrollPane, ScrollState, Scrollable};
-use crate::theme::SyntaxTone;
-use crate::ui::ctx::{RenderCtx, fill};
-use crate::ui::edit_menu::{
+use termrock_controls::scrollbar;
+use termrock_core::edit::{EditEntry, EditKind, FieldKeys, TextCmd};
+use termrock_core::event::{Key, Outcome};
+use termrock_core::field::edit::{EditField, Editable, LineLook};
+use termrock_core::field::field_common::{EditAction, PointerField};
+use termrock_core::focus::request_focus_next;
+use termrock_core::hit::Axis;
+use termrock_core::id::WidgetId;
+use termrock_core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
+use termrock_core::scroll::{HScroll, ScrollPane, ScrollState, Scrollable};
+use termrock_overlays::edit_menu::{
     EditCaps, EditMenu, EditMenuHost, edit_menu_key, edit_menu_pointer, edit_menu_route,
     point_editable,
 };
-use crate::ui::text::{find_ranges, width};
-use crate::widgets::edit::{EditField, Editable, LineLook};
-use crate::widgets::field_common::{EditAction, PointerField};
-use crate::widgets::scrollbar;
+use termrock_runtime::ctx::{RenderCtx, fill};
+use termrock_text::cells::{find_ranges, width};
+use termrock_theme::SyntaxTone;
 
 mod index;
-use crate::core::hints::{HasHints, HintCx};
-use crate::widgets::keyhint::Hint;
 use index::{
     BracketMap, DiagnosticIndex, ProviderKey, RunIndex, SegmentSnapshot, SyntaxCache,
     next_generation,
 };
+use termrock_controls::keyhint::Hint;
+use termrock_core::hints::{HasHints, HintCx};
 
 pub type Highlighter = fn(&str) -> Vec<(Range<usize>, SyntaxTone)>;
 pub type Segmenter = fn(&str) -> Vec<Range<usize>>;
@@ -207,7 +207,7 @@ impl CodeEditor {
             nav: NavKeys::default(),
             keymap: CodeCmd::default_keymap(),
             edit_entry: None,
-            entry: crate::theme::Theme::DEFAULT_EDIT_ENTRY,
+            entry: termrock_theme::Theme::DEFAULT_EDIT_ENTRY,
             esc_reverts: false,
             field_keys: None,
             snapshot: None,
@@ -239,7 +239,7 @@ impl CodeEditor {
 
     pub fn text_keymap(
         mut self,
-        keymap: crate::core::keymap::KeyMap<crate::core::edit::TextCmd>,
+        keymap: termrock_core::keymap::KeyMap<termrock_core::edit::TextCmd>,
     ) -> Self {
         self.field.text_keymap = Some(keymap);
         self
@@ -259,11 +259,14 @@ impl CodeEditor {
         self.edit_entry.unwrap_or(self.entry)
     }
 
-    pub fn hints(&self) -> Vec<crate::widgets::keyhint::Hint> {
+    pub fn hints(&self) -> Vec<termrock_controls::keyhint::Hint> {
         if let Some(m) = self.edit_menu.menu() {
-            return crate::core::hints::HasHints::hints(m, &crate::core::hints::HintCx::new(None));
+            return termrock_core::hints::HasHints::hints(
+                m,
+                &termrock_core::hints::HintCx::new(None),
+            );
         }
-        use crate::widgets::keyhint::{EDIT_CODE, hint};
+        use termrock_controls::keyhint::{EDIT_CODE, hint};
         let esc = if self.esc_reverts { "Cancel" } else { "Done" };
         if self.find.as_ref().is_some_and(|f| f.editing) {
             vec![hint("Enter", "Find"), hint("Esc", "Close")]
@@ -276,7 +279,7 @@ impl CodeEditor {
         } else if self.read_only {
             vec![hint("Tab", "Next")]
         } else {
-            vec![crate::widgets::widget_hints::EDIT, hint("Tab", "Next")]
+            vec![termrock_controls::widget_hints::EDIT, hint("Tab", "Next")]
         }
     }
 
@@ -431,7 +434,7 @@ impl CodeEditor {
             let blocks = self
                 .segmenter
                 .map(|f| {
-                    crate::record_work!(AnnotationQueries, 1usize);
+                    termrock_metrics::record_work!(AnnotationQueries, 1usize);
                     f(self.field.buffer.text())
                 })
                 .unwrap_or_default();
@@ -488,7 +491,10 @@ impl CodeEditor {
         if !self.read_only {
             if !self.editing {
                 self.snapshot = self.esc_reverts.then(|| {
-                    crate::record_work!(PayloadBytesCloned, self.field.buffer.text().len());
+                    termrock_metrics::record_work!(
+                        PayloadBytesCloned,
+                        self.field.buffer.text().len()
+                    );
                     self.field.buffer.text().to_owned()
                 });
             }
@@ -720,12 +726,12 @@ impl CodeEditor {
         }
     }
 
-    fn text_cmd(&self, key: &Key) -> Option<crate::core::edit::TextCmd> {
+    fn text_cmd(&self, key: &Key) -> Option<termrock_core::edit::TextCmd> {
         self.field.text_cmd(key)
     }
 
     fn nav_key(&mut self, key: &Key) -> (Outcome, Option<EditorAction>) {
-        use crate::core::edit::TextCmd;
+        use termrock_core::edit::TextCmd;
 
         if let Some(cmd) = self.text_cmd(key) {
             match cmd {
@@ -739,7 +745,7 @@ impl CodeEditor {
                     return self.on_key(key);
                 }
                 _ => {
-                    let action = crate::widgets::field_common::text_cmd_action(cmd, true);
+                    let action = termrock_core::field::field_common::text_cmd_action(cmd, true);
                     if matches!(
                         action,
                         EditAction::Commit
@@ -944,7 +950,7 @@ impl CodeEditor {
             let spans = self
                 .highlighter
                 .map(|f| {
-                    crate::record_work!(AnnotationQueries, 1usize);
+                    termrock_metrics::record_work!(AnnotationQueries, 1usize);
                     f(self.field.buffer.text())
                 })
                 .unwrap_or_default();
@@ -977,7 +983,7 @@ impl CodeEditor {
         }
     }
 
-    pub fn track_click(mut self, click: crate::core::scroll::TrackClick) -> Self {
+    pub fn track_click(mut self, click: termrock_core::scroll::TrackClick) -> Self {
         self.scroll.track_click = Some(click);
         self
     }
@@ -1036,7 +1042,7 @@ impl CodeEditor {
             ctx.selection(self.id);
         }
         ctx.scrollable(self.id, area);
-        ctx.pointer_shape(self.id, crate::core::shape::PointerShape::Text);
+        ctx.pointer_shape(self.id, termrock_core::shape::PointerShape::Text);
 
         let fs = if self.read_only {
             Style::new().fg(t.text_primary).bg(bg)
@@ -1125,7 +1131,7 @@ impl CodeEditor {
             };
             #[cfg(test)]
             index::work::tally(|c| c.rows += 1);
-            crate::record_work!(VisibleRowsPainted, 1usize);
+            termrock_metrics::record_work!(VisibleRowsPainted, 1usize);
             let line = view.text();
             let ls = view.start();
             let le = ls + line.len();
@@ -1179,7 +1185,7 @@ impl CodeEditor {
                 buf,
                 area.x + 3,
                 y,
-                &crate::ui::text::fit_right(&(li + 1).to_string(), num_w as usize),
+                &termrock_text::cells::fit_right(&(li + 1).to_string(), num_w as usize),
                 ns,
             );
             if text_area.width == 0 {
@@ -1266,7 +1272,7 @@ impl CodeEditor {
                 buf,
                 text_area.x,
                 text_area.y,
-                &crate::ui::text::truncate(&self.placeholder, text_area.width as usize),
+                &termrock_text::cells::truncate(&self.placeholder, text_area.width as usize),
                 fs.fg(t.text_muted),
             );
         }
@@ -1367,7 +1373,7 @@ impl CodeEditor {
             String::new()
         };
         let right_padding = u16::from(area.width > 1);
-        let pos = crate::ui::text::truncate(&pos, (area.width - right_padding) as usize);
+        let pos = termrock_text::cells::truncate(&pos, (area.width - right_padding) as usize);
         let px = area
             .right()
             .saturating_sub(width(&pos) as u16 + right_padding)
@@ -1384,7 +1390,7 @@ impl CodeEditor {
                 buf,
                 area.x + 1,
                 fy,
-                &crate::ui::text::truncate(&d.message, room),
+                &termrock_text::cells::truncate(&d.message, room),
                 fs.fg(c),
             );
         }
@@ -1394,7 +1400,7 @@ impl CodeEditor {
     }
 }
 
-impl crate::ui::measure::Measure for CodeEditor {
+impl termrock_runtime::measure::Measure for CodeEditor {
     fn measure(&self, _avail: ratatui::layout::Size, _ctx: &RenderCtx) -> ratatui::layout::Size {
         let line_count = self.field.buffer.line_count();
         let num_w = (line_count.to_string().len() as u16).max(2);
@@ -1435,7 +1441,7 @@ impl Editable for CodeEditor {
     }
 }
 
-impl crate::core::pointer::MouseTarget for CodeEditor {
+impl termrock_core::pointer::MouseTarget for CodeEditor {
     type Action = ();
 
     fn mouse_id(&self) -> WidgetId {
@@ -1444,27 +1450,27 @@ impl crate::core::pointer::MouseTarget for CodeEditor {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<()> {
-        use crate::core::intent::Phase;
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<()> {
+        use termrock_core::intent::Phase;
         if let Some(o) = edit_menu_pointer(self, ev) {
             return o.into();
         }
-        if let Some(r) = crate::core::pointer::scroll_input(self, ev) {
+        if let Some(r) = termrock_core::pointer::scroll_input(self, ev) {
             return r;
         }
         match ev.phase() {
             Some(Phase::Press) => PointerField::on_press_count(self, ev.pos(), ev.count()).into(),
             Some(Phase::Click) => PointerField::on_click_count(self, ev.pos(), ev.count()).into(),
             Some(Phase::Drag) => PointerField::on_drag(self, ev.pos()).into(),
-            _ => crate::core::response::Response::ignored(),
+            _ => termrock_core::response::Response::ignored(),
         }
     }
 
     fn route(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> Option<crate::core::response::Response<()>> {
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> Option<termrock_core::response::Response<()>> {
         edit_menu_route(self, ev)
     }
 }
@@ -1484,7 +1490,7 @@ impl EditMenuHost for CodeEditor {
     fn edit_shortcut(&self, cmd: TextCmd) -> Option<String> {
         self.field.shortcut(cmd)
     }
-    fn edit_target(&self, ev: &crate::core::pointer::PointerEvent) -> bool {
+    fn edit_target(&self, ev: &termrock_core::pointer::PointerEvent) -> bool {
         ev.id == self.id && self.text_area.contains(ev.pos())
     }
     fn edit_point(&mut self, pos: Position) {
@@ -1511,10 +1517,10 @@ mod issue105_tests {
     use ratatui::crossterm::event::KeyModifiers;
 
     use super::*;
-    use crate::core::focus::FocusRing;
-    use crate::core::hit::HitRegistry;
-    use crate::theme::{ColorLevel, Theme};
-    use crate::ui::ctx::Interaction;
+    use termrock_core::focus::FocusRing;
+    use termrock_core::hit::HitRegistry;
+    use termrock_runtime::ctx::Interaction;
+    use termrock_theme::{ColorLevel, Theme};
 
     const ID: WidgetId = WidgetId::of("issue105.editor");
     const AREA: Rect = Rect::new(0, 0, 40, 4);
@@ -1597,7 +1603,7 @@ mod issue105_tests {
                 Some("select")
             );
         }
-        crate::core::focus::cancel_focus_request();
+        termrock_core::focus::cancel_focus_request();
     }
 
     #[test]

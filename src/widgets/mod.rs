@@ -1,10 +1,7 @@
 pub mod breadcrumb;
 pub mod choice_dialog;
-pub mod code;
-mod code_specimen;
 pub mod detail_card;
 pub mod dialog;
-pub mod diff;
 pub mod document_workspace;
 pub mod file_browser;
 pub mod form_dialog;
@@ -28,7 +25,6 @@ pub mod steps;
 pub mod table;
 mod table_specimen;
 pub mod tabs;
-pub mod textarea;
 pub mod toolbar;
 pub mod tree;
 
@@ -44,11 +40,10 @@ pub use termrock_controls::{
 };
 pub(crate) use termrock_core::field::text_select;
 pub use termrock_core::field::{edit, field_common};
+pub use termrock_editors::{code, diff, textarea};
 pub use termrock_feedback::{
     empty, meter_list, notice, page_header, progress, statusbar, too_small,
 };
+pub use termrock_fields::{chips, input, select};
 pub use termrock_overlays::{completion, menu, option_editor, option_list, picker, row_menu};
 pub use termrock_viewport::{panel, viewport, viewport_ops};
-// Transitional: `widgets::diff` reads `SAMPLE_ROWS` through this path until #447 moves it.
-pub use termrock_fields::{chips, input, select};
-pub(crate) use termrock_viewport::viewport_specimen;
