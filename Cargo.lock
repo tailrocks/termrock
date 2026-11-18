@@ -1002,6 +1002,7 @@ dependencies = [
  "termrock-overlays",
  "termrock-runtime",
  "termrock-session",
+ "termrock-terminal",
  "termrock-text",
  "termrock-theme",
  "termrock-viewport",
@@ -2403,6 +2404,22 @@ dependencies = [
  "serde_json",
  "sha2 0.11.1",
  "termrock",
+]
+
+[[package]]
+name = "termrock-terminal"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "termpane",
+ "termrock-controls",
+ "termrock-core",
+ "termrock-metrics",
+ "termrock-runtime",
+ "termrock-text",
+ "termrock-theme",
+ "termrock-viewport",
+ "unicode-width",
 ]
 
 [[package]]

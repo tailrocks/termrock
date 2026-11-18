@@ -22,10 +22,10 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Rect;
 
 use super::{ForwardPolicy, Paste, TermEvent, TerminalState, TerminalViewport, encode_key};
-use crate::core::event::{Key, Outcome};
-use crate::core::hit::Axis;
-use crate::core::id::WidgetId;
-use crate::widgets::viewport_ops::ViewportOps;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::hit::Axis;
+use termrock_core::id::WidgetId;
+use termrock_viewport::viewport_ops::ViewportOps;
 
 const FOCUS_IN: &[u8] = b"\x1b[I";
 const FOCUS_OUT: &[u8] = b"\x1b[O";
