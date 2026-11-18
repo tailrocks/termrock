@@ -6,8 +6,9 @@ pub mod docs;
 pub mod metrics;
 pub use termrock_core::motion;
 pub use termrock_session::clock;
-pub mod runtime;
-pub mod shell;
+pub use termrock_shell as shell;
+pub use termrock_shell::reach_tests;
+pub use termrock_shell::runtime;
 #[cfg(feature = "terminal")]
 pub use termrock_terminal as terminal;
 pub use termrock_theme as theme;

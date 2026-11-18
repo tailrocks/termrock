@@ -1,8 +1,8 @@
-use crate::core::id::WidgetId;
-use crate::theme::Strings;
-use crate::ui::leave::{Leave, LeaveGuard, Stakes};
-use crate::widgets::breadcrumb::Breadcrumb;
-use crate::widgets::dialog::Dialog;
+use termrock_core::id::WidgetId;
+use termrock_dialogs::dialog::Dialog;
+use termrock_dialogs::leave::{Leave, LeaveGuard, Stakes};
+use termrock_navigation::breadcrumb::Breadcrumb;
+use termrock_theme::Strings;
 
 use super::PageKey;
 

@@ -1383,6 +1383,8 @@ fn catalog_without_a_preferred_spelling_the_definition_path_wins() {
 /// table is what the preferred-spelling pin has to undo. A definition that sits in
 /// another crate (#446) is spelled by a `pub use` of the facade, and the bare walk then
 /// prefers an item re-export (`shell::LayerTag`) to a module re-export (`ui::layer`).
+/// The same holds for the clipboard types of `termrock-shell` (#448): the crate root
+/// re-exports them, and the bare walk prefers that to the `shell::clipboard` module path.
 const MOVED_KEEPING_SPELLING: &[(&str, &str)] = &[
     ("core::hints::ARROWS", "widgets::keyhint::ARROWS"),
     (
@@ -1417,7 +1419,14 @@ const MOVED_KEEPING_SPELLING: &[(&str, &str)] = &[
     ("core::hints::range", "widgets::keyhint::range"),
     ("core::hints::toggle_hint", "widgets::keyhint::toggle_hint"),
     ("shell::Breadcrumb", "widgets::breadcrumb::Breadcrumb"),
+    ("shell::Clipboard", "shell::clipboard::Clipboard"),
+    ("shell::ClipboardHook", "shell::clipboard::ClipboardHook"),
+    ("shell::Copied", "shell::clipboard::Copied"),
     ("shell::LayerTag", "ui::layer::LayerTag"),
+    (
+        "shell::NativeClipboard",
+        "shell::clipboard::NativeClipboard",
+    ),
     ("theme::CardHeading", "widgets::panel::CardHeading"),
     ("theme::RowState", "widgets::grid::RowState"),
     ("theme::VisualState", "ui::ctx::VisualState"),

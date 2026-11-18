@@ -575,6 +575,7 @@ dependencies = [
  "termrock-overlays",
  "termrock-runtime",
  "termrock-session",
+ "termrock-shell",
  "termrock-terminal",
  "termrock-text",
  "termrock-theme",
@@ -1658,6 +1659,24 @@ dependencies = [
  "termrock-core",
  "termrock-metrics",
  "termrock-text",
+]
+
+[[package]]
+name = "termrock-shell"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "termrock-controls",
+ "termrock-core",
+ "termrock-dialogs",
+ "termrock-feedback",
+ "termrock-metrics",
+ "termrock-navigation",
+ "termrock-overlays",
+ "termrock-runtime",
+ "termrock-session",
+ "termrock-text",
+ "termrock-theme",
 ]
 
 [[package]]

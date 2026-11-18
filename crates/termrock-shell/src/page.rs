@@ -3,17 +3,17 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Rect;
 
 use super::Cx;
-use crate::core::event::{Key, Outcome};
-use crate::core::focus::FocusChange;
-use crate::core::id::WidgetId;
-use crate::core::pointer::PointerEvent;
-use crate::ui::context::ContextAnchor;
-use crate::ui::ctx::RenderCtx;
-use crate::ui::layer::LayerTag;
-use crate::ui::layers::LayerResult;
-use crate::ui::leave::Stakes;
-use crate::widgets::keyhint::Hint;
-use crate::widgets::menu::{ContextMenu, MenuItem};
+use termrock_controls::keyhint::Hint;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::focus::FocusChange;
+use termrock_core::id::WidgetId;
+use termrock_core::pointer::PointerEvent;
+use termrock_dialogs::layers::LayerResult;
+use termrock_dialogs::leave::Stakes;
+use termrock_overlays::context::ContextAnchor;
+use termrock_overlays::layer::LayerTag;
+use termrock_overlays::menu::{ContextMenu, MenuItem};
+use termrock_runtime::ctx::RenderCtx;
 
 pub trait PageTypes {
     type State: ?Sized;
