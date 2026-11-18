@@ -1,13 +1,13 @@
-use junie_tui::core::focus::FocusRing;
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::refusal::Reason;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::ui::popup::Placement;
-use junie_tui::widgets::menu::{ContextMenu, MenuItem};
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
+use termrock_core::focus::FocusRing;
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::WidgetId;
+use termrock_core::refusal::Reason;
+use termrock_overlays::menu::{ContextMenu, MenuItem};
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_runtime::popup::Placement;
+use termrock_theme::{ColorLevel, Theme};
 
 fn menu(short: &str) -> ContextMenu {
     ContextMenu::new(
