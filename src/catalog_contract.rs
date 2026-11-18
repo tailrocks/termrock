@@ -864,6 +864,79 @@ fn catalog_api_ids_match_the_committed_digest() {
     );
 }
 
+/// Every `#[doc(hidden)] pub` item of the crates of the walk, `<file>  <item>` per line. The
+/// inventory gives such an item no id, so without this list a new public item could skip the
+/// catalog by carrying the attribute (#444). Adding one is a reviewed line in this file.
+const DOC_HIDDEN: &str = "tests/regressions/doc-hidden-items.txt";
+
+fn doc_hidden_lines(tree: &SourceTree) -> String {
+    let mut lines = BTreeSet::new();
+    for (path, text) in &tree.files {
+        let items = api_inventory::doc_hidden_items(text)
+            .unwrap_or_else(|e| panic!("parse {}: {e}", path.display()));
+        lines.extend(
+            items
+                .into_iter()
+                .map(|item| format!("{}  {item}\n", path.display())),
+        );
+    }
+    lines.into_iter().collect()
+}
+
+#[test]
+fn catalog_doc_hidden_items_are_a_reviewed_list() {
+    let actual = doc_hidden_lines(&Sources::load().tree);
+    if std::env::var_os("UPDATE_DOC_HIDDEN").is_some() {
+        std::fs::write(root().join(DOC_HIDDEN), &actual).expect("write the list");
+        return;
+    }
+    let committed = std::fs::read_to_string(root().join(DOC_HIDDEN))
+        .unwrap_or_else(|e| panic!("read {DOC_HIDDEN}: {e}"));
+    let committed: BTreeSet<&str> = committed.lines().collect();
+    let found: BTreeSet<&str> = actual.lines().collect();
+    let added: Vec<_> = found.difference(&committed).collect();
+    let gone: Vec<_> = committed.difference(&found).collect();
+    assert!(
+        added.is_empty() && gone.is_empty(),
+        "the #[doc(hidden)] pub items changed.\nnew: {added:#?}\nremoved: {gone:#?}\n\
+         A hidden item has no API id, so it is never catalogued, covered or digested: use the \
+         attribute only for plumbing that must cross a crate boundary (never for something an app \
+         or consumer should call), then run this test with UPDATE_DOC_HIDDEN=1 and commit {DOC_HIDDEN}."
+    );
+}
+
+#[test]
+fn catalog_doc_hidden_scan_sees_each_kind_of_hidden_item() {
+    let source = "\
+        #[doc(hidden)] pub fn f() {}\n\
+        #[doc(hidden)] pub(crate) fn not_public() {}\n\
+        pub fn shown() {}\n\
+        #[doc(hidden)] pub struct S;\n\
+        pub struct T { pub a: u8, #[doc(hidden)] pub b: u8 }\n\
+        pub enum E { A, #[doc(hidden)] B }\n\
+        pub trait Tr { #[doc(hidden)] fn m(&self); fn n(&self); }\n\
+        impl T { #[doc(hidden)] pub fn crossing(&self) {} pub fn open(&self) {} }\n\
+        #[doc(hidden)] pub mod inner { pub fn skipped() {} }\n\
+        pub mod outer { #[doc(hidden)] pub const C: u8 = 1; }\n\
+        #[doc(hidden)] pub use outer::C as Alias;\n\
+        #[doc(hidden)] #[macro_export] macro_rules! quiet { () => {}; }\n";
+    assert_eq!(
+        api_inventory::doc_hidden_items(source).expect("parses"),
+        [
+            "E::B",
+            "S",
+            "T::b",
+            "T::crossing",
+            "Tr::m",
+            "f",
+            "inner",
+            "outer::C",
+            "quiet!",
+            "use outer::C",
+        ]
+    );
+}
+
 #[test]
 fn catalog_api_id_digest_names_the_row_that_changed() {
     let s = Sources::load();
