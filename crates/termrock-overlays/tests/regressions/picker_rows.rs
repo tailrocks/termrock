@@ -1,12 +1,12 @@
-use junie_tui::core::focus::FocusRing;
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::WidgetId;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::widgets::option_list::{Item, OptionList, PopupRow, PopupSnapshot};
-use junie_tui::widgets::picker::Picker;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
+use termrock_core::focus::FocusRing;
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::WidgetId;
+use termrock_overlays::option_list::{Item, OptionList, PopupRow, PopupSnapshot};
+use termrock_overlays::picker::Picker;
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_theme::{ColorLevel, Theme};
 
 fn painted_item_rows(count: usize, max_rows: u16, searchable: bool, hints: &str) -> usize {
     let mut picker = Picker::new(WidgetId::of("picker-rows"), "Rows")

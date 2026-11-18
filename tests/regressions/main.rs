@@ -37,8 +37,6 @@ mod pane_rig;
 mod pane_tree_minima;
 mod pane_tree_pointer;
 mod performance_inventory;
-mod picker_row_limits;
-mod picker_rows;
 mod popup_stale_anchor;
 mod response_batches;
 mod scroll_view_navigation;
