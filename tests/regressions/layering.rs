@@ -1070,7 +1070,70 @@ fn check_metadata(metadata: &serde_json::Value, layering: &Layering) -> (usize, 
         }
     }
     problems.extend(cycles(&graph));
+    problems.extend(feature_forwarding_problems(&packages, layering));
     (checked, problems)
+}
+
+/// A crate that declares feature `F` must forward it to every normal dependency
+/// that also declares `F`. Without the forward, `cargo check -p <crate>
+/// --all-features` fails on its own, and the workspace build only passes by
+/// feature unification (#446). A crate that does not declare `F` is exempt, so a
+/// dependency's dev-only feature (`termrock-text/test-support`) stays out. `default` is a choice of features, not one.
+fn feature_forwarding_problems(packages: &[serde_json::Value], layering: &Layering) -> Vec<String> {
+    let declared: BTreeMap<&str, BTreeSet<&str>> = packages
+        .iter()
+        .filter_map(|p| {
+            let features = p["features"].as_object()?;
+            Some((
+                p["name"].as_str()?,
+                features.keys().map(String::as_str).collect(),
+            ))
+        })
+        .collect();
+    let mut problems = Vec::new();
+    for package in packages {
+        let name = package["name"].as_str().unwrap_or_default();
+        if layering.member(name).is_none() {
+            continue;
+        }
+        let Some(features) = package["features"].as_object() else {
+            continue;
+        };
+        for (feature, list) in features {
+            if feature == "default" {
+                continue;
+            }
+            let forwarded: BTreeSet<&str> = list
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(|v| v.as_str())
+                .collect();
+            for dep in package["dependencies"].as_array().into_iter().flatten() {
+                let dep_name = dep["name"].as_str().unwrap_or_default();
+                if !dep["kind"].is_null()
+                    || !dep_name.starts_with("termrock-") && dep_name != "junie-tui"
+                {
+                    continue;
+                }
+                if !declared
+                    .get(dep_name)
+                    .is_some_and(|f| f.contains(feature.as_str()))
+                {
+                    continue;
+                }
+                let rename = dep["rename"].as_str().unwrap_or(dep_name);
+                let plain = format!("{rename}/{feature}");
+                let weak = format!("{rename}?/{feature}");
+                if !forwarded.contains(plain.as_str()) && !forwarded.contains(weak.as_str()) {
+                    problems.push(format!(
+                        "{name}: feature `{feature}` must forward to `{dep_name}`, which also declares it. Add \"{plain}\" to `{feature}` in its Cargo.toml, or `cargo check -p {name} --all-features` fails on its own."
+                    ));
+                }
+            }
+        }
+    }
+    problems
 }
 
 /// A `crates/termrock-*` or `apps/*` directory that `cargo metadata` does not
