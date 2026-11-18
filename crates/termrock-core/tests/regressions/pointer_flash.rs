@@ -1,11 +1,11 @@
-use junie_tui::core::event::Outcome;
-use junie_tui::core::focus::{Focus, FocusRing};
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::pointer::{
+use termrock_core::event::Outcome;
+use termrock_core::focus::{Focus, FocusRing};
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::WidgetId;
+use termrock_core::pointer::{
     PointerConfig, PointerEvent, PointerHost, PointerParts, PointerRouter,
 };
-use junie_tui::core::response::Response;
+use termrock_core::response::Response;
 
 const BUTTON: WidgetId = WidgetId::of("t.flash.button");
 
