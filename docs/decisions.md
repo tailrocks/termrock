@@ -598,3 +598,46 @@ follows the evidence and this entry records the differences.
 No `termrock::` path, type identity or catalog id changed. The allowlist lost
 every `src/ui/**` and `src/widgets/**` row and the two `ui::layers` test rows;
 the core and theme rows (#441) and the two `test_alloc` rows (#449) remain.
+
+## 2026-11-18: `termrock-runtime` and the scroll-bar painters (#445)
+
+`termrock-runtime` holds `RenderCtx`, `reveal`, `tooltip`, `popup`, `measure`,
+`row`, `fade`, the `Specimen` trait and the column solver. It depends on
+`termrock-{metrics,text,core,theme}` and `ratatui`, and on no other package.
+Choices that differ from the issue's wording or settle what it left open:
+
+- **The column solver is `termrock_runtime::columns`.** #442 left the solver in
+  `ui/column_solver.rs` and turned `ui/columns.rs` into a shim over it plus the
+  three table items. The solver file moves as `columns.rs`, as the move map
+  says; `ui/columns.rs` stays in `junie-tui` and now re-exports
+  `termrock_runtime::columns`. `widgets/{grid,table,picker}.rs` import
+  `crate::ui::columns` instead of the old `pub(crate)` `column_solver`.
+- **`impl ScrollPaint for RenderCtx` moves with `RenderCtx`.** The orphan rule
+  (see "Three coherence breaks of `termrock-core`") puts the impl in the crate
+  that owns `RenderCtx`. The impl calls the `render_*` painters, so those move
+  too: `id_for`, `h_id_for`, `render_divider`, `render_vertical`,
+  `render_horizontal`, `render_horizontal_with`, `render_with_fade` and
+  `render_with_fade_except` now live in `termrock_runtime::scrollbar`, and
+  `widgets::scrollbar` re-exports each at its old path. The geometry, hit-test
+  and `Bars` code stays in `widgets/scrollbar.rs` (`controls`). Nothing is
+  painted differently; every catalog id keeps its spelling and the digest does
+  not change.
+- **`ui::fitting` stays crate-private to `junie-tui`.** The issue says to make
+  its items `pub` + `#[doc(hidden)]`. `removal_order` and the module are, but
+  `ui/mod.rs` re-exports the module with `pub(crate) use`, so no new path
+  appears under `termrock::ui`.
+- **Hidden plumbing.** Everything the moved code kept `pub(crate)` and a
+  higher crate still uses is `#[doc(hidden)] pub` and listed in
+  `tests/regressions/doc-hidden-items.txt`: `RenderCtx::{push_shift,
+  pop_shift, note_render_mutation, render_mutated}`, `ctx::{Shift,
+  total_shift, scratch_buffer, copy_cells}`, `measure::terminal_extent`,
+  `fitting::removal_order`, and the reveal helpers `OVERFLOW`, `overflow_id`,
+  `overflow`, `overflowed`, `cuts_len`, `scroll_cuts_since` and
+  `clip_cuts_since`. `RenderCtx::shifts` stays private; `ui/scroll_view.rs`
+  pushes and pops through `push_shift` and `pop_shift`, which keeps the field
+  and the `Vec` out of the interface. No item of the facade gains an id.
+- **No other coherence break.** `RenderCtx`, `Reveal`, `Tooltips`, `Placement`
+  and the other moved types have no inherent impl and no foreign-trait impl
+  outside the moved files. The only `impl` for a moved type outside it is
+  `impl From<FramePlacement> for Placement` in `ui/modal.rs`, which stays legal
+  because `FramePlacement` is local there.
