@@ -2,13 +2,13 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::Color;
 
-use crate::ui::ctx::RenderCtx;
-use crate::ui::measure::terminal_extent;
-use crate::widgets::action_row::ActionRow;
-use crate::widgets::button::Button;
-use crate::widgets::empty::{self, EmptyState};
-use crate::widgets::panel::Panel;
-use crate::widgets::props::{self, Prop};
+use crate::props::{self, Prop};
+use termrock_controls::action_row::ActionRow;
+use termrock_controls::button::Button;
+use termrock_feedback::empty::{self, EmptyState};
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::measure::terminal_extent;
+use termrock_viewport::panel::Panel;
 
 #[derive(Debug, Clone)]
 pub struct DetailCard {
@@ -132,7 +132,7 @@ impl DetailCard {
             panel = panel.meta(m);
         }
         if self.fit {
-            let mut scratch = crate::ui::ctx::scratch_buffer(card);
+            let mut scratch = termrock_runtime::ctx::scratch_buffer(card);
             let probe = panel.render(card, &mut scratch, t);
             let chrome = card.height.saturating_sub(probe.height);
             let need = usize::from(chrome)

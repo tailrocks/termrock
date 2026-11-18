@@ -1,6 +1,5 @@
 pub mod breadcrumb;
 pub mod choice_dialog;
-pub mod detail_card;
 pub mod dialog;
 pub mod document_workspace;
 pub mod file_browser;
@@ -14,25 +13,25 @@ mod grid_undo_tests;
 pub mod help;
 pub mod info_dialog;
 pub mod inspect_changes;
-pub mod list;
-pub mod list_detail;
 pub mod nav_list;
-pub mod props;
 pub mod rail;
-pub mod search_detail;
 pub mod steps;
 pub mod table;
 mod table_specimen;
 pub mod tabs;
 pub mod toolbar;
-pub mod tree;
 
 #[cfg(test)]
 mod collection_edit_tests;
 #[cfg(all(test, feature = "work-metrics"))]
 mod keyed_cost_tests;
+// Drives a `Select` and a `TextInput`, so it sits above the collections crate; #449 moves it to `termrock-conformance`.
+#[cfg(all(test, feature = "work-metrics"))]
+#[path = "search_detail/cost_tests.rs"]
+mod search_detail_cost_tests;
 
 // Transitional: the line-edit fields live in `termrock-core` (#444); #452 removes this.
+pub use termrock_collections::{detail_card, list, list_detail, props, search_detail, tree};
 pub use termrock_controls::{
     action_row, brand, button, choice, hintbar, icon_button, keyhint, keyref, scrollbar, segments,
     widget_hints,

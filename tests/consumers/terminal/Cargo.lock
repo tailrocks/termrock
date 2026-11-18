@@ -562,6 +562,7 @@ dependencies = [
  "ratatui",
  "serde_json",
  "termpane",
+ "termrock-collections",
  "termrock-controls",
  "termrock-core",
  "termrock-editors",
@@ -1453,6 +1454,24 @@ name = "termrock"
 version = "0.1.0"
 dependencies = [
  "junie-tui",
+]
+
+[[package]]
+name = "termrock-collections"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "termrock-controls",
+ "termrock-core",
+ "termrock-feedback",
+ "termrock-fields",
+ "termrock-layout",
+ "termrock-metrics",
+ "termrock-overlays",
+ "termrock-runtime",
+ "termrock-text",
+ "termrock-theme",
+ "termrock-viewport",
 ]
 
 [[package]]

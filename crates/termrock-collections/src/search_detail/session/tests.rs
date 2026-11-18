@@ -1,9 +1,9 @@
 //! The session's context gate, with the paint's relocation taken out of the way.
 
 use super::*;
-use crate::core::id::WidgetId;
-use crate::core::list::{KeyedRowSource, RowSource};
-use crate::widgets::search_detail::ResultRowKind;
+use crate::search_detail::ResultRowKind;
+use termrock_core::id::WidgetId;
+use termrock_core::list::{KeyedRowSource, RowSource};
 
 const ROW: u64 = 1;
 const FIRST: u64 = 10;

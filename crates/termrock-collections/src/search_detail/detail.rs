@@ -8,24 +8,24 @@ use super::{
     QueryToken, SearchAction, SearchCmd, SearchConfig, SearchError, SearchFocusMode, SearchPhase,
     SearchSession, SearchSource,
 };
-use crate::core::event::{Key, Outcome};
-use crate::core::focus::{Focus, FocusChange};
-use crate::core::hit::Axis;
-use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::core::intent::Phase;
-use crate::core::list::{KeyedRowSource, RowSource, SourceStamp};
-use crate::core::pointer::PointerEvent;
-use crate::core::response::Response;
-use crate::ui::context::{ContextAnchor, ContextRequest, ContextSource};
-use crate::ui::ctx::{RenderCtx, fill, legible_on_fill};
-use crate::ui::layout::Split;
-use crate::ui::text::truncate;
-use crate::widgets::edit::EditField;
-use crate::widgets::input::TextInput;
-use crate::widgets::list_detail::{
+use crate::list_detail::{
     DetailPane, Event, ListDetail, ListDetailSource, MasterRow, MasterWidths, PaneHost,
     SourceFrame, paint_master_row,
 };
+use termrock_core::event::{Key, Outcome};
+use termrock_core::field::edit::EditField;
+use termrock_core::focus::{Focus, FocusChange};
+use termrock_core::hit::Axis;
+use termrock_core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock_core::intent::Phase;
+use termrock_core::list::{KeyedRowSource, RowSource, SourceStamp};
+use termrock_core::pointer::PointerEvent;
+use termrock_core::response::Response;
+use termrock_fields::input::TextInput;
+use termrock_layout::layout::Split;
+use termrock_overlays::context::{ContextAnchor, ContextRequest, ContextSource};
+use termrock_runtime::ctx::{RenderCtx, fill, legible_on_fill};
+use termrock_text::cells::truncate;
 
 type Reply = Response<SearchAction>;
 
@@ -615,7 +615,7 @@ impl SearchDetail {
     }
 
     fn query_pointer(&mut self, ev: &PointerEvent) -> Reply {
-        use crate::core::pointer::MouseTarget;
+        use termrock_core::pointer::MouseTarget;
         let routed = self.session.query_input_mut().route(ev);
         let routed = routed.unwrap_or_else(|| self.session.query_input_mut().pointer(ev));
         routed.lift().merge(self.session.edited_query())
@@ -996,7 +996,7 @@ pub fn paint_query_default(
     ctx: &mut RenderCtx,
 ) {
     let t = ctx.theme;
-    let state = crate::ui::ctx::VisualState {
+    let state = termrock_runtime::ctx::VisualState {
         focused: query.focused,
         editing: query.focused,
         ..Default::default()
@@ -1056,7 +1056,7 @@ fn paint_cells<S: SearchSource + ?Sized>(
     let mut x = row.rect.x + 4 + label_w + 2;
     for cell in 0..row.source.cell_count(row.row) {
         let text = format!(" {} ", row.source.cell_label(row.row, cell));
-        let w = crate::ui::text::width(&text) as u16;
+        let w = termrock_text::cells::width(&text) as u16;
         if x + w > right {
             break;
         }

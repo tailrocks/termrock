@@ -876,3 +876,22 @@ was listed before the move.
   listed in `tests/regressions/doc-hidden-items.txt`. The crate has no
   `work-metrics` feature because none of its code records work, so the root
   `work-metrics` feature does not forward to it.
+- **`termrock-collections`** (`list`, `tree`, `props`, `detail_card`,
+  `list_detail`, `search_detail/*`, `ui::{content, list_core}`). It depends on
+  `termrock-{layout, fields, viewport, overlays, feedback, controls}` and the
+  foundations, as the layering table allows. Every `impl` in the moved files is
+  either an impl of a trait defined in the same file (`TreeRows for [FlatRow]`,
+  `ListRows for [ListItem]`, `ListSource for KeyedVec<ListItem>`) or a foreign
+  trait on a local type, so there is no coherence break; the `RowItem` impls of
+  `ListItem` and `FlatRow` sit next to their types, as #444 arranged.
+  - `search_detail/cost_tests.rs` stays in `junie-tui` for #449. Its
+    `mod cost_tests;` declaration left `search_detail.rs`; `src/widgets/mod.rs`
+    declares it by `#[path]` as `search_detail_cost_tests` (work-metrics tests
+    only) and it imports from `termrock_collections::{list_detail,
+    search_detail}`. Everything it reaches there was already `pub`. Its nextest
+    names change from `widgets::search_detail::cost_tests::` to
+    `widgets::search_detail_cost_tests::`, so the `performance` profile and
+    `performance-inventory.tsv` follow that spelling (the set of 168 tests is
+    unchanged).
+  - `PropsList::{wrapping, row_of, height_at}` are hidden `pub` for
+    `info_dialog`.

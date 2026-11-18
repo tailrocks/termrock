@@ -1,27 +1,27 @@
-use crate::core::event::{Key, Outcome};
-use crate::core::focus::Focus;
-use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::core::keyed::{KeyedSourceError, KeyedState};
-use crate::core::list::{KeyedRowSource, SourceStamp};
-use crate::core::pointer::PointerEvent;
-use crate::core::response::Response;
-use crate::core::scroll::{ScrollState, TrackClick};
-use crate::theme::{ButtonKind, StatusKind, Tone};
-use crate::ui::ctx::{RenderCtx, fill, legible_on_fill};
-use crate::ui::layout::Split;
-use crate::ui::master_detail::{DetailSize, MasterDetail, Mode};
-use crate::ui::text::{fit, paint_clipped, paint_truncated, truncate, width, wrap};
-use crate::widgets::button::{Button, ButtonRow, RowOverflow};
-use crate::widgets::keyhint::{Hint, hint};
-use crate::widgets::notice::Notice;
-use crate::widgets::panel::{Panel, PanelFocus};
-use crate::widgets::scrollbar;
-use crate::widgets::splitter::Splitter;
-use crate::widgets::viewport::{Span, render_spans};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
+use termrock_controls::button::{Button, ButtonRow, RowOverflow};
+use termrock_controls::keyhint::{Hint, hint};
+use termrock_controls::scrollbar;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::focus::Focus;
+use termrock_core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock_core::keyed::{KeyedSourceError, KeyedState};
+use termrock_core::list::{KeyedRowSource, SourceStamp};
+use termrock_core::pointer::PointerEvent;
+use termrock_core::response::Response;
+use termrock_core::scroll::{ScrollState, TrackClick};
+use termrock_feedback::notice::Notice;
+use termrock_layout::layout::Split;
+use termrock_layout::master_detail::{DetailSize, MasterDetail, Mode};
+use termrock_layout::splitter::Splitter;
+use termrock_runtime::ctx::{RenderCtx, fill, legible_on_fill};
+use termrock_text::cells::{fit, paint_clipped, paint_truncated, truncate, width, wrap};
+use termrock_theme::{ButtonKind, StatusKind, Tone};
+use termrock_viewport::panel::{Panel, PanelFocus};
+use termrock_viewport::viewport::{Span, render_spans};
 
 const COLUMN_GAP: u16 = 2;
 
@@ -188,13 +188,13 @@ impl ListRow {
     }
 }
 
-impl crate::core::keyed::KeyedRecord for ListRow {
+impl termrock_core::keyed::KeyedRecord for ListRow {
     fn label(&self) -> &str {
         &self.label
     }
 }
 
-impl ListDetailSource for crate::core::keyed::KeyedVec<ListRow> {
+impl ListDetailSource for termrock_core::keyed::KeyedVec<ListRow> {
     fn row(&self, visible: usize) -> ListRowRef<'_> {
         self.value_at(visible)
             .expect("visible row within the store")
@@ -462,7 +462,7 @@ impl ListDetail {
                 .resizable(split)
                 .seam(Splitter::new(
                     master.sub("seam"),
-                    crate::ui::layout::SplitDir::Horizontal,
+                    termrock_layout::layout::SplitDir::Horizontal,
                 ))
                 .collapse_below(100)
                 .summary_rows(6),
@@ -844,7 +844,7 @@ impl ListDetail {
                         Rect::new(geom.inner.x - 1, geom.inner.y + k as u16, geom.row_w + 1, 1);
                     let key = source.key(i);
                     ctx.register_part(s.master, PartRef::item(Part::ROW, key), rect);
-                    crate::record_work!(VisibleRowsPainted, 1usize);
+                    termrock_metrics::record_work!(VisibleRowsPainted, 1usize);
                     paint(
                         source,
                         MasterRow {
@@ -938,7 +938,7 @@ impl ListDetail {
             let rect = Rect::new(area.x, area.y + k as u16, row_w, 1);
             let key = key_of(i);
             ctx.register_part(self.master, PartRef::item(Part::ROW, key), rect);
-            crate::record_work!(VisibleRowsPainted, 1usize);
+            termrock_metrics::record_work!(VisibleRowsPainted, 1usize);
             host.row(
                 MasterRow {
                     index: i,
@@ -1061,7 +1061,7 @@ impl ListDetail {
         {
             return (label, detail, meta);
         }
-        crate::record_work!(WidthRowsMeasured, rows.len());
+        termrock_metrics::record_work!(WidthRowsMeasured, rows.len());
         let mut label = 0;
         let (mut detail, mut meta) = (0u16, 0u16);
         for i in 0..rows.len() {
@@ -1378,7 +1378,7 @@ impl ListDetail {
                         buf,
                         value_room,
                         0,
-                        &crate::ui::reveal::cut(value_room, value),
+                        &termrock_runtime::reveal::cut(value_room, value),
                         Style::new().fg(t.tone(*tone)).bg(bg),
                     );
                 }
@@ -1387,7 +1387,7 @@ impl ListDetail {
                         buf,
                         line,
                         0,
-                        &crate::ui::reveal::cut(line, text),
+                        &termrock_runtime::reveal::cut(line, text),
                         Style::new().fg(t.tone(*tone)).bg(bg),
                     );
                 }
@@ -1540,7 +1540,7 @@ impl ListDetail {
                     buf,
                     row,
                     0,
-                    &crate::ui::reveal::cut(row, &text),
+                    &termrock_runtime::reveal::cut(row, &text),
                     Style::new().fg(t.tone(tone)).bg(bg),
                 );
                 y += 1;

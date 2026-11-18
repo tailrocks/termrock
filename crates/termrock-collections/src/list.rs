@@ -3,32 +3,32 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Rect;
 use ratatui::style::Color;
 
-use crate::core::event::{Key, Outcome};
-use crate::core::hints::{
+use crate::list_core::ListCore;
+use termrock_controls::keyhint::{Hint, hint};
+use termrock_controls::scrollbar;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::hints::{
     Binding, Bindings, HasHints, HintCx, actions_bindings, nav_bindings, nav_hints,
 };
-use crate::core::hit::Axis;
-use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::core::keyed::{KeyedSourceError, KeyedState};
-use crate::core::keymap::{
+use termrock_core::hit::Axis;
+use termrock_core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock_core::keyed::{KeyedSourceError, KeyedState};
+use termrock_core::keymap::{
     Actions, KeyBinding, KeyMap, NavKeys, hint_key, lookup, select_all_bindings, unassigned_chord,
 };
-use crate::core::list::{
+use termrock_core::list::{
     Cursor, KeyStep, KeyedRowSource, Moved, Navigable, RowItem, RowSource, TypeAheadPrecedence,
 };
-use crate::core::pointer::PointerEvent;
-use crate::core::refusal::{Control, Reason};
-use crate::core::response::Response;
-use crate::core::scroll::{ScrollPane, Scrollable};
-use crate::core::selection::{ClickPolicy, RowSelection, SelectGesture};
-use crate::theme::Tone;
-use crate::ui::context::{ContextAnchor, ContextRequest, ContextSource, row_rect};
-use crate::ui::ctx::{RenderCtx, fill};
-use crate::ui::list_core::ListCore;
-use crate::ui::reveal::{Reveal, RevealLine};
-use crate::ui::row::{MarkKind, RowLook, RowUi};
-use crate::widgets::keyhint::{Hint, hint};
-use crate::widgets::scrollbar;
+use termrock_core::pointer::PointerEvent;
+use termrock_core::refusal::{Control, Reason};
+use termrock_core::response::Response;
+use termrock_core::scroll::{ScrollPane, Scrollable};
+use termrock_core::selection::{ClickPolicy, RowSelection, SelectGesture};
+use termrock_overlays::context::{ContextAnchor, ContextRequest, ContextSource, row_rect};
+use termrock_runtime::ctx::{RenderCtx, fill};
+use termrock_runtime::reveal::{Reveal, RevealLine};
+use termrock_runtime::row::{MarkKind, RowLook, RowUi};
+use termrock_theme::Tone;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ListItem {
@@ -88,7 +88,7 @@ impl ListItem {
     }
 }
 
-impl crate::core::keyed::KeyedRecord for ListItem {
+impl termrock_core::keyed::KeyedRecord for ListItem {
     fn label(&self) -> &str {
         &self.label
     }
@@ -113,7 +113,7 @@ pub trait ListSource: KeyedRowSource {
     fn item(&self, visible: usize) -> ListItemRef<'_>;
 }
 
-impl ListSource for crate::core::keyed::KeyedVec<ListItem> {
+impl ListSource for termrock_core::keyed::KeyedVec<ListItem> {
     fn item(&self, visible: usize) -> ListItemRef<'_> {
         self.value_at(visible)
             .expect("visible row within the store")
@@ -275,7 +275,7 @@ impl ListBox {
         self
     }
 
-    pub fn inactive_selection(mut self, look: crate::theme::InactiveSelection) -> Self {
+    pub fn inactive_selection(mut self, look: termrock_theme::InactiveSelection) -> Self {
         self.core.inactive_selection = Some(look);
         self
     }
@@ -408,7 +408,7 @@ impl ListBox {
 
     fn label_width(item: &ListItemRef<'_>, text_w: usize) -> (usize, usize) {
         let label_w = text_w.saturating_sub(2);
-        let meta_w = item.meta.map(crate::ui::text::width).unwrap_or(0);
+        let meta_w = item.meta.map(termrock_text::cells::width).unwrap_or(0);
         let meta_w = if label_w.saturating_sub(meta_w + 2) < 12 {
             0
         } else {
@@ -436,17 +436,17 @@ impl ListBox {
             .inline(ctx, rid, lw as u16, item.label, true, room)
     }
 
-    pub fn empty(mut self, state: crate::widgets::empty::EmptyState) -> Self {
+    pub fn empty(mut self, state: termrock_feedback::empty::EmptyState) -> Self {
         self.core.empty = Some(state);
         self
     }
 
     pub fn empty_text(mut self, s: &str) -> Self {
-        self.core.empty = Some(crate::widgets::empty::EmptyState::new(s));
+        self.core.empty = Some(termrock_feedback::empty::EmptyState::new(s));
         self
     }
 
-    pub fn content(mut self, content: crate::ui::content::ContentState) -> Self {
+    pub fn content(mut self, content: crate::content::ContentState) -> Self {
         self.core.content = content;
         self
     }
@@ -702,13 +702,13 @@ impl ListBox {
     /// key, so a press can only complete on the row it started on.
     pub fn on_pointer_source<S: ListSource + ?Sized>(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
+        ev: &termrock_core::pointer::PointerEvent,
         source: &S,
     ) -> Result<Response<ListAction>, KeyedSourceError> {
-        use crate::core::intent::Phase;
+        use termrock_core::intent::Phase;
         self.bind(source)?;
         self.keyed.note_pointer(ev.phase());
-        if let Some(r) = crate::core::pointer::scroll_input(self, ev) {
+        if let Some(r) = termrock_core::pointer::scroll_input(self, ev) {
             return Ok(r.lift());
         }
         let hit = match (ev.key_of(Part::MARKER), ev.key_of(Part::ROW)) {
@@ -764,7 +764,7 @@ impl ListBox {
         Ok(())
     }
 
-    pub fn track_click(mut self, click: crate::core::scroll::TrackClick) -> Self {
+    pub fn track_click(mut self, click: termrock_core::scroll::TrackClick) -> Self {
         self.core.scroll.track_click = Some(click);
         self
     }
@@ -831,7 +831,7 @@ impl ListBox {
             if y >= area.bottom() {
                 break;
             }
-            crate::record_work!(VisibleRowsPainted, 1usize);
+            termrock_metrics::record_work!(VisibleRowsPainted, 1usize);
             let item = rows.item(li);
             let hit_key = rows.hit_key(li);
             let block = expanded.as_ref().filter(|_| li == self.core.cursor);
@@ -868,7 +868,7 @@ impl ListBox {
             if let Some(lines) = block {
                 for (k, line) in lines.iter().take(h as usize).enumerate() {
                     let ls = if line.more { st.fg(t.text_muted) } else { st };
-                    let text = crate::ui::text::fit(&line.text, lw);
+                    let text = termrock_text::cells::fit(&line.text, lw);
                     buf.set_string(row.x + 3, y + k as u16, text, ls);
                 }
             } else {
@@ -903,7 +903,7 @@ impl ListBox {
 
         ctx.scrollable(self.id, area);
         if let Some(sb) = sp.track {
-            crate::ui::fade::scroll_edges_except(
+            termrock_runtime::fade::scroll_edges_except(
                 buf,
                 ctx,
                 sp.body,
@@ -921,7 +921,7 @@ impl ListBox {
     }
 }
 
-impl crate::ui::measure::Measure for ListBox {
+impl termrock_runtime::measure::Measure for ListBox {
     fn measure(&self, avail: ratatui::layout::Size, ctx: &RenderCtx) -> ratatui::layout::Size {
         if self.items.is_empty() {
             return match &self.core.empty {
@@ -933,10 +933,10 @@ impl crate::ui::measure::Measure for ListBox {
             .items
             .iter()
             .map(|item| {
-                let label = crate::ui::text::width(&item.label) as u16;
+                let label = termrock_text::cells::width(&item.label) as u16;
 
                 let text = match item.meta.as_deref().filter(|m| !m.is_empty()) {
-                    Some(m) => 2 + label.max(12) + 2 + crate::ui::text::width(m) as u16,
+                    Some(m) => 2 + label.max(12) + 2 + termrock_text::cells::width(m) as u16,
                     None => 2 + label,
                 };
                 text + 1
@@ -987,13 +987,13 @@ impl Navigable for ListBox {
     }
 }
 
-impl crate::ui::specimen::Specimen for ListBox {
+impl termrock_runtime::specimen::Specimen for ListBox {
     fn specimen_id(&self) -> WidgetId {
         self.id
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         matches!(
             state,
             Rest | Hover
@@ -1010,8 +1010,8 @@ impl crate::ui::specimen::Specimen for ListBox {
         )
     }
 
-    fn specimen_height(&self, state: crate::ui::specimen::SpecimenState) -> u16 {
-        use crate::ui::specimen::SpecimenState::*;
+    fn specimen_height(&self, state: termrock_runtime::specimen::SpecimenState) -> u16 {
+        use termrock_runtime::specimen::SpecimenState::*;
         if matches!(state, Empty | Loading | Error) {
             1
         } else {
@@ -1021,13 +1021,13 @@ impl crate::ui::specimen::Specimen for ListBox {
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
         bg: Color,
     ) {
-        use crate::ui::specimen::SpecimenState::*;
+        use termrock_runtime::specimen::SpecimenState::*;
         let mut l = self.clone();
         l.items.truncate(3);
         l.selection = RowSelection::new();
@@ -1049,7 +1049,7 @@ impl crate::ui::specimen::Specimen for ListBox {
                 l.items.clear();
                 l.selection = RowSelection::new();
             }
-            Loading | Error => l.content = crate::ui::content::specimen(state),
+            Loading | Error => l.content = crate::content::specimen(state),
             Overflow => {
                 if let Some(it) = l.items.get_mut(c) {
                     it.label = format!("{} and a label far longer than its row", it.label);
@@ -1070,16 +1070,16 @@ impl crate::ui::specimen::Specimen for ListBox {
     }
 }
 
-impl crate::core::pointer::MouseTarget for ListBox {
+impl termrock_core::pointer::MouseTarget for ListBox {
     type Action = ();
 
     fn mouse_id(&self) -> WidgetId {
         self.id
     }
 
-    fn pointer(&mut self, ev: &crate::core::pointer::PointerEvent) -> Response<()> {
-        use crate::core::intent::Phase;
-        if let Some(r) = crate::core::pointer::scroll_input(self, ev) {
+    fn pointer(&mut self, ev: &termrock_core::pointer::PointerEvent) -> Response<()> {
+        use termrock_core::intent::Phase;
+        if let Some(r) = termrock_core::pointer::scroll_input(self, ev) {
             return r;
         }
         if !ev.is(Phase::Click) {

@@ -14,27 +14,25 @@
 //! [`QueryToken::result_stamp`], and hands both back through
 //! [`SearchSession::submit`].
 //!
-//! Selection lives in one [`KeyedState`](crate::core::keyed::KeyedState) over
+//! Selection lives in one [`KeyedState`](termrock_core::keyed::KeyedState) over
 //! the selectable keys (items and cells), so it survives reorder, filter and
 //! refresh by identity. Headings, spacers and cell containers carry keys of
 //! their own and are never selectable.
 
-#[cfg(all(test, feature = "work-metrics"))]
-mod cost_tests;
 mod detail;
 mod projection;
 mod session;
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::core::edit::TextCmd;
-use crate::core::id::ItemKey;
-use crate::core::keyed::KeyedSourceError;
-use crate::core::keymap::{Actions, KeyBinding, KeyMap};
-use crate::core::list::{KeyedRowSource, SourceStamp};
-use crate::core::selection::ClickPolicy;
-use crate::ui::context::{ContextConfig, ContextRequest};
 use ratatui::crossterm::event::KeyCode;
+use termrock_core::edit::TextCmd;
+use termrock_core::id::ItemKey;
+use termrock_core::keyed::KeyedSourceError;
+use termrock_core::keymap::{Actions, KeyBinding, KeyMap};
+use termrock_core::list::{KeyedRowSource, SourceStamp};
+use termrock_core::selection::ClickPolicy;
+use termrock_overlays::context::{ContextConfig, ContextRequest};
 
 pub use detail::{
     QueryView, RowPaint, SearchDetail, SearchDetailSource, SearchPaint, paint_query_default,
@@ -56,7 +54,7 @@ pub enum ResultRowKind {
 
 /// The results a host builds for one query.
 ///
-/// The inherited [`RowSource`](crate::core::list::RowSource) methods describe
+/// The inherited [`RowSource`](termrock_core::list::RowSource) methods describe
 /// the visible rows, `source_len`/`source_key` every authoritative key: row
 /// keys of all kinds and every cell key, each once. An [`ResultRowKind::Item`]
 /// row and its sole cell are one entity and one key.

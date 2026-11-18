@@ -997,6 +997,7 @@ dependencies = [
  "sha2 0.10.9",
  "syn 3.0.10",
  "termpane",
+ "termrock-collections",
  "termrock-controls",
  "termrock-core",
  "termrock-editors",
@@ -2165,6 +2166,24 @@ version = "0.1.0"
 dependencies = [
  "junie-tui",
  "ratatui",
+]
+
+[[package]]
+name = "termrock-collections"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "termrock-controls",
+ "termrock-core",
+ "termrock-feedback",
+ "termrock-fields",
+ "termrock-layout",
+ "termrock-metrics",
+ "termrock-overlays",
+ "termrock-runtime",
+ "termrock-text",
+ "termrock-theme",
+ "termrock-viewport",
 ]
 
 [[package]]

@@ -14,6 +14,7 @@ members = [
     "apps/showcase",
     "apps/tablepro",
     "crates/termrock",
+    "crates/termrock-collections",
     "crates/termrock-controls",
     "crates/termrock-core",
     "crates/termrock-editors",
@@ -36,6 +37,7 @@ default-members = [
     "apps/showcase",
     "apps/tablepro",
     "crates/termrock",
+    "crates/termrock-collections",
     "crates/termrock-controls",
     "crates/termrock-core",
     "crates/termrock-editors",
@@ -57,6 +59,7 @@ clap = { version = "4.6", features = ["derive"] }
 ratatui = { version = "0.30", features = ["crossterm_0_29"] }
 serde_json = "1"
 sha2 = "0.10.9"
+termrock-collections = { path = "crates/termrock-collections", version = "0.1.0" }
 termrock-controls = { path = "crates/termrock-controls", version = "0.1.0" }
 termrock-core = { path = "crates/termrock-core", version = "0.1.0" }
 termrock-editors = { path = "crates/termrock-editors", version = "0.1.0" }
@@ -78,7 +81,7 @@ default = ["cli", "terminal"]
 cli = ["dep:clap", "termrock-core/cli"]
 terminal = ["dep:termpane"]
 product = ["terminal"]
-work-metrics = ["termrock-controls/work-metrics", "termrock-core/work-metrics", "termrock-editors/work-metrics", "termrock-feedback/work-metrics", "termrock-fields/work-metrics", "termrock-metrics/work-metrics", "termrock-overlays/work-metrics", "termrock-runtime/work-metrics", "termrock-session/work-metrics", "termrock-viewport/work-metrics"]
+work-metrics = ["termrock-collections/work-metrics", "termrock-controls/work-metrics", "termrock-core/work-metrics", "termrock-editors/work-metrics", "termrock-feedback/work-metrics", "termrock-fields/work-metrics", "termrock-metrics/work-metrics", "termrock-overlays/work-metrics", "termrock-runtime/work-metrics", "termrock-session/work-metrics", "termrock-viewport/work-metrics"]
 
 [lib]
 name = "junie_tui"
@@ -98,6 +101,7 @@ ratatui = { workspace = true }
 unicode-width = "0.2.3"
 unicode-segmentation = "1"
 serde_json = { workspace = true }
+termrock-collections = { workspace = true }
 termrock-controls = { workspace = true }
 termrock-core = { workspace = true }
 termrock-editors = { workspace = true }

@@ -216,7 +216,7 @@ list, table, grid and tree widget in the frame.
 - Drawing a `TextViewport` through a shared reference after a change, without
   preparing it first, clones the whole history.
 - Keyed collections (#41) are measured by `widgets::keyed_cost_tests` and
-  `widgets::search_detail::cost_tests` with the metrics above, in the
+  `widgets::search_detail_cost_tests` with the metrics above, in the
   `performance` profile. A `KeyedState` whose `SourceStamp` is unchanged
   enumerates 0 source rows; a data revision enumerates the authoritative and the
   visible rows once each (1,000 for a 500-row store). `Picker` indexes n items
