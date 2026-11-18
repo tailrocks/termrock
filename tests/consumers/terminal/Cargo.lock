@@ -562,6 +562,7 @@ dependencies = [
  "ratatui",
  "serde_json",
  "termpane",
+ "termrock-controls",
  "termrock-core",
  "termrock-metrics",
  "termrock-runtime",
@@ -1453,6 +1454,19 @@ name = "termrock-consumer-terminal"
 version = "0.0.0"
 dependencies = [
  "termrock",
+]
+
+[[package]]
+name = "termrock-controls"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "termrock-core",
+ "termrock-metrics",
+ "termrock-runtime",
+ "termrock-text",
+ "termrock-theme",
+ "unicode-segmentation",
 ]
 
 [[package]]

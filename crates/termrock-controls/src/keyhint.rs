@@ -3,10 +3,10 @@ use ratatui::crossterm::event::KeyModifiers;
 use ratatui::layout::Rect;
 use ratatui::style::Style;
 
-use crate::theme::{BadgeKind, HintAlign, HintBarStyle, StatusKind, Theme, Tone};
-use crate::ui::measure::terminal_extent;
+use termrock_runtime::measure::terminal_extent;
+use termrock_theme::{BadgeKind, HintAlign, HintBarStyle, StatusKind, Theme, Tone};
 
-pub use crate::core::hints::{
+pub use termrock_core::hints::{
     ARROWS, CONTEXT_MENU, DELETE, EDIT_CELL, EDIT_CODE, EDIT_FIELD, EDIT_TEXT, Hint, HintPriority,
     LEFT_RIGHT, UP_DOWN, deliverable_line, hint, modifier_click, normalize_key, range, toggle_hint,
 };
@@ -65,8 +65,8 @@ struct HintCells {
 impl HintCells {
     fn of(h: &Hint) -> Self {
         Self {
-            key: crate::ui::text::width(&normalize_key(h.key.as_ref())),
-            action: crate::ui::text::width(&h.action),
+            key: termrock_text::cells::width(&normalize_key(h.key.as_ref())),
+            action: termrock_text::cells::width(&h.action),
         }
     }
 
@@ -86,7 +86,8 @@ fn hint_width(h: &Hint, compact: bool) -> usize {
 
 /// Full width of the kept hints plus their gaps and the cut marker slot, with
 /// no narrowing, so a fit against `room` never sees a wrapped total.
-pub(crate) fn cost(hints: &[Hint], keep: &[usize], compact: &[bool]) -> usize {
+#[doc(hidden)]
+pub fn cost(hints: &[Hint], keep: &[usize], compact: &[bool]) -> usize {
     let mut c = keep
         .iter()
         .map(|&i| hint_width(&hints[i], compact[i]).saturating_add(GAP))
@@ -104,7 +105,8 @@ pub(crate) fn cost(hints: &[Hint], keep: &[usize], compact: &[bool]) -> usize {
 /// fit, pruning starts again from full widths: non-pinned hints go last to
 /// first, then pinned ones last to first. A running total and a keep mask
 /// replace a cost and a retain per removal.
-pub(crate) fn fit(hints: &[Hint], room: u16, style: &HintBarStyle) -> (Vec<usize>, Vec<bool>) {
+#[doc(hidden)]
+pub fn fit(hints: &[Hint], room: u16, style: &HintBarStyle) -> (Vec<usize>, Vec<bool>) {
     let room = usize::from(room) as u128;
     let cells: Vec<HintCells> = hints.iter().map(HintCells::of).collect();
     let slot = |w: usize| w as u128 + GAP as u128;
@@ -113,7 +115,7 @@ pub(crate) fn fit(hints: &[Hint], room: u16, style: &HintBarStyle) -> (Vec<usize
             .iter()
             .enumerate()
             .map(|(i, c)| {
-                crate::record_work!(FitVisits, 1usize);
+                termrock_metrics::record_work!(FitVisits, 1usize);
                 slot(c.cells(compact(i)))
             })
             .sum()
@@ -137,7 +139,7 @@ pub(crate) fn fit(hints: &[Hint], room: u16, style: &HintBarStyle) -> (Vec<usize
         .filter(|&i| !pinned[i])
         .chain((0..hints.len()).rev().filter(|&i| pinned[i]));
     for gone in order {
-        crate::record_work!(FitVisits, 1usize);
+        termrock_metrics::record_work!(FitVisits, 1usize);
         keep[gone] = false;
         kept -= slot(cells[gone].cells(false));
         if kept + GAP as u128 <= room {
@@ -152,9 +154,9 @@ pub(crate) fn fit(hints: &[Hint], room: u16, style: &HintBarStyle) -> (Vec<usize
 pub fn width(hints: &[Hint], badge: Option<&str>, status: Option<&str>) -> u16 {
     let all: Vec<usize> = (0..hints.len()).collect();
     let full = vec![false; hints.len()];
-    let badge = badge.map_or(0, |b| crate::ui::text::width(b).saturating_add(4));
+    let badge = badge.map_or(0, |b| termrock_text::cells::width(b).saturating_add(4));
     let status = status
-        .map(crate::ui::text::width)
+        .map(termrock_text::cells::width)
         .filter(|w| *w > 0)
         .map_or(0, |w| w.saturating_add(3));
     terminal_extent(
@@ -326,7 +328,7 @@ pub fn render_parts_at(
     (n, spots)
 }
 
-pub fn key_of(label: &str) -> Option<crate::core::event::Key> {
+pub fn key_of(label: &str) -> Option<termrock_core::event::Key> {
     use ratatui::crossterm::event::KeyCode;
     let label = normalize_key(label);
     let mut rest: &str = &label;
@@ -389,7 +391,7 @@ pub fn key_of(label: &str) -> Option<crate::core::event::Key> {
             }
         }
     };
-    Some(crate::core::event::Key { code, mods })
+    Some(termrock_core::event::Key { code, mods })
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -410,12 +412,14 @@ fn render_right(
     }
     let mut x = area.x + 1;
     if let Some((text, kind)) = badge {
-        let b =
-            crate::ui::text::truncate(&format!(" {text} "), area.width.saturating_sub(2) as usize);
+        let b = termrock_text::cells::truncate(
+            &format!(" {text} "),
+            area.width.saturating_sub(2) as usize,
+        );
         if !b.is_empty() {
             buf.set_string(x, area.y, &b, t.badge(kind));
             x = x
-                .saturating_add(terminal_extent(crate::ui::text::width(&b)))
+                .saturating_add(terminal_extent(termrock_text::cells::width(&b)))
                 .saturating_add(2)
                 .min(area.right());
         }
@@ -444,8 +448,8 @@ fn render_right(
                 available = available.min(share.max(available.saturating_sub(need + 2)));
             }
         }
-        let text = crate::ui::text::truncate(&text, available);
-        let w = crate::ui::text::width(&text) as u16;
+        let text = termrock_text::cells::truncate(&text, available);
+        let w = termrock_text::cells::width(&text) as u16;
         if w > 0 {
             buf.set_string(area.right() - w - 1, area.y, &text, st);
             if !mark.is_empty() {
@@ -454,11 +458,11 @@ fn render_right(
 
             let mut px = area.right() - w - 1;
             if !mark.is_empty() {
-                px += crate::ui::text::width(mark) as u16 + 1;
+                px += termrock_text::cells::width(mark) as u16 + 1;
             }
             let end = area.right() - 1;
             for (part, tone) in parts {
-                let pw = crate::ui::text::width(part) as u16;
+                let pw = termrock_text::cells::width(part) as u16;
                 let to = px.saturating_add(pw).min(end);
                 if to > px {
                     buf.set_style(
@@ -490,7 +494,7 @@ fn render_right(
         let h = &hints[i];
         let key = normalize_key(h.key.as_ref());
         let key = t.glyphs.key_label(&key);
-        let kw = crate::ui::text::width(&key) as u16;
+        let kw = termrock_text::cells::width(&key) as u16;
         buf.set_string(x, area.y, &key, t.key_hint_key());
         if !compact[i] {
             buf.set_string(x + kw + 1, area.y, &h.action, t.key_hint_action());

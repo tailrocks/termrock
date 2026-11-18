@@ -1,18 +1,18 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 
-use crate::core::event::{Key, Outcome};
-use crate::core::hints::{HasHints, HintCx};
-use crate::core::id::WidgetId;
-use crate::core::refusal::{Control, Reason};
-use crate::theme::{ButtonKind, Kind};
-use crate::ui::ctx::RenderCtx;
-use crate::ui::measure::terminal_extent;
-use crate::ui::specimen::{Specimen, SpecimenState};
-use crate::ui::text::{paint_clipped, width};
-use crate::widgets::keyhint::Hint;
+use crate::keyhint::Hint;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::style::Color;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::hints::{HasHints, HintCx};
+use termrock_core::id::WidgetId;
+use termrock_core::refusal::{Control, Reason};
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::measure::terminal_extent;
+use termrock_runtime::specimen::{Specimen, SpecimenState};
+use termrock_text::cells::{paint_clipped, width};
+use termrock_theme::{ButtonKind, Kind};
 use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Debug, Clone)]
@@ -27,11 +27,11 @@ pub struct Button {
     pub busy: bool,
     pub area: Rect,
 
-    pub focus_visible: crate::ui::ctx::FocusVisible,
+    pub focus_visible: termrock_runtime::ctx::FocusVisible,
 
     pub mnemonic: Option<usize>,
 
-    pub tip: Option<crate::ui::tooltip::Tip>,
+    pub tip: Option<termrock_runtime::tooltip::Tip>,
 
     pub focusable: bool,
 }
@@ -47,7 +47,7 @@ impl Button {
             on: None,
             busy: false,
             area: Rect::ZERO,
-            focus_visible: crate::ui::ctx::FocusVisible::Always,
+            focus_visible: termrock_runtime::ctx::FocusVisible::Always,
             mnemonic: None,
             tip: None,
             focusable: true,
@@ -61,7 +61,7 @@ impl Button {
 
     pub fn tooltip(mut self, text: &str) -> Self {
         let key = self.tip.take().and_then(|t| t.shortcut);
-        self.tip = Some(crate::ui::tooltip::Tip {
+        self.tip = Some(termrock_runtime::tooltip::Tip {
             text: text.to_owned(),
             shortcut: key,
         });
@@ -75,7 +75,7 @@ impl Button {
         self
     }
 
-    pub fn focus_visible(mut self, mode: crate::ui::ctx::FocusVisible) -> Self {
+    pub fn focus_visible(mut self, mode: termrock_runtime::ctx::FocusVisible) -> Self {
         self.focus_visible = mode;
         self
     }
@@ -116,17 +116,18 @@ impl Button {
         terminal_extent(self.intrinsic_width())
     }
 
-    pub(crate) fn intrinsic_width(&self) -> usize {
+    #[doc(hidden)]
+    pub fn intrinsic_width(&self) -> usize {
         let marker = if self.on.is_some() || self.busy { 2 } else { 0 };
         width(&self.label).saturating_add(2 + marker)
     }
 
-    pub fn hint(&self) -> crate::widgets::keyhint::Hint {
+    pub fn hint(&self) -> crate::keyhint::Hint {
         if self.busy {
-            return crate::widgets::keyhint::Hint::new("", "Working…")
-                .priority(crate::widgets::keyhint::HintPriority::Normal);
+            return crate::keyhint::Hint::new("", "Working…")
+                .priority(crate::keyhint::HintPriority::Normal);
         }
-        crate::widgets::keyhint::Hint::new("Enter", self.label.clone())
+        crate::keyhint::Hint::new("Enter", self.label.clone())
     }
 
     pub fn can_activate(&self) -> bool {
@@ -219,7 +220,7 @@ impl Button {
             w.saturating_sub(2),
             area.height,
         );
-        let text = crate::ui::text::fit(&text, usize::from(content.width));
+        let text = termrock_text::cells::fit(&text, usize::from(content.width));
         paint_clipped(buf, area, 0, it.gutter, gutter);
         paint_clipped(buf, content, 0, &text, style);
 
@@ -292,17 +293,13 @@ impl Button {
             ctx.clickable(self.id, area);
         }
         if let Some(tip) = &self.tip {
-            crate::ui::tooltip::show(ctx, self.id, area, tip, None);
+            termrock_runtime::tooltip::show(ctx, self.id, area, tip, None);
         }
     }
 }
 
-pub(crate) fn wrap_lines(
-    width: usize,
-    widths: &[usize],
-    gap: usize,
-    max_lines: usize,
-) -> Vec<Vec<usize>> {
+#[doc(hidden)]
+pub fn wrap_lines(width: usize, widths: &[usize], gap: usize, max_lines: usize) -> Vec<Vec<usize>> {
     let mut lines: Vec<Vec<usize>> = vec![vec![]];
     let mut used = 0usize;
     for (i, &w) in widths.iter().enumerate() {
@@ -389,7 +386,8 @@ fn place_line(area: Rect, y: u16, line: &[(usize, usize)], gap: u16, right: bool
 /// Wraps and places buttons from their wide intrinsic widths, so a button wider
 /// than any `u16` allocation never looks like it fits. A button that has no row
 /// or no width left is `Rect::ZERO`.
-pub(crate) fn place_lines(area: Rect, wide: &[usize], gap: u16, right: bool) -> Vec<Rect> {
+#[doc(hidden)]
+pub fn place_lines(area: Rect, wide: &[usize], gap: u16, right: bool) -> Vec<Rect> {
     let area = area.intersection(area);
     let mut out = vec![Rect::ZERO; wide.len()];
     for (k, line) in wrap_lines(
@@ -476,7 +474,7 @@ impl ButtonRow {
         cur: Option<WidgetId>,
         forward: bool,
     ) -> Option<WidgetId> {
-        use crate::core::list::{Cursor, Moved, RowFn};
+        use termrock_core::list::{Cursor, Moved, RowFn};
         let row: Vec<&Button> = buttons.into_iter().collect();
         let i = row.iter().position(|b| Some(b.id) == cur)?;
         let enabled = |j: usize| !row[j].disabled;
@@ -487,7 +485,7 @@ impl ButtonRow {
             label: &label,
         };
         let mut c = Cursor::new(i)
-            .axis(crate::core::hit::Axis::Horizontal)
+            .axis(termrock_core::hit::Axis::Horizontal)
             .wrap(self.wrap);
         match c.step(if forward { 1 } else { -1 }, &src) {
             Moved::To(j) => Some(row[j].id),
@@ -499,7 +497,7 @@ impl ButtonRow {
         owner.sub("more")
     }
 
-    fn gap_for(&self, theme: &crate::theme::Theme) -> u16 {
+    fn gap_for(&self, theme: &termrock_theme::Theme) -> u16 {
         self.gap.unwrap_or(theme.spacing.button_gap)
     }
 
@@ -519,7 +517,7 @@ impl ButtonRow {
     }
 
     /// Natural width of the whole row, saturating at `u16::MAX`.
-    pub fn width(&self, buttons: &[Button], theme: &crate::theme::Theme) -> u16 {
+    pub fn width(&self, buttons: &[Button], theme: &termrock_theme::Theme) -> u16 {
         terminal_extent(
             Self::intrinsic_widths(buttons)
                 .iter()
@@ -531,7 +529,7 @@ impl ButtonRow {
         )
     }
 
-    pub fn rows(&self, width: u16, buttons: &[Button], theme: &crate::theme::Theme) -> u16 {
+    pub fn rows(&self, width: u16, buttons: &[Button], theme: &termrock_theme::Theme) -> u16 {
         match self.overflow {
             RowOverflow::More => 1,
             RowOverflow::Wrap => {
@@ -551,7 +549,12 @@ impl ButtonRow {
         }
     }
 
-    pub fn layout(&self, area: Rect, buttons: &[Button], theme: &crate::theme::Theme) -> RowLayout {
+    pub fn layout(
+        &self,
+        area: Rect,
+        buttons: &[Button],
+        theme: &termrock_theme::Theme,
+    ) -> RowLayout {
         let gap = self.gap_for(theme);
         let widths = Self::intrinsic_widths(buttons);
         let mut out = RowLayout {
@@ -669,7 +672,7 @@ impl ButtonRow {
     }
 }
 
-impl crate::core::pointer::MouseTarget for Button {
+impl termrock_core::pointer::MouseTarget for Button {
     type Action = ();
 
     fn mouse_id(&self) -> WidgetId {
@@ -678,10 +681,10 @@ impl crate::core::pointer::MouseTarget for Button {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<()> {
-        use crate::core::response::Response;
-        if !ev.is(crate::core::intent::Phase::Click) {
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<()> {
+        use termrock_core::response::Response;
+        if !ev.is(termrock_core::intent::Phase::Click) {
             return Response::ignored();
         }
         if self.on_click() {

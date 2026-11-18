@@ -2,12 +2,12 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::Style;
 
-use crate::core::id::{PartRef, WidgetId};
-use crate::theme::Theme;
-use crate::ui::ctx::{RenderCtx, fill};
-use crate::ui::measure::terminal_extent;
-use crate::ui::text::width;
-use crate::ui::tooltip::Tip;
+use termrock_core::id::{PartRef, WidgetId};
+use termrock_runtime::ctx::{RenderCtx, fill};
+use termrock_runtime::measure::terminal_extent;
+use termrock_runtime::tooltip::Tip;
+use termrock_text::cells::width;
+use termrock_theme::Theme;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum IconLook {
@@ -168,7 +168,13 @@ impl IconButton {
             }
         }
         if let Some(col) = glyph_x.checked_sub(plate.x) {
-            crate::ui::text::paint_clipped(buf, plate, usize::from(col), self.glyph(ctx.theme), st);
+            termrock_text::cells::paint_clipped(
+                buf,
+                plate,
+                usize::from(col),
+                self.glyph(ctx.theme),
+                st,
+            );
         }
         match self.part {
             Some((owner, part)) => {
@@ -177,25 +183,25 @@ impl IconButton {
             None => ctx.clickable(self.id, plate),
         }
         if let Some(tip) = self.tip.clone().or(default_tip) {
-            crate::ui::tooltip::show(ctx, self.id, plate, &tip, None);
+            termrock_runtime::tooltip::show(ctx, self.id, plate, &tip, None);
         }
         plate
     }
 }
 
-impl crate::ui::specimen::Specimen for IconButton {
+impl termrock_runtime::specimen::Specimen for IconButton {
     fn specimen_id(&self) -> WidgetId {
         self.id
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         matches!(state, Rest | Hover | Pressed)
     }
 
     fn specimen(
         &self,
-        _state: crate::ui::specimen::SpecimenState,
+        _state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
