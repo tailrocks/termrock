@@ -1637,7 +1637,10 @@ fn g05_check_visual_does_not_write_baselines() {
 fn g05_tests_do_not_invoke_accept() {
     let needle = concat!("tuiscotti", " ", "accept");
     let workspace = crate::support::workspace_root();
-    let mut pending = vec![workspace.join("tests")];
+    let mut pending = vec![
+        workspace.join("tests"),
+        workspace.join("crates/termrock-functional/tests"),
+    ];
     while let Some(dir) = pending.pop() {
         for entry in std::fs::read_dir(&dir)
             .unwrap_or_else(|error| panic!("read {}: {error}", dir.display()))

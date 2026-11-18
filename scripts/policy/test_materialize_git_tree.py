@@ -134,7 +134,7 @@ class BatchMaterializerTests(unittest.TestCase):
         self.assertFalse(self.calls.exists())
 
     def test_approved_blob_size_must_equal_reviewed_size(self) -> None:
-        path = "tests/functional/reference-bins/test"
+        path = "crates/termrock-functional/tests/functional/reference-bins/test"
         replies = self.prepare([("100755", path, b"123456")])
         self.allowlist.write_text(f"{path}\t{'a' * 40}\t7\n", encoding="ascii")
         result = self.run_materializer(replies, maximum_blob=5)
