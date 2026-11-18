@@ -211,10 +211,10 @@ and prints each normal feature tree.
 
 | Fixture | Features | Proves |
 | --- | --- | --- |
-| [`tests/consumers/minimal`](../tests/consumers/minimal/src/lib.rs) | none | `consumer_minimal_renders_input_and_list`; the examples `consumer_minimal_validated_input_reports_and_clears_errors`, `consumer_minimal_typed_grid_actions_arrive_in_order`, `consumer_minimal_nested_scroll_views_bubble_what_they_cannot_scroll` and `consumer_minimal_bounded_external_messages_return_the_overflow`. The normal tree has neither `clap` nor `termpane`. |
-| [`tests/consumers/keyed-modal`](../tests/consumers/keyed-modal/src/lib.rs) | none | `consumer_keyed_modal_preserves_selection`: a keyed list borrowed from a provider, under a modal layer, keeps its selected key when the provider is reordered, and focus returns. It is the borrowed-keyed-list and the modal-focus example. |
-| [`tests/consumers/terminal`](../tests/consumers/terminal/src/lib.rs) | `terminal` | `consumer_terminal_constructs_public_viewport`. No `clap`. |
-| [`tests/consumers/jackin-host`](../tests/consumers/jackin-host/src/lib.rs) | none, on `jackin-console` | `consumer_jackin_host_resolves_the_host_api`. The host keeps its intentional terminal dependency and resolves no `clap`; `tests/library_has_no_demo.rs` of `jackin-console` keeps demo names out of the host modules. |
+| [`crates/termrock/tests/consumers/minimal`](../crates/termrock/tests/consumers/minimal/src/lib.rs) | none | `consumer_minimal_renders_input_and_list`; the examples `consumer_minimal_validated_input_reports_and_clears_errors`, `consumer_minimal_typed_grid_actions_arrive_in_order`, `consumer_minimal_nested_scroll_views_bubble_what_they_cannot_scroll` and `consumer_minimal_bounded_external_messages_return_the_overflow`. The normal tree has neither `clap` nor `termpane`. |
+| [`crates/termrock/tests/consumers/keyed-modal`](../crates/termrock/tests/consumers/keyed-modal/src/lib.rs) | none | `consumer_keyed_modal_preserves_selection`: a keyed list borrowed from a provider, under a modal layer, keeps its selected key when the provider is reordered, and focus returns. It is the borrowed-keyed-list and the modal-focus example. |
+| [`crates/termrock/tests/consumers/terminal`](../crates/termrock/tests/consumers/terminal/src/lib.rs) | `terminal` | `consumer_terminal_constructs_public_viewport`. No `clap`. |
+| [`crates/termrock/tests/consumers/jackin-host`](../crates/termrock/tests/consumers/jackin-host/src/lib.rs) | none, on `jackin-console` | `consumer_jackin_host_resolves_the_host_api`. The host keeps its intentional terminal dependency and resolves no `clap`; `tests/library_has_no_demo.rs` of `jackin-console` keeps demo names out of the host modules. |
 
 `tests/regressions/facade_contract.rs` runs in the ordinary test suite: it
 scans the four application packages for any manifest entry or Rust path that
