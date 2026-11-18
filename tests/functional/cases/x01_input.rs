@@ -8,8 +8,6 @@
 //! macOS uses `FieldKeys::Emacs`, so Ctrl+W is Cut. The PTY delivers that
 //! chord: the selected name is cleared and `w` is not inserted.
 
-use std::path::PathBuf;
-
 use tui_test::TerminalSnapshot;
 use tuiscotti_latest::check::CheckOutcome;
 
@@ -146,7 +144,7 @@ fn close(app: &App) {
 }
 
 fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
+    let root = crate::support::oracle_baselines();
     let sample = tuiscotti_latest::sample::Sample::state(
         test_id,
         screen.clone(),

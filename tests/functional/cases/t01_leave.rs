@@ -3,8 +3,6 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/t01_leave/` and the dotted checkpoint ids use underscores.
 
-use std::path::PathBuf;
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, Launch, TABLEPRO, find_all, flash_settle, row_text, text, try_launch};
@@ -122,7 +120,7 @@ fn click_dialog(app: &App, label: &str) {
 }
 
 fn shot(app: &App, id: &str, precondition: &str) {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
+    let root = crate::support::oracle_baselines();
     let outcome = app.check_visual_with_precondition(&root, id, precondition);
     assert!(outcome.is_pass(), "visual mismatch for {id}: {outcome:?}");
 }

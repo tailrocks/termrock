@@ -339,7 +339,7 @@ fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
         );
         return;
     }
-    let root = crate::support::workspace_root().join("tests/functional/baselines");
+    let root = crate::support::oracle_baselines();
     let sample = tuiscotti_latest::sample::Sample::state(
         test_id,
         screen.clone(),
