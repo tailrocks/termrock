@@ -186,7 +186,7 @@ workspaces, Docker, OpenShell, Codex).
   A proof whose scenario never calls its API fails the gate: add the call to
   the scenario with an assertion, re-point the proof, or make it a `Nonvisual`
   exception with a real regression test. Layer 3 is the
-  tuiscotti journeys in `tests/functional`. Name matching is never behavioral
+  tuiscotti journeys in `crates/termrock-functional/tests/functional`. Name matching is never behavioral
   proof. Run `cargo nextest run -p termrock-catalog -p termrock-showcase
   --all-features --no-tests fail -E 'test(catalog_)'` (the source gate is in
   `termrock-catalog`, the scenarios in `termrock-showcase`); the Rust crate CI jobs

@@ -43,8 +43,7 @@ fn sha256_file(path: &Path) -> String {
 }
 
 fn manifest() -> Value {
-    let path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("docs/testing/reference-manifest.json");
+    let path = crate::support::workspace_root().join("docs/testing/reference-manifest.json");
     serde_json::from_slice(&std::fs::read(&path).expect("reference manifest")).expect("manifest")
 }
 
@@ -382,8 +381,7 @@ fn disposition_sample_fixture(cols: u32, rows: u32) -> TerminalSnapshot {
 }
 
 fn assert_superseded_json_dispositions(active_root: &Path) {
-    let path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("docs/testing/baseline-dispositions.json");
+    let path = crate::support::workspace_root().join("docs/testing/baseline-dispositions.json");
     let value: Value =
         serde_json::from_slice(&std::fs::read(&path).expect("dispositions")).expect("dispositions");
     let rows = value.as_array().expect("dispositions array");
@@ -431,8 +429,7 @@ fn assert_superseded_json_dispositions(active_root: &Path) {
             ),
             "{id}: {reason}"
         );
-        let baseline =
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(row["path"].as_str().expect("path"));
+        let baseline = crate::support::workspace_root().join(row["path"].as_str().expect("path"));
         assert!(
             !baseline.exists(),
             "superseded JSON sample remains: {}",
@@ -589,8 +586,7 @@ fn legacy_sample_json_hashes() -> std::collections::BTreeMap<PathBuf, String> {
 }
 
 fn assert_historical_json_hash_receipts(dispositions: &[Value], baseline_root: &Path) {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("docs/testing/baseline-archives-20261108.tsv");
+    let path = crate::support::workspace_root().join("docs/testing/baseline-archives-20261108.tsv");
     let contents = std::fs::read_to_string(&path)
         .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
     let mut lines = contents.lines();
@@ -658,7 +654,7 @@ fn g05_approved_binary_manifest_matches_active_samples() {
     assert_no_legacy_sample_trees();
     let legacy_json_hashes = legacy_sample_json_hashes();
     let dispositions_path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("docs/testing/baseline-dispositions.json");
+        crate::support::workspace_root().join("docs/testing/baseline-dispositions.json");
     let dispositions: Value =
         serde_json::from_slice(&std::fs::read(&dispositions_path).expect("baseline dispositions"))
             .expect("baseline dispositions JSON");
@@ -666,8 +662,8 @@ fn g05_approved_binary_manifest_matches_active_samples() {
         dispositions.as_array().expect("dispositions array"),
         &root,
     );
-    let manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("docs/testing/binary-baselines-20261108.tsv");
+    let manifest_path =
+        crate::support::workspace_root().join("docs/testing/binary-baselines-20261108.tsv");
     let manifest = std::fs::read_to_string(&manifest_path).expect("binary baseline manifest");
     let mut lines = manifest.lines();
     assert_eq!(
@@ -729,7 +725,7 @@ fn g05_approved_binary_manifest_matches_active_samples() {
         assert_eq!(sha256_file(&path), *expected_sha, "{test_id}");
         sample_ids.push((path.clone(), (*test_id).to_owned()));
         let receipt_relative_path = *receipt_path;
-        let receipt_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(receipt_relative_path);
+        let receipt_path = crate::support::workspace_root().join(receipt_relative_path);
         let receipt: Value = serde_json::from_slice(
             &std::fs::read(&receipt_path)
                 .unwrap_or_else(|error| panic!("{}: {error}", receipt_path.display())),
@@ -752,12 +748,12 @@ fn g05_approved_binary_manifest_matches_active_samples() {
     }
     assert_eq!(count, 140);
     assert!(!ids.contains("functional/tablepro_query_syntax_error"));
-    let historical_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+    let historical_path = crate::support::workspace_root()
         .join("docs/testing/acceptance-receipts/historical-binary-20261108/transactions.jsonl");
     let historical = std::fs::read_to_string(&historical_path)
         .unwrap_or_else(|error| panic!("{}: {error}", historical_path.display()));
-    let refresh_manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("docs/testing/baseline-refreshes-20261108.tsv");
+    let refresh_manifest_path =
+        crate::support::workspace_root().join("docs/testing/baseline-refreshes-20261108.tsv");
     let refresh_manifest = std::fs::read_to_string(&refresh_manifest_path)
         .unwrap_or_else(|error| panic!("{}: {error}", refresh_manifest_path.display()));
     let mut refresh_lines = refresh_manifest.lines();
@@ -779,7 +775,7 @@ fn g05_approved_binary_manifest_matches_active_samples() {
     }
     let mut inherited_approved = std::collections::BTreeMap::new();
     let inherited_early = std::fs::read_to_string(
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        crate::support::workspace_root()
             .join("docs/testing/acceptance-receipts/inherited-main-20261108/baselines.tsv"),
     )
     .expect("inherited main baseline manifest");
@@ -815,7 +811,7 @@ fn g05_approved_binary_manifest_matches_active_samples() {
                 "refresh chain starts from the inherited approval {test_id}"
             );
         }
-        let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let repo_root = crate::support::workspace_root();
         if ids.contains(test_id.as_str()) {
             // The manifest row carries the latest digest, so nothing else ties the first
             // refresh to the approval it replaced. An original approval receipt of this id
@@ -963,7 +959,7 @@ fn g05_approved_binary_manifest_matches_active_samples() {
                 active_sha.as_str(),
                 "active refreshed sample {test_id}"
             );
-            let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            let repo_root = crate::support::workspace_root();
             let archive = repo_root.join(archive_path);
             assert_eq!(
                 sha256_file(&archive),
@@ -1101,7 +1097,7 @@ fn g05_approved_binary_manifest_matches_active_samples() {
     }
     let mut actual_paths = std::collections::BTreeSet::new();
     collect_pb_paths(&root, &root, &mut actual_paths);
-    let inherited_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+    let inherited_root = crate::support::workspace_root()
         .join("docs/testing/acceptance-receipts/inherited-main-20261108");
     let inherited_manifest_path = inherited_root.join("baselines.tsv");
     let inherited_manifest = std::fs::read_to_string(&inherited_manifest_path)
@@ -1181,7 +1177,7 @@ fn g05_approved_binary_manifest_matches_active_samples() {
 
 #[test]
 fn g05_disposition_sample_reader_accepts_pb_path() {
-    let fixture_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+    let fixture_root = crate::support::workspace_root()
         .join("target/functional")
         .join(format!(
             "g05-disposition-{}-{}",
@@ -1281,7 +1277,7 @@ fn assert_acceptance_receipts() {
         ),
     ];
     for (file, binary, baseline_id) in cases {
-        let receipt_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        let receipt_path = crate::support::workspace_root()
             .join("docs/testing/acceptance-receipts/protobuf-20261107")
             .join(format!("{file}.json"));
         let receipt: Value =
@@ -1339,8 +1335,7 @@ fn assert_acceptance_receipts() {
 
 fn original_approval_receipt_digests(test_id: &str) -> Vec<String> {
     let safe = test_id.replace('/', "_");
-    let receipts =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("docs/testing/acceptance-receipts");
+    let receipts = crate::support::workspace_root().join("docs/testing/acceptance-receipts");
     let mut digests = Vec::new();
     for dir in std::fs::read_dir(&receipts).expect("acceptance receipts dir") {
         let dir = dir.expect("receipt dir entry").path();
@@ -1363,8 +1358,7 @@ fn original_approval_receipt_digests(test_id: &str) -> Vec<String> {
 
 fn first_refresh_previous_sha(test_id: &str) -> Option<String> {
     let manifest = std::fs::read_to_string(
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("docs/testing/baseline-refreshes-20261108.tsv"),
+        crate::support::workspace_root().join("docs/testing/baseline-refreshes-20261108.tsv"),
     )
     .expect("baseline refresh manifest");
     manifest
@@ -1405,7 +1399,7 @@ fn g05_candidate_refuses_reference_binary() {
         .as_object()
         .expect("showcase platforms");
     for (target, platform) in platforms {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(
+        let path = crate::support::workspace_root().join(
             platform["path"]
                 .as_str()
                 .unwrap_or_else(|| panic!("path for {target}")),
@@ -1431,10 +1425,8 @@ fn g05_candidate_refuses_reference_binary() {
 #[test]
 fn g05_candidate_cannot_select_reference_manifest_override() {
     let mut launch = Launch::new("g05-candidate-reference-manifest", SHOWCASE);
-    launch.reference_manifest = Some(
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("docs/testing/reference-manifest-j06-pr2.json"),
-    );
+    launch.reference_manifest =
+        Some(crate::support::workspace_root().join("docs/testing/reference-manifest-j06-pr2.json"));
     let Err(error) = try_launch(launch) else {
         panic!("candidate mode must not select an alternate reference manifest");
     };
@@ -1505,9 +1497,7 @@ fn g05_reference_session_receipt_records_identity() {
     assert!(text(&screen).chars().any(|ch| ch.is_ascii_alphanumeric()));
     let evidence = app.evidence_dir();
     let baselines = baseline_root();
-    assert!(
-        evidence.starts_with(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/functional"))
-    );
+    assert!(evidence.starts_with(crate::support::workspace_root().join("target/functional")));
     assert!(!evidence.starts_with(&baselines));
     let session: Value = serde_json::from_slice(
         &std::fs::read(evidence.join("session.json")).expect("session.json"),

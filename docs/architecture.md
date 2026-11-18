@@ -55,7 +55,7 @@ file will land in is `[files]` in `docs/layering.toml`.
 | Facade | `termrock` | The public surface applications depend on: `pub use` of the crates above. | `crates/termrock` |
 | Applications | `apps/*` | Routes, demo or simulated data, composition. They import `termrock::` only and hold no shared widget behaviour. | `apps/showcase`, `apps/tablepro`, `apps/holla`, `apps/jackin` |
 
-`termrock-functional` (the PTY journeys of `tests/functional`) and
+`termrock-functional` (the PTY journeys formerly in `tests/functional`) and
 `functional-cross` are test-only crates; nothing depends on them. `junie-tui`
 stays as a transitional deprecated shim once the split ends (#452).
 

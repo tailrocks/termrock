@@ -77,5 +77,5 @@ command = ["sh", "scripts/build-app-bins.sh"]
 slow-timeout = { period = "120s", terminate-after = 2 }
 
 [[profile.default.scripts]]
-filter = "package(functional-cross) | binary_id(=junie-tui::functional)"
+filter = "package(functional-cross) | package(termrock-functional)"
 setup = "app-bins"

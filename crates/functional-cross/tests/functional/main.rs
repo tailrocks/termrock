@@ -1,6 +1,6 @@
 #![cfg(any(target_os = "macos", target_os = "linux"))]
 
-/// The engine types the shared harness (`tests/functional/support.rs`) names.
+/// The engine types the shared harness (`crates/termrock-functional/tests/functional/support.rs`) names.
 /// Each target that includes it supplies them from the crate it can depend on.
 mod engine {
     pub use junie_tui::clock::TestRequest;
@@ -9,7 +9,7 @@ mod engine {
 }
 
 #[allow(dead_code)]
-#[path = "../../../../tests/functional/bins.rs"]
+#[path = "../../../../crates/termrock-functional/tests/functional/bins.rs"]
 mod bins;
 mod cases;
 #[allow(dead_code)]

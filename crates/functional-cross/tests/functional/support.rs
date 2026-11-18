@@ -1,4 +1,4 @@
-#[path = "../../../../tests/functional/support.rs"]
+#[path = "../../../../crates/termrock-functional/tests/functional/support.rs"]
 mod shared;
 
 use std::collections::BTreeMap;

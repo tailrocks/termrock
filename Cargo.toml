@@ -37,6 +37,7 @@ members = [
     "crates/termrock-theme",
     "crates/termrock-viewport",
     "crates/functional-cross",
+    "crates/termrock-functional",
 ]
 default-members = [
     ".",
@@ -68,6 +69,7 @@ default-members = [
     "crates/termrock-theme",
     "crates/termrock-viewport",
     "crates/functional-cross",
+    "crates/termrock-functional",
 ]
 
 [workspace.dependencies]
@@ -112,11 +114,6 @@ name = "junie_tui"
 path = "src/lib.rs"
 
 doctest = false
-
-[[test]]
-name = "functional"
-path = "tests/functional/main.rs"
-required-features = ["cli", "terminal"]
 
 [dependencies]
 ratatui = { workspace = true }
