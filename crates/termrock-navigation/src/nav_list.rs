@@ -2,17 +2,17 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::Color;
 
-use crate::core::event::{Key, Outcome};
-use crate::core::hit::Axis;
-use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::core::intent::Phase;
-use crate::core::keymap::{Nav, NavKeys};
-use crate::core::pointer::PointerEvent;
-use crate::core::response::Response;
-use crate::core::scroll::{ScrollState, TrackClick};
-use crate::ui::ctx::{RenderCtx, VisualState, fill};
-use crate::ui::text::{paint_clipped, paint_truncated};
-use crate::widgets::scrollbar;
+use termrock_controls::scrollbar;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::hit::Axis;
+use termrock_core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock_core::intent::Phase;
+use termrock_core::keymap::{Nav, NavKeys};
+use termrock_core::pointer::PointerEvent;
+use termrock_core::response::Response;
+use termrock_core::scroll::{ScrollState, TrackClick};
+use termrock_runtime::ctx::{RenderCtx, VisualState, fill};
+use termrock_text::cells::{paint_clipped, paint_truncated};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NavItem {
@@ -94,7 +94,7 @@ pub struct NavList {
 
     pub scroll: ScrollState,
 
-    pub inactive_selection: Option<crate::theme::InactiveSelection>,
+    pub inactive_selection: Option<termrock_theme::InactiveSelection>,
     area: Rect,
 }
 
@@ -115,7 +115,7 @@ impl NavList {
         }
     }
 
-    pub fn inactive_selection(mut self, look: crate::theme::InactiveSelection) -> Self {
+    pub fn inactive_selection(mut self, look: termrock_theme::InactiveSelection) -> Self {
         self.inactive_selection = Some(look);
         self
     }
@@ -436,7 +436,7 @@ impl NavList {
                             }),
                         );
                         let content = usize::from(row_w).saturating_sub(5);
-                        let badge_w = it.badge.as_deref().map_or(0, crate::ui::text::width);
+                        let badge_w = it.badge.as_deref().map_or(0, termrock_text::cells::width);
                         let label_room = if badge_w > 0 {
                             content.saturating_sub(badge_w + 2)
                         } else {
@@ -468,7 +468,7 @@ impl NavList {
         }
         ctx.scrollable(self.id, area);
         if has_sb {
-            crate::ui::fade::scroll_edges_except(
+            termrock_runtime::fade::scroll_edges_except(
                 buf,
                 ctx,
                 Rect::new(area.x, area.y, row_w, area.height),
@@ -490,13 +490,13 @@ impl NavList {
     }
 }
 
-impl crate::ui::specimen::Specimen for NavList {
+impl termrock_runtime::specimen::Specimen for NavList {
     fn specimen_id(&self) -> WidgetId {
         self.id
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         matches!(
             state,
             Rest | Hover
@@ -510,19 +510,19 @@ impl crate::ui::specimen::Specimen for NavList {
         ) && !(self.collapsed && state == Overflow)
     }
 
-    fn specimen_height(&self, _state: crate::ui::specimen::SpecimenState) -> u16 {
+    fn specimen_height(&self, _state: termrock_runtime::specimen::SpecimenState) -> u16 {
         self.sample().rows().len() as u16
     }
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
         bg: Color,
     ) {
-        use crate::ui::specimen::SpecimenState::*;
+        use termrock_runtime::specimen::SpecimenState::*;
         let mut l = self.sample();
         fill(buf, area, ratatui::style::Style::new().bg(bg));
         if l.items.is_empty() {
@@ -572,7 +572,7 @@ impl NavList {
     }
 }
 
-impl crate::core::pointer::MouseTarget for NavList {
+impl termrock_core::pointer::MouseTarget for NavList {
     type Action = NavAction;
 
     fn mouse_id(&self) -> WidgetId {

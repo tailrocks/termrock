@@ -3,22 +3,22 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier};
 
-use crate::core::event::{Key, Outcome};
+use termrock_core::event::{Key, Outcome};
 
-use crate::core::hints::{Binding, Bindings, HasHints, HintCx, actions_bindings};
-use crate::core::hit::Axis;
-use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::core::keymap::{Actions, KeyBinding, KeyMap, NavKeys, lookup, unassigned_chord};
-use crate::core::list::{Cursor, Navigable, RowSource};
-use crate::core::pointer::PointerEvent;
-use crate::theme::Kind;
-use crate::ui::context::{ContextAnchor, ContextRequest, ContextSource};
-use crate::ui::ctx::RenderCtx;
-use crate::ui::specimen::{Specimen, SpecimenState};
-use crate::ui::tooltip::Tip;
-use crate::widgets::icon_button::IconButton;
-use crate::widgets::keyhint::{Hint, hint};
-use crate::widgets::menu::{ContextMenu, MenuAction, MenuItem};
+use termrock_controls::icon_button::IconButton;
+use termrock_controls::keyhint::{Hint, hint};
+use termrock_core::hints::{Binding, Bindings, HasHints, HintCx, actions_bindings};
+use termrock_core::hit::Axis;
+use termrock_core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock_core::keymap::{Actions, KeyBinding, KeyMap, NavKeys, lookup, unassigned_chord};
+use termrock_core::list::{Cursor, Navigable, RowSource};
+use termrock_core::pointer::PointerEvent;
+use termrock_overlays::context::{ContextAnchor, ContextRequest, ContextSource};
+use termrock_overlays::menu::{ContextMenu, MenuAction, MenuItem};
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::specimen::{Specimen, SpecimenState};
+use termrock_runtime::tooltip::Tip;
+use termrock_theme::Kind;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct TabItem {
@@ -82,18 +82,22 @@ fn total_of(widths: impl Iterator<Item = usize>) -> usize {
         .fold(0usize, usize::saturating_add)
 }
 
-impl crate::ui::measure::Measure for Tabs {
+impl termrock_runtime::measure::Measure for Tabs {
     fn measure(
         &self,
         _avail: ratatui::layout::Size,
-        _ctx: &crate::ui::ctx::RenderCtx,
+        _ctx: &termrock_runtime::ctx::RenderCtx,
     ) -> ratatui::layout::Size {
         let new = if self.allow_new { 4 } else { 0 };
         let total = self.intrinsic_total().saturating_add(new);
-        ratatui::layout::Size::new(crate::ui::measure::terminal_extent(total), 2)
+        ratatui::layout::Size::new(termrock_runtime::measure::terminal_extent(total), 2)
     }
 
-    fn min_width(&self, _avail: ratatui::layout::Size, _ctx: &crate::ui::ctx::RenderCtx) -> u16 {
+    fn min_width(
+        &self,
+        _avail: ratatui::layout::Size,
+        _ctx: &termrock_runtime::ctx::RenderCtx,
+    ) -> u16 {
         let widest = self
             .items
             .iter()
@@ -101,7 +105,7 @@ impl crate::ui::measure::Measure for Tabs {
             .max()
             .unwrap_or(0);
         let more = 3 + self.items.len().to_string().len();
-        crate::ui::measure::terminal_extent(
+        termrock_runtime::measure::terminal_extent(
             widest
                 .saturating_add(1 + 8 + more)
                 .saturating_add(if self.allow_new { 4 } else { 0 }),
@@ -365,9 +369,9 @@ impl Tabs {
         self
     }
 
-    fn overflow_tip(&self, t: &crate::theme::Theme) -> Tip {
+    fn overflow_tip(&self, t: &termrock_theme::Theme) -> Tip {
         let tip = Tip::new(t.strings.tip_overflow);
-        match crate::core::keymap::label_for(&self.keymap, TabCmd::ShowHidden) {
+        match termrock_core::keymap::label_for(&self.keymap, TabCmd::ShowHidden) {
             Some(k) => tip.shortcut(&k),
             None => tip,
         }
@@ -536,7 +540,8 @@ impl Tabs {
     pub fn on_wheel(&mut self, dx: i32, dy: i32) -> Outcome {
         if let Some((menu, _)) = self.menu.as_mut() {
             return if dy != 0 {
-                crate::core::scroll::Scrollable::wheel(&mut menu.list, Axis::Vertical, dy).outcome()
+                termrock_core::scroll::Scrollable::wheel(&mut menu.list, Axis::Vertical, dy)
+                    .outcome()
             } else {
                 Outcome::Consumed
             };
@@ -729,7 +734,7 @@ impl Tabs {
     }
 
     fn tab_width(&self, it: &TabItem) -> usize {
-        let text = crate::ui::text::width;
+        let text = termrock_text::cells::width;
         let mut w = 1usize.saturating_add(text(&it.label)).saturating_add(2);
         if let Some(p) = &it.prefix {
             w = w.saturating_add(text(p)).saturating_add(1);
@@ -864,7 +869,7 @@ impl Tabs {
             if w > usize::from(area.right().saturating_sub(x)) {
                 break;
             }
-            let w = crate::ui::measure::terminal_extent(w);
+            let w = termrock_runtime::measure::terminal_extent(w);
             let r = Rect::new(x, y, w, 1);
             self.areas[i] = r;
             let tid = self.tab_id(i);
@@ -876,7 +881,7 @@ impl Tabs {
 
             let look = t.interactive(Kind::Tab, s, t.plane_of(bg));
             let st = look.style;
-            crate::ui::ctx::fill(buf, r, st);
+            termrock_runtime::ctx::fill(buf, r, st);
             if s.focused {
                 buf.set_string(x, y, look.gutter, look.gutter_style);
             }
@@ -892,10 +897,10 @@ impl Tabs {
                     st.fg(t.beside_label(t.text_muted, plane, label))
                         .remove_modifier(Modifier::BOLD),
                 );
-                cx += crate::ui::text::width(p) as u16 + 1;
+                cx += termrock_text::cells::width(p) as u16 + 1;
             }
             buf.set_string(cx, y, &it.label, st);
-            cx += crate::ui::text::width(&it.label) as u16;
+            cx += termrock_text::cells::width(&it.label) as u16;
             if let Some(x) = &it.suffix {
                 buf.set_string(
                     cx + 1,
@@ -911,7 +916,7 @@ impl Tabs {
                     ))
                     .remove_modifier(Modifier::BOLD),
                 );
-                cx += crate::ui::text::width(x) as u16 + 1;
+                cx += termrock_text::cells::width(x) as u16 + 1;
             }
             if it.busy {
                 buf.set_string(
@@ -922,7 +927,7 @@ impl Tabs {
                 );
                 cx += 2;
             } else if it.error {
-                let ink = t.tone_on(crate::theme::Tone::Error, plane);
+                let ink = t.tone_on(termrock_theme::Tone::Error, plane);
                 buf.set_string(cx + 1, y, "!", st.fg(ink));
                 cx += 2;
             } else if it.dirty {
@@ -934,7 +939,7 @@ impl Tabs {
                 );
                 cx += 2;
             } else if it.done {
-                let ink = t.tone_on(crate::theme::Tone::Success, plane);
+                let ink = t.tone_on(termrock_theme::Tone::Success, plane);
                 buf.set_string(
                     cx + 1,
                     y,
@@ -983,7 +988,7 @@ impl Tabs {
 
             if show_close {
                 let tip = Tip::new(t.strings.tip_close_tab);
-                let tip = match crate::core::keymap::label_for(&self.keymap, TabCmd::Close) {
+                let tip = match termrock_core::keymap::label_for(&self.keymap, TabCmd::Close) {
                     Some(k) => tip.shortcut(&k),
                     None => tip,
                 };
@@ -1019,7 +1024,7 @@ impl Tabs {
             self.more_area = r;
 
             let host = ratatui::style::Style::new().bg(bg);
-            crate::ui::ctx::fill(buf, r, host);
+            termrock_runtime::ctx::fill(buf, r, host);
             self.more_button
                 .with_glyph(&format!("+{hidden}"))
                 .part_of(self.id, PartRef::of(Part::OVERFLOW))
@@ -1033,7 +1038,7 @@ impl Tabs {
             let nx = area.right().saturating_sub(new_w);
             let nid = self.new_id();
             let tip = Tip::new(t.strings.tip_new_tab);
-            let tip = match crate::core::keymap::label_for(&self.keymap, TabCmd::New) {
+            let tip = match termrock_core::keymap::label_for(&self.keymap, TabCmd::New) {
                 Some(k) => tip.shortcut(&k),
                 None => tip,
             };
@@ -1072,7 +1077,7 @@ impl Navigable for Tabs {
     }
 }
 
-impl crate::core::pointer::MouseTarget for Tabs {
+impl termrock_core::pointer::MouseTarget for Tabs {
     type Action = TabAction;
 
     fn mouse_id(&self) -> WidgetId {
@@ -1081,18 +1086,18 @@ impl crate::core::pointer::MouseTarget for Tabs {
 
     fn route(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> Option<crate::core::response::Response<TabAction>> {
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> Option<termrock_core::response::Response<TabAction>> {
         let menu = self.menu.as_ref().map(|(m, _)| m.id);
         (ev.on(self.id) || menu.is_some_and(|m| ev.on(m))).then(|| self.pointer(ev))
     }
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<TabAction> {
-        use crate::core::intent::Phase;
-        use crate::core::response::Response;
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<TabAction> {
+        use termrock_core::intent::Phase;
+        use termrock_core::response::Response;
         if let Some((axis, delta)) = ev.wheel() {
             let step = delta.signum();
             return match axis {

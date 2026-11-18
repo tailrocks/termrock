@@ -2,11 +2,11 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::Color;
 
-use crate::core::id::{Part, PartRef, WidgetId};
-use crate::theme::Kind;
-use crate::ui::ctx::RenderCtx;
-use crate::ui::text::{paint_clipped, width};
-use crate::ui::tooltip::Tip;
+use termrock_core::id::{Part, PartRef, WidgetId};
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::tooltip::Tip;
+use termrock_text::cells::{paint_clipped, width};
+use termrock_theme::Kind;
 use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -80,7 +80,7 @@ impl SidebarRail {
         let st = t
             .interactive(Kind::Title, ctx.state(self.id), t.plane_of(bg))
             .style;
-        crate::ui::ctx::fill(buf, col, st);
+        termrock_runtime::ctx::fill(buf, col, st);
         paint_clipped(buf, col, 0, t.glyphs.overflow_right, st);
         let placeholder = if width(t.glyphs.ellipsis) == 1 {
             t.glyphs.ellipsis
@@ -97,7 +97,7 @@ impl SidebarRail {
         }
         ctx.clickable(self.id, col);
         if !self.label.is_empty() {
-            crate::ui::tooltip::show(ctx, self.id, col, &Tip::new(&self.label), None);
+            termrock_runtime::tooltip::show(ctx, self.id, col, &Tip::new(&self.label), None);
         }
     }
 
@@ -120,34 +120,34 @@ impl SidebarRail {
     }
 }
 
-impl crate::ui::specimen::Specimen for SidebarRail {
+impl termrock_runtime::specimen::Specimen for SidebarRail {
     fn specimen_id(&self) -> WidgetId {
         self.id
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         self.collapsed_rail && matches!(state, Rest | Hover | Pressed)
     }
 
-    fn specimen_height(&self, _state: crate::ui::specimen::SpecimenState) -> u16 {
+    fn specimen_height(&self, _state: termrock_runtime::specimen::SpecimenState) -> u16 {
         u16::try_from(2 + self.rows().count()).unwrap_or(u16::MAX)
     }
 
     fn specimen(
         &self,
-        _state: crate::ui::specimen::SpecimenState,
+        _state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
         bg: Color,
     ) {
-        crate::ui::ctx::fill(buf, area, ratatui::style::Style::new().bg(bg));
+        termrock_runtime::ctx::fill(buf, area, ratatui::style::Style::new().bg(bg));
         self.render_rail(area, buf, ctx, bg);
     }
 }
 
-impl crate::core::pointer::MouseTarget for SidebarRail {
+impl termrock_core::pointer::MouseTarget for SidebarRail {
     type Action = RailAction;
 
     fn mouse_id(&self) -> WidgetId {
@@ -156,10 +156,10 @@ impl crate::core::pointer::MouseTarget for SidebarRail {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<RailAction> {
-        use crate::core::response::Response;
-        if !ev.is(crate::core::intent::Phase::Click) {
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<RailAction> {
+        use termrock_core::response::Response;
+        if !ev.is(termrock_core::intent::Phase::Click) {
             return Response::ignored();
         }
         match self.on_click(ev.id) {

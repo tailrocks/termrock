@@ -895,3 +895,16 @@ was listed before the move.
     unchanged).
   - `PropsList::{wrapping, row_of, height_at}` are hidden `pub` for
     `info_dialog`.
+- **`termrock-navigation`** (`breadcrumb`, `rail`, `nav_list`, `tabs`, `toolbar`,
+  `steps`, `document_workspace`). It depends on `termrock-{collections, overlays,
+  controls}` and the foundations; `steps` reads `content` and `list_core` from
+  collections. Every `impl` in the moved files is a foreign trait on a local
+  type, so there is no coherence break. `Breadcrumb::{intrinsic_width,
+  first_shown}` and `Toolbar::intrinsic_width` are hidden `pub` for the
+  intrinsic-width and overflow-parity tests that wait for #449.
+  `Breadcrumb` is defined in `breadcrumb.rs` and also re-exported as
+  `shell::Breadcrumb`; in another crate the bare walk prefers the shell item
+  re-export, as it did for `LayerTag` (#446), so
+  `MOVED_KEEPING_SPELLING` gained `("shell::Breadcrumb",
+  "widgets::breadcrumb::Breadcrumb")`. The catalog line and the id digest keep
+  `widgets::breadcrumb::Breadcrumb`.

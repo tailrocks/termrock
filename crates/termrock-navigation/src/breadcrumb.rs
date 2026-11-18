@@ -2,11 +2,11 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier};
 
-use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::theme::Kind;
-use crate::ui::ctx::RenderCtx;
-use crate::ui::measure::terminal_extent;
-use crate::ui::text::{truncate, truncate_middle, width};
+use termrock_core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::measure::terminal_extent;
+use termrock_text::cells::{truncate, truncate_middle, width};
+use termrock_theme::Kind;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Breadcrumb {
@@ -34,7 +34,8 @@ impl Breadcrumb {
         self.segments.iter().map(|s| width(s)).collect()
     }
 
-    pub(crate) fn intrinsic_width(&self, sep_w: usize) -> usize {
+    #[doc(hidden)]
+    pub fn intrinsic_width(&self, sep_w: usize) -> usize {
         let n = self.segments.len();
         if n == 0 {
             return 0;
@@ -46,14 +47,15 @@ impl Breadcrumb {
     /// Index of the first segment that shows in `avail` cells. Earlier segments
     /// collapse into one ellipsis lead and the last segment always stays. One
     /// pass over the label widths keeps a running suffix total.
-    pub(crate) fn first_shown(&self, ellipsis_w: usize, sep_w: usize, avail: usize) -> usize {
+    #[doc(hidden)]
+    pub fn first_shown(&self, ellipsis_w: usize, sep_w: usize, avail: usize) -> usize {
         let n = self.segments.len();
         let widths = self.label_widths();
         let lead = ellipsis_w.saturating_add(sep_w);
         let mut labels: usize = widths.iter().sum();
         let mut from = 0;
         while from + 1 < n && suffix_cells(labels, from, n, lead, sep_w) > avail {
-            crate::record_work!(FitVisits, 1usize);
+            termrock_metrics::record_work!(FitVisits, 1usize);
             labels -= widths[from];
             from += 1;
         }
@@ -156,7 +158,7 @@ impl Breadcrumb {
     }
 }
 
-impl crate::ui::measure::Measure for Breadcrumb {
+impl termrock_runtime::measure::Measure for Breadcrumb {
     fn measure(&self, _avail: ratatui::layout::Size, ctx: &RenderCtx) -> ratatui::layout::Size {
         if self.segments.is_empty() {
             return ratatui::layout::Size::new(0, 0);
@@ -166,13 +168,13 @@ impl crate::ui::measure::Measure for Breadcrumb {
     }
 }
 
-impl crate::ui::specimen::Specimen for Breadcrumb {
+impl termrock_runtime::specimen::Specimen for Breadcrumb {
     fn specimen_id(&self) -> WidgetId {
         self.id
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         match state {
             Rest | Overflow | Narrow => true,
             Hover | Pressed => self.clickable && self.segments.len() > 1,
@@ -182,13 +184,13 @@ impl crate::ui::specimen::Specimen for Breadcrumb {
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
         bg: Color,
     ) {
-        use crate::ui::specimen::SpecimenState::*;
+        use termrock_runtime::specimen::SpecimenState::*;
         let mut b = self.clone();
         if state == Overflow {
             let at = b.segments.len().saturating_sub(1);
@@ -206,12 +208,12 @@ impl crate::ui::specimen::Specimen for Breadcrumb {
             }
             _ => {}
         }
-        crate::ui::ctx::fill(buf, area, ratatui::style::Style::new().bg(bg));
+        termrock_runtime::ctx::fill(buf, area, ratatui::style::Style::new().bg(bg));
         b.render(area, buf, ctx, bg);
     }
 }
 
-impl crate::core::pointer::MouseTarget for Breadcrumb {
+impl termrock_core::pointer::MouseTarget for Breadcrumb {
     type Action = usize;
 
     fn mouse_id(&self) -> WidgetId {
@@ -220,10 +222,10 @@ impl crate::core::pointer::MouseTarget for Breadcrumb {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<usize> {
-        use crate::core::response::Response;
-        if !ev.is(crate::core::intent::Phase::Click) {
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<usize> {
+        use termrock_core::response::Response;
+        if !ev.is(termrock_core::intent::Phase::Click) {
             return Response::ignored();
         }
         match self.on_click(ev.id) {
