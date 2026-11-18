@@ -26,7 +26,7 @@
 # build may have produced, and a switch between sets never rebuilds the other.
 #
 # `TCB_BIN_<NAME>` is for functional-cross. `TERMROCK_TEST_<NAME>` is for the
-# root `functional` target (tests/functional/bins.rs). When the caller already
+# root `functional` target (crates/termrock-functional/tests/functional/bins.rs). When the caller already
 # exported all three `TERMROCK_TEST_<NAME>`, as scripts/run_functional.py does
 # after building with the run's features, nothing is built and those paths are
 # used for both.
