@@ -3,7 +3,7 @@
 //! and the column solver.
 //!
 //! `termrock::ui::<module>` is the module of the same name here, except that
-//! `columns` is `termrock::ui::columns`; the `junie-tui` package re-exports
+//! `columns` is `termrock::ui::columns`; the `termrock` facade re-exports
 //! each at that path.
 
 pub mod columns;

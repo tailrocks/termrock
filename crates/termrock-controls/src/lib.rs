@@ -2,7 +2,7 @@
 //! the brand lockup.
 //!
 //! `termrock::widgets::<module>` is the module of the same name here; the
-//! `junie-tui` package re-exports each at that path.
+//! the `termrock` facade re-exports each at that path.
 
 pub mod action_row;
 pub mod brand;

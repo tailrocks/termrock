@@ -2,7 +2,7 @@
 //!
 //! `termrock::widgets::{detail_card, list, list_detail, props, search_detail, tree}` and
 //! `termrock::ui::{content, list_core}` are the modules of the same name here; the
-//! `junie-tui` package re-exports each at that path.
+//! the `termrock` facade re-exports each at that path.
 
 pub mod content;
 pub mod detail_card;

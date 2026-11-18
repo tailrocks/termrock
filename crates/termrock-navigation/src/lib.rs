@@ -1,7 +1,7 @@
 //! Breadcrumb, rail, navigation list, tabs, toolbar, steps and the document workspace.
 //!
 //! `termrock::widgets::{breadcrumb, document_workspace, nav_list, rail, steps, tabs, toolbar}`
-//! are the modules of the same name here; the `junie-tui` package re-exports each at that path.
+//! are the modules of the same name here; the `termrock` facade re-exports each at that path.
 
 pub mod breadcrumb;
 pub mod document_workspace;

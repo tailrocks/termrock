@@ -1,7 +1,7 @@
 //! The table and the editable grid, with their changesets and submissions.
 //!
 //! `termrock::widgets::{grid, table}` are the modules of the same name here; the
-//! `junie-tui` package re-exports each at that path. `table` and `grid` call each
+//! the `termrock` facade re-exports each at that path. `table` and `grid` call each
 //! other, so they live in one crate.
 
 #[cfg(test)]

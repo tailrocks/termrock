@@ -1,4 +1,4 @@
-//! Source-level inventory of the declared public API of `junie-tui`.
+//! Source-level inventory of the declared public API of `termrock`.
 //!
 //! The inventory is a syn walk over the exported module graph. It is layer 1
 //! of the capability gate: it says which API ids exist and under which
