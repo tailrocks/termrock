@@ -1,33 +1,35 @@
-use crate::core::event::{Key, Outcome};
-use crate::core::focus::{Focus, FocusRing};
-use crate::core::hints::{HasHints, HintCx, nav_hints};
-use crate::core::hit::Axis;
-use crate::core::id::WidgetId;
-use crate::core::intent::DismissReason;
-use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
-use crate::core::pointer::PointerEvent;
-use crate::core::response::Response;
-use crate::core::scroll::{ScrollPane, Scrollable};
-use crate::theme::Tone;
-use crate::ui::ctx::RenderCtx;
-pub use crate::ui::layer::InfoResult;
-use crate::ui::layer::{Layer, LayerCx, LayerOut, LayerResult, LayerSpec, Overlay, layer_out};
-use crate::ui::popup::Dismiss;
-use crate::ui::text::truncate;
-use crate::widgets::button::{Button, row_layout_right, row_lines};
-use crate::widgets::icon_button::IconButton;
-use crate::widgets::keyhint::Hint;
-use crate::widgets::props::{Prop, PropsAction, PropsList};
-use crate::widgets::scrollbar;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style};
+use termrock_collections::props::{Prop, PropsAction, PropsList};
+use termrock_controls::button::{Button, row_layout_right, row_lines};
+use termrock_controls::icon_button::IconButton;
+use termrock_controls::keyhint::Hint;
+use termrock_controls::scrollbar;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::focus::{Focus, FocusRing};
+use termrock_core::hints::{HasHints, HintCx, nav_hints};
+use termrock_core::hit::Axis;
+use termrock_core::id::WidgetId;
+use termrock_core::intent::DismissReason;
+use termrock_core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
+use termrock_core::pointer::PointerEvent;
+use termrock_core::response::Response;
+use termrock_core::scroll::{ScrollPane, Scrollable};
+pub use termrock_overlays::layer::InfoResult;
+use termrock_overlays::layer::{
+    Layer, LayerCx, LayerOut, LayerResult, LayerSpec, Overlay, layer_out,
+};
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::popup::Dismiss;
+use termrock_text::cells::truncate;
+use termrock_theme::Tone;
 
 pub struct InfoDialog {
-    pub close_button: crate::widgets::icon_button::IconButton,
+    pub close_button: termrock_controls::icon_button::IconButton,
 
-    pub dismiss: crate::ui::popup::Dismiss,
+    pub dismiss: termrock_runtime::popup::Dismiss,
     pub id: WidgetId,
     pub title: String,
     pub meta: Option<String>,
@@ -48,7 +50,7 @@ pub struct InfoDialog {
 
     pub keymap: KeyMap<InfoCmd>,
 
-    strings: crate::theme::Strings,
+    strings: termrock_theme::Strings,
 }
 
 impl HasHints for InfoDialog {
@@ -58,7 +60,7 @@ impl HasHints for InfoDialog {
             v.push(Hint::new(k, a));
         }
         if self.copy_values.iter().any(Option::is_some)
-            && let Some(k) = crate::core::keymap::hint_key(&self.keymap, InfoCmd::Copy)
+            && let Some(k) = termrock_core::keymap::hint_key(&self.keymap, InfoCmd::Copy)
         {
             v.push(Hint::new(k, "Copy"));
         }
@@ -93,12 +95,12 @@ impl Actions for InfoCmd {
 }
 
 impl InfoDialog {
-    pub fn close_button(mut self, button: crate::widgets::icon_button::IconButton) -> Self {
+    pub fn close_button(mut self, button: termrock_controls::icon_button::IconButton) -> Self {
         self.close_button = button;
         self
     }
 
-    pub fn dismiss(mut self, dismiss: crate::ui::popup::Dismiss) -> Self {
+    pub fn dismiss(mut self, dismiss: termrock_runtime::popup::Dismiss) -> Self {
         self.dismiss = dismiss;
         self
     }
@@ -109,8 +111,10 @@ impl InfoDialog {
             .map(|p| p.copyable.then(|| p.value.clone()))
             .collect();
         Self {
-            dismiss: crate::ui::popup::Dismiss::LIGHT,
-            close_button: crate::widgets::icon_button::IconButton::close(crate::ui::modal::CLOSE),
+            dismiss: termrock_runtime::popup::Dismiss::LIGHT,
+            close_button: termrock_controls::icon_button::IconButton::close(
+                termrock_overlays::modal::CLOSE,
+            ),
             id,
             title: title.to_owned(),
             meta: None,
@@ -119,8 +123,8 @@ impl InfoDialog {
             detail: vec![],
             detail_scroll: ScrollPane::default(),
             actions: vec![],
-            close: Button::secondary(id.sub("close"), crate::theme::Strings::DEFAULT.close),
-            strings: crate::theme::Strings::DEFAULT,
+            close: Button::secondary(id.sub("close"), termrock_theme::Strings::DEFAULT.close),
+            strings: termrock_theme::Strings::DEFAULT,
             width: 66,
             result: None,
             area: Rect::ZERO,
@@ -177,10 +181,10 @@ impl InfoDialog {
         self.intro
             .iter()
             .flat_map(|(line, tone)| {
-                if crate::ui::text::width(line) <= width {
+                if termrock_text::cells::width(line) <= width {
                     vec![(line.clone(), *tone)]
                 } else {
-                    crate::ui::text::wrap(line, width)
+                    termrock_text::cells::wrap(line, width)
                         .into_iter()
                         .map(|part| (part, *tone))
                         .collect()
@@ -279,7 +283,7 @@ impl InfoDialog {
             _ => {}
         }
         match key.code {
-            KeyCode::Esc => crate::ui::layer::dismiss(self, DismissReason::Esc)
+            KeyCode::Esc => termrock_overlays::layer::dismiss(self, DismissReason::Esc)
                 .map_or(Outcome::Consumed, |response| response.outcome()),
             KeyCode::Enter => {
                 self.result = Some(InfoResult::Closed);
@@ -354,8 +358,8 @@ impl InfoDialog {
         self.detail_scroll.begin(ctx.track_click);
         let s = ctx.theme.strings;
         let old = std::mem::replace(&mut self.strings, s);
-        crate::theme::Strings::follow(&mut self.close.label, old.close, s.close);
-        let inner_w = crate::ui::modal::Frame::new(self.width, 0).inner_width(screen);
+        termrock_theme::Strings::follow(&mut self.close.label, old.close, s.close);
+        let inner_w = termrock_overlays::modal::Frame::new(self.width, 0).inner_width(screen);
         let mut widths: Vec<u16> = self.actions.iter().map(|b| b.width()).collect();
         widths.push(self.close.width());
         let footer_rows = row_lines(inner_w, &widths, 1);
@@ -373,7 +377,7 @@ impl InfoDialog {
         } else {
             self.title.clone()
         };
-        let (area, inner) = crate::ui::modal::Frame::new(self.width, h)
+        let (area, inner) = termrock_overlays::modal::Frame::new(self.width, h)
             .title(&title)
             .meta(self.meta.as_deref())
             .overlay(&*self)
@@ -420,7 +424,7 @@ impl InfoDialog {
             let wrapped: Vec<String> = self
                 .detail
                 .iter()
-                .flat_map(|l| crate::ui::text::wrap(l, inner.width.saturating_sub(2) as usize))
+                .flat_map(|l| termrock_text::cells::wrap(l, inner.width.saturating_sub(2) as usize))
                 .collect();
             self.detail_scroll.set_content(wrapped.len());
             self.detail_scroll.set_viewport(dh as usize);
@@ -463,19 +467,19 @@ impl Scrollable for InfoDialog {
 impl InfoDialog {
     pub fn pointer_in(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
+        ev: &termrock_core::pointer::PointerEvent,
         focus: &mut Focus,
     ) -> Response<()> {
-        use crate::core::id::Part;
-        use crate::core::intent::Phase;
-        use crate::core::pointer::MouseTarget;
+        use termrock_core::id::Part;
+        use termrock_core::intent::Phase;
+        use termrock_core::pointer::MouseTarget;
         if let Some(mut r) = self.props.route(ev) {
             if ev.is(Phase::Click) && ev.index_of(Part::ROW).is_some() {
                 focus.focus(self.props.id);
             }
 
             for action in r.take_actions() {
-                if let crate::widgets::props::PropsAction::Activate(i) = action
+                if let termrock_collections::props::PropsAction::Activate(i) = action
                     && let Some(Some(v)) = self.copy_values.get(i)
                 {
                     self.result = Some(InfoResult::Copy(v.clone()));
@@ -487,7 +491,7 @@ impl InfoDialog {
             return Response::ignored();
         }
         if ev.on(self.id)
-            && let Some(r) = crate::core::pointer::scroll_input(self, ev)
+            && let Some(r) = termrock_core::pointer::scroll_input(self, ev)
         {
             return r;
         }
@@ -537,7 +541,7 @@ impl<R: From<LayerResult> + 'static, W: ?Sized + 'static> Layer<R, W> for InfoDi
     }
 
     fn on_drag(&mut self, pressed: WidgetId, pos: Position) -> Outcome {
-        if pressed != crate::widgets::scrollbar::id_for(self.id) {
+        if pressed != termrock_controls::scrollbar::id_for(self.id) {
             return Outcome::Ignored;
         }
 
@@ -545,7 +549,7 @@ impl<R: From<LayerResult> + 'static, W: ?Sized + 'static> Layer<R, W> for InfoDi
             self,
             pressed,
             pos,
-            &mut crate::core::focus::Focus::default(),
+            &mut termrock_core::focus::Focus::default(),
         )
     }
     fn on_wheel(&mut self, delta: i32, _: Position) -> Outcome {

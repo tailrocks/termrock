@@ -575,6 +575,7 @@ dependencies = [
  "termrock-collections",
  "termrock-controls",
  "termrock-core",
+ "termrock-dialogs",
  "termrock-editors",
  "termrock-feedback",
  "termrock-fields",
@@ -1528,6 +1529,22 @@ dependencies = [
  "termrock-metrics",
  "termrock-text",
  "unicode-segmentation",
+]
+
+[[package]]
+name = "termrock-dialogs"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "termrock-collections",
+ "termrock-controls",
+ "termrock-core",
+ "termrock-fields",
+ "termrock-overlays",
+ "termrock-runtime",
+ "termrock-text",
+ "termrock-theme",
+ "termrock-viewport",
 ]
 
 [[package]]
