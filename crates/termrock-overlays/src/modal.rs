@@ -2,15 +2,15 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Margin, Rect};
 use ratatui::style::Style;
 
-use crate::core::focus::{Focus, FocusFallback, FocusRing};
-use crate::core::id::WidgetId;
-use crate::ui::ctx::{Backdrop, RenderCtx, fill};
-use crate::ui::popup::{Dismiss, Place, Placement, place_with};
-use crate::ui::specimen::{Specimen, SpecimenState};
-use crate::ui::text::{truncate, width};
-use crate::ui::tooltip::Tip;
-use crate::widgets::icon_button::IconButton;
 use ratatui::style::Color;
+use termrock_controls::icon_button::IconButton;
+use termrock_core::focus::{Focus, FocusFallback, FocusRing};
+use termrock_core::id::WidgetId;
+use termrock_runtime::ctx::{Backdrop, RenderCtx, fill};
+use termrock_runtime::popup::{Dismiss, Place, Placement, place_with};
+use termrock_runtime::specimen::{Specimen, SpecimenState};
+use termrock_runtime::tooltip::Tip;
+use termrock_text::cells::{truncate, width};
 
 pub const CLOSE: WidgetId = WidgetId::of("modal.close");
 
@@ -34,11 +34,13 @@ pub fn body_bounds(screen: Rect, top: u16, bottom: u16) -> Rect {
 }
 
 pub fn refuse_outside_click(
-    pointer: &mut crate::core::pointer::PointerState,
+    pointer: &mut termrock_core::pointer::PointerState,
     dismiss: Dismiss,
     now_ms: u64,
 ) -> bool {
-    if dismiss.outside_click || dismiss.refuse_feedback != crate::ui::popup::RefuseFeedback::Flash {
+    if dismiss.outside_click
+        || dismiss.refuse_feedback != termrock_runtime::popup::RefuseFeedback::Flash
+    {
         return false;
     }
     pointer.flash(SURFACE, now_ms);
@@ -89,9 +91,9 @@ pub trait Modal {
     fn dismiss(&self) -> Dismiss;
 }
 
-impl<O: crate::ui::layer::Overlay> Modal for O {
+impl<O: crate::layer::Overlay> Modal for O {
     fn dismiss(&self) -> Dismiss {
-        crate::ui::layer::Overlay::dismiss(self)
+        crate::layer::Overlay::dismiss(self)
     }
 }
 
@@ -317,7 +319,7 @@ impl<'a> Frame<'a> {
         self
     }
 
-    pub fn overlay<O: crate::ui::layer::Overlay + ?Sized>(mut self, overlay: &O) -> Self {
+    pub fn overlay<O: crate::layer::Overlay + ?Sized>(mut self, overlay: &O) -> Self {
         self.dismiss = Some(overlay.dismiss());
         if let Some(b) = overlay.close_button() {
             self.close_button = b.clone();
@@ -391,7 +393,8 @@ impl<'a> Frame<'a> {
     /// Width of the content region on `screen`. It does not depend on the
     /// frame height, so a dialog can measure a wrapped footer before it
     /// chooses that height.
-    pub(crate) fn inner_width(&self, screen: Rect) -> u16 {
+    #[doc(hidden)]
+    pub fn inner_width(&self, screen: Rect) -> u16 {
         self.area(screen).inner(self.margin).width
     }
 
@@ -407,7 +410,7 @@ impl<'a> Frame<'a> {
                 ctx.hits.register_part_as(
                     BACKDROP,
                     BACKDROP,
-                    crate::core::id::PartRef::of(crate::core::id::Part::BACKDROP),
+                    termrock_core::id::PartRef::of(termrock_core::id::Part::BACKDROP),
                     screen,
                 );
             }
@@ -504,7 +507,7 @@ impl Specimen for Frame<'static> {
         bg: Color,
     ) {
         let mut f = self.clone();
-        if f.placement != crate::ui::popup::Placement::Center {
+        if f.placement != termrock_runtime::popup::Placement::Center {
             let anchor = Rect::new(area.x + 4, area.y + f.top + 1, 8, 1).intersection(area);
             f.anchor = anchor;
             let t = ctx.theme;

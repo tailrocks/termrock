@@ -5,35 +5,35 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
 
-use crate::core::edit::TextCmd;
-use crate::core::event::{Key, Outcome};
-use crate::core::hints::{HasHints, HintCx, nav_hints};
-use crate::core::hit::Axis;
-use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::core::keymap::{
-    Actions, KeyBinding, KeyMap, KeyboardCapabilities, Nav, NavKeys, deliverable_binding_for_with,
-};
-use crate::core::list::{Cursor, KeyStep, Navigable, RowSource};
-use crate::core::pointer::{MouseTarget, PointerEvent};
-use crate::core::response::Response;
-use crate::theme::CursorStyle;
-use crate::ui::columns::{Col, solve};
-use crate::ui::ctx::{Backdrop, RenderCtx, fill};
-use crate::ui::edit_menu::{
+use crate::edit_menu::{
     EditCaps, EditMenu, EditMenuHost, edit_menu_key, edit_menu_pointer, edit_menu_route,
     point_field,
 };
-use crate::ui::layer::{
+use crate::layer::{
     DismissReason, Layer, LayerCx, LayerOut, LayerResult, LayerSpec, Overlay, layer_out,
 };
-use crate::ui::popup::{Dismiss, Placement, place_with};
-use crate::ui::specimen::{Specimen, SpecimenState};
-use crate::ui::text::{TextClip, paint_graphemes, truncate, wider_than, width};
-use crate::widgets::edit::EditField;
-use crate::widgets::keyhint::Hint;
-use crate::widgets::option_list::{Item, OptionList};
+use crate::option_list::{Item, OptionList};
 use ratatui::layout::Position;
 use ratatui::style::Color;
+use termrock_controls::keyhint::Hint;
+use termrock_core::edit::TextCmd;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::field::edit::EditField;
+use termrock_core::hints::{HasHints, HintCx, nav_hints};
+use termrock_core::hit::Axis;
+use termrock_core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock_core::keymap::{
+    Actions, KeyBinding, KeyMap, KeyboardCapabilities, Nav, NavKeys, deliverable_binding_for_with,
+};
+use termrock_core::list::{Cursor, KeyStep, Navigable, RowSource};
+use termrock_core::pointer::{MouseTarget, PointerEvent};
+use termrock_core::response::Response;
+use termrock_runtime::columns::{Col, solve};
+use termrock_runtime::ctx::{Backdrop, RenderCtx, fill};
+use termrock_runtime::popup::{Dismiss, Placement, place_with};
+use termrock_runtime::specimen::{Specimen, SpecimenState};
+use termrock_text::cells::{TextClip, paint_graphemes, truncate, wider_than, width};
+use termrock_theme::CursorStyle;
 
 pub const DEFAULT_GLYPH: &str = "·";
 
@@ -120,14 +120,14 @@ pub struct Picker {
     pub scope: Option<String>,
     pub empty_text: String,
 
-    strings: crate::theme::Strings,
+    strings: termrock_theme::Strings,
 
-    pub empty: Option<crate::widgets::empty::EmptyState>,
+    pub empty: Option<termrock_feedback::empty::EmptyState>,
     pub area: Rect,
 
-    pub reveal: Option<crate::ui::reveal::Reveal>,
+    pub reveal: Option<termrock_runtime::reveal::Reveal>,
 
-    pub(crate) pending: crate::ui::layer::ResultQueue<PickerAction>,
+    pub(crate) pending: crate::layer::ResultQueue<PickerAction>,
 
     pub delete_is_secondary: bool,
     multi: bool,
@@ -294,7 +294,7 @@ impl Picker {
             id,
             status: PickerStatus::Ready,
             title: title.to_owned(),
-            placeholder: crate::theme::Strings::DEFAULT.search_placeholder.into(),
+            placeholder: termrock_theme::Strings::DEFAULT.search_placeholder.into(),
             items: vec![],
             index: HashMap::new(),
             visible: vec![],
@@ -304,12 +304,12 @@ impl Picker {
             hints_overridden: false,
             backdrop: Backdrop::DEFAULT,
             scope: None,
-            empty_text: crate::theme::Strings::DEFAULT.no_matches.into(),
-            strings: crate::theme::Strings::DEFAULT,
+            empty_text: termrock_theme::Strings::DEFAULT.no_matches.into(),
+            strings: termrock_theme::Strings::DEFAULT,
             empty: None,
             area: Rect::ZERO,
             reveal: None,
-            pending: crate::ui::layer::ResultQueue::default(),
+            pending: crate::layer::ResultQueue::default(),
             delete_is_secondary: true,
             multi: false,
             choose_hint: std::borrow::Cow::Borrowed("Choose"),
@@ -395,7 +395,7 @@ impl Picker {
     }
 
     fn source_of(&self, key: ItemKey) -> Option<usize> {
-        crate::record_work!(KeyLookups, 1);
+        termrock_metrics::record_work!(KeyLookups, 1);
         self.index.get(&key).copied()
     }
 
@@ -497,8 +497,8 @@ impl Picker {
         self.list.chosen = chosen.filter(|index| *index < self.visible.len());
     }
 
-    pub fn wheel(&mut self, axis: crate::core::hit::Axis, delta: i32) -> Outcome {
-        crate::core::scroll::Scrollable::wheel(&mut self.list, axis, delta).outcome()
+    pub fn wheel(&mut self, axis: termrock_core::hit::Axis, delta: i32) -> Outcome {
+        termrock_core::scroll::Scrollable::wheel(&mut self.list, axis, delta).outcome()
     }
 
     pub fn width(mut self, width: u16) -> Self {
@@ -517,7 +517,7 @@ impl Picker {
         self
     }
 
-    pub fn fit(mut self, fit: crate::ui::popup::Place) -> Self {
+    pub fn fit(mut self, fit: termrock_runtime::popup::Place) -> Self {
         self.list.fit = fit;
         self
     }
@@ -544,7 +544,7 @@ impl Picker {
         self
     }
 
-    pub fn empty(mut self, state: crate::widgets::empty::EmptyState) -> Self {
+    pub fn empty(mut self, state: termrock_feedback::empty::EmptyState) -> Self {
         self.empty = Some(state);
         self
     }
@@ -554,7 +554,7 @@ impl Picker {
         self
     }
 
-    pub fn dismiss(mut self, dismiss: crate::ui::popup::Dismiss) -> Self {
+    pub fn dismiss(mut self, dismiss: termrock_runtime::popup::Dismiss) -> Self {
         self.list.dismiss = dismiss;
         self
     }
@@ -762,7 +762,7 @@ impl Picker {
                 return Err(PickerItemsError::DuplicateKey(key));
             }
         }
-        crate::record_work!(KeyIndexInserts, items.len());
+        termrock_metrics::record_work!(KeyIndexInserts, items.len());
         Ok(keys)
     }
 
@@ -818,7 +818,7 @@ impl Picker {
         let toggle = self.toggle_keymap.iter().any(|(binding, command)| {
             *command == PickerCmd::Toggle
                 && binding.deliverable_with(capabilities)
-                && binding.normalized_mods() == crate::core::keymap::normalized_key_mods(key)
+                && binding.normalized_mods() == termrock_core::keymap::normalized_key_mods(key)
                 && binding.matches_with(key, capabilities)
         });
         if self.multi && toggle {
@@ -900,7 +900,7 @@ impl Picker {
                 if let Some(q) = &mut self.list.query
                     && !q.text().is_empty()
                 {
-                    q.record(crate::core::edit::EditKind::Other);
+                    q.record(termrock_core::edit::EditKind::Other);
                     q.buffer.set_text("");
                     return (Outcome::Changed, Some(PickerAction::QueryChanged));
                 }
@@ -972,7 +972,7 @@ impl Picker {
     }
 
     pub fn on_click(&mut self, id: WidgetId) -> Option<PickerAction> {
-        if id == crate::ui::popup::backdrop_id(self.id) {
+        if id == termrock_runtime::popup::backdrop_id(self.id) {
             return self.on_click_outside();
         }
         let i = self.eligible(self.list.row_of(id, self.visible.len())?)?;
@@ -999,7 +999,7 @@ impl Picker {
             screen,
             buf,
             ctx,
-            &crate::widgets::keyhint::deliverable_line(&hints),
+            &termrock_controls::keyhint::deliverable_line(&hints),
         );
         self.hints = hints;
 
@@ -1065,7 +1065,7 @@ impl Picker {
         self.list.scroll.begin(ctx.track_click);
         let s = ctx.theme.strings;
         let old = std::mem::replace(&mut self.strings, s);
-        use crate::theme::Strings;
+        use termrock_theme::Strings;
         Strings::follow(
             &mut self.placeholder,
             old.search_placeholder,
@@ -1076,11 +1076,11 @@ impl Picker {
 
         ctx.modal_backdrop_with(buf, screen, self.backdrop);
 
-        let modal = crate::ui::popup::Dismiss {
+        let modal = termrock_runtime::popup::Dismiss {
             pass_through: false,
             ..self.list.dismiss
         };
-        crate::ui::popup::backdrop(ctx, self.id, modal, screen);
+        termrock_runtime::popup::backdrop(ctx, self.id, modal, screen);
         let h = self.height().min(screen.height.saturating_sub(2));
         let w = self.list.width.1.min(screen.width.saturating_sub(4));
         let area = place_with(
@@ -1127,7 +1127,7 @@ impl Picker {
         y += 1;
         if let Some(query) = &mut self.list.query {
             let field = Rect::new(inner.x, y, inner.width, 1);
-            let fstate = crate::ui::ctx::VisualState {
+            let fstate = termrock_runtime::ctx::VisualState {
                 focused: true,
                 editing: true,
                 ..Default::default()
@@ -1153,7 +1153,7 @@ impl Picker {
                 );
                 line.as_position()
             } else {
-                let look = crate::widgets::edit::LineLook {
+                let look = termrock_core::field::edit::LineLook {
                     text: fs,
                     selection: t.selection(),
                     ellipsis: fs.fg(t.text_muted),
@@ -1165,7 +1165,7 @@ impl Picker {
             };
             if line.width > 0 {
                 let id = ctx.register_part(self.id, PartRef::of(Part::QUERY), line);
-                ctx.pointer_shape(id, crate::core::shape::PointerShape::Text);
+                ctx.pointer_shape(id, termrock_core::shape::PointerShape::Text);
             }
             ctx.set_cursor(caret);
             y += 2;
@@ -1201,7 +1201,7 @@ impl Picker {
         };
         match &self.status {
             PickerStatus::Loading(label) => {
-                crate::widgets::progress::render_spinner(
+                termrock_feedback::progress::render_spinner(
                     Rect::new(list.x + 1, list.y, list.width.saturating_sub(1), 1),
                     buf,
                     ctx,
@@ -1212,25 +1212,25 @@ impl Picker {
                 return;
             }
             PickerStatus::Error { message, detail } => {
-                let mut e = crate::widgets::empty::EmptyState::error(message);
+                let mut e = termrock_feedback::empty::EmptyState::error(message);
                 if let Some(d) = detail {
                     e = e.hint(d);
                 }
-                crate::widgets::empty::render(list, buf, t, &e, bg);
+                termrock_feedback::empty::render(list, buf, t, &e, bg);
                 hint_row(buf);
                 return;
             }
             PickerStatus::Ready => {}
         }
         if self.visible.is_empty() {
-            crate::widgets::empty::render(
+            termrock_feedback::empty::render(
                 list,
                 buf,
                 t,
                 &self
                     .empty
                     .clone()
-                    .unwrap_or_else(|| crate::widgets::empty::EmptyState::new(&self.empty_text)),
+                    .unwrap_or_else(|| termrock_feedback::empty::EmptyState::new(&self.empty_text)),
                 bg,
             );
         }
@@ -1304,13 +1304,13 @@ impl Picker {
                         buf,
                         row.x + 1,
                         ry,
-                        crate::ui::row::MarkKind::Tick,
+                        termrock_runtime::row::MarkKind::Tick,
                         focused,
                     );
                 }
                 let label_area = Rect::new(row.x + 3, ry, label_col, 1).intersection(row);
                 let label_cut = !it.disabled
-                    && crate::ui::reveal::truncated(ctx, reveal, rid, label_area, &it.label);
+                    && termrock_runtime::reveal::truncated(ctx, reveal, rid, label_area, &it.label);
                 paint_graphemes(
                     buf,
                     label_area,
@@ -1368,7 +1368,7 @@ impl Picker {
                         );
                         detail_cut = wider_than(&it.detail, room);
                         if !it.disabled && !label_cut {
-                            crate::ui::reveal::truncated(
+                            termrock_runtime::reveal::truncated(
                                 ctx,
                                 reveal,
                                 rid,
@@ -1387,7 +1387,7 @@ impl Picker {
                     } else {
                         format!("{} — {}", it.label, it.detail)
                     };
-                    crate::ui::reveal::peek(ctx, &full);
+                    termrock_runtime::reveal::peek(ctx, &full);
                 }
             });
         hint_row(buf);
@@ -1416,7 +1416,7 @@ impl Navigable for Picker {
     }
 }
 
-impl crate::core::pointer::MouseTarget for Picker {
+impl termrock_core::pointer::MouseTarget for Picker {
     type Action = PickerAction;
 
     fn mouse_id(&self) -> WidgetId {
@@ -1425,10 +1425,10 @@ impl crate::core::pointer::MouseTarget for Picker {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<PickerAction> {
-        use crate::core::intent::Phase;
-        use crate::core::response::Response;
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<PickerAction> {
+        use termrock_core::intent::Phase;
+        use termrock_core::response::Response;
 
         if let Some(o) = edit_menu_pointer(self, ev) {
             if self.edit_menu.take_edited() {
@@ -1440,12 +1440,12 @@ impl crate::core::pointer::MouseTarget for Picker {
         if ev.wheel().is_some() && ev.part().part == Part::BACKDROP {
             return Response::ignored();
         }
-        if let Some(r) = crate::core::pointer::scroll_input(&mut self.list, ev) {
+        if let Some(r) = termrock_core::pointer::scroll_input(&mut self.list, ev) {
             return r.lift();
         }
 
         if let Some(query) = &mut self.list.query
-            && let Some(r) = crate::widgets::option_list::query_pointer(query, ev)
+            && let Some(r) = crate::option_list::query_pointer(query, ev)
         {
             return r.lift();
         }
@@ -1484,8 +1484,8 @@ impl crate::core::pointer::MouseTarget for Picker {
 
     fn route(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> Option<crate::core::response::Response<PickerAction>> {
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> Option<termrock_core::response::Response<PickerAction>> {
         edit_menu_route(self, ev)
     }
 }
@@ -1507,7 +1507,7 @@ impl EditMenuHost for Picker {
     fn edit_shortcut(&self, cmd: TextCmd) -> Option<String> {
         self.list.query.as_ref().and_then(|q| q.shortcut(cmd))
     }
-    fn edit_target(&self, ev: &crate::core::pointer::PointerEvent) -> bool {
+    fn edit_target(&self, ev: &termrock_core::pointer::PointerEvent) -> bool {
         self.list.query.is_some() && ev.part().part == Part::QUERY
     }
     fn edit_point(&mut self, pos: ratatui::layout::Position) {
@@ -1572,9 +1572,9 @@ impl Specimen for Picker {
 
 fn picker_sample(p: &Picker, state: SpecimenState) -> Picker {
     let mut p = p.clone();
-    p.set_placement(crate::ui::popup::Placement::Center);
+    p.set_placement(termrock_runtime::popup::Placement::Center);
     p.anchor = Rect::ZERO;
-    p.backdrop = crate::ui::ctx::Backdrop::FULL;
+    p.backdrop = termrock_runtime::ctx::Backdrop::FULL;
     match state {
         SpecimenState::Disabled => {
             let mut items: Vec<_> = p
@@ -1654,7 +1654,7 @@ impl<R: From<LayerResult> + 'static, W: ?Sized + 'static> Layer<R, W> for Picker
     }
 
     fn pointer(&mut self, ev: &PointerEvent, _: &mut LayerCx<'_, W>) -> Outcome {
-        if ev.part().part == crate::core::id::Part::BACKDROP && !self.edit_menu.owns(ev) {
+        if ev.part().part == termrock_core::id::Part::BACKDROP && !self.edit_menu.owns(ev) {
             return Outcome::Ignored;
         }
         let mut r = MouseTarget::pointer(self, ev);
@@ -1697,25 +1697,25 @@ mod tests {
     use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 
     use super::{Item, Picker, PickerAction, PickerKeyProfile, PickerStatus};
-    use crate::core::edit::TextCmd;
-    use crate::core::event::{Key, Outcome};
-    use crate::core::focus::{Focus, FocusRing};
-    use crate::core::hints::{HasHints, HintCx};
-    use crate::core::hit::HitRegistry;
-    use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-    use crate::core::intent::Phase;
-    use crate::core::keymap::{KeyBinding, KeyboardCapabilities};
-    use crate::core::pointer::PointerEvent;
-    use crate::theme::{ColorLevel, Theme};
-    use crate::ui::context::ContextAnchor;
-    use crate::ui::ctx::{Interaction, RenderCtx};
-    use crate::ui::layer::LayerResult;
-    use crate::ui::layer::{Layer, LayerCx, LayerOut};
-    use crate::widgets::hintbar::{HintBar, HintKeys, HintLayer};
-    use crate::widgets::keyhint::key_of;
-    use crate::widgets::menu::MenuItem;
+    use crate::context::ContextAnchor;
+    use crate::layer::LayerResult;
+    use crate::layer::{Layer, LayerCx, LayerOut};
+    use crate::menu::MenuItem;
     use ratatui::buffer::Buffer;
     use ratatui::layout::{Position, Rect};
+    use termrock_controls::hintbar::{HintBar, HintKeys, HintLayer};
+    use termrock_controls::keyhint::key_of;
+    use termrock_core::edit::TextCmd;
+    use termrock_core::event::{Key, Outcome};
+    use termrock_core::focus::{Focus, FocusRing};
+    use termrock_core::hints::{HasHints, HintCx};
+    use termrock_core::hit::HitRegistry;
+    use termrock_core::id::{ItemKey, Part, PartRef, WidgetId};
+    use termrock_core::intent::Phase;
+    use termrock_core::keymap::{KeyBinding, KeyboardCapabilities};
+    use termrock_core::pointer::PointerEvent;
+    use termrock_runtime::ctx::{Interaction, RenderCtx};
+    use termrock_theme::{ColorLevel, Theme};
 
     #[test]
     fn searchable_multi_keeps_hidden_identities_across_filter_and_reorder() {
@@ -1896,8 +1896,8 @@ mod tests {
 
     #[test]
     fn a_custom_toggle_command_binding_checks_the_cursor_item() {
-        use crate::core::keymap::KeyBinding;
-        use crate::widgets::picker::PickerCmd;
+        use crate::picker::PickerCmd;
+        use termrock_core::keymap::KeyBinding;
         let mut picker = Picker::new(WidgetId::of("picker-test"), "Choose")
             .multi_select(true)
             .expect("empty picker accepts multi-selection")
@@ -2085,7 +2085,7 @@ mod tests {
 
         impl Drop for RestoreAlt {
             fn drop(&mut self) {
-                crate::core::keyboard::set_alt_delivered(self.0);
+                termrock_core::keyboard::set_alt_delivered(self.0);
             }
         }
 
@@ -2129,7 +2129,7 @@ mod tests {
         });
         assert_eq!(remapped.checked(), &[ItemKey::text("alpha")]);
 
-        crate::core::keyboard::set_alt_delivered(false);
+        termrock_core::keyboard::set_alt_delivered(false);
         let mut undeliverable = Picker::new(WidgetId::of("picker-custom-undeliverable"), "Choose")
             .multi_select(true)
             .expect("empty picker accepts multi-selection")
@@ -2226,12 +2226,12 @@ mod tests {
             .set_items(vec![Item::new("Alpha").key(ItemKey::text("alpha"))])
             .expect("valid picker update");
         let legacy = Event::Key(KeyEvent::new(KeyCode::Char('T'), KeyModifiers::SHIFT));
-        let input = crate::core::event::Input::from_crossterm_with(
+        let input = termrock_core::event::Input::from_crossterm_with(
             legacy,
-            crate::core::event::InputConfig::default(),
+            termrock_core::event::InputConfig::default(),
         )
         .expect("legacy key event decodes");
-        let crate::core::event::Input::Key(key) = input else {
+        let termrock_core::event::Input::Key(key) = input else {
             panic!("legacy key event must decode to a key");
         };
         assert_eq!(
@@ -2260,8 +2260,8 @@ mod tests {
 
         impl Drop for RestoreCaps {
             fn drop(&mut self) {
-                crate::core::keyboard::set_alt_delivered(self.alt);
-                crate::core::keyboard::set_super_delivered(self.super_key);
+                termrock_core::keyboard::set_alt_delivered(self.alt);
+                termrock_core::keyboard::set_super_delivered(self.super_key);
             }
         }
 
@@ -2269,8 +2269,8 @@ mod tests {
             alt: KeyboardCapabilities::current().alt,
             super_key: KeyboardCapabilities::current().super_key,
         };
-        crate::core::keyboard::set_alt_delivered(true);
-        crate::core::keyboard::set_super_delivered(true);
+        termrock_core::keyboard::set_alt_delivered(true);
+        termrock_core::keyboard::set_super_delivered(true);
 
         let cases = [
             (
@@ -2790,8 +2790,8 @@ mod tests {
 
     #[test]
     fn a_click_cannot_choose_the_item_that_replaced_the_pressed_row() {
-        use crate::core::pointer::MouseTarget;
-        use crate::widgets::picker::VisibleKey;
+        use crate::picker::VisibleKey;
+        use termrock_core::pointer::MouseTarget;
 
         let area = Rect::new(0, 0, 100, 30);
         let (a, b, c) = (ItemKey::text("a"), ItemKey::text("b"), ItemKey::text("c"));
@@ -2966,7 +2966,7 @@ mod tests {
         let backdrop = PointerEvent::new(
             &hits,
             Phase::Click,
-            crate::ui::popup::backdrop_id(picker.id),
+            termrock_runtime::popup::backdrop_id(picker.id),
             Position::new(0, 0),
             1,
             KeyModifiers::NONE,
@@ -3306,7 +3306,7 @@ mod tests {
                     "detail needs a second row and must be omitted: {rows:?}"
                 );
 
-                let backdrop = crate::ui::popup::backdrop_id(picker.id);
+                let backdrop = termrock_runtime::popup::backdrop_id(picker.id);
                 for region in hits.regions() {
                     if region.id == backdrop || region.area.is_empty() {
                         continue;

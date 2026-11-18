@@ -3,20 +3,20 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 use ratatui::style::Modifier;
 
-use crate::core::event::{Key, Outcome};
-use crate::core::hints::{HasHints, HintCx, nav_hints};
-use crate::core::id::{ItemKey, WidgetId};
-use crate::core::keymap::{Nav, NavKeys};
-use crate::core::list::{Cursor, Moved, Navigable, RowSource};
-use crate::core::refusal::Reason;
-use crate::core::response::Response;
-use crate::theme::CursorStyle;
-use crate::ui::ctx::RenderCtx;
-use crate::ui::layer::{DismissReason, LayerSpec, Overlay};
-use crate::ui::popup::{Dismiss, Placement, backdrop_id, place_with, surface_for};
-use crate::ui::text::{TextClip, paint_graphemes, width};
-use crate::widgets::keyhint::{Hint, hint};
-use crate::widgets::option_list::{Item, OptionList, PopupSnapshot, paint_reason};
+use crate::layer::{DismissReason, LayerSpec, Overlay};
+use crate::option_list::{Item, OptionList, PopupSnapshot, paint_reason};
+use termrock_controls::keyhint::{Hint, hint};
+use termrock_core::event::{Key, Outcome};
+use termrock_core::hints::{HasHints, HintCx, nav_hints};
+use termrock_core::id::{ItemKey, WidgetId};
+use termrock_core::keymap::{Nav, NavKeys};
+use termrock_core::list::{Cursor, Moved, Navigable, RowSource};
+use termrock_core::refusal::Reason;
+use termrock_core::response::Response;
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::popup::{Dismiss, Placement, backdrop_id, place_with, surface_for};
+use termrock_text::cells::{TextClip, paint_graphemes, width};
+use termrock_theme::CursorStyle;
 
 pub const TEXT_INSET: u16 = 4;
 
@@ -63,7 +63,7 @@ impl Completion {
     pub fn new(id: WidgetId) -> Self {
         let list = OptionList::new(id)
             .width(24, 48)
-            .fit(crate::ui::popup::Place::DEFAULT.text_inset(TEXT_INSET))
+            .fit(termrock_runtime::popup::Place::DEFAULT.text_inset(TEXT_INSET))
             .dismiss(Dismiss::LIGHT.pass_through(true))
             .nav(Self::NAV)
             .type_ahead(false)
@@ -84,7 +84,7 @@ impl Completion {
         self
     }
 
-    pub fn fit(mut self, fit: crate::ui::popup::Place) -> Self {
+    pub fn fit(mut self, fit: termrock_runtime::popup::Place) -> Self {
         self.list.fit = fit;
         self
     }
@@ -148,7 +148,7 @@ impl Completion {
             .then_some(CompletionAction::Accept(index))
     }
 
-    pub fn apply(&self, i: usize, buffer: &mut crate::core::text::TextBuffer) -> bool {
+    pub fn apply(&self, i: usize, buffer: &mut termrock_text::buffer::TextBuffer) -> bool {
         if !self.can_accept(i) {
             return false;
         }
@@ -255,7 +255,7 @@ impl Completion {
 
         let items = &self.items;
         let snapshot = self.list.snapshot(inner, &items[..], |i| {
-            crate::record_work!(PayloadBytesCloned, items[i].payload_bytes());
+            termrock_metrics::record_work!(PayloadBytesCloned, items[i].payload_bytes());
             items[i].clone()
         });
         let (id, dismiss) = (self.id, self.list.dismiss);
@@ -269,7 +269,7 @@ impl Completion {
         if let Some(widths) = self.widths {
             return widths;
         }
-        crate::record_work!(WidthRowsMeasured, self.items.len());
+        termrock_metrics::record_work!(WidthRowsMeasured, self.items.len());
         let label_w = self
             .items
             .iter()
@@ -376,7 +376,7 @@ impl Navigable for Completion {
     }
 }
 
-impl crate::core::pointer::MouseTarget for Completion {
+impl termrock_core::pointer::MouseTarget for Completion {
     type Action = CompletionAction;
 
     fn mouse_id(&self) -> WidgetId {
@@ -385,11 +385,11 @@ impl crate::core::pointer::MouseTarget for Completion {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<CompletionAction> {
-        use crate::core::intent::Phase;
-        use crate::core::response::Response;
-        if let Some(r) = crate::core::pointer::scroll_input(&mut self.list, ev) {
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<CompletionAction> {
+        use termrock_core::intent::Phase;
+        use termrock_core::response::Response;
+        if let Some(r) = termrock_core::pointer::scroll_input(&mut self.list, ev) {
             return r.lift();
         }
         match ev.phase() {
