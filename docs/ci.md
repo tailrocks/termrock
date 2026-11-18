@@ -53,6 +53,13 @@ change the config and run `velnor-actions generate`.
   list) and the shared `regressions` target. The command that runs it with the
   Showcase scenarios is `cargo nextest run -p termrock-catalog -p
   termrock-showcase --all-features --no-tests fail -E 'test(catalog_)'`.
+- **Rust / termrock-conformance** and **termrock-conformance (product)** — the
+  work-metrics harness and report, and the shared `regressions` target of the
+  cost contracts of #56: the library budgets, the responsive-fit, keyed-collection
+  and search-detail cost tests, the performance inventory gate and the
+  default-branch guard. The job builds with `--all-features`, which is how
+  `work_contract_*` runs with the counters on; the `suite-performance` job runs the
+  same tests under `--profile performance`.
 - **Rust / functional-cross** and **Rust / functional-cross (product)** —
   the same five tasks for `crates/functional-cross`, which holds the
   cross-binary functional cases. Its `functional` target is selected by
@@ -97,6 +104,9 @@ package, which keeps the target list stable:
 
 - `junie-tui`: `tests/regressions/<topic>.rs` plus `mod <topic>;` in
   `tests/regressions/main.rs`.
+- `termrock-conformance`: `crates/termrock-conformance/tests/regressions/<topic>.rs`
+  plus `mod <topic>;` in its `main.rs` (the cost contracts of #56, the inventory
+  gate and the default-branch guard).
 - `jackin-console`: `apps/jackin/tests/regressions/<topic>.rs` plus
   `mod <topic>;` in `apps/jackin/tests/regressions/main.rs` (the target is
   gated by the `demo` feature).

@@ -31,7 +31,7 @@ T	keyed_cost::list_detail_unchanged_widths_are_cached
 T	keyed_cost::select_fixed_probe_never_clones_options
 S	search detail projection reuse	termrock-conformance::regressions	/^search_detail_cost::/	crates/termrock-conformance/tests/regressions/search_detail_cost.rs
 T	search_detail_cost::search_detail_noop_source_does_not_rebuild
-S	library widget budgets (viewport, scroll view, list, table, tree, picker, select, completion, editor, textarea)	junie-tui::regressions	/^work_budgets::/	tests/regressions/work_budgets.rs
+S	library widget budgets (viewport, scroll view, list, table, tree, picker, select, completion, editor, textarea)	termrock-conformance::regressions	/^work_budgets::/	crates/termrock-conformance/tests/regressions/work_budgets.rs
 T	work_budgets::work_contract_viewport_first_use_and_prepared_draw
 T	work_budgets::work_contract_viewport_one_append_is_incremental
 T	work_budgets::work_contract_viewport_adapter_unprepared_draw
@@ -69,10 +69,10 @@ T	work_budgets::work_contract_jackin_idle_and_roster_update
 T	work_budgets::work_contract_jackin_capsule_idle_frame
 T	work_budgets::work_contract_jackin_capsule_frame_after_typing
 T	work_budgets::work_contract_jackin_account_update
-S	ScrollPanel source-row budgets	junie-tui::regressions	/^work_budgets::/	tests/regressions/work_budgets/scroll_panel.rs
+S	ScrollPanel source-row budgets	termrock-conformance::regressions	/^work_budgets::/	crates/termrock-conformance/tests/regressions/work_budgets/scroll_panel.rs
 T	work_budgets::scroll_panel::work_contract_scroll_panel_flat_measures_once_and_appends_incrementally
 T	work_budgets::scroll_panel::work_contract_scroll_panel_wrapped_builds_once_per_content_change
-S	terminal view and viewport budgets	junie-tui::regressions	/^work_budgets::/	tests/regressions/work_budgets/terminal.rs
+S	terminal view and viewport budgets	termrock-conformance::regressions	/^work_budgets::/	crates/termrock-conformance/tests/regressions/work_budgets/terminal.rs
 T	work_budgets::terminal::work_contract_terminal_prepared_paint
 T	work_budgets::terminal::work_contract_terminal_feed_and_copy_units
 S	runtime input and output budgets	termrock-shell	/^runtime::raw_input_tests::work::/	crates/termrock-shell/src/runtime/raw_input_tests/work.rs
@@ -89,9 +89,9 @@ T	projection_work::one_epoch_change_builds_once_before_render
 T	projection_work::quiet_many_daemons_do_not_scan_full_roster
 T	projection_work::quiet_panes_do_not_rebuild_roster_or_accounts
 T	projection_work::roster_index_visits_each_instance_once
-S	measurement sampling is real	junie-tui::regressions	=work_measurements::measurement_edit_samples_are_real_changes	tests/regressions/work_measurements.rs
+S	measurement sampling is real	termrock-conformance::regressions	=work_measurements::measurement_edit_samples_are_real_changes	crates/termrock-conformance/tests/regressions/work_measurements.rs
 T	work_measurements::measurement_edit_samples_are_real_changes
-S	this gate	junie-tui::regressions	/^performance_inventory::/	tests/regressions/performance_inventory.rs
+S	this gate	termrock-conformance::regressions	/^performance_inventory::/	crates/termrock-conformance/tests/regressions/performance_inventory.rs
 T	performance_inventory::performance_profile_selects_every_required_suite
 T	performance_inventory::performance_nextest_list_runs_every_required_test
 T	performance_inventory::performance_required_tests_exist_in_source
