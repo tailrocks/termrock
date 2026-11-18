@@ -884,3 +884,9 @@ the #445 entries were applied up front: every `impl` in the moved files and ever
   moves it from there, and the facade reaches it as `widgets::brand` through the
   re-export, which is the chain a real extraction produces. The tests assert the
   same things.
+- **`termrock-feedback`.** It depends on `termrock-controls` for `empty -> button`
+  and on nothing above it. `Button::intrinsic_width` and `button::place_lines`,
+  which `empty` calls, became hidden `pub` in `termrock-controls`. The
+  `pub(crate) use termrock_runtime::fitting` line of `src/ui/mod.rs` had one
+  user left, `statusbar`, which now imports `termrock_runtime::fitting` itself,
+  so the line is gone (the module stays `#[doc(hidden)]` in `termrock-runtime`).
