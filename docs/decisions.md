@@ -752,3 +752,30 @@ the #445 entries were applied up front: every `impl` in the moved files and ever
   `pub(crate) use termrock_runtime::fitting` line of `src/ui/mod.rs` had one
   user left, `statusbar`, which now imports `termrock_runtime::fitting` itself,
   so the line is gone (the module stays `#[doc(hidden)]` in `termrock-runtime`).
+- **`termrock-overlays` holds `picker` with the layer stack.** The issue cuts
+  `layer`, `modal`, `context`, `edit_menu`, `option_list`, `menu`, `completion`
+  and `row_menu` from `option_editor` and `picker`. `layer.rs` names
+  `PickerAction` in `LayerResult::Picker`, so a crate with `layer` and without
+  `picker` would depend on `junie-tui`. The cut is now: this branch moves
+  everything but `option_editor` (nothing in the crate uses it), the next moves
+  `option_editor`. The duplication risk of `picker.rs` (3.4k lines) moves from
+  the second PR to the first; run Sonar on a draft of this branch.
+- **`menu` and `option_list` stay one crate.** `option_list` calls
+  `menu::reason_room` and `menu` uses `option_list`; they are both here.
+- **Paths that named moved files.** `scripts/rewrite-regression-paths.py`
+  rewrote the 26 `regression_test:` paths of the picker tests. The catalog tests
+  `catalog_regression_paths_follow_a_moved_test_file` and `..._left_stale_fails`
+  and the `UNRELATED_TEST` constant name `crates/termrock-overlays/src/{picker,
+  layer}.rs`, and `tests/picker_catalog.rs` reads the two sources from there.
+  The Showcase page `popups_tooltips` prints `src/ui/modal.rs` and
+  `src/ui/popup.rs` as screen text; it is left alone, because a changed string
+  would change the baselines.
+- **One respelled id.** `LayerTag` is defined in `layer.rs` and also re-exported
+  as `shell::LayerTag`. In another crate the bare walk prefers that item
+  re-export to the `ui::layer` module re-export, so
+  `catalog_the_catalog_spelling_leaves_the_repository_ids_unchanged` needed the
+  row `("shell::LayerTag", "ui::layer::LayerTag")` in `MOVED_KEEPING_SPELLING`.
+  The catalog line and the id digest keep `ui::layer::LayerTag`.
+- **Hidden plumbing.** `context::row_rect`, `layer::layer_out`,
+  `ContextMenu::contains_id` and `modal::Frame::inner_width` are used by the
+  dialogs, lists, tables and chips that stay in `junie-tui` until #447 and #448.
