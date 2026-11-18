@@ -3,21 +3,21 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier};
 
-use crate::core::event::{Key, Outcome};
-use crate::core::hit::Axis;
-use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
-use crate::core::list::{Cursor, Navigable, RowSource};
-use crate::core::response::Response;
-use crate::core::scroll::{ScrollPane, Scrollable};
-use crate::core::selection::ClickPolicy;
-use crate::theme::{Theme, Tone};
-use crate::ui::ctx::RenderCtx;
-use crate::ui::list_core::ListCore;
-use crate::ui::measure::terminal_extent;
-use crate::ui::reveal::{Reveal, RevealLine};
-use crate::ui::row::{RowLook, RowUi};
-use crate::widgets::scrollbar;
+use crate::list_core::ListCore;
+use termrock_controls::scrollbar;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::hit::Axis;
+use termrock_core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock_core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
+use termrock_core::list::{Cursor, Navigable, RowSource};
+use termrock_core::response::Response;
+use termrock_core::scroll::{ScrollPane, Scrollable};
+use termrock_core::selection::ClickPolicy;
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::measure::terminal_extent;
+use termrock_runtime::reveal::{Reveal, RevealLine};
+use termrock_runtime::row::{RowLook, RowUi};
+use termrock_theme::{Theme, Tone};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Prop {
@@ -95,7 +95,7 @@ fn label_column(props: &[Prop], width: u16, sheet: Sheet) -> Option<u16> {
     column(
         props
             .iter()
-            .map(|p| crate::ui::text::width(&p.label).saturating_add(2)),
+            .map(|p| termrock_text::cells::width(&p.label).saturating_add(2)),
         width,
         sheet,
     )
@@ -103,7 +103,7 @@ fn label_column(props: &[Prop], width: u16, sheet: Sheet) -> Option<u16> {
 
 fn value_rows<'a>(p: &'a Prop, label: Option<&'a str>, x: u16, vw: usize, out: &mut Vec<Row<'a>>) {
     if p.wrap {
-        let lines = crate::ui::text::wrap(&p.value, vw.max(4));
+        let lines = termrock_text::cells::wrap(&p.value, vw.max(4));
         for (i, line) in lines.into_iter().enumerate() {
             out.push(Row {
                 prop: p,
@@ -116,7 +116,7 @@ fn value_rows<'a>(p: &'a Prop, label: Option<&'a str>, x: u16, vw: usize, out: &
         out.push(Row {
             prop: p,
             label,
-            value: crate::ui::text::truncate(&p.value, vw),
+            value: termrock_text::cells::truncate(&p.value, vw),
             value_x: x,
         });
     }
@@ -128,7 +128,8 @@ fn rows(props: &[Prop], width: u16, sheet: Sheet) -> Vec<Row<'_>> {
     for p in props {
         match column {
             Some(label_w)
-                if crate::ui::text::width(&p.label).saturating_add(2) <= usize::from(label_w) =>
+                if termrock_text::cells::width(&p.label).saturating_add(2)
+                    <= usize::from(label_w) =>
             {
                 let vw = width.saturating_sub(label_w) as usize;
                 value_rows(p, Some(&p.label), label_w, vw, &mut out);
@@ -166,7 +167,7 @@ pub fn width_with(props: &[Prop], sheet: Sheet) -> u16 {
     if props.is_empty() {
         return 0;
     }
-    let w = crate::ui::text::width;
+    let w = termrock_text::cells::width;
     let label = props
         .iter()
         .map(|p| w(&p.label).saturating_add(2))
@@ -208,10 +209,10 @@ pub fn render_with(
             break;
         }
         if let Some(label) = row.label {
-            let shown = crate::ui::text::truncate(label, area.width as usize);
+            let shown = termrock_text::cells::truncate(label, area.width as usize);
             buf.set_string(area.x, y, &shown, t.muted().bg(bg));
-            let cut = Rect::new(area.x, y, crate::ui::text::width(&shown) as u16, 1);
-            crate::ui::reveal::queue_cut(cut, label);
+            let cut = Rect::new(area.x, y, termrock_text::cells::width(&shown) as u16, 1);
+            termrock_runtime::reveal::queue_cut(cut, label);
         }
         let style = ratatui::style::Style::new()
             .fg(t.tone(row.prop.tone))
@@ -222,10 +223,10 @@ pub fn render_with(
                 let cut = Rect::new(
                     area.x + row.value_x,
                     y,
-                    crate::ui::text::width(&row.value) as u16,
+                    termrock_text::cells::width(&row.value) as u16,
                     1,
                 );
-                crate::ui::reveal::queue_cut(cut, &row.prop.value);
+                termrock_runtime::reveal::queue_cut(cut, &row.prop.value);
             }
         }
         y += 1;
@@ -238,7 +239,7 @@ fn natural(props: &[Prop], avail: ratatui::layout::Size) -> ratatui::layout::Siz
 }
 
 pub fn render_in(
-    view: &mut crate::ui::scroll_view::ScrollView,
+    view: &mut termrock_viewport::scroll_view::ScrollView,
     area: Rect,
     buf: &mut Buffer,
     ctx: &mut RenderCtx,
@@ -333,12 +334,12 @@ impl PropsList {
         self
     }
 
-    pub fn content(mut self, content: crate::ui::content::ContentState) -> Self {
+    pub fn content(mut self, content: crate::content::ContentState) -> Self {
         self.core.content = content;
         self
     }
 
-    pub fn empty(mut self, state: crate::widgets::empty::EmptyState) -> Self {
+    pub fn empty(mut self, state: termrock_feedback::empty::EmptyState) -> Self {
         self.core.empty = Some(state);
         self
     }
@@ -366,12 +367,13 @@ impl PropsList {
         }
     }
 
-    pub(crate) fn wrapping(mut self) -> Self {
+    #[doc(hidden)]
+    pub fn wrapping(mut self) -> Self {
         self.wrapping = true;
         self
     }
 
-    pub fn track_click(mut self, click: crate::core::scroll::TrackClick) -> Self {
+    pub fn track_click(mut self, click: termrock_core::scroll::TrackClick) -> Self {
         self.core.scroll.track_click = Some(click);
         self
     }
@@ -405,7 +407,8 @@ impl PropsList {
         PartRef::item(Part::ROW, ItemKey::index(i))
     }
 
-    pub(crate) fn row_of(&self, id: WidgetId) -> Option<usize> {
+    #[doc(hidden)]
+    pub fn row_of(&self, id: WidgetId) -> Option<usize> {
         self.id.item_of(id, Part::ROW, 0..self.props.len())
     }
 
@@ -486,7 +489,7 @@ impl PropsList {
         let widths = self
             .props
             .iter()
-            .map(|p| crate::ui::text::width(&p.label).saturating_add(2));
+            .map(|p| termrock_text::cells::width(&p.label).saturating_add(2));
         let label_w = column(widths, label_area, self.sheet).unwrap_or_else(|| {
             (label_area as u32 * self.sheet.label_max_share.min(100) as u32 / 100) as u16
         });
@@ -506,7 +509,7 @@ impl PropsList {
     /// The lines of a prop that wraps; `None` for one that stays on a row.
     fn wrapped_lines(&self, p: &Prop, geo: Geometry, x: u16) -> Option<Vec<String>> {
         (self.wrapping && p.wrap)
-            .then(|| crate::ui::text::wrap(&p.value, Self::value_width(geo, x, p).max(4)))
+            .then(|| termrock_text::cells::wrap(&p.value, Self::value_width(geo, x, p).max(4)))
     }
 
     /// The rows the wrapping props take beyond their first.
@@ -563,7 +566,8 @@ impl PropsList {
     }
 
     /// The height that shows every prop whole in a list `width` columns wide.
-    pub(crate) fn height_at(&self, width: u16) -> u16 {
+    #[doc(hidden)]
+    pub fn height_at(&self, width: u16) -> u16 {
         let area = Rect::new(0, 0, width, 1);
         let geo = self.geometry(area, area);
         terminal_extent(self.props.len().saturating_add(self.wrap_extra(geo, 0)))
@@ -685,7 +689,7 @@ impl PropsList {
             buf.set_string(
                 row.x + 2,
                 y,
-                crate::ui::text::truncate(&p.label, label_w.saturating_sub(2) as usize),
+                termrock_text::cells::truncate(&p.label, label_w.saturating_sub(2) as usize),
                 st.fg(t.text_muted).remove_modifier(Modifier::BOLD),
             );
             let vx = row.x + 2 + label_w;
@@ -695,7 +699,7 @@ impl PropsList {
             if let Some(lines) = block {
                 for (k, line) in lines.iter().take(h as usize).enumerate() {
                     let ls = if line.more { st.fg(t.text_muted) } else { vs };
-                    let text = crate::ui::text::truncate(&line.text, vw);
+                    let text = termrock_text::cells::truncate(&line.text, vw);
                     buf.set_string(vx, y + k as u16, text, ls);
                 }
             } else {
@@ -714,7 +718,7 @@ impl PropsList {
             y += h;
         }
         if let Some(sb) = sp.track {
-            crate::ui::fade::scroll_edges_except(
+            termrock_runtime::fade::scroll_edges_except(
                 buf,
                 ctx,
                 sp.body,
@@ -754,18 +758,18 @@ impl Navigable for PropsList {
     }
 }
 
-impl crate::ui::specimen::Specimen for PropsList {
+impl termrock_runtime::specimen::Specimen for PropsList {
     fn specimen_id(&self) -> WidgetId {
         self.id
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         matches!(state, Rest | Focused | Loading | Error | Overflow | Narrow)
     }
 
-    fn specimen_height(&self, state: crate::ui::specimen::SpecimenState) -> u16 {
-        use crate::ui::specimen::SpecimenState::*;
+    fn specimen_height(&self, state: termrock_runtime::specimen::SpecimenState) -> u16 {
+        use termrock_runtime::specimen::SpecimenState::*;
         if matches!(state, Loading | Error) {
             return 1;
         }
@@ -774,24 +778,24 @@ impl crate::ui::specimen::Specimen for PropsList {
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
         bg: Color,
     ) {
         let mut list = self.clone();
-        if state == crate::ui::specimen::SpecimenState::Overflow
+        if state == termrock_runtime::specimen::SpecimenState::Overflow
             && let Some(p) = list.props.first_mut()
         {
             p.value = format!("{} and a value far longer than its row", p.value);
         }
-        list.core.content = crate::ui::content::specimen(state);
+        list.core.content = crate::content::specimen(state);
         list.render(area, buf, ctx, bg);
     }
 }
 
-impl crate::core::pointer::MouseTarget for PropsList {
+impl termrock_core::pointer::MouseTarget for PropsList {
     type Action = PropsAction;
 
     fn mouse_id(&self) -> WidgetId {
@@ -800,15 +804,15 @@ impl crate::core::pointer::MouseTarget for PropsList {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<PropsAction> {
-        use crate::core::intent::Phase;
-        if let Some(r) = crate::core::pointer::scroll_input(self, ev) {
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<PropsAction> {
+        use termrock_core::intent::Phase;
+        if let Some(r) = termrock_core::pointer::scroll_input(self, ev) {
             return r.lift();
         }
         match ev.index_of(Part::ROW) {
             Some(row) if ev.is(Phase::Click) => self.on_click_count(row, ev.count()).into(),
-            _ => crate::core::response::Response::ignored(),
+            _ => termrock_core::response::Response::ignored(),
         }
     }
 }

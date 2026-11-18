@@ -5,18 +5,20 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 
-use super::{QueryRequest, ResultRowKind, SearchAction, SearchConfig, SearchDetail, SearchSource};
-use crate::core::focus::FocusRing;
-use crate::core::hit::HitRegistry;
-use crate::core::id::{ItemKey, WidgetId};
-use crate::core::list::{KeyedRowSource, RowSource, SourceStamp};
-use crate::metrics::{Metric, measure};
-use crate::theme::{ColorLevel, Theme};
-use crate::ui::ctx::{Interaction, RenderCtx};
-use crate::ui::layout::Split;
-use crate::widgets::input::TextInput;
 use crate::widgets::keyed_cost_tests::nz;
-use crate::widgets::list_detail::SourceFrame;
+use termrock_collections::list_detail::SourceFrame;
+use termrock_collections::search_detail::{
+    QueryRequest, ResultRowKind, SearchAction, SearchConfig, SearchDetail, SearchSource,
+};
+use termrock_core::focus::FocusRing;
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::{ItemKey, WidgetId};
+use termrock_core::list::{KeyedRowSource, RowSource, SourceStamp};
+use termrock_fields::input::TextInput;
+use termrock_layout::layout::Split;
+use termrock_metrics::{Metric, measure};
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_theme::{ColorLevel, Theme};
 
 const AREA: Rect = Rect::new(0, 0, 120, 24);
 
@@ -123,7 +125,7 @@ fn search_detail_noop_source_does_not_rebuild() {
         Split::new(50, 36, 40),
     )
     .config(SearchConfig::default());
-    let requests = |reply: crate::core::response::Response<SearchAction>| -> Vec<QueryRequest> {
+    let requests = |reply: termrock_core::response::Response<SearchAction>| -> Vec<QueryRequest> {
         reply
             .into_actions()
             .into_iter()

@@ -5,16 +5,16 @@ use super::{
     MissingSelection, QueryRequest, QueryToken, SearchAction, SearchCmd, SearchConfig, SearchError,
     SearchFocusMode, SearchSource, fresh_owner,
 };
-use crate::core::edit::{EditKind, TextCmd};
-use crate::core::event::Key;
-use crate::core::id::ItemKey;
-use crate::core::keyed::KeyedState;
-use crate::core::keymap::lookup;
-use crate::core::list::SourceStamp;
-use crate::core::response::Response;
-use crate::ui::context::{ContextAnchor, ContextRequest};
-use crate::widgets::edit::{EditExit, EditField, EditResult};
-use crate::widgets::input::TextInput;
+use termrock_core::edit::{EditKind, TextCmd};
+use termrock_core::event::Key;
+use termrock_core::field::edit::{EditExit, EditField, EditResult};
+use termrock_core::id::ItemKey;
+use termrock_core::keyed::KeyedState;
+use termrock_core::keymap::lookup;
+use termrock_core::list::SourceStamp;
+use termrock_core::response::Response;
+use termrock_fields::input::TextInput;
+use termrock_overlays::context::{ContextAnchor, ContextRequest};
 
 type Reply = Response<SearchAction>;
 
@@ -415,7 +415,7 @@ impl SearchSession {
     // ---- keyboard ---------------------------------------------------------
 
     /// The command a key is bound to. Context keys are the composition's:
-    /// it reads [`ContextConfig`](crate::ui::context::ContextConfig) itself.
+    /// it reads [`ContextConfig`](termrock_overlays::context::ContextConfig) itself.
     pub fn command_for(&self, key: &Key) -> Option<SearchCmd> {
         lookup(&self.config.keymap, key)
     }
@@ -672,7 +672,7 @@ impl SearchSession {
     /// captured now; the anchor comes from the repainted layout through
     /// [`emit_context`](Self::emit_context). Which keys ask, and whether a
     /// pointer request moves the cursor, are
-    /// [`ContextConfig`](crate::ui::context::ContextConfig)'s, applied by the
+    /// [`ContextConfig`](termrock_overlays::context::ContextConfig)'s, applied by the
     /// composition.
     pub fn begin_context(&mut self) -> Reply {
         match self.actionable() {

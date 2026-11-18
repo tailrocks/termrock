@@ -5,26 +5,26 @@ use std::collections::{HashMap, HashSet};
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier};
 
-use crate::core::event::{Key, Outcome};
-use crate::core::hints::{
+use crate::list_core::ListCore;
+use termrock_controls::keyhint::{Hint, hint};
+use termrock_core::event::{Key, Outcome};
+use termrock_core::hints::{
     Binding, Bindings, HasHints, HintCx, actions_bindings, nav_bindings, nav_hints,
 };
-use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::core::keyed::{KeyedSourceError, KeyedState};
-use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup, unassigned_chord};
-use crate::core::list::{
+use termrock_core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock_core::keyed::{KeyedSourceError, KeyedState};
+use termrock_core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup, unassigned_chord};
+use termrock_core::list::{
     Cursor, KeyStep, KeyedRowSource, Moved, Navigable, RowItem, RowSource, SourceStamp,
 };
-use crate::core::pointer::PointerEvent;
-use crate::core::response::Response;
-use crate::core::scroll::{ScrollPane, Scrollable};
-use crate::core::selection::ClickPolicy;
-use crate::theme::Tone;
-use crate::ui::context::{ContextAnchor, ContextRequest, ContextSource, row_rect};
-use crate::ui::ctx::RenderCtx;
-use crate::ui::list_core::ListCore;
-use crate::ui::row::{MarkKind, RowLook, RowUi};
-use crate::widgets::keyhint::{Hint, hint};
+use termrock_core::pointer::PointerEvent;
+use termrock_core::response::Response;
+use termrock_core::scroll::{ScrollPane, Scrollable};
+use termrock_core::selection::ClickPolicy;
+use termrock_overlays::context::{ContextAnchor, ContextRequest, ContextSource, row_rect};
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::row::{MarkKind, RowLook, RowUi};
+use termrock_theme::Tone;
 
 #[derive(Debug, Clone)]
 pub struct TreeNode {
@@ -287,8 +287,8 @@ impl Actions for TreeCmd {
 
 fn label_matches(label: &str, query: &str) -> bool {
     let lowered = label.to_lowercase();
-    crate::record_work!(LabelsNormalized, 1usize);
-    crate::record_work!(LabelBytesNormalized, lowered.len());
+    termrock_metrics::record_work!(LabelsNormalized, 1usize);
+    termrock_metrics::record_work!(LabelBytesNormalized, lowered.len());
     #[cfg(test)]
     work::record_label_test(lowered.len());
     lowered.contains(query)
@@ -589,18 +589,18 @@ impl TreeView {
 
     pub fn type_ahead_precedence(
         mut self,
-        precedence: crate::core::list::TypeAheadPrecedence,
+        precedence: termrock_core::list::TypeAheadPrecedence,
     ) -> Self {
         self.core.type_ahead_precedence = Some(precedence);
         self
     }
 
-    pub fn content(mut self, content: crate::ui::content::ContentState) -> Self {
+    pub fn content(mut self, content: crate::content::ContentState) -> Self {
         self.core.content = content;
         self
     }
 
-    pub fn empty(mut self, state: crate::widgets::empty::EmptyState) -> Self {
+    pub fn empty(mut self, state: termrock_feedback::empty::EmptyState) -> Self {
         self.core.empty = Some(state);
         self
     }
@@ -615,7 +615,7 @@ impl TreeView {
         self
     }
 
-    pub fn inactive_selection(mut self, look: crate::theme::InactiveSelection) -> Self {
+    pub fn inactive_selection(mut self, look: termrock_theme::InactiveSelection) -> Self {
         self.core.inactive_selection = Some(look);
         self
     }
@@ -775,7 +775,7 @@ impl TreeView {
         self.id.part(PartRef::item(Part::ICON, ItemKey::index(i)))
     }
 
-    pub fn row_at(&self, ev: &crate::core::pointer::PointerEvent) -> Option<usize> {
+    pub fn row_at(&self, ev: &termrock_core::pointer::PointerEvent) -> Option<usize> {
         if !ev.on(self.id) {
             return None;
         }
@@ -909,8 +909,8 @@ impl TreeView {
         walk(&self.nodes, &mut Vec::new(), &self.expanded)
     }
 
-    pub fn context_items(&self) -> Vec<(TreeCmd, crate::widgets::menu::MenuItem)> {
-        use crate::ui::context::{ContextCmd, command_items};
+    pub fn context_items(&self) -> Vec<(TreeCmd, termrock_overlays::menu::MenuItem)> {
+        use termrock_overlays::context::{ContextCmd, command_items};
         let cmds = [
             ContextCmd::new(TreeCmd::ExpandAll)
                 .unless(self.all_expanded().then_some("Every branch is open")),
@@ -1157,7 +1157,7 @@ impl TreeView {
         Response::changed()
     }
 
-    pub fn track_click(mut self, click: crate::core::scroll::TrackClick) -> Self {
+    pub fn track_click(mut self, click: termrock_core::scroll::TrackClick) -> Self {
         self.core.scroll.track_click = Some(click);
         self
     }
@@ -1231,14 +1231,14 @@ impl TreeView {
                     + (row.depth as u16) * self.indent
                     + 2
                     + if row.glyph.is_some() { 2 } else { 0 }
-                    + crate::ui::text::width(row.label) as u16
+                    + termrock_text::cells::width(row.label) as u16
                     + 2
-                    + crate::ui::text::width(m) as u16
+                    + termrock_text::cells::width(m) as u16
                     + 1;
                 need <= row_w
             });
         for (i, ri) in self.core.scroll.visible_range().enumerate() {
-            crate::record_work!(VisibleRowsPainted, 1usize);
+            termrock_metrics::record_work!(VisibleRowsPainted, 1usize);
             let y = area.y + i as u16;
             let row = rows.row(ri);
             let hit = rows.hit_key(ri);
@@ -1305,7 +1305,7 @@ impl TreeView {
                 rp.mark(ctx, buf, x, y, MarkKind::Glyph(m), focused);
             }
             x += 2;
-            let meta_w = row.meta.map(crate::ui::text::width).unwrap_or(0) as u16;
+            let meta_w = row.meta.map(termrock_text::cells::width).unwrap_or(0) as u16;
             let avail = rect.right().saturating_sub(x);
 
             let meta_w = if !show_meta || avail.saturating_sub(meta_w + 2) < 10 {
@@ -1353,7 +1353,10 @@ impl TreeView {
             buf.set_string(
                 lx,
                 y,
-                crate::ui::text::fit(row.label, (lw as usize).saturating_sub((lx - x) as usize)),
+                termrock_text::cells::fit(
+                    row.label,
+                    (lw as usize).saturating_sub((lx - x) as usize),
+                ),
                 label_style,
             );
             if let Some(m) = row.meta
@@ -1385,7 +1388,7 @@ impl TreeView {
                 .draw_divider(sb, buf, ctx, self.id, focused);
         }
         if has_sb {
-            crate::ui::fade::scroll_edges_except(
+            termrock_runtime::fade::scroll_edges_except(
                 buf,
                 ctx,
                 Rect::new(
@@ -1409,7 +1412,7 @@ impl TreeView {
     }
 }
 
-impl crate::ui::measure::Measure for TreeView {
+impl termrock_runtime::measure::Measure for TreeView {
     fn measure(&self, avail: ratatui::layout::Size, ctx: &RenderCtx) -> ratatui::layout::Size {
         if self.rows.is_empty() || !self.core.content.is_ready() {
             return match &self.core.empty {
@@ -1417,7 +1420,7 @@ impl crate::ui::measure::Measure for TreeView {
                 _ => ratatui::layout::Size::new(0, self.rows.len() as u16),
             };
         }
-        let w = |s: &str| crate::ui::text::width(s) as u16;
+        let w = |s: &str| termrock_text::cells::width(s) as u16;
         let width = self
             .rows
             .iter()
@@ -1474,13 +1477,13 @@ impl Navigable for TreeView {
 
 const SPECIMEN_ROWS: usize = 4;
 
-impl crate::ui::specimen::Specimen for TreeView {
+impl termrock_runtime::specimen::Specimen for TreeView {
     fn specimen_id(&self) -> WidgetId {
         self.id
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         matches!(
             state,
             Rest | Hover
@@ -1496,8 +1499,8 @@ impl crate::ui::specimen::Specimen for TreeView {
         )
     }
 
-    fn specimen_height(&self, state: crate::ui::specimen::SpecimenState) -> u16 {
-        use crate::ui::specimen::SpecimenState::*;
+    fn specimen_height(&self, state: termrock_runtime::specimen::SpecimenState) -> u16 {
+        use termrock_runtime::specimen::SpecimenState::*;
         if matches!(state, Loading | Error) {
             return 1;
         }
@@ -1506,13 +1509,13 @@ impl crate::ui::specimen::Specimen for TreeView {
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
         bg: Color,
     ) {
-        use crate::ui::specimen::SpecimenState::*;
+        use termrock_runtime::specimen::SpecimenState::*;
         let mut t = self.clone();
         t.flatten();
         t.cursor = 1.min(t.rows.len().saturating_sub(1));
@@ -1535,7 +1538,7 @@ impl crate::ui::specimen::Specimen for TreeView {
                     t.set_busy(&p, true);
                 }
             }
-            (Loading | Error, _) => t.core.content = crate::ui::content::specimen(state),
+            (Loading | Error, _) => t.core.content = crate::content::specimen(state),
             _ => {}
         }
         let v = state.visual();
@@ -1545,12 +1548,12 @@ impl crate::ui::specimen::Specimen for TreeView {
                 ctx.interaction.pressed = Some(t.row_id(t.cursor));
             }
         }
-        crate::ui::ctx::fill(buf, area, ratatui::style::Style::new().bg(bg));
+        termrock_runtime::ctx::fill(buf, area, ratatui::style::Style::new().bg(bg));
         t.render(area, buf, ctx, bg);
     }
 }
 
-impl crate::core::pointer::MouseTarget for TreeView {
+impl termrock_core::pointer::MouseTarget for TreeView {
     type Action = TreeAction;
 
     fn mouse_id(&self) -> WidgetId {
@@ -1559,14 +1562,14 @@ impl crate::core::pointer::MouseTarget for TreeView {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<TreeAction> {
-        use crate::core::intent::Phase;
-        if let Some(r) = crate::core::pointer::scroll_input(self, ev) {
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<TreeAction> {
+        use termrock_core::intent::Phase;
+        if let Some(r) = termrock_core::pointer::scroll_input(self, ev) {
             return r.lift();
         }
         if !ev.is(Phase::Click) {
-            return crate::core::response::Response::ignored();
+            return termrock_core::response::Response::ignored();
         }
 
         let hit = match (ev.index_of(Part::ICON), ev.index_of(Part::ROW)) {
@@ -1576,7 +1579,7 @@ impl crate::core::pointer::MouseTarget for TreeView {
         };
         match hit {
             Some((row, toggle)) => self.on_click_at(row, toggle, ev.mods(), ev.count()),
-            None => crate::core::response::Response::ignored(),
+            None => termrock_core::response::Response::ignored(),
         }
     }
 }
@@ -1711,7 +1714,7 @@ impl TreeProjection {
                 stack.push((source.node(child).map_or(&[][..], |n| n.children), 0, at));
             }
         }
-        crate::record_work!(SourceRowsEnumerated, walk.order.len());
+        termrock_metrics::record_work!(SourceRowsEnumerated, walk.order.len());
         Ok((walk.order, walk.positions, walk.parents))
     }
 
@@ -2158,13 +2161,13 @@ impl TreeView {
     /// node key, so a press can only complete on the node it began on.
     pub fn on_pointer_source<S: TreeSource + ?Sized>(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
+        ev: &termrock_core::pointer::PointerEvent,
         source: &S,
     ) -> Result<Response<TreeAction<ItemKey>>, KeyedSourceError> {
-        use crate::core::intent::Phase;
+        use termrock_core::intent::Phase;
         self.bind_tree(source)?;
         self.keyed.note_pointer(ev.phase());
-        if let Some(r) = crate::core::pointer::scroll_input(self, ev) {
+        if let Some(r) = termrock_core::pointer::scroll_input(self, ev) {
             return Ok(r.lift());
         }
         let hit = match (ev.key_of(Part::ICON), ev.key_of(Part::ROW)) {
@@ -2306,7 +2309,7 @@ pub struct KeyedTree {
 impl Clone for KeyedTree {
     fn clone(&self) -> Self {
         Self {
-            instance: crate::core::keyed::fresh_instance(),
+            instance: termrock_core::keyed::fresh_instance(),
             data: self.data,
             view: self.view,
             roots: self.roots.clone(),
@@ -2325,7 +2328,7 @@ impl Default for KeyedTree {
 impl KeyedTree {
     pub fn new() -> Self {
         Self {
-            instance: crate::core::keyed::fresh_instance(),
+            instance: termrock_core::keyed::fresh_instance(),
             data: 0,
             view: 0,
             roots: Vec::new(),
