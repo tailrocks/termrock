@@ -1,10 +1,11 @@
 use std::cell::Cell;
 
+use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
 
-use crate::core::hit::{Axis, Bar};
-use crate::core::id::WidgetId;
-use crate::core::response::Response;
+use crate::hit::{Axis, Bar};
+use crate::id::WidgetId;
+use crate::response::Response;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ScrollState {
@@ -684,6 +685,127 @@ impl ScrollPane {
             self.press_on(bar.axis, pos)
         } else {
             self.drag_on(bar.axis, pos)
+        }
+    }
+}
+
+/// What the pane's `draw_*` methods ask of the render context.
+///
+/// The scrollbar is painted with the theme and the context's pointer state, which
+/// sit above this crate, so the context implements this trait and `ScrollPane`
+/// stays an inherent-method type (`pane.draw_v(..)`). Only the render context
+/// implements it.
+#[doc(hidden)]
+pub trait ScrollPaint {
+    fn paint_vertical(
+        &mut self,
+        area: Rect,
+        buf: &mut Buffer,
+        owner: WidgetId,
+        scroll: &ScrollState,
+        focused: bool,
+    );
+
+    fn paint_divider(
+        &mut self,
+        area: Rect,
+        buf: &mut Buffer,
+        owner: WidgetId,
+        scroll: &ScrollState,
+        focused: bool,
+    );
+
+    fn paint_horizontal(
+        &mut self,
+        area: Rect,
+        buf: &mut Buffer,
+        owner: WidgetId,
+        scroll: &ScrollState,
+        focused: bool,
+        always: bool,
+    );
+
+    /// Paints the fade edges and the bar; returns the area left for content.
+    fn paint_with_fade(
+        &mut self,
+        area: Rect,
+        buf: &mut Buffer,
+        owner: WidgetId,
+        scroll: &ScrollState,
+        focused: bool,
+        keep: &[u16],
+    ) -> Rect;
+
+    fn scrollable_under(&mut self, owner: WidgetId, area: Rect);
+}
+
+impl ScrollPane {
+    pub fn draw_v<C: ScrollPaint>(
+        &mut self,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut C,
+        owner: WidgetId,
+        focused: bool,
+    ) {
+        ctx.paint_vertical(area, buf, owner, &self.v, focused);
+        self.remember(Axis::Vertical, owner, area, buf);
+    }
+
+    pub fn draw_divider<C: ScrollPaint>(
+        &mut self,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut C,
+        owner: WidgetId,
+        focused: bool,
+    ) {
+        ctx.paint_divider(area, buf, owner, &self.v, focused);
+        self.remember(Axis::Vertical, owner, area, buf);
+    }
+
+    pub fn draw_h<C: ScrollPaint>(
+        &mut self,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut C,
+        owner: WidgetId,
+        focused: bool,
+    ) {
+        let always = self.h_cfg.bar == ScrollbarVisibility::Always;
+        ctx.paint_horizontal(area, buf, owner, &self.h, focused, always);
+        self.remember(Axis::Horizontal, owner, area, buf);
+    }
+
+    pub fn draw_with_fade<C: ScrollPaint>(
+        &mut self,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut C,
+        owner: WidgetId,
+        focused: bool,
+        keep: &[u16],
+    ) -> Rect {
+        let content = ctx.paint_with_fade(area, buf, owner, &self.v, focused, keep);
+        if content != area {
+            let track = Rect::new(area.right() - 1, area.y, 1, area.height);
+            self.remember(Axis::Vertical, owner, track, buf);
+
+            ctx.scrollable_under(owner, area.intersection(*buf.area()));
+        }
+        content
+    }
+
+    fn remember(&mut self, axis: Axis, owner: WidgetId, area: Rect, buf: &Buffer) {
+        let area = area.intersection(*buf.area());
+        let state = match axis {
+            Axis::Vertical => &self.v,
+            Axis::Horizontal => &self.h,
+        };
+        if area.is_empty() || !state.overflows() {
+            self.clear_track(axis);
+        } else {
+            self.set_track(owner, axis, area);
         }
     }
 }

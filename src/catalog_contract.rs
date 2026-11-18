@@ -26,7 +26,7 @@ use syn::visit::Visit;
 
 const EXPANSIONS: &[Expansion] = &[
     Expansion {
-        site: "core::id::parts",
+        site: "@termrock_core::id::parts",
         ids: &[
             "core::id::Part::CONTAINER",
             "core::id::Part::BACKDROP",

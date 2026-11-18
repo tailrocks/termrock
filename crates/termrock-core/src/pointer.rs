@@ -714,14 +714,16 @@ fn hit_of(hits: &HitRegistry, id: WidgetId) -> Hit {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum BarPhase {
+#[doc(hidden)]
+pub enum BarPhase {
     Press,
     Drag,
     Release,
 }
 
 impl BarPhase {
-    pub(crate) fn of(ev: &PointerEvent) -> Option<Self> {
+    #[doc(hidden)]
+    pub fn of(ev: &PointerEvent) -> Option<Self> {
         match ev.phase()? {
             Phase::Press => Some(Self::Press),
             Phase::Drag | Phase::DragStart => Some(Self::Drag),
@@ -1153,6 +1155,3 @@ mod tests {
         );
     }
 }
-
-#[cfg(test)]
-mod nested_scrollbar_tests;

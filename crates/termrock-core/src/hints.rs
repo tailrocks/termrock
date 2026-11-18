@@ -2,22 +2,20 @@ use std::borrow::Cow;
 
 use ratatui::crossterm::event::KeyModifiers;
 
-use crate::core::event::{ClientPlatform, Key};
-use crate::core::id::WidgetId;
-use crate::core::keyboard::label_deliverable;
-use crate::core::keymap::{Actions, KeyBinding, KeyboardCapabilities, NavKeys};
+use crate::event::{ClientPlatform, Key};
+use crate::id::WidgetId;
+use crate::keyboard::label_deliverable;
+use crate::keymap::{Actions, KeyBinding, KeyboardCapabilities, NavKeys};
 
 /// Keys a hint bar always keeps, implemented by the theme's hint bar style.
 ///
 /// `Hint::is_pinned` reads the list through this trait so that `core` does not
-/// name `theme`. The trait is public only so it can appear in that bound; it is
-/// not reachable by path.
-mod pinned {
-    pub trait PinnedKeys {
-        fn pinned_keys(&self) -> &[&str];
-    }
+/// name `theme`. It is `#[doc(hidden)]` so that `theme`, another crate, can
+/// implement it without it joining the declared API.
+#[doc(hidden)]
+pub trait PinnedKeys {
+    fn pinned_keys(&self) -> &[&str];
 }
-pub(crate) use pinned::PinnedKeys;
 
 pub const UP_DOWN: &str = "↑↓";
 pub const LEFT_RIGHT: &str = "←→";

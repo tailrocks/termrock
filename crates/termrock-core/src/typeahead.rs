@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use crate::core::event::Key;
+use crate::event::Key;
 use ratatui::crossterm::event::KeyCode;
 
 #[derive(Debug, Clone)]

@@ -14,7 +14,7 @@ use crate::core::keymap::{
     Actions, KeyBinding, KeyMap, NavKeys, hint_key, lookup, select_all_bindings, unassigned_chord,
 };
 use crate::core::list::{
-    Cursor, KeyStep, KeyedRowSource, Moved, Navigable, RowSource, TypeAheadPrecedence,
+    Cursor, KeyStep, KeyedRowSource, Moved, Navigable, RowItem, RowSource, TypeAheadPrecedence,
 };
 use crate::core::pointer::PointerEvent;
 use crate::core::refusal::{Control, Reason};
@@ -960,15 +960,12 @@ impl Scrollable for ListBox {
     }
 }
 
-impl RowSource for [ListItem] {
-    fn len(&self) -> usize {
-        <[ListItem]>::len(self)
+impl RowItem for ListItem {
+    fn label(&self) -> &str {
+        &self.label
     }
-    fn enabled(&self, i: usize) -> bool {
-        !self[i].disabled
-    }
-    fn label(&self, i: usize) -> &str {
-        &self[i].label
+    fn enabled(&self) -> bool {
+        !self.disabled
     }
 }
 

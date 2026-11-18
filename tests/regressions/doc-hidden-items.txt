@@ -1,3 +1,26 @@
+crates/termrock-core/src/edit.rs  clipboard::store
+crates/termrock-core/src/event.rs  pin::PlatformPin
+crates/termrock-core/src/event.rs  pin::PlatformPin::new
+crates/termrock-core/src/event.rs  use pin::PlatformPin
+crates/termrock-core/src/hints.rs  PinnedKeys
+crates/termrock-core/src/hit.rs  HitMark::regions_len
+crates/termrock-core/src/hit.rs  HitRegistry::clip_mark
+crates/termrock-core/src/hit.rs  HitRegistry::logical_bar
+crates/termrock-core/src/hit.rs  PartMap
+crates/termrock-core/src/intent.rs  DismissReason::permitted_by
+crates/termrock-core/src/item.rs  Item::payload_bytes
+crates/termrock-core/src/keyed.rs  KeyedState::begin_edit_at
+crates/termrock-core/src/keyed.rs  KeyedState::note_pointer
+crates/termrock-core/src/keyed.rs  KeyedState::release_click
+crates/termrock-core/src/keyed.rs  fresh_instance
+crates/termrock-core/src/list.rs  RowItem
+crates/termrock-core/src/pointer.rs  BarPhase
+crates/termrock-core/src/pointer.rs  BarPhase::of
+crates/termrock-core/src/scroll.rs  ScrollPaint
+crates/termrock-core/src/selection.rs  CHECK_MIXED
+crates/termrock-core/src/selection.rs  CHECK_OFF
+crates/termrock-core/src/selection.rs  CHECK_ON
+crates/termrock-core/src/selection.rs  CheckGlyphs
 crates/termrock-metrics/src/lib.rs  state
 crates/termrock-metrics/src/state.rs  epoch_for_test
 crates/termrock-metrics/src/state.rs  set_for_test

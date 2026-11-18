@@ -1,10 +1,10 @@
 use std::cell::Cell;
 
-use crate::core::event::{Key, Outcome};
-use crate::core::hit::Axis;
-use crate::core::id::ItemKey;
-use crate::core::keymap::{Nav, NavKeys};
-use crate::core::typeahead::TypeAhead;
+use crate::event::{Key, Outcome};
+use crate::hit::Axis;
+use crate::id::ItemKey;
+use crate::keymap::{Nav, NavKeys};
+use crate::typeahead::TypeAhead;
 
 pub trait RowSource {
     fn len(&self) -> usize;
@@ -39,8 +39,39 @@ impl RowSource for [String] {
         <[String]>::len(self)
     }
     fn label(&self, i: usize) -> &str {
-        crate::record_work!(LabelsRead, 1usize);
+        termrock_metrics::record_work!(LabelsRead, 1usize);
         &self[i]
+    }
+}
+
+/// One row of a slice that is a [`RowSource`]: the three things a source asks
+/// of a row. A slice of rows cannot get `RowSource` from a trait of another
+/// crate, so the row types implement this one instead.
+#[doc(hidden)]
+pub trait RowItem {
+    fn label(&self) -> &str;
+
+    fn enabled(&self) -> bool {
+        true
+    }
+
+    fn key(&self, index: usize) -> ItemKey {
+        ItemKey::index(index)
+    }
+}
+
+impl<T: RowItem> RowSource for [T] {
+    fn len(&self) -> usize {
+        <[T]>::len(self)
+    }
+    fn enabled(&self, i: usize) -> bool {
+        RowItem::enabled(&self[i])
+    }
+    fn label(&self, i: usize) -> &str {
+        RowItem::label(&self[i])
+    }
+    fn key(&self, i: usize) -> ItemKey {
+        RowItem::key(&self[i], i)
     }
 }
 
@@ -185,7 +216,7 @@ impl Cursor {
         let from = self.index.min(n - 1);
         let mut i = from;
         for _ in 0..n {
-            let next = crate::core::nav::step_index(i, n, delta, self.wrap);
+            let next = crate::nav::step_index(i, n, delta, self.wrap);
             if next == i {
                 break;
             }

@@ -80,13 +80,7 @@ impl Dismiss {
     }
 
     pub const fn allows(self, reason: crate::core::intent::DismissReason) -> bool {
-        use crate::core::intent::DismissReason as R;
-        match reason {
-            R::Esc | R::CloseButton => self.escape,
-            R::OutsideClick => self.outside_click,
-            R::FocusOut => self.focus_out,
-            R::Programmatic => true,
-        }
+        reason.permitted_by(self.escape, self.outside_click, self.focus_out)
     }
 
     pub const fn shows_close(self) -> bool {
