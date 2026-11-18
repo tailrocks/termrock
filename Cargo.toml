@@ -30,7 +30,7 @@ default-members = [
 clap = { version = "4.6", features = ["derive"] }
 ratatui = { version = "0.30", features = ["crossterm_0_29"] }
 serde_json = "1"
-sha2 = "0.10.9"
+sha2 = "0.11.0"
 tui-test = { package = "tuiscotti-tui-test", version = "=0.2.1" }
 tuiscotti-latest = { package = "tuiscotti", git = "https://github.com/tailrocks/tuiscotti", rev = "f1fb3f276b8d49948881c07b3bbc619840b6cc93" }
 

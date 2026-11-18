@@ -752,7 +752,7 @@ version = "0.1.0"
 dependencies = [
  "junie-tui",
  "serde_json",
- "sha2 0.10.9",
+ "sha2 0.11.1",
  "tuiscotti",
  "tuiscotti-tui-test",
 ]
@@ -994,7 +994,7 @@ dependencies = [
  "libc",
  "ratatui",
  "serde_json",
- "sha2 0.10.9",
+ "sha2 0.11.1",
  "syn 3.0.10",
  "termpane",
  "toml 1.2.1+spec-1.1.0",
@@ -2161,7 +2161,7 @@ dependencies = [
  "clap",
  "ratatui",
  "serde_json",
- "sha2 0.10.9",
+ "sha2 0.11.1",
  "termrock",
  "unicode-segmentation",
 ]
@@ -2174,7 +2174,7 @@ dependencies = [
  "libc",
  "ratatui",
  "serde_json",
- "sha2 0.10.9",
+ "sha2 0.11.1",
  "syn 3.0.10",
  "termrock",
 ]
@@ -2187,7 +2187,7 @@ dependencies = [
  "ratatui",
  "regex",
  "serde_json",
- "sha2 0.10.9",
+ "sha2 0.11.1",
  "termrock",
 ]
 
