@@ -468,10 +468,20 @@ fn layering_the_root_is_a_virtual_manifest_without_code() {
     );
     for dir in ["src", "tests", "examples"] {
         assert!(
-            !root().join(dir).exists(),
-            "the repository root must have no `{dir}/` directory"
+            !holds_files(&root().join(dir)),
+            "the repository root must have no files under `{dir}/`"
         );
     }
+}
+
+/// Whether `dir` or anything below it is a file. An empty directory (Git does not track
+/// one, so a checkout that moved the files out can still have it) holds nothing.
+fn holds_files(dir: &Path) -> bool {
+    std::fs::read_dir(dir).is_ok_and(|entries| {
+        entries
+            .filter_map(Result::ok)
+            .any(|entry| entry.path().is_file() || holds_files(&entry.path()))
+    })
 }
 
 #[test]
