@@ -11,7 +11,7 @@ doctest = false
 
 [features]
 default = []
-work-metrics = ["termrock-metrics/work-metrics"]
+work-metrics = ["termrock-core/work-metrics", "termrock-metrics/work-metrics", "termrock-runtime/work-metrics"]
 
 [dependencies]
 ratatui = { workspace = true }
