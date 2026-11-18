@@ -10,8 +10,7 @@ use crate::support::{
 /// Tuiscotti test ids are `[a-z0-9_-]` segments, so `S01.shell` cannot be one.
 /// The baseline root is the owned directory and the id is the slug inside it.
 fn baseline_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/functional/baselines/pre_refactor/S01.shell")
+    crate::support::oracle_baselines().join("pre_refactor/S01.shell")
 }
 
 fn capturing() -> bool {

@@ -222,7 +222,7 @@ fn wide_dialog(screen: &TerminalSnapshot) -> bool {
 }
 
 fn baseline_hit(app: &App, checkpoint: &str) -> bool {
-    let root = crate::support::workspace_root().join("tests/functional/baselines");
+    let root = crate::support::oracle_baselines();
     app.check_visual(&root, &visual_id(checkpoint)).is_pass()
 }
 
