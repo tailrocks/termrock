@@ -18,7 +18,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use super::api_inventory::{Body, flatten_use};
+use crate::inventory::{Body, flatten_use};
 use syn::visit::Visit;
 
 /// The namespace of the scenario files, which call each other's helpers.

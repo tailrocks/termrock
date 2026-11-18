@@ -2,7 +2,7 @@
 //!
 //! Each `ScenarioCase` builds real components, sends real input, reads typed
 //! outcomes and renders to a `Buffer`. `coverage.rs` lists which APIs each
-//! scenario proves; the source-only gate in `src/catalog_contract.rs` checks
+//! scenario proves; the source-only gate in `crates/termrock-catalog/src/catalog_contract.rs` checks
 //! that every referenced scenario has exactly one case here. One line per
 //! case keeps a restack mechanical.
 

@@ -2,8 +2,6 @@
 
 #[path = "terminal/session.rs"]
 mod session;
-#[path = "terminal/session_catalog.rs"]
-mod session_catalog;
 
 use junie_tui::core::event::Key;
 use junie_tui::terminal::{

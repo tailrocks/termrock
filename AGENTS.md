@@ -147,9 +147,9 @@ workspaces, Docker, OpenShell, Codex).
   See the showcase coverage track in
   `docs/architecture/shared-components-plan.md` (§7).
 - The declared-API gate has three layers, reported separately. Layer 1 is
-  source coverage in `src/catalog_contract.rs`: an inventory of every public
+  source coverage in `crates/termrock-catalog/src/catalog_contract.rs`: an inventory of every public
   API under the exported module graph (matrix rows minimal, default and
-  all-features) must match `src/catalog.rs` exactly (`CAPABILITIES` plus
+  all-features) must match `crates/termrock-catalog/src/catalog.rs` exactly (`CAPABILITIES` plus
   `MEMBERS`; fields, trait items and trait impls inherit their owner) and
   every API needs exactly one disposition: a `CapabilityProof` or
   `CapabilityException` line in `apps/showcase/src/coverage.rs` or a
@@ -174,21 +174,21 @@ workspaces, Docker, OpenShell, Codex).
   variant needs its own name, one of its methods, variants or trait items, or
   for a variant `Enum::Variant`) must be an identifier in a named scenario's
   body or in a fn, const or `impl` it reaches in the Showcase crate by call,
-  `use` line or path (`tests/support/scenario_reach.rs`). A method or const
+  `use` line or path (`crates/termrock-catalog/src/scenario_reach.rs`). A method or const
   whose name another exported type also uses (`new`, `len`, `key`, `render`)
   needs its owner type named in the scenario too, for example in a type
   annotation on the value it returns, because any other type's call would
   satisfy the bare name. Strings and comments
   do not count, and the check is still identifier matching, not behavioral
   proof. The one explicit exception is `VARIANT_SETS` in
-  `src/catalog_contract.rs` (`Metric::ALL` stands for the variants it lists).
+  `crates/termrock-catalog/src/catalog_contract.rs` (`Metric::ALL` stands for the variants it lists).
   A proof whose scenario never calls its API fails the gate: add the call to
   the scenario with an assertion, re-point the proof, or make it a `Nonvisual`
   exception with a real regression test. Layer 3 is the
   tuiscotti journeys in `tests/functional`. Name matching is never behavioral
-  proof. Run `cargo nextest run -p junie-tui -p termrock-showcase
+  proof. Run `cargo nextest run -p termrock-catalog -p termrock-showcase
   --all-features --no-tests fail -E 'test(catalog_)'` (the source gate is in
-  `junie-tui`, the scenarios in `termrock-showcase`); the Rust crate CI jobs
+  `termrock-catalog`, the scenarios in `termrock-showcase`); the Rust crate CI jobs
   already run it. The proofs
   are split into lanes so parallel work never edits one file: a lane owns
   `apps/showcase/src/coverage/lane_<lane>.rs` (its proofs and exceptions),

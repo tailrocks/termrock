@@ -1,7 +1,7 @@
-use crate::core::hints::{Binding, Bindings, HasHints, HintCx};
-use crate::core::id::WidgetId;
-use crate::core::list::NavProfile;
-use crate::widgets::keyhint::Hint;
+use termrock_controls::keyhint::Hint;
+use termrock_core::hints::{Binding, Bindings, HasHints, HintCx};
+use termrock_core::id::WidgetId;
+use termrock_core::list::NavProfile;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KnobLayer {
@@ -79,13 +79,13 @@ fn hints_of(w: &dyn HasHints) -> Vec<Hint> {
 }
 
 pub fn documented() -> Vec<Documented> {
-    use crate::widgets::grid::{CellKind, ColumnSpec, DataGrid};
-    use crate::widgets::list::{ListBox, ListItem, SelectMode};
-    use crate::widgets::select::Select;
-    use crate::widgets::table::{Column, DataTable};
-    use crate::widgets::tabs::Tabs;
-    use crate::widgets::tree::{TreeNode, TreeView};
     use ratatui::layout::Constraint;
+    use termrock_collections::list::{ListBox, ListItem, SelectMode};
+    use termrock_collections::tree::{TreeNode, TreeView};
+    use termrock_fields::select::Select;
+    use termrock_grid::grid::{CellKind, ColumnSpec, DataGrid};
+    use termrock_grid::table::{Column, DataTable};
+    use termrock_navigation::tabs::Tabs;
 
     fn list(mode: SelectMode) -> ListBox {
         ListBox::new(
@@ -297,7 +297,7 @@ pub fn index(all: &[Documented]) -> String {
 }
 
 pub fn files() -> Vec<(String, String)> {
-    crate::core::keyboard::set_alt_delivered(true);
+    termrock_core::keyboard::set_alt_delivered(true);
     let all = documented();
     let mut v: Vec<(String, String)> = all
         .iter()
