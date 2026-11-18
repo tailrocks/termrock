@@ -60,6 +60,7 @@
   "prConcurrentLimit": 4,
   "branchConcurrentLimit": 4,
   "commitBody": "Signed-off-by: Renovate Bot <renovate@whitesourcesoftware.com>",
+  "rebaseWhen": "conflicted",
   "recreateWhen": "always",
   "lockFileMaintenance": {
     "enabled": true,
