@@ -2336,6 +2336,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "termrock-functional"
+version = "0.1.0"
+dependencies = [
+ "libc",
+ "ratatui",
+ "serde_json",
+ "sha2 0.10.9",
+ "termrock",
+ "tuiscotti",
+ "tuiscotti-tui-test",
+]
+
+[[package]]
 name = "termrock-grid"
 version = "0.1.0"
 dependencies = [
