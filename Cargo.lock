@@ -990,13 +990,13 @@ dependencies = [
 name = "junie-tui"
 version = "0.1.0"
 dependencies = [
- "clap",
  "libc",
  "ratatui",
  "serde_json",
  "sha2 0.10.9",
  "syn 3.0.10",
  "termpane",
+ "termrock-cli",
  "termrock-collections",
  "termrock-controls",
  "termrock-core",
@@ -1010,6 +1010,7 @@ dependencies = [
  "termrock-overlays",
  "termrock-runtime",
  "termrock-session",
+ "termrock-terminal",
  "termrock-text",
  "termrock-theme",
  "termrock-viewport",
@@ -2171,6 +2172,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "termrock-cli"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "termrock-core",
+ "termrock-theme",
+]
+
+[[package]]
 name = "termrock-collections"
 version = "0.1.0"
 dependencies = [
@@ -2381,6 +2391,22 @@ dependencies = [
  "serde_json",
  "sha2 0.10.9",
  "termrock",
+]
+
+[[package]]
+name = "termrock-terminal"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "termpane",
+ "termrock-controls",
+ "termrock-core",
+ "termrock-metrics",
+ "termrock-runtime",
+ "termrock-text",
+ "termrock-theme",
+ "termrock-viewport",
+ "unicode-width",
 ]
 
 [[package]]

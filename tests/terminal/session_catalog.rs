@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 use junie_tui::catalog;
 use syn::{ImplItem, Item, TraitItem, Type, Visibility};
 
-const SOURCE: &str = include_str!("../../src/terminal/session.rs");
+const SOURCE: &str = include_str!("../../crates/termrock-terminal/src/session.rs");
 
 fn public(vis: &Visibility) -> bool {
     matches!(vis, Visibility::Public(_))

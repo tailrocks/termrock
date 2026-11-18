@@ -4,21 +4,21 @@ use ratatui::layout::{Position, Rect};
 use ratatui::style::{Color, Style};
 
 use super::{Defaults, RowWrap, TERMINAL_DEFAULTS, TermEvent, TermView, TerminalState, paint_view};
-use crate::core::event::Outcome;
-use crate::core::hit::{Axis, Bar};
-use crate::core::id::WidgetId;
-use crate::core::intent::Phase;
-use crate::core::pointer::{MouseTarget, PointerEvent, scroll_input};
-use crate::core::response::Response;
-use crate::core::scroll::{ScrollPane, Scrollable};
-use crate::theme::ColorLevel;
-use crate::ui::ctx::{RenderCtx, fill};
-use crate::ui::text::thousands;
-use crate::widgets::field_common::PointerSelect;
-use crate::widgets::scrollbar;
-use crate::widgets::text_select::{TextSelect, is_word, word_bounds};
-use crate::widgets::viewport::CellPos;
-use crate::widgets::viewport_ops::ViewportOps;
+use termrock_controls::scrollbar;
+use termrock_core::event::Outcome;
+use termrock_core::field::field_common::PointerSelect;
+use termrock_core::field::text_select::{TextSelect, is_word, word_bounds};
+use termrock_core::hit::{Axis, Bar};
+use termrock_core::id::WidgetId;
+use termrock_core::intent::Phase;
+use termrock_core::pointer::{MouseTarget, PointerEvent, scroll_input};
+use termrock_core::response::Response;
+use termrock_core::scroll::{ScrollPane, Scrollable};
+use termrock_runtime::ctx::{RenderCtx, fill};
+use termrock_text::cells::thousands;
+use termrock_theme::ColorLevel;
+use termrock_viewport::viewport::CellPos;
+use termrock_viewport::viewport_ops::ViewportOps;
 
 const TRACK_COLUMNS: u16 = 1;
 
@@ -230,7 +230,7 @@ impl TerminalViewport {
         }
         let back = scrolled.saturating_sub(line).min(history);
         let row = line - (scrolled - back);
-        crate::record_work!(SourceRowsRead, 1usize);
+        termrock_metrics::record_work!(SourceRowsRead, 1usize);
         Some((
             self.state.view(usize::try_from(back).ok()?),
             u16::try_from(row).ok()?,
@@ -667,7 +667,7 @@ impl ViewportOps for TerminalViewport {
             }
         }
         if self.offset > 0 {
-            crate::ui::fade::scroll_edges(buf, ctx, grid, &self.scroll.v);
+            termrock_runtime::fade::scroll_edges(buf, ctx, grid, &self.scroll.v);
         }
 
         if area.width > TRACK_COLUMNS {

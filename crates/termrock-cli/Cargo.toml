@@ -1,0 +1,15 @@
+[package]
+name = "termrock-cli"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+description = "Clap argument types for the Termrock terminal UI library"
+license = "MIT"
+
+[lib]
+doctest = false
+
+[dependencies]
+clap = { workspace = true }
+termrock-core = { workspace = true, features = ["cli"] }
+termrock-theme = { workspace = true }

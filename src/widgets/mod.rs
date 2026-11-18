@@ -19,7 +19,6 @@ pub use termrock_controls::{
     action_row, brand, button, choice, hintbar, icon_button, keyhint, keyref, scrollbar, segments,
     widget_hints,
 };
-pub(crate) use termrock_core::field::text_select;
 pub use termrock_core::field::{edit, field_common};
 pub use termrock_editors::{code, diff, textarea};
 pub use termrock_feedback::{
