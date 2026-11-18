@@ -310,3 +310,34 @@ Where the implementation differs from the plan in #440, and why:
   not list it and its dependencies would go unchecked. Added at review.
 
 Revisit when #452 removes `[files]`: from then on only stage B remains.
+
+## 2026-11-18: Relocate CI policy scripts, consumer fixtures and the example first (#450)
+
+#450 depends on #448, which has not landed. Three groups of its move list do
+not import any extracted crate, so they land first as a stack
+(`split/450-a`, `-b`, `-c`). Every root test target that imports a crate
+extracted by #444 to #448 waits.
+
+- Policy scripts, Python tests, fixture pack and mutants move to
+  `scripts/policy/`. A flat move into `scripts/` would collide with the
+  existing `scripts/check-generated-workflows.sh`. Each shell script resolves
+  the repository root with `../..` and each Python script with `parents[2]`;
+  the issue lists the files but not this edit. `test_build_app_bins.py` also
+  moves, although the issue's list of 15 omits it. Reviewed digests are
+  unchanged: no pinned digest covers a moved file, and no pinned file changed.
+- Consumer fixtures move to `crates/termrock/tests/consumers/<name>/`. The
+  issue's manifest paths are one level short. From the new directory the
+  facade is `../../..` and `jackin-console` is `../../../../../apps/jackin`.
+  The four lockfiles are unchanged and `scripts/check-consumers.sh --locked`
+  passes.
+- `examples/document_workspace.rs` moves to `crates/termrock/examples/` and
+  imports `termrock::`. It carries no `#[test]`, so it is not one of the six
+  contract examples.
+- Not weakened: no check was removed or loosened, and the same commands run
+  from the new locations.
+- SonarCloud classified the moved scripts as main code and failed the Security
+  Rating on New Code at E (path traversal, argument injection and publicly
+  writable directory findings in the guard harnesses). They raised none of
+  these findings under `tests/`, where SonarCloud reads them as test code, so `.sonarcloud.properties` now sets `sonar.test.inclusions`
+  to `scripts/policy/**` plus every `tests/` directory. That keeps the
+  classification they had; no finding is suppressed in the scripts.

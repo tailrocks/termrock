@@ -11,7 +11,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "build-app-bins.sh"
+SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "build-app-bins.sh"
 NAMES = ["showcase", "tablepro", "holla"]
 
 
