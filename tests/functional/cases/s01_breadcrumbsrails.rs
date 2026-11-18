@@ -11,8 +11,7 @@ use tui_test::TerminalSnapshot;
 use crate::support::{App, Launch, Point, SHOWCASE, find, find_all, row_text, text, try_launch};
 
 fn baseline_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/functional/baselines/pre_refactor/S01.breadcrumbsrails")
+    crate::support::oracle_baselines().join("pre_refactor/S01.breadcrumbsrails")
 }
 
 fn visual_id(case_id: &str) -> String {

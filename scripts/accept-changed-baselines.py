@@ -32,7 +32,7 @@ from pathlib import Path
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parent.parent
-BASELINES = ROOT / "tests/functional/baselines"
+BASELINES = ROOT / "crates/termrock-functional/tests/functional/baselines"
 REFRESH_TSV = ROOT / "docs/testing/baseline-refreshes-20261108.tsv"
 BINARY_TSV = ROOT / "docs/testing/binary-baselines-20261108.tsv"
 CHANGED_CELLS = "Changed cells:"

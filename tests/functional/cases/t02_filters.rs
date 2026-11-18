@@ -3,7 +3,6 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/t02_filters/` and the dotted checkpoint ids use underscores.
 
-use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use tui_test::TerminalSnapshot;
@@ -85,7 +84,7 @@ fn click_list(app: &App, name: &str) {
 }
 
 fn shot(app: &App, id: &str, precondition: &str) {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
+    let root = crate::support::oracle_baselines();
     let outcome = app.check_visual_with_precondition(&root, id, precondition);
     assert!(outcome.is_pass(), "visual mismatch for {id}: {outcome:?}");
 }

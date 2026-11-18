@@ -362,7 +362,7 @@ fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
     )
     .expect("build Tuiscotti state sample");
     let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
-    let root = crate::support::workspace_root().join("tests/functional/baselines");
+    let root = crate::support::oracle_baselines();
     let artifacts = app.evidence_dir().join("check-artifacts");
     let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
         .expect("open Tuiscotti frozen store");

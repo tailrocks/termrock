@@ -49,7 +49,7 @@ fn production_baseline_digests() -> Vec<(PathBuf, String)> {
         }
     }
 
-    let root = crate::support::workspace_root().join("tests/functional/baselines");
+    let root = crate::support::oracle_baselines();
     let mut paths = Vec::new();
     collect(&root, &mut paths);
     paths.sort();

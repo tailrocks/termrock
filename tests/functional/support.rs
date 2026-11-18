@@ -1326,11 +1326,27 @@ fn evidence_directory(name: &str) -> PathBuf {
         .join(format!("{name}-{}-{nanos}-{seq}", std::process::id()))
 }
 
-fn baseline_root(test_id: &str) -> PathBuf {
-    if test_id.starts_with("pre_refactor/") {
-        workspace_root().join("tests/functional/baselines")
+/// The functional baseline tree, relative to the workspace root. It holds the
+/// `functional/` and `showcase/` captures of the Showcase, TablePro and Holla
+/// journeys and the frozen `pre_refactor/` oracle that those journeys, Jackin
+/// and the cross-binary cases check against.
+const BASELINES: &str = "crates/termrock-functional/tests/functional/baselines";
+
+/// The directory that holds the `pre_refactor/` capture directories.
+pub fn oracle_baselines() -> PathBuf {
+    workspace_root().join(BASELINES)
+}
+
+/// The baseline directory for `test_id`: the shared tree for `pre_refactor/`
+/// ids, else the `tests/functional/baselines` of the target's own package.
+/// A target without such a directory (the root `functional` target, until its
+/// sources move into `termrock-functional`) reads the shared tree.
+pub fn baseline_root(test_id: &str) -> PathBuf {
+    let own = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
+    if test_id.starts_with("pre_refactor/") || !own.is_dir() {
+        oracle_baselines()
     } else {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines")
+        own
     }
 }
 

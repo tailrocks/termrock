@@ -3,7 +3,6 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/s07_panetree/` and each case id's dots become underscores.
 
-use std::path::PathBuf;
 use tui_test::TerminalSnapshot;
 use tuiscotti_latest::check::CheckOutcome;
 
@@ -305,7 +304,7 @@ fn cursor_only(fields: &str) -> bool {
 
 /// Cell delta against a frozen baseline. `None` means the snapshot matches.
 fn baseline_delta(app: &App, screen: &TerminalSnapshot, test_id: &str) -> Option<(usize, String)> {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
+    let root = crate::support::oracle_baselines();
     let sample = tuiscotti_latest::sample::Sample::state(
         test_id,
         screen.clone(),

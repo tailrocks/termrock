@@ -307,7 +307,7 @@ def tree_inventory(git, seed_repository, commit, root_tree, home):
         excluded = object_type == "blob" and any(
             path.startswith(prefix) and "/" not in path[len(prefix):] and path[len(prefix):].endswith(".tui.pb")
             for prefix in (
-                "tests/functional/baselines/functional/",
+                "tests/functional/baselines/functional/", "crates/termrock-functional/tests/functional/baselines/functional/",
                 "apps/jackin/tests/functional/baselines/functional/",
             )
         )

@@ -71,7 +71,7 @@ fn launch_showcase(name: &str) -> App {
 }
 
 fn baseline_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines")
+    crate::support::oracle_baselines()
 }
 
 fn tree_digest(root: &Path) -> String {
@@ -281,8 +281,7 @@ fn g05_refresh_provenance_rejects_conflicting_digest_alias_without_mutation() {
         "provenance_path": "provenance.json",
     });
     let original = provenance.clone();
-    let baseline = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/functional/baselines/functional/showcase_page_pickers.tui.pb");
+    let baseline = baseline_root().join("functional/showcase_page_pickers.tui.pb");
     let baseline_sha = sha256_file(&baseline);
 
     assert!(
@@ -320,8 +319,7 @@ fn g05_refresh_provenance_rejects_ledger_path_mismatch_without_mutation() {
         "history": {"superseded_baseline": "wrong-archive.tui.pb"},
     });
     let original = provenance.clone();
-    let baseline = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/functional/baselines/functional/showcase_page_pickers.tui.pb");
+    let baseline = baseline_root().join("functional/showcase_page_pickers.tui.pb");
     let baseline_sha = sha256_file(&baseline);
 
     assert!(
@@ -492,12 +490,22 @@ fn assert_no_legacy_json_samples(root: &Path) {
 
 fn assert_no_legacy_sample_trees() {
     let workspace = crate::support::workspace_root();
+    assert_no_legacy_json_samples(&baseline_root());
     for relative in [
-        "tests/functional/baselines",
         "docs/testing/acceptance-receipts/historical-baselines-json",
         "scripts/coverage-fixtures",
     ] {
         assert_no_legacy_json_samples(&workspace.join(relative));
+    }
+}
+
+/// The on-disk path of a path recorded in `docs/testing`. The receipts name the
+/// baselines under `tests/functional/baselines` and are not rewritten, so that
+/// prefix resolves to the baseline tree of `termrock-functional`.
+fn recorded_path(workspace: &Path, recorded: &str) -> PathBuf {
+    match recorded.strip_prefix("tests/functional/baselines/") {
+        Some(relative) => crate::support::oracle_baselines().join(relative),
+        None => workspace.join(recorded),
     }
 }
 
@@ -543,7 +551,7 @@ fn legacy_sample_json_hashes() -> std::collections::BTreeMap<PathBuf, String> {
             source.display()
         );
         if !replacement.is_empty() {
-            let replacement = workspace.join(replacement);
+            let replacement = recorded_path(&workspace, replacement);
             assert!(
                 replacement.is_file(),
                 "missing PB replacement: {}",
@@ -605,7 +613,7 @@ fn assert_historical_json_hash_receipts(dispositions: &[Value], baseline_root: &
         assert!(sha.bytes().all(|byte| byte.is_ascii_hexdigit()), "{id}");
 
         let source_relative = PathBuf::from("tests/functional/baselines").join(historical_path);
-        let source = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(&source_relative);
+        let source = crate::support::oracle_baselines().join(historical_path);
         assert!(
             !source.exists(),
             "legacy sample remains for {id}: {}",
@@ -813,7 +821,7 @@ fn g05_approved_binary_manifest_matches_active_samples() {
                 "first refresh of {test_id} replaces no original approval receipt"
             );
         }
-        let active_path = repo_root.join(active_path);
+        let active_path = recorded_path(&repo_root, active_path);
         let mut prior_active_sha = None;
         for fields in chain {
             let [
@@ -982,8 +990,12 @@ fn g05_approved_binary_manifest_matches_active_samples() {
                 .ends_with(".tui.json"),
             "historical source is not a Tuiscotti sample path for {test_id}"
         );
-        let historical_json =
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(&historical_json_relative);
+        let historical_json = recorded_path(
+            &crate::support::workspace_root(),
+            historical_json_relative
+                .to_str()
+                .expect("historical JSON path is UTF-8"),
+        );
         assert!(
             !historical_json.exists(),
             "superseded JSON sample remains for {test_id}: {}",
@@ -1009,9 +1021,7 @@ fn g05_approved_binary_manifest_matches_active_samples() {
             "historical JSON digest is malformed for {test_id}"
         );
         let expected_path = historical_json
-            .strip_prefix(
-                PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines"),
-            )
+            .strip_prefix(crate::support::oracle_baselines())
             .expect("historical JSON source is under baseline root")
             .with_extension("pb");
         assert_eq!(
@@ -1626,8 +1636,11 @@ fn g05_check_visual_does_not_write_baselines() {
 #[test]
 fn g05_tests_do_not_invoke_accept() {
     let needle = concat!("tuiscotti", " ", "accept");
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests");
-    let mut pending = vec![root];
+    let workspace = crate::support::workspace_root();
+    let mut pending = vec![
+        workspace.join("tests"),
+        workspace.join("crates/termrock-functional/tests"),
+    ];
     while let Some(dir) = pending.pop() {
         for entry in std::fs::read_dir(&dir)
             .unwrap_or_else(|error| panic!("read {}: {error}", dir.display()))

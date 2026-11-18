@@ -3,7 +3,6 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/s07_splitsstacks/` and each case id's dots become underscores.
 
-use std::path::PathBuf;
 use tui_test::TerminalSnapshot;
 use tuiscotti_latest::check::CheckOutcome;
 
@@ -231,7 +230,7 @@ fn gutter_count(screen: &TerminalSnapshot) -> usize {
 }
 
 fn shot(app: &App, case_id: &str) {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
+    let root = crate::support::oracle_baselines();
     let id = visual_id(case_id);
     let outcome = app.check_visual(&root, &id);
     if let CheckOutcome::Failure(failure) = &outcome {

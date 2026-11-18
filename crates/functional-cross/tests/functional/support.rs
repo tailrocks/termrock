@@ -168,7 +168,7 @@ pub fn sample_bytes(screen: &TerminalSnapshot, test_id: &str) -> Vec<u8> {
 /// Check a frame against its stored baseline; the error names the candidate.
 pub fn stored_result(app: &App, screen: &TerminalSnapshot, test_id: &str) -> Result<(), String> {
     let bytes = sample_bytes(screen, test_id);
-    let root = workspace_root().join("tests/functional/baselines");
+    let root = oracle_baselines();
     let artifacts = app.evidence_dir().join("check-artifacts");
     let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
         .expect("open Tuiscotti frozen store");

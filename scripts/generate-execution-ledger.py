@@ -792,7 +792,7 @@ def main() -> None:
             }
         )
 
-    baseline_root = ROOT / "tests/functional/baselines"
+    baseline_root = ROOT / "crates/termrock-functional/tests/functional/baselines"
     baselines = binary_baseline_inventory(baseline_root, ROOT)
 
     summary = {
