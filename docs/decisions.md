@@ -342,3 +342,31 @@ Decision:
   #444 maps the row's features onto each crate's features.
 - `.sonarcloud.properties` excludes `crates/termrock-catalog/src/catalog.rs`
   from copy-paste detection now, ahead of the catalog's move in #449.
+
+## 2026-11-18: Foundation back-edges use unnameable traits (#441)
+
+`core::hints` now owns `Hint` and `core::selection` owns the check strings, so
+`core` no longer names `theme` or `widgets`. `Hint::is_pinned` and
+`TriState::glyph_in` take a `&impl` of a trait that `theme` implements
+(`PinnedKeys` for `HintBarStyle`, `CheckGlyphs` for `Glyphs`). Every old call
+site still compiles.
+
+- The two traits are the issue's proposal, with one change: they are `pub`
+  traits inside private modules, re-exported as `pub(crate)`. The declared-API
+  inventory counts only items it can reach through a public path
+  (`tests/support/api_inventory.rs` does not read `#[doc(hidden)]`), so a
+  nameable trait would add two ids and need catalog and coverage lines. That
+  contradicts "the inventory id set does not change".
+- `TriState::glyph()` uses constants in `core::selection`, and
+  `Glyphs::UNICODE` takes its three check strings from them, so the two cannot
+  drift.
+- `VisualState` and `CardHeading` moved into `theme`; `ui::ctx` and
+  `widgets::panel` re-export them. Their catalog ids keep the old spelling
+  through the canonical-spelling pin of #443.
+- The B6 edge (`metrics/harness.rs` to `runtime`) needed no change: `[files]`
+  already maps the work-metrics harness, its report and its tests to
+  `conformance`.
+
+Revisit in #444: once `core` and `theme` are separate crates the traits must be
+visible across the boundary. Make them `#[doc(hidden)] pub` and have the
+inventory skip hidden items in the same PR, so the id set still does not grow.
