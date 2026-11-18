@@ -120,15 +120,6 @@ functional = ["termrock"]
 # to the facade.
 [files]
 
-# core
-# Re-exports `termrock-text` and holds the buffer tests, which drive `core::edit`, until #444 moves them to `termrock-core`.
-"src/core/text.rs" = "core"
-"src/core/text/tests.rs" = "core"
-"src/widgets/edit.rs" = "core"
-"src/widgets/edit/parsers.rs" = "core"
-"src/widgets/field_common.rs" = "core"
-"src/widgets/text_select.rs" = "core"
-
 # theme
 "src/theme.rs" = "theme"
 

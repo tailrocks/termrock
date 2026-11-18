@@ -1,11 +1,11 @@
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Position;
 
-use crate::core::edit::{EditKind, FieldKeys, TextCmd, UndoStack, clipboard};
-use crate::core::event::{Key, Outcome};
-use crate::core::id::WidgetId;
-use crate::core::keymap::{KeyBinding, lookup};
-use crate::core::text::TextBuffer;
+use crate::edit::{EditKind, FieldKeys, TextCmd, UndoStack, clipboard};
+use crate::event::{Key, Outcome};
+use crate::id::WidgetId;
+use crate::keymap::{KeyBinding, lookup};
+use termrock_text::buffer::TextBuffer;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PointerSelect {

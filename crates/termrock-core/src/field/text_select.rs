@@ -4,11 +4,12 @@ use ratatui::crossterm::event::KeyModifiers;
 use ratatui::layout::Position;
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::core::event::Outcome;
-use crate::widgets::field_common::PointerSelect;
+use crate::event::Outcome;
+use crate::field::field_common::PointerSelect;
 
 #[derive(Debug, Clone)]
-pub(crate) struct TextSelect<P> {
+#[doc(hidden)]
+pub struct TextSelect<P> {
     pub sel: Option<(P, P)>,
 
     pub press: Option<P>,
@@ -173,16 +174,14 @@ impl<P: Copy + Ord> TextSelect<P> {
     }
 }
 
-pub(crate) fn is_word(g: &str) -> bool {
+#[doc(hidden)]
+pub fn is_word(g: &str) -> bool {
     g.chars()
         .all(|ch| ch.is_alphanumeric() || matches!(ch, '_' | '-' | '/' | '.'))
 }
 
-pub(crate) fn word_bounds<T>(
-    items: &[T],
-    i: usize,
-    word: impl Fn(&T) -> bool,
-) -> Option<(usize, usize)> {
+#[doc(hidden)]
+pub fn word_bounds<T>(items: &[T], i: usize, word: impl Fn(&T) -> bool) -> Option<(usize, usize)> {
     if items.is_empty() {
         return None;
     }
@@ -202,14 +201,16 @@ pub(crate) fn word_bounds<T>(
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct PlainCell<'a> {
+#[doc(hidden)]
+pub struct PlainCell<'a> {
     pub g: &'a str,
     pub bytes: Range<usize>,
 
     pub col: usize,
 }
 
-pub(crate) fn plain_cells(s: &str) -> Vec<PlainCell<'_>> {
+#[doc(hidden)]
+pub fn plain_cells(s: &str) -> Vec<PlainCell<'_>> {
     let mut col = 0;
     s.grapheme_indices(true)
         .map(|(at, g)| {
@@ -218,7 +219,7 @@ pub(crate) fn plain_cells(s: &str) -> Vec<PlainCell<'_>> {
                 bytes: at..at + g.len(),
                 col,
             };
-            col += crate::ui::text::width(g);
+            col += termrock_text::cells::width(g);
             c
         })
         .collect()
