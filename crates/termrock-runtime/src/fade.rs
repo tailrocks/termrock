@@ -2,8 +2,8 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier};
 
-use crate::core::scroll::ScrollState;
-use crate::ui::ctx::RenderCtx;
+use crate::ctx::RenderCtx;
+use termrock_core::scroll::ScrollState;
 
 pub const OUTER_KEEP: f32 = 0.55;
 

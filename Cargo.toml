@@ -16,6 +16,7 @@ members = [
     "crates/termrock",
     "crates/termrock-core",
     "crates/termrock-metrics",
+    "crates/termrock-runtime",
     "crates/termrock-text",
     "crates/termrock-theme",
     "crates/functional-cross",
@@ -30,6 +31,7 @@ default-members = [
     "crates/termrock",
     "crates/termrock-core",
     "crates/termrock-metrics",
+    "crates/termrock-runtime",
     "crates/termrock-text",
     "crates/termrock-theme",
     "crates/functional-cross",
@@ -43,6 +45,7 @@ serde_json = "1"
 sha2 = "0.11.0"
 termrock-core = { path = "crates/termrock-core", version = "0.1.0" }
 termrock-metrics = { path = "crates/termrock-metrics", version = "0.1.0" }
+termrock-runtime = { path = "crates/termrock-runtime", version = "0.1.0" }
 termrock-text = { path = "crates/termrock-text", version = "0.1.0" }
 termrock-theme = { path = "crates/termrock-theme", version = "0.1.0" }
 tui-test = { package = "tuiscotti-tui-test", version = "=0.2.1" }
@@ -53,7 +56,7 @@ default = ["cli", "terminal"]
 cli = ["dep:clap", "termrock-core/cli"]
 terminal = ["dep:termpane"]
 product = ["terminal"]
-work-metrics = ["termrock-core/work-metrics", "termrock-metrics/work-metrics"]
+work-metrics = ["termrock-core/work-metrics", "termrock-metrics/work-metrics", "termrock-runtime/work-metrics"]
 
 [lib]
 name = "junie_tui"
@@ -70,6 +73,7 @@ unicode-segmentation = "1"
 serde_json = { workspace = true }
 termrock-core = { workspace = true }
 termrock-metrics = { workspace = true }
+termrock-runtime = { workspace = true }
 termrock-text = { workspace = true }
 termrock-theme = { workspace = true }
 

@@ -17,7 +17,7 @@ use crate::core::list::{Cursor, KeyStep, Navigable, RowSource};
 use crate::core::pointer::{MouseTarget, PointerEvent};
 use crate::core::response::Response;
 use crate::theme::CursorStyle;
-use crate::ui::column_solver::{Col, solve};
+use crate::ui::columns::{Col, solve};
 use crate::ui::ctx::{Backdrop, RenderCtx, fill};
 use crate::ui::edit_menu::{
     EditCaps, EditMenu, EditMenuHost, edit_menu_key, edit_menu_pointer, edit_menu_route,

@@ -2,9 +2,9 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::Color;
 
-use crate::core::id::WidgetId;
-use crate::theme::Kind;
-use crate::ui::ctx::{RenderCtx, VisualState};
+use crate::ctx::{RenderCtx, VisualState};
+use termrock_core::id::WidgetId;
+use termrock_theme::Kind;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Col {
@@ -288,9 +288,9 @@ pub fn render_seam(
     ctx.register_part(owner, part, hit);
 }
 
-pub fn seam_part(col: usize) -> crate::core::id::PartRef {
-    crate::core::id::PartRef::item(
-        crate::core::id::Part::SEAM,
-        crate::core::id::ItemKey::index(col),
+pub fn seam_part(col: usize) -> termrock_core::id::PartRef {
+    termrock_core::id::PartRef::item(
+        termrock_core::id::Part::SEAM,
+        termrock_core::id::ItemKey::index(col),
     )
 }

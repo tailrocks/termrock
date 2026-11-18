@@ -5,12 +5,12 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style};
 
-use crate::core::event::{Key, Outcome};
-use crate::core::id::WidgetId;
-use crate::theme::ColorLevel;
-use crate::ui::ctx::{RenderCtx, fill};
-use crate::ui::popup::{self, Placement};
-use crate::ui::text::{truncate, wider_than, width, wrap};
+use crate::ctx::{RenderCtx, fill};
+use crate::popup::{self, Placement};
+use termrock_core::event::{Key, Outcome};
+use termrock_core::id::WidgetId;
+use termrock_text::cells::{truncate, wider_than, width, wrap};
+use termrock_theme::ColorLevel;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum RevealMode {
@@ -181,7 +181,7 @@ impl RevealState {
         } else {
             self.effective.key_label()?
         };
-        let d = crate::theme::Strings::DEFAULT;
+        let d = termrock_theme::Strings::DEFAULT;
         let (open, close) = self.labels.unwrap_or((d.reveal_open, d.reveal_close));
         Some((key, if self.open { close } else { open }))
     }
@@ -380,7 +380,7 @@ fn window(
     lines: &[String],
     rows: usize,
     scroll: usize,
-    t: &crate::theme::Theme,
+    t: &termrock_theme::Theme,
 ) -> (Vec<RevealLine>, Extent) {
     let line = |s: &String| RevealLine {
         text: s.clone(),
@@ -394,7 +394,7 @@ fn window(
             } else {
                 t.glyphs.arrows[1]
             },
-            crate::theme::Strings::fill(t.strings.more_count, &[&n])
+            termrock_theme::Strings::fill(t.strings.more_count, &[&n])
         ),
         more: true,
     };
@@ -478,9 +478,11 @@ pub fn truncated(
     cut
 }
 
-pub(crate) const OVERFLOW: &str = "…";
+#[doc(hidden)]
+pub const OVERFLOW: &str = "…";
 
-pub(crate) fn overflow_id(area: Rect) -> WidgetId {
+#[doc(hidden)]
+pub fn overflow_id(area: Rect) -> WidgetId {
     WidgetId::of("junie.reveal.overflow").child(((area.x as usize) << 16) | area.y as usize)
 }
 
@@ -490,7 +492,8 @@ thread_local! {
         const { std::cell::RefCell::new(Vec::new()) };
 }
 
-pub(crate) fn overflow(
+#[doc(hidden)]
+pub fn overflow(
     ctx: &mut RenderCtx,
     buf: &mut Buffer,
     area: Rect,
@@ -506,7 +509,7 @@ pub(crate) fn overflow(
     let mut vs = ctx.state(id);
     vs.focused = false;
     let st = t
-        .interactive(crate::theme::Kind::Title, vs, t.plane_of(bg))
+        .interactive(termrock_theme::Kind::Title, vs, t.plane_of(bg))
         .style;
     let st = st.fg(t.legible(t.text_muted, st.bg.unwrap_or(bg)));
     buf.set_string(area.x, area.y, OVERFLOW, st);
@@ -531,7 +534,8 @@ fn revealable(full: &str) {
 
 const REVEALED_MAX: usize = 4096;
 
-pub(crate) fn overflowed() -> Vec<String> {
+#[doc(hidden)]
+pub fn overflowed() -> Vec<String> {
     OVERFLOWS.with(|o| o.borrow().clone())
 }
 
@@ -584,8 +588,8 @@ pub fn hover_wait() -> Option<(u64, u64)> {
     HOVER_WAIT.with(|w| w.get()).map(|ms| (frame, ms))
 }
 
-pub fn on_pointer_wheel(input: &crate::core::event::Input) -> Option<Outcome> {
-    let crate::core::event::Input::Mouse(m) = input else {
+pub fn on_pointer_wheel(input: &termrock_core::event::Input) -> Option<Outcome> {
+    let termrock_core::event::Input::Mouse(m) = input else {
         return None;
     };
     let (0, dy) = m.wheel()? else {
@@ -703,11 +707,13 @@ pub fn clamp(ctx: &mut RenderCtx, area: Rect, full: &str, focused: bool) -> Vec<
     lines
 }
 
-pub(crate) fn cuts_len() -> usize {
+#[doc(hidden)]
+pub fn cuts_len() -> usize {
     CUTS.with(|q| q.borrow().len())
 }
 
-pub(crate) fn scroll_cuts_since(from: usize, content: Rect, window: Rect, to: Position) {
+#[doc(hidden)]
+pub fn scroll_cuts_since(from: usize, content: Rect, window: Rect, to: Position) {
     let (dx, dy) = (window.x.saturating_sub(to.x), window.y.saturating_sub(to.y));
     CUTS.with(|q| {
         let mut q = q.borrow_mut();
@@ -726,7 +732,8 @@ pub(crate) fn scroll_cuts_since(from: usize, content: Rect, window: Rect, to: Po
     });
 }
 
-pub(crate) fn clip_cuts_since(from: usize, viewport: Rect) {
+#[doc(hidden)]
+pub fn clip_cuts_since(from: usize, viewport: Rect) {
     CUTS.with(|q| {
         let mut q = q.borrow_mut();
         let from = from.min(q.len());
@@ -790,7 +797,7 @@ struct Tip {
     source: Source,
     feed: Feed,
 
-    shifts: Vec<crate::ui::ctx::Shift>,
+    shifts: Vec<crate::ctx::Shift>,
 }
 
 #[derive(Debug, Default)]
@@ -881,7 +888,7 @@ fn layout(
     id: WidgetId,
     text: &str,
     feed: &Feed,
-    t: &crate::theme::Theme,
+    t: &termrock_theme::Theme,
 ) -> (Rect, Vec<RevealLine>) {
     let room = screen.width.saturating_sub(2).max(1) as usize;
     let lines = wrapped(id, text, room);
@@ -907,7 +914,7 @@ fn draw(buf: &mut Buffer, ctx: &mut RenderCtx, tip: &Tip) {
     let screen = *buf.area();
     let t = ctx.theme;
 
-    let (dx, dy) = crate::ui::ctx::total_shift(&tip.shifts);
+    let (dx, dy) = crate::ctx::total_shift(&tip.shifts);
     if tip.anchor.x < dx || tip.anchor.y < dy {
         return;
     }

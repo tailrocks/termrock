@@ -19,7 +19,7 @@ use crate::core::list::{Cursor, KeyStep, KeyedRowSource, Moved, Navigable, RowSo
 use crate::core::response::Response;
 use crate::core::scroll::{HScroll, ScrollPane, Scrollable};
 use crate::core::selection::{ClickPolicy, RowSelection, SelectGesture, SelectionMode, TriState};
-use crate::ui::column_solver::ColumnSizing;
+use crate::ui::columns::ColumnSizing;
 use crate::ui::ctx::{RenderCtx, fill};
 use crate::ui::row::{MarkKind, RowLook, RowUi};
 use crate::widgets::edit::{EditExit, EditField, Validator};
@@ -1021,7 +1021,7 @@ impl DataTable {
     }
 
     pub fn seam_id(&self, c: usize) -> WidgetId {
-        self.id.part(crate::ui::column_solver::seam_part(c))
+        self.id.part(crate::ui::columns::seam_part(c))
     }
 
     fn seam_of(&self, id: WidgetId) -> Option<usize> {
@@ -2395,7 +2395,7 @@ impl DataTable {
             }
             if self.sizing.resizable {
                 let hit = self.sizing.seam_rect(r.right(), header_y, 2, area);
-                crate::ui::column_solver::render_seam(
+                crate::ui::columns::render_seam(
                     buf,
                     ctx,
                     (self.id, ci),
