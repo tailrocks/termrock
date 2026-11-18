@@ -11,7 +11,7 @@ doctest = false
 
 [features]
 default = []
-work-metrics = ["termrock-collections/work-metrics", "termrock-controls/work-metrics", "termrock-core/work-metrics", "termrock-feedback/work-metrics", "termrock-fields/work-metrics", "termrock-metrics/work-metrics", "termrock-navigation/work-metrics", "termrock-overlays/work-metrics", "termrock-runtime/work-metrics", "termrock-shell/work-metrics", "termrock-viewport/work-metrics"]
+work-metrics = ["termrock-collections/work-metrics", "termrock-controls/work-metrics", "termrock-core/work-metrics", "termrock-editors/work-metrics", "termrock-feedback/work-metrics", "termrock-fields/work-metrics", "termrock-grid/work-metrics", "termrock-metrics/work-metrics", "termrock-navigation/work-metrics", "termrock-overlays/work-metrics", "termrock-runtime/work-metrics", "termrock-shell/work-metrics", "termrock-terminal/work-metrics", "termrock-viewport/work-metrics"]
 
 [dependencies]
 ratatui = { workspace = true }
@@ -20,14 +20,20 @@ termrock-metrics = { workspace = true }
 termrock-shell = { workspace = true }
 
 [dev-dependencies]
+serde_json = { workspace = true }
+syn = { version = "=3.0.10", features = ["full", "visit"] }
 termrock-collections = { workspace = true }
 termrock-controls = { workspace = true }
+termrock-editors = { workspace = true }
 termrock-feedback = { workspace = true }
 termrock-fields = { workspace = true }
+termrock-grid = { workspace = true }
 termrock-layout = { workspace = true }
 termrock-navigation = { workspace = true }
 termrock-overlays = { workspace = true }
 termrock-runtime = { workspace = true }
+termrock-terminal = { workspace = true }
 termrock-text = { workspace = true }
 termrock-theme = { workspace = true }
 termrock-viewport = { workspace = true }
+toml = "=1.2.1"

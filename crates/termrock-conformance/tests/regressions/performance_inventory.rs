@@ -52,13 +52,13 @@ const CI_PROFILE: &str = "ci";
 const TASK_MANIFEST: &str = ".github/velnor/task-execution-manifest-v1.json";
 const VELNOR_CONFIG: &str = ".velnor/config.toml";
 const CI_WORKFLOW: &str = ".github/workflows/ci.yml";
-const MEASUREMENT_FILE: &str = "tests/regressions/work_measurements.rs";
+const MEASUREMENT_FILE: &str = "crates/termrock-conformance/tests/regressions/work_measurements.rs";
 
 /// One required suite.
 struct Suite {
     /// What it covers, for failure messages.
     family: &'static str,
-    /// The nextest binary id, for example `junie-tui::regressions`.
+    /// The nextest binary id, for example `termrock-conformance::regressions`.
     binary_id: &'static str,
     /// The argument of `test(...)` in the profile operand, if the operand has
     /// one. `None` selects the whole binary.
@@ -72,7 +72,8 @@ struct Suite {
 
 /// The required suites, one `S` line each followed by its `T` lines, in
 /// `performance-inventory.tsv` beside this file.
-const INVENTORY_FILE: &str = "tests/regressions/performance-inventory.tsv";
+const INVENTORY_FILE: &str =
+    "crates/termrock-conformance/tests/regressions/performance-inventory.tsv";
 
 fn leak(text: &str) -> &'static str {
     Box::leak(text.to_owned().into_boxed_str())
@@ -129,8 +130,12 @@ const MEASUREMENTS: &[&str] = &[
     "measurement_textarea_keystroke_then_frame",
 ];
 
+/// The repository root: this crate is `crates/termrock-conformance`, two levels below it.
 fn root() -> &'static Path {
     Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(2)
+        .expect("termrock-conformance sits at crates/termrock-conformance")
 }
 
 fn squash(text: &str) -> String {
@@ -622,10 +627,10 @@ fn performance_measure_profile_is_serial_and_runs_only_ignored_measurements() {
     }
     match string_value(&section, "default-filter") {
         Ok(filter)
-            if filter.contains("binary_id(=junie-tui::regressions)")
+            if filter.contains("binary_id(=termrock-conformance::regressions)")
                 && filter.contains("work_measurements::") => {}
         Ok(filter) => problems.push(format!(
-            "[profile.{MEASURE_PROFILE}] filter does not select the work_measurements module of junie-tui::regressions: {}",
+            "[profile.{MEASURE_PROFILE}] filter does not select the work_measurements module of termrock-conformance::regressions: {}",
             squash(&filter)
         )),
         Err(why) => problems.push(why),
@@ -774,7 +779,7 @@ mod gate_logic {
 
     #[test]
     fn a_ci_job_that_is_not_required_fails() {
-        let workflow = ci_workflow().replace("      - rust-junie-tui\n", "");
+        let workflow = ci_workflow().replace("      - rust-termrock-conformance\n", "");
         let problems = check_ci_jobs(&ci_manifest(None), &workflow);
         assert_eq!(problems.len(), 1, "{problems:?}");
         assert!(problems[0].contains("Required"));
@@ -822,7 +827,7 @@ mod gate_logic {
     #[test]
     fn a_test_the_filter_does_not_select_fails() {
         let mut list = full_list();
-        list["rust-suites"]["junie-tui::regressions"]["testcases"]["work_budgets::work_contract_tree_filtered_rebuild"]
+        list["rust-suites"]["termrock-conformance::regressions"]["testcases"]["work_budgets::work_contract_tree_filtered_rebuild"]
             ["filter-match"] = serde_json::json!({ "status": "mismatch", "reason": "expression" });
         let problems = list_problems(&list);
         assert_eq!(problems.len(), 1, "{problems:?}");

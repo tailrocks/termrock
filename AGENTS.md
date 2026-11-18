@@ -54,7 +54,8 @@ workspaces, Docker, OpenShell, Codex).
 - New integration tests go into the shared `regressions` target:
   `tests/regressions/<topic>.rs` plus a `mod <topic>;` line in
   `tests/regressions/main.rs`, and the same under `apps/jackin/tests/` for
-  `jackin-console`. Never add a new top-level `tests/*.rs` or
+  `jackin-console` and `crates/termrock-conformance/tests/regressions/` for the
+  cost contracts and the performance inventory. Never add a new top-level `tests/*.rs` or
   `apps/jackin/tests/*.rs`: generated CI lists every test target, so each
   one changes the generated workflows. See `docs/ci.md`.
 - Keep dependencies on their latest releases: crates (majors included),

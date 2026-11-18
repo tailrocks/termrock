@@ -27,7 +27,7 @@ rm -f "$out"/*.timing.json "$out"/measurement-summary.txt
 
 # Build first, so the load printed below is the load the measurement ran under,
 # not the load of the compiler.
-cargo nextest list --release -p junie-tui --test regressions \
+cargo nextest list --release -p termrock-conformance --test regressions \
   --profile performance-measure --run-ignored only >/dev/null
 
 dirty=$(git status --porcelain --untracked-files=no 2>/dev/null | wc -l | tr -d ' ')
@@ -44,7 +44,7 @@ dirty=$(git status --porcelain --untracked-files=no 2>/dev/null | wc -l | tr -d 
 
 # --release: timing a debug build means nothing. No --features: the counters
 # must be off. test-threads = 1 comes from the profile.
-cargo nextest run --release -p junie-tui --test regressions \
+cargo nextest run --release -p termrock-conformance --test regressions \
   --profile performance-measure --run-ignored only --no-tests fail
 
 echo "load after:    $(uptime)" | tee -a "$out/measurement-environment.txt"
