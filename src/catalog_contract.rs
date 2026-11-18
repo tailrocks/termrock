@@ -1040,11 +1040,11 @@ fn catalog_regression_paths_follow_a_moved_test_file() {
     let mut s = Sources::load();
     assert!(
         s.coverage
-            .contains("regression_test: \"src/widgets/picker.rs::")
+            .contains("regression_test: \"crates/termrock-overlays/src/picker.rs::")
     );
     move_test_file(
         &mut s,
-        "src/widgets/picker.rs",
+        "crates/termrock-overlays/src/picker.rs",
         "crates/zz-picker/src/lib.rs",
         true,
     );
@@ -1057,7 +1057,7 @@ fn catalog_a_regression_path_the_move_left_stale_fails() {
     let mut s = Sources::load();
     move_test_file(
         &mut s,
-        "src/widgets/picker.rs",
+        "crates/termrock-overlays/src/picker.rs",
         "crates/zz-picker/src/lib.rs",
         false,
     );
@@ -2107,7 +2107,8 @@ fn with_probe_exception(kind: &str, reason: &str, test: &str, issue: &str) -> So
     s
 }
 
-const UNRELATED_TEST: &str = "src/ui/layer.rs::settle_drains_every_queued_result_in_order";
+const UNRELATED_TEST: &str =
+    "crates/termrock-overlays/src/layer.rs::settle_drains_every_queued_result_in_order";
 const PROBE_REASON: &str =
     "No page can reach this helper because the host calls it between frames.";
 

@@ -1,11 +1,11 @@
-use crate::core::event::{Key, Outcome};
-use crate::core::id::WidgetId;
-use crate::ui::context::{ContextAnchor, ContextConfig};
-use crate::ui::ctx::RenderCtx;
-use crate::widgets::keyhint::{Hint, hint};
-use crate::widgets::menu::{ContextMenu, MenuAction, MenuItem};
+use crate::context::{ContextAnchor, ContextConfig};
+use crate::menu::{ContextMenu, MenuAction, MenuItem};
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
+use termrock_controls::keyhint::{Hint, hint};
+use termrock_core::event::{Key, Outcome};
+use termrock_core::id::WidgetId;
+use termrock_runtime::ctx::RenderCtx;
 
 struct Open<T, C> {
     target: T,

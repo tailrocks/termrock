@@ -3,21 +3,21 @@ use std::any::Any;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
 
-use crate::core::event::{Key, Outcome};
-use crate::core::focus::{Focus, FocusChange, FocusRing};
-use crate::core::hit::Axis;
-use crate::core::id::WidgetId;
-pub use crate::core::intent::DismissReason;
-use crate::core::intent::Phase;
-use crate::core::pointer::PointerEvent;
-use crate::core::response::Response;
-use crate::ui::ctx::{Backdrop, RenderCtx};
-use crate::ui::modal::{FocusOnOpen, Modal, ModalStack};
-use crate::ui::popup::{Dismiss, Placement};
-use crate::widgets::icon_button::IconButton;
-use crate::widgets::keyhint::Hint;
-use crate::widgets::menu::MenuAction;
-use crate::widgets::picker::PickerAction;
+use crate::menu::MenuAction;
+use crate::modal::{FocusOnOpen, Modal, ModalStack};
+use crate::picker::PickerAction;
+use termrock_controls::icon_button::IconButton;
+use termrock_controls::keyhint::Hint;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::focus::{Focus, FocusChange, FocusRing};
+use termrock_core::hit::Axis;
+use termrock_core::id::WidgetId;
+pub use termrock_core::intent::DismissReason;
+use termrock_core::intent::Phase;
+use termrock_core::pointer::PointerEvent;
+use termrock_core::response::Response;
+use termrock_runtime::ctx::{Backdrop, RenderCtx};
+use termrock_runtime::popup::{Dismiss, Placement};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LayerKind {
@@ -387,7 +387,7 @@ impl<R: 'static, W: ?Sized + 'static, O> ModalStack<LayerEntry<R, W, O>> {
             return LayerPointer::Handled(Outcome::Ignored);
         };
 
-        if ev.is(Phase::Click) && ev.id == crate::ui::modal::BACKDROP {
+        if ev.is(Phase::Click) && ev.id == crate::modal::BACKDROP {
             return LayerPointer::Dismissed(self.dismiss(DismissReason::OutsideClick, focus));
         }
         let out = {
@@ -396,7 +396,7 @@ impl<R: 'static, W: ?Sized + 'static, O> ModalStack<LayerEntry<R, W, O>> {
         };
         if out == Outcome::Ignored
             && ev.is(Phase::Click)
-            && ev.part().part == crate::core::id::Part::BACKDROP
+            && ev.part().part == termrock_core::id::Part::BACKDROP
         {
             return LayerPointer::Dismissed(self.dismiss(DismissReason::OutsideClick, focus));
         }
@@ -511,7 +511,8 @@ pub enum LayerResult {
     File(FileBrowserResult),
 }
 
-pub(crate) fn layer_out<R: From<LayerResult>>(r: LayerResult, closes: bool) -> LayerOut<R> {
+#[doc(hidden)]
+pub fn layer_out<R: From<LayerResult>>(r: LayerResult, closes: bool) -> LayerOut<R> {
     if closes {
         LayerOut::Close(r.into())
     } else {
@@ -549,8 +550,8 @@ pub enum FileBrowserResult {
 #[cfg(test)]
 mod queue_tests {
     use super::*;
-    use crate::widgets::menu::{ContextMenu, MenuAction, MenuItem};
-    use crate::widgets::picker::{Picker, PickerAction};
+    use crate::menu::{ContextMenu, MenuAction, MenuItem};
+    use crate::picker::{Picker, PickerAction};
 
     type Stack = ShellLayers<LayerResult>;
 

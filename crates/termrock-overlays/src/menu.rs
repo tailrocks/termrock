@@ -2,28 +2,28 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Color, Modifier, Style};
 
-use crate::core::event::{Key, Outcome};
+use termrock_core::event::{Key, Outcome};
 
-use crate::core::hints::{HasHints, HintCx, nav_hints};
-use crate::core::hit::{Axis, ReleaseFrom};
-use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::core::keymap::{Nav, NavKeys, unassigned_chord};
-use crate::core::list::{Cursor, Moved, Navigable, RowFn, RowSource};
-use crate::core::pointer::{MouseTarget, PointerEvent};
-use crate::core::response::Response;
-use crate::core::scroll::Scrollable;
-use crate::theme::{CursorStyle, Kind, Plane};
-use crate::ui::ctx::{RenderCtx, fill};
-use crate::ui::layer::{
+use crate::layer::{
     DismissReason, Layer, LayerCx, LayerOut, LayerResult, LayerSpec, Overlay, layer_out,
 };
-use crate::ui::popup::{Dismiss, Place, backdrop_id, place_with};
-use crate::ui::specimen::{Specimen, SpecimenState};
-use crate::ui::text::{truncate, width};
-use crate::widgets::brand::Lockup;
-use crate::widgets::keyhint::Hint;
-use crate::widgets::option_list::{AsItem, Item, OptionList, WheelMode};
+use crate::option_list::{AsItem, Item, OptionList, WheelMode};
 use ratatui::crossterm::event::KeyCode;
+use termrock_controls::brand::Lockup;
+use termrock_controls::keyhint::Hint;
+use termrock_core::hints::{HasHints, HintCx, nav_hints};
+use termrock_core::hit::{Axis, ReleaseFrom};
+use termrock_core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock_core::keymap::{Nav, NavKeys, unassigned_chord};
+use termrock_core::list::{Cursor, Moved, Navigable, RowFn, RowSource};
+use termrock_core::pointer::{MouseTarget, PointerEvent};
+use termrock_core::response::Response;
+use termrock_core::scroll::Scrollable;
+use termrock_runtime::ctx::{RenderCtx, fill};
+use termrock_runtime::popup::{Dismiss, Place, backdrop_id, place_with};
+use termrock_runtime::specimen::{Specimen, SpecimenState};
+use termrock_text::cells::{truncate, width};
+use termrock_theme::{CursorStyle, Kind, Plane};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MenuItem {
@@ -90,7 +90,7 @@ pub enum UnknownKey {
     Swallow,
 }
 
-pub use crate::ui::popup::Placement;
+pub use termrock_runtime::popup::Placement;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MenuAction {
@@ -110,11 +110,11 @@ pub struct ContextMenu {
 
     pub title: Option<String>,
 
-    pub(crate) pending: crate::ui::layer::ResultQueue<MenuAction>,
+    pub(crate) pending: crate::layer::ResultQueue<MenuAction>,
 
     pub hide_owner_focus: bool,
 
-    pub reveal: Option<crate::ui::reveal::Reveal>,
+    pub reveal: Option<termrock_runtime::reveal::Reveal>,
 
     pub min_width: u16,
 
@@ -215,7 +215,7 @@ impl ContextMenu {
             anchor: Rect::ZERO,
             area: Rect::ZERO,
             title: None,
-            pending: crate::ui::layer::ResultQueue::default(),
+            pending: crate::layer::ResultQueue::default(),
             hide_owner_focus: true,
             reveal: None,
             min_width: 8,
@@ -309,7 +309,8 @@ impl ContextMenu {
         self.list.row_of(id, self.items.len())
     }
 
-    pub(crate) fn contains_id(&self, id: WidgetId) -> bool {
+    #[doc(hidden)]
+    pub fn contains_id(&self, id: WidgetId) -> bool {
         id == self.id
             || id == backdrop_id(self.id)
             || id == self.more_above_id()
@@ -446,7 +447,7 @@ impl ContextMenu {
         let menu = self.clone();
         ctx.overlay(move |buf, ctx| {
             ctx.hits.push_barrier();
-            crate::ui::popup::backdrop(ctx, menu.id, menu.list.dismiss, *buf.area());
+            termrock_runtime::popup::backdrop(ctx, menu.id, menu.list.dismiss, *buf.area());
             menu.paint(buf, ctx);
         });
     }
@@ -570,11 +571,11 @@ impl ContextMenu {
             s.error = item.danger;
             let row = Rect::new(rows.x, y, rows.width, 1);
 
-            let it = crate::ui::row::RowUi::resolve(
+            let it = termrock_runtime::row::RowUi::resolve(
                 ctx,
                 row,
                 s,
-                crate::ui::row::RowLook::Fill(CursorStyle::Fill),
+                termrock_runtime::row::RowLook::Fill(CursorStyle::Fill),
                 bg,
             )
             .look;
@@ -589,7 +590,7 @@ impl ContextMenu {
             let label_w = rows.width.saturating_sub(3) as usize;
             buf.set_string(row.x + 2, y, truncate(&item.item.label, label_w), st);
             if !item.item.disabled {
-                crate::ui::reveal::truncated(
+                termrock_runtime::reveal::truncated(
                     ctx,
                     self.reveal,
                     rid,
@@ -601,7 +602,7 @@ impl ContextMenu {
             if let Some(sc) = item
                 .shortcut
                 .as_deref()
-                .filter(|s| crate::core::keyboard::label_deliverable(s))
+                .filter(|s| termrock_core::keyboard::label_deliverable(s))
             {
                 let sw = width(sc) as u16;
                 if sw + width(&item.item.label) as u16 + 5 <= rows.width {
@@ -672,11 +673,11 @@ pub enum Overflow {
     Chevron,
 }
 
-impl crate::ui::measure::Measure for MenuBar {
+impl termrock_runtime::measure::Measure for MenuBar {
     fn measure(
         &self,
         _avail: ratatui::layout::Size,
-        ctx: &crate::ui::ctx::RenderCtx,
+        ctx: &termrock_runtime::ctx::RenderCtx,
     ) -> ratatui::layout::Size {
         let mut w = ctx.theme.spacing.chrome_edge.saturating_sub(1);
         if let Some(b) = &self.brand {
@@ -759,8 +760,8 @@ impl MenuBar {
             nav: NavKeys::default(),
             overflow: Overflow::Hide,
             more_area: Rect::ZERO,
-            type_ahead: crate::core::list::NavProfile::current().type_ahead(),
-            type_ahead_timeout: crate::core::typeahead::TypeAhead::DEFAULT_TIMEOUT,
+            type_ahead: termrock_core::list::NavProfile::current().type_ahead(),
+            type_ahead_timeout: termrock_core::typeahead::TypeAhead::DEFAULT_TIMEOUT,
             open_on: OpenOn::Press,
             press_drag: true,
             press_handled: None,
@@ -1285,7 +1286,7 @@ impl MenuBar {
             .then(|| (self.brand_id(), self.brand_area));
         ctx.overlay(move |buf, ctx| {
             ctx.hits.push_barrier();
-            crate::ui::popup::backdrop(ctx, id, dismiss, *buf.area());
+            termrock_runtime::popup::backdrop(ctx, id, dismiss, *buf.area());
             for (part, r) in titles {
                 ctx.register_part(id, part, r);
             }
@@ -1330,7 +1331,7 @@ impl Navigable for MenuBar {
     }
 }
 
-impl crate::core::pointer::MouseTarget for ContextMenu {
+impl termrock_core::pointer::MouseTarget for ContextMenu {
     type Action = MenuAction;
 
     fn mouse_id(&self) -> WidgetId {
@@ -1339,14 +1340,14 @@ impl crate::core::pointer::MouseTarget for ContextMenu {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<MenuAction> {
-        use crate::core::intent::Phase;
-        use crate::core::response::Response;
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<MenuAction> {
+        use termrock_core::intent::Phase;
+        use termrock_core::response::Response;
         if ev.wheel().is_some() && self.list.on_backdrop(ev) {
             return Response::ignored();
         }
-        if let Some(r) = crate::core::pointer::scroll_input(&mut self.list, ev) {
+        if let Some(r) = termrock_core::pointer::scroll_input(&mut self.list, ev) {
             return r.lift();
         }
         match ev.phase() {
@@ -1370,7 +1371,7 @@ impl crate::core::pointer::MouseTarget for ContextMenu {
     }
 }
 
-impl crate::core::pointer::MouseTarget for MenuBar {
+impl termrock_core::pointer::MouseTarget for MenuBar {
     type Action = MenuBarAction;
 
     fn mouse_id(&self) -> WidgetId {
@@ -1379,8 +1380,8 @@ impl crate::core::pointer::MouseTarget for MenuBar {
 
     fn route(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> Option<crate::core::response::Response<MenuBarAction>> {
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> Option<termrock_core::response::Response<MenuBarAction>> {
         let owner = ev.owner();
         let mine = owner == self.id
             || owner == self.brand_id()
@@ -1390,10 +1391,10 @@ impl crate::core::pointer::MouseTarget for MenuBar {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<MenuBarAction> {
-        use crate::core::intent::Phase;
-        use crate::core::response::Response;
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<MenuBarAction> {
+        use termrock_core::intent::Phase;
+        use termrock_core::response::Response;
         if let Some((axis, delta)) = ev.wheel() {
             return match self.open.as_mut() {
                 Some(m) => m.list.wheel(axis, delta).lift(),
@@ -1442,7 +1443,7 @@ impl Specimen for ContextMenu {
             .clone()
             .anchor(
                 Rect::new(area.x, area.y, 1, 0),
-                crate::ui::popup::Placement::Below,
+                termrock_runtime::popup::Placement::Below,
             )
             .edge_margin(0);
         m.anchor_to = None;

@@ -2,21 +2,21 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::Color;
 
-use crate::core::event::Key;
-use crate::core::hit::Axis;
-use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::core::keymap::{Nav, NavKeys};
-use crate::core::list::{Cursor, KeyStep, Moved, RowSource};
-use crate::core::pointer::PointerEvent;
-use crate::core::response::Response;
-use crate::core::scroll::{ScrollPane, ScrollState, Scrollable};
-use crate::core::typeahead::TypeAhead;
-use crate::theme::CursorStyle;
-use crate::ui::ctx::RenderCtx;
-use crate::ui::popup::{Dismiss, Place, Placement, backdrop_id};
-use crate::ui::row::{RowLook, RowPaint, RowUi};
-use crate::widgets::edit::EditField;
-use crate::widgets::scrollbar;
+use termrock_controls::scrollbar;
+use termrock_core::event::Key;
+use termrock_core::field::edit::EditField;
+use termrock_core::hit::Axis;
+use termrock_core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock_core::keymap::{Nav, NavKeys};
+use termrock_core::list::{Cursor, KeyStep, Moved, RowSource};
+use termrock_core::pointer::PointerEvent;
+use termrock_core::response::Response;
+use termrock_core::scroll::{ScrollPane, ScrollState, Scrollable};
+use termrock_core::typeahead::TypeAhead;
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::popup::{Dismiss, Place, Placement, backdrop_id};
+use termrock_runtime::row::{RowLook, RowPaint, RowUi};
+use termrock_theme::CursorStyle;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SelectArrows {
@@ -100,7 +100,7 @@ impl OptionList {
             wheel: WheelMode::Viewport,
             hover_moves_cursor: true,
             nav: NavKeys::default(),
-            type_ahead: crate::core::list::NavProfile::current().type_ahead(),
+            type_ahead: termrock_core::list::NavProfile::current().type_ahead(),
             fade_edges: true,
             dismiss: Dismiss::LIGHT,
             placement: Placement::Below,
@@ -430,7 +430,7 @@ impl OptionList {
                 payload: payload(i),
             });
         }
-        crate::record_work!(OverlayRowsSnapshotted, rows.len());
+        termrock_metrics::record_work!(OverlayRowsSnapshotted, rows.len());
         PopupSnapshot {
             id: self.id,
             rows,
@@ -471,7 +471,7 @@ impl OptionList {
         area: Rect,
         bg: Color,
         buf: &mut Buffer,
-        t: &crate::theme::Theme,
+        t: &termrock_theme::Theme,
     ) {
         paint_reason(
             self.status(items),
@@ -507,17 +507,17 @@ pub(crate) fn paint_reason(
     area: Rect,
     bg: Color,
     buf: &mut Buffer,
-    t: &crate::theme::Theme,
+    t: &termrock_theme::Theme,
 ) {
     let Some(reason) = reason else {
         return;
     };
-    let room = crate::widgets::menu::reason_room(area.width, more_below);
+    let room = crate::menu::reason_room(area.width, more_below);
     if room >= 1 {
         buf.set_string(
             area.x + 2,
             area.bottom().saturating_sub(1),
-            format!(" {} ", crate::ui::text::truncate(reason, room)),
+            format!(" {} ", termrock_text::cells::truncate(reason, room)),
             ratatui::style::Style::new()
                 .fg(t.legible(t.text_muted, bg))
                 .bg(bg),
@@ -581,7 +581,7 @@ impl<P> PopupSnapshot<P> {
     ) {
         let has_sb = self.scroll.overflows();
         for row in &self.rows {
-            crate::record_work!(VisibleRowsPainted, 1usize);
+            termrock_metrics::record_work!(VisibleRowsPainted, 1usize);
             let y = inner.y + row.line;
             let mut state = ctx.state(self.row_id(row.index));
             state.focused = self.highlighted == Some(row.index);
@@ -606,7 +606,7 @@ impl<P> PopupSnapshot<P> {
 }
 
 pub fn query_pointer(query: &mut EditField, ev: &PointerEvent) -> Option<Response<()>> {
-    use crate::core::intent::Phase;
+    use termrock_core::intent::Phase;
     if ev.part().part != Part::QUERY {
         return None;
     }
