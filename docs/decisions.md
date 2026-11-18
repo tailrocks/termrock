@@ -408,3 +408,115 @@ wording or settle what it left open.
 - **`core/text/tests.rs` moves with the buffer** into `termrock-text` except
   `text_revision_follows_undo_and_redo`, which drives `core::edit` and stays in
   `junie-tui` until `termrock-core` exists (#444 core).
+||||||| parent of 2cdaa723e (refactor(core): extract termrock-core and close the three coherence breaks (#444))
+=======
+## 2026-11-18: Three coherence breaks of `termrock-core`, and how they close (#444)
+
+Context: an experiment that moved `core` into its own crate failed in
+`junie-tui` with three errors that are not visibility problems. Rust's
+coherence rules forbid, across a crate boundary, an inherent `impl` on a
+foreign type (E0116), a foreign trait implemented for a slice of local types
+(E0117), and an exhaustive `match` on a foreign `#[non_exhaustive]` enum
+(E0004). Each one would have hit every later extraction that moves a type away
+from its trait or its inherent impl, so the answer is a rule, not a patch.
+
+Rule: a type, the traits whose impls are blanket over it, and its inherent
+methods stay in the crate that owns the type. What the lower crate cannot name
+(theme, `RenderCtx`, widget item types) reaches it through a `#[doc(hidden)]`
+trait that the higher crate implements.
+
+### ScrollPane `draw_*` (E0116)
+
+`impl ScrollPane { draw_v, draw_h, draw_divider, draw_with_fade }` sat in
+`widgets/scrollbar.rs`. `ScrollPane` stays in `termrock-core`. The four methods
+now sit next to it, generic over a hidden `core::scroll::ScrollPaint` that
+`RenderCtx` implements in `widgets/scrollbar.rs`:
+
+```rust
+pub fn draw_v<C: ScrollPaint>(&mut self, area, buf, ctx: &mut C, owner, focused)
+```
+
+`ScrollPaint` carries the five things the methods ask of the context (paint a
+vertical bar, a divider, a horizontal bar, the fade-and-bar pair; register a
+scroll-under region). The bodies call the same `render_*` functions as before,
+so nothing is painted differently. Every call site, in `src/`, `apps/showcase`
+and the tests, is unchanged (`pane.draw_v(..)`), needs no import and passes a
+`&mut RenderCtx` as before.
+
+Alternatives, with the evidence that decided it:
+
+- Relocate `ScrollPane` to the crate that draws it. Rejected. Core needs it:
+  `Scrollable::pane() -> &mut ScrollPane` and `pointer::scroll_input` are core,
+  and about 400 lines of `ScrollPane` are pointer, track and column logic that
+  reads private `ScrollState` fields. Moving it takes `Scrollable`,
+  `scroll_input` and the tests with it and leaves the five-module core cycle
+  (`hit`, `intent`, `pointer`, `scroll`, `shape`) cut in two.
+- An extension trait in the drawing crate. Rejected. The four methods stop being
+  `core::scroll::ScrollPane::draw_*`: four ids change and a trait id appears,
+  the digest of `tests/regressions/api-ids.sha256` changes, and the 23 call
+  sites (apps and tests included) each need `use ...::ScrollPaneDraw`. A
+  published method would become a method that needs an import. The constraint
+  was "unchanged unless unavoidable"; it is avoidable.
+- Move the drawing into core. Rejected: it paints with the theme and
+  `Interaction`, which sit above core.
+
+Consequence for #445 and #446: `impl ScrollPaint for RenderCtx` must live in
+the crate that owns `RenderCtx` (the orphan rule), and `termrock-runtime` is
+below `termrock-controls`, where `scrollbar.rs` goes. When `RenderCtx` moves to
+`termrock-runtime`, the painting functions `render_vertical`,
+`render_horizontal_with`, `render_divider` and `render_with_fade_except`, with
+their `thumb_style` helper, move with it and `widgets::scrollbar` re-exports
+them. They use only `RenderCtx`, the theme and `ui::fade`, all in runtime or
+below. The ids keep their spelling through the canonical-spelling pin of #443.
+
+### Row slices (E0117)
+
+`impl RowSource for [ListItem]`, `for [FlatRow]` and `impl<T: AsItem> RowSource
+for [T]` cannot stay in the crates of `ListItem`, `FlatRow` and `AsItem`: a
+slice is never local. They become one blanket impl in core,
+`impl<T: RowItem> RowSource for [T]`, where `RowItem` is a hidden trait with
+`label`, `enabled` and `key`. `ListItem` and `FlatRow` implement `RowItem` in
+their own files, with the bodies the slice impls had.
+
+`AsItem` is documented API with a Showcase proof ("any row type feeds the shared
+row source"), so a user type that implements `AsItem` must keep getting
+`[T]: RowSource`. For that, `AsItem` and the `Item` it returns move into core
+(`core::item`, a pure move of the struct and its builders), `impl<T: AsItem>
+RowItem for T` lives there, and `widgets::option_list` re-exports both.
+`MenuItem` still implements `AsItem` in `menu.rs`. `RowItem` is not public API.
+
+Alternative rejected: keep `AsItem` in the widget crate and give it `RowItem` as
+a supertrait. It compiles every in-tree use, but a user type that implements
+`AsItem` today would stop compiling until it also implemented a hidden trait.
+The coherence of the three-impl layout (core blanket over `AsItem` and
+`ListItem: RowItem` in a downstream crate) was checked by the compiler; a
+downstream crate may implement a trait for its own type next to an upstream
+blanket because it owns the type.
+
+### DismissReason (E0004)
+
+`DismissReason` stays `#[non_exhaustive]`, which is a published promise.
+`Dismiss::allows` matched it exhaustively in `ui/popup.rs`. The match moves into
+core as a hidden `const fn DismissReason::permitted_by(escape, outside_click,
+focus_out)` and `Dismiss::allows` calls it, so a new variant still fails to
+compile, now in the crate that owns the enum. A wildcard arm would have given a
+future variant a silent default; dropping `#[non_exhaustive]` would have changed
+the public contract.
+
+### `PinnedKeys` and `CheckGlyphs` (the #441 note)
+
+Both are now plain `#[doc(hidden)] pub` traits in core with no private module,
+as the #441 decision said they must be once core and theme are separate crates.
+The inventory walker skips `#[doc(hidden)]` items (#444, `tests/support`), so
+the declared-API id set does not change.
+
+### Everything else that crossed the boundary
+
+Items that `junie-tui` reaches in core became `#[doc(hidden)] pub` (compiler
+driven, no other edit): the rest are `pub(crate)` helpers of `hit`, `keyed`,
+`pointer`, `event`, `scroll` and `Item::payload_bytes`. None joins the
+declared API.
+
+The test module `core/pointer/nested_scrollbar_tests.rs` imports `ScrollView`,
+the scrollbar and the theme, so it cannot sit in core. It stays at its path,
+declared from `src/core/mod.rs`, until #446 moves it to `termrock-viewport`.

@@ -1,6 +1,6 @@
 use super::event::ClientPlatform;
 use super::keymap::{Actions, KeyBinding, KeyMap};
-use super::text::TextBuffer;
+use termrock_text::buffer::TextBuffer;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum EditEntry {
@@ -211,7 +211,7 @@ impl UndoStack {
         self.redo.clear();
         let folds = kind != EditKind::Other && self.run == Some(kind);
         if !folds {
-            crate::record_work!(PayloadBytesCloned, buf.text().len());
+            termrock_metrics::record_work!(PayloadBytesCloned, buf.text().len());
             self.undo.push(Snap {
                 text: buf.text().to_owned(),
                 cursor: buf.cursor_offset(),
@@ -245,7 +245,7 @@ impl UndoStack {
         let Some(s) = self.undo.pop() else {
             return false;
         };
-        crate::record_work!(PayloadBytesCloned, buf.text().len());
+        termrock_metrics::record_work!(PayloadBytesCloned, buf.text().len());
         self.redo.push(Snap {
             text: buf.text().to_owned(),
             cursor: buf.cursor_offset(),
@@ -259,7 +259,7 @@ impl UndoStack {
         let Some(s) = self.redo.pop() else {
             return false;
         };
-        crate::record_work!(PayloadBytesCloned, buf.text().len());
+        termrock_metrics::record_work!(PayloadBytesCloned, buf.text().len());
         self.undo.push(Snap {
             text: buf.text().to_owned(),
             cursor: buf.cursor_offset(),
@@ -287,7 +287,8 @@ pub mod clipboard {
         static HOOK: RefCell<Option<Hook>> = const { RefCell::new(None) };
     }
 
-    pub(crate) fn store(text: &str) {
+    #[doc(hidden)]
+    pub fn store(text: &str) {
         TEXT.with(|t| *t.borrow_mut() = Some(text.to_owned()));
     }
 

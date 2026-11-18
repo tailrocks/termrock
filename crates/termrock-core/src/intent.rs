@@ -90,12 +90,29 @@ pub enum DismissReason {
     Programmatic,
 }
 
+impl DismissReason {
+    /// Whether a popup that closes on the given inputs lets this reason close it.
+    ///
+    /// The match lives next to the enum so that a new variant fails to compile
+    /// here; a `#[non_exhaustive]` enum cannot be matched exhaustively from
+    /// another crate.
+    #[doc(hidden)]
+    pub const fn permitted_by(self, escape: bool, outside_click: bool, focus_out: bool) -> bool {
+        match self {
+            Self::Esc | Self::CloseButton => escape,
+            Self::OutsideClick => outside_click,
+            Self::FocusOut => focus_out,
+            Self::Programmatic => true,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use ratatui::crossterm::event::KeyModifiers;
 
     use super::*;
-    use crate::core::id::{ItemKey, Part};
+    use crate::id::{ItemKey, Part};
 
     #[test]
     fn pointer_and_wheel_intents_carry_their_part_and_position() {

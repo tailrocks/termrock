@@ -1665,8 +1665,14 @@ pub fn module_api(source: &str, module: &str) -> BTreeSet<String> {
     }
     lib.push_str(&format!("pub mod {leaf};"));
     lib.push_str(&" }".repeat(parents.len()));
-    let tree =
-        SourceTree::from_files(&[("src/lib.rs", &lib), (&format!("{dir}/{leaf}.rs"), source)]);
+    // A one-file scratch crate has no other crate to resolve `pub use termrock_core::...` in, so
+    // those re-exports are left out of it.
+    let own: String = source
+        .lines()
+        .filter(|line| !line.starts_with("pub use termrock_"))
+        .map(|line| format!("{line}\n"))
+        .collect();
+    let tree = SourceTree::from_files(&[("src/lib.rs", &lib), (&format!("{dir}/{leaf}.rs"), &own)]);
     let inventory = build(&tree, &MATRIX[2], &[], &BTreeSet::new())
         .unwrap_or_else(|e| panic!("{}", e.join("\n")));
     inventory

@@ -238,10 +238,12 @@ mod pin {
         pub(super) static PINNED: Cell<Option<ClientPlatform>> = const { Cell::new(None) };
     }
 
-    pub(crate) struct PlatformPin(Option<ClientPlatform>);
+    #[doc(hidden)]
+    pub struct PlatformPin(Option<ClientPlatform>);
 
     impl PlatformPin {
-        pub(crate) fn new(platform: ClientPlatform) -> Self {
+        #[doc(hidden)]
+        pub fn new(platform: ClientPlatform) -> Self {
             Self(PINNED.with(|p| p.replace(Some(platform))))
         }
     }
@@ -254,7 +256,8 @@ mod pin {
 }
 
 #[cfg(feature = "work-metrics")]
-pub(crate) use pin::PlatformPin;
+#[doc(hidden)]
+pub use pin::PlatformPin;
 
 impl InputConfig {
     pub const fn for_platform(platform: ClientPlatform) -> Self {

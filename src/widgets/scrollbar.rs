@@ -3,10 +3,9 @@ use ratatui::layout::{Position, Rect};
 use ratatui::style::Style;
 
 use crate::core::event::Outcome;
-use crate::core::hit::Axis;
 use crate::core::id::WidgetId;
 use crate::core::pointer::{BarPhase, PointerEvent};
-use crate::core::scroll::{ScrollPane, ScrollState, ScrollbarVisibility, TrackClick};
+use crate::core::scroll::{ScrollPaint, ScrollState, TrackClick};
 use crate::theme::{Glyphs, Kind, Plane};
 use crate::ui::ctx::{RenderCtx, VisualState};
 
@@ -303,74 +302,55 @@ pub fn render_with_fade_except(
     content
 }
 
-impl ScrollPane {
-    pub fn draw_v(
+impl ScrollPaint for RenderCtx<'_> {
+    fn paint_vertical(
         &mut self,
         area: Rect,
         buf: &mut Buffer,
-        ctx: &mut RenderCtx,
         owner: WidgetId,
+        scroll: &ScrollState,
         focused: bool,
     ) {
-        render_vertical(area, buf, ctx, owner, &self.v, focused);
-        self.remember(Axis::Vertical, owner, area, buf);
+        render_vertical(area, buf, self, owner, scroll, focused);
     }
 
-    pub fn draw_divider(
+    fn paint_divider(
         &mut self,
         area: Rect,
         buf: &mut Buffer,
-        ctx: &mut RenderCtx,
         owner: WidgetId,
+        scroll: &ScrollState,
         focused: bool,
     ) {
-        render_divider(area, buf, ctx, owner, &self.v, focused);
-        self.remember(Axis::Vertical, owner, area, buf);
+        render_divider(area, buf, self, owner, scroll, focused);
     }
 
-    pub fn draw_h(
+    fn paint_horizontal(
         &mut self,
         area: Rect,
         buf: &mut Buffer,
-        ctx: &mut RenderCtx,
         owner: WidgetId,
+        scroll: &ScrollState,
         focused: bool,
+        always: bool,
     ) {
-        let always = self.h_cfg.bar == ScrollbarVisibility::Always;
-        render_horizontal_with(area, buf, ctx, owner, &self.h, focused, always);
-        self.remember(Axis::Horizontal, owner, area, buf);
+        render_horizontal_with(area, buf, self, owner, scroll, focused, always);
     }
 
-    pub fn draw_with_fade(
+    fn paint_with_fade(
         &mut self,
         area: Rect,
         buf: &mut Buffer,
-        ctx: &mut RenderCtx,
         owner: WidgetId,
+        scroll: &ScrollState,
         focused: bool,
         keep: &[u16],
     ) -> Rect {
-        let content = render_with_fade_except(area, buf, ctx, owner, &self.v, focused, keep);
-        if content != area {
-            let track = Rect::new(area.right() - 1, area.y, 1, area.height);
-            self.remember(Axis::Vertical, owner, track, buf);
-
-            ctx.scrollable_under(owner, area.intersection(*buf.area()));
-        }
-        content
+        render_with_fade_except(area, buf, self, owner, scroll, focused, keep)
     }
 
-    fn remember(&mut self, axis: Axis, owner: WidgetId, area: Rect, buf: &Buffer) {
-        let area = area.intersection(*buf.area());
-        let state = match axis {
-            Axis::Vertical => &self.v,
-            Axis::Horizontal => &self.h,
-        };
-        if area.is_empty() || !state.overflows() {
-            self.clear_track(axis);
-        } else {
-            self.set_track(owner, axis, area);
-        }
+    fn scrollable_under(&mut self, owner: WidgetId, area: Rect) {
+        RenderCtx::scrollable_under(self, owner, area);
     }
 }
 

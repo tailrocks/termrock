@@ -1,21 +1,13 @@
-pub mod data;
-pub mod edit;
-pub mod event;
-pub mod focus;
-pub mod hints;
-pub mod hit;
-pub mod id;
-pub mod intent;
-pub mod keyboard;
-pub mod keyed;
-pub mod keymap;
-pub mod list;
-pub mod nav;
-pub mod pointer;
-pub mod refusal;
-pub mod response;
-pub mod scroll;
-pub mod selection;
-pub mod shape;
+//! Transitional (#444): the modules of `termrock-core` keep their `core::` paths
+//! through these re-exports. #452 removes them.
+
+pub use termrock_core::{
+    data, edit, event, focus, hints, hit, id, intent, keyboard, keyed, keymap, list, nav, pointer,
+    refusal, response, scroll, selection, shape, typeahead,
+};
+
 pub mod text;
-pub mod typeahead;
+
+#[cfg(test)]
+#[path = "pointer/nested_scrollbar_tests.rs"]
+mod nested_scrollbar_tests;

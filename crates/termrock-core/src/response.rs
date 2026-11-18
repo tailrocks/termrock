@@ -23,7 +23,7 @@ pub enum Invalidate {
 /// The ordered semantic actions one input produced.
 ///
 /// Zero or one action is stored inline; a second action allocates. The
-/// unrelated [`crate::core::keymap::Actions`] trait is a key-map concept; import
+/// unrelated [`crate::keymap::Actions`] trait is a key-map concept; import
 /// this type under another name (`ResponseActions`) when a module needs both.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Actions<A> {
