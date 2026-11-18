@@ -866,8 +866,10 @@ the #445 entries were applied up front: every `impl` in the moved files and ever
   type of `junie-tui` (`Dialog`, `Select`, `ListBox`, `TextInput`, ...) implements
   a trait of a lower crate (`Overlay`, `Layer`, `ContextSource`, `EditMenuHost`,
   `ViewportOps`). The one blanket impl, `impl<O: Overlay> Modal for O`, has both
-  traits in `termrock-overlays`. The compiler agreed; nothing needed a hidden
-  trait, a respelled id or a `MOVED_KEEPING_SPELLING` row.
+  traits in `termrock-overlays`. The compiler agreed; no coherence fix was
+  needed, so no trait had to be hidden or moved. (The one `MOVED_KEEPING_SPELLING`
+  row below comes from how the catalog spells a re-exported id, not from
+  coherence.)
 - **Hidden plumbing, not new API.** Items that stayed `pub(crate)` and that a
   higher crate or a `junie-tui` test still reaches are `#[doc(hidden)] pub` and
   listed in `tests/regressions/doc-hidden-items.txt`. Every one was found by the
