@@ -6,22 +6,22 @@ use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Rect;
 
-use crate::core::event::{Key, Outcome};
-use crate::core::focus::FocusRing;
-use crate::core::hit::HitRegistry;
-use crate::core::id::{ItemKey, WidgetId};
-use crate::core::keyed::{KeyedRecord, KeyedState, KeyedVec};
-use crate::core::refusal::{Reason, take_refusal};
-use crate::metrics::{Metric, WorkDelta, measure};
-use crate::theme::{ColorLevel, Theme};
-use crate::ui::ctx::{Interaction, RenderCtx};
-use crate::widgets::completion::Completion;
-use crate::widgets::option_editor::{
+use termrock_core::event::{Key, Outcome};
+use termrock_core::focus::FocusRing;
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::{ItemKey, WidgetId};
+use termrock_core::keyed::{KeyedRecord, KeyedState, KeyedVec};
+use termrock_core::refusal::{Reason, take_refusal};
+use termrock_fields::select::Select;
+use termrock_metrics::{Metric, WorkDelta, measure};
+use termrock_overlays::completion::Completion;
+use termrock_overlays::option_editor::{
     ChoiceEditor, ColumnEditor, EditorConfig, OptionItem, Options,
 };
-use crate::widgets::option_list::Item;
-use crate::widgets::picker::Picker;
-use crate::widgets::select::Select;
+use termrock_overlays::option_list::Item;
+use termrock_overlays::picker::Picker;
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_theme::{ColorLevel, Theme};
 
 const SCREEN: Rect = Rect::new(0, 0, 80, 30);
 
@@ -257,8 +257,8 @@ fn keyed_resize_cancels_capture_without_source_scan() {
 
 #[test]
 fn list_detail_unchanged_widths_are_cached() {
-    use crate::ui::layout::Split;
-    use crate::widgets::list_detail::{ListDetail, ListRow, SourceFrame};
+    use termrock_collections::list_detail::{ListDetail, ListRow, SourceFrame};
+    use termrock_layout::layout::Split;
 
     let mut store = KeyedVec::try_from_rows((0..5_000).map(|n| {
         (

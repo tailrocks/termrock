@@ -6,28 +6,28 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 
-use crate::core::focus::FocusRing;
-use crate::core::hit::HitRegistry;
-use crate::core::id::WidgetId;
-use crate::theme::{ColorLevel, HintBarStyle, Theme, Tone};
-use crate::ui::ctx::{Interaction, RenderCtx};
-use crate::widgets::breadcrumb::Breadcrumb;
-use crate::widgets::chips::{Chip, ChipBar, overflow_run_cells};
-use crate::widgets::hintbar::{HintBar, HintLayer};
-use crate::widgets::keyhint::{self, Hint, HintPriority};
-use crate::widgets::segments::{self, Segment};
-use crate::widgets::statusbar::{Emphasis, StatusBar, StatusItem};
-use crate::widgets::toolbar::{ToolItem, Toolbar};
+use termrock_controls::hintbar::{HintBar, HintLayer};
+use termrock_controls::keyhint::{self, Hint, HintPriority};
+use termrock_controls::segments::{self, Segment};
+use termrock_core::focus::FocusRing;
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::WidgetId;
+use termrock_feedback::statusbar::{Emphasis, StatusBar, StatusItem};
+use termrock_fields::chips::{Chip, ChipBar, overflow_run_cells};
+use termrock_navigation::breadcrumb::Breadcrumb;
+use termrock_navigation::toolbar::{ToolItem, Toolbar};
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_theme::{ColorLevel, HintBarStyle, Theme, Tone};
 
 const ID: WidgetId = WidgetId::of("overflow.parity");
 
 mod reference {
     //! The fitters as they were before #76, with the same inputs and results.
 
-    use crate::ui::text::width;
-    use crate::widgets::keyhint::{self, Hint};
-    use crate::widgets::segments::Segment;
-    use crate::widgets::statusbar::{Group, StatusBar, StatusItem};
+    use termrock_controls::keyhint::{self, Hint};
+    use termrock_controls::segments::Segment;
+    use termrock_feedback::statusbar::{Group, StatusBar, StatusItem};
+    use termrock_text::cells::width;
 
     pub fn overflow_run(widths: &[usize], avail: usize, gap: usize) -> (usize, Option<String>) {
         let n = widths.len();
@@ -42,7 +42,7 @@ mod reference {
             let marker = format!("+{}", n - k);
             let used = widths[..k]
                 .iter()
-                .inspect(|_| crate::record_work!(FitVisits, 1usize))
+                .inspect(|_| termrock_metrics::record_work!(FitVisits, 1usize))
                 .fold(0usize, |a, &w| a.saturating_add(w).saturating_add(gap))
                 .saturating_add(width(&marker));
             if used <= avail {
@@ -209,7 +209,7 @@ mod reference {
     pub fn keyhint_fit(
         hints: &[Hint],
         room: u16,
-        style: &crate::theme::HintBarStyle,
+        style: &termrock_theme::HintBarStyle,
     ) -> (Vec<usize>, Vec<bool>) {
         let room = usize::from(room);
         let all: Vec<usize> = (0..hints.len()).collect();
@@ -426,7 +426,7 @@ fn item_of(cells: usize, priority: u8, variant: usize) -> StatusItem {
     match variant {
         1 => item.busy = true,
         2 => item.emphasis = Emphasis::Chip,
-        3 => item = item.meter(Some(40), crate::widgets::progress::MeterTone::Normal),
+        3 => item = item.meter(Some(40), termrock_feedback::progress::MeterTone::Normal),
         _ => {}
     }
     item
@@ -565,7 +565,7 @@ fn theme() -> Theme {
 #[cfg(feature = "work-metrics")]
 #[test]
 fn reference_fitters_do_superlinear_work() {
-    use crate::metrics::{Metric, WorkDelta, measure};
+    use termrock_metrics::{Metric, WorkDelta, measure};
     let doubled = |small: WorkDelta, big: WorkDelta, metric: Metric| {
         big.get(metric) as f64 / small.get(metric) as f64
     };

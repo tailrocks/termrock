@@ -5,20 +5,20 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 
-use crate::core::focus::FocusRing;
-use crate::core::hit::HitRegistry;
-use crate::core::id::WidgetId;
-use crate::metrics::{Metric, WorkDelta, measure};
-use crate::theme::{ColorLevel, Theme, Tone};
-use crate::ui::ctx::{Interaction, RenderCtx};
-use crate::widgets::breadcrumb::Breadcrumb;
-use crate::widgets::chips::{Chip, ChipBar, overflow_run_cells};
-use crate::widgets::hintbar::{HintBar, HintLayer};
-use crate::widgets::keyhint::Hint;
-use crate::widgets::segments::{self, Segment};
-use crate::widgets::statusbar::{StatusBar, StatusItem};
-use crate::widgets::tabs::Tabs;
-use crate::widgets::toolbar::{ToolItem, Toolbar};
+use termrock_controls::hintbar::{HintBar, HintLayer};
+use termrock_controls::keyhint::Hint;
+use termrock_controls::segments::{self, Segment};
+use termrock_core::focus::FocusRing;
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::WidgetId;
+use termrock_feedback::statusbar::{StatusBar, StatusItem};
+use termrock_fields::chips::{Chip, ChipBar, overflow_run_cells};
+use termrock_metrics::{Metric, WorkDelta, measure};
+use termrock_navigation::breadcrumb::Breadcrumb;
+use termrock_navigation::tabs::Tabs;
+use termrock_navigation::toolbar::{ToolItem, Toolbar};
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_theme::{ColorLevel, Theme, Tone};
 
 const ID: WidgetId = WidgetId::of("overflow.work");
 const SIZES: [usize; 3] = [250, 500, 1000];

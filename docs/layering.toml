@@ -121,16 +121,6 @@ functional = ["termrock"]
 # Re-exports `termrock-text` at `core::text`; the buffer itself is in the crate.
 "src/core/text.rs" = "text"
 
-
-# conformance
-"src/ui/intrinsic_tests.rs" = "conformance"
-"src/ui/intrinsic_wide_tests.rs" = "conformance"
-"src/ui/overflow_parity_tests.rs" = "conformance"
-"src/ui/overflow_work_tests.rs" = "conformance"
-"src/ui/scroll_view/window_tests.rs" = "conformance"
-"src/widgets/keyed_cost_tests.rs" = "conformance"
-"src/widgets/search_detail/cost_tests.rs" = "conformance"
-
 # termrock
 "src/core/mod.rs" = "termrock"
 "src/lib.rs" = "termrock"
