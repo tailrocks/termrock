@@ -1,86 +1,48 @@
-#[path = "../../../../../tests/functional/cases/g05_reference.rs"]
 mod g05_reference;
-#[path = "../../../../../tests/functional/cases/h01_alternatives.rs"]
 mod h01_alternatives;
-#[path = "../../../../../tests/functional/cases/h01_finder.rs"]
 mod h01_finder;
-#[path = "../../../../../tests/functional/cases/h01_memory.rs"]
 mod h01_memory;
-#[path = "../../../../../tests/functional/cases/h01_scope.rs"]
 mod h01_scope;
-#[path = "../../../../../tests/functional/cases/h01_why.rs"]
 mod h01_why;
-#[path = "../../../../../tests/functional/cases/h02_args.rs"]
 mod h02_args;
-#[path = "../../../../../tests/functional/cases/h02_config.rs"]
 mod h02_config;
-#[path = "../../../../../tests/functional/cases/h02_reload.rs"]
 mod h02_reload;
-#[path = "../../../../../tests/functional/cases/h02_trust.rs"]
 mod h02_trust;
-#[path = "../../../../../tests/functional/cases/h02_validation.rs"]
 mod h02_validation;
-#[path = "../../../../../tests/functional/cases/h03_attach.rs"]
 mod h03_attach;
-#[path = "../../../../../tests/functional/cases/h03_guards.rs"]
 mod h03_guards;
-#[path = "../../../../../tests/functional/cases/h03_input.rs"]
 mod h03_input;
-#[path = "../../../../../tests/functional/cases/h03_output.rs"]
 mod h03_output;
-#[path = "../../../../../tests/functional/cases/h03_picker.rs"]
 mod h03_picker;
-#[path = "../../../../../tests/functional/cases/h04_actions.rs"]
 mod h04_actions;
-#[path = "../../../../../tests/functional/cases/h04_plan.rs"]
 mod h04_plan;
-#[path = "../../../../../tests/functional/cases/h04_snapshots-docker.rs"]
+#[path = "h04_snapshots-docker.rs"]
 mod h04_snapshots_docker;
-#[path = "../../../../../tests/functional/cases/h04_snapshots-git.rs"]
+#[path = "h04_snapshots-git.rs"]
 mod h04_snapshots_git;
-#[path = "../../../../../tests/functional/cases/h04_snapshots-host.rs"]
+#[path = "h04_snapshots-host.rs"]
 mod h04_snapshots_host;
-#[path = "../../../../../tests/functional/cases/h04_snapshots-services.rs"]
+#[path = "h04_snapshots-services.rs"]
 mod h04_snapshots_services;
-#[path = "../../../../../tests/functional/cases/h05_disk.rs"]
 mod h05_disk;
-#[path = "../../../../../tests/functional/cases/h05_files.rs"]
 mod h05_files;
-#[path = "../../../../../tests/functional/cases/h05_find.rs"]
 mod h05_find;
-#[path = "../../../../../tests/functional/cases/h05_previews.rs"]
 mod h05_previews;
-#[path = "../../../../../tests/functional/cases/h05_scan.rs"]
 mod h05_scan;
-#[path = "../../../../../tests/functional/cases/h06_cleanup.rs"]
 mod h06_cleanup;
-#[path = "../../../../../tests/functional/cases/h06_gate.rs"]
 mod h06_gate;
-#[path = "../../../../../tests/functional/cases/h06_log.rs"]
 mod h06_log;
-#[path = "../../../../../tests/functional/cases/h06_quit.rs"]
 mod h06_quit;
-#[path = "../../../../../tests/functional/cases/h06_report.rs"]
 mod h06_report;
-#[path = "../../../../../tests/functional/cases/s01_breadcrumbsrails.rs"]
 mod s01_breadcrumbsrails;
-#[path = "../../../../../tests/functional/cases/s01_chrome.rs"]
 mod s01_chrome;
-#[path = "../../../../../tests/functional/cases/s01_focusnavigation.rs"]
 mod s01_focusnavigation;
-#[path = "../../../../../tests/functional/cases/s01_helpkeys.rs"]
 mod s01_helpkeys;
-#[path = "../../../../../tests/functional/cases/s01_overview.rs"]
 mod s01_overview;
-#[path = "../../../../../tests/functional/cases/s01_quitleave.rs"]
 mod s01_quitleave;
-#[path = "../../../../../tests/functional/cases/s01_shell.rs"]
 mod s01_shell;
-#[path = "../../../../../tests/functional/cases/s01_statushints.rs"]
 mod s01_statushints;
-#[path = "../../../../../tests/functional/cases/s02_buttons.rs"]
 mod s02_buttons;
-#[path = "../../../../../tests/functional/cases/s02_checksradios.rs"]
 mod s02_checksradios;
 #[path = "../../../../../tests/functional/cases/s02_chipsselects.rs"]
 mod s02_chipsselects;
