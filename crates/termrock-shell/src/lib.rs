@@ -7,10 +7,9 @@ mod nav;
 mod page;
 pub mod reach;
 mod router;
+pub mod runtime;
 mod status;
 
-pub use crate::ui::layer::LayerTag;
-pub use crate::widgets::breadcrumb::Breadcrumb;
 pub use app::{App, PageKey, Shell, blur_fan_out, handle, render};
 pub use chrome::{Chrome, Menus, Regions};
 pub use clipboard::{Clipboard, ClipboardHook, Copied, NativeClipboard};
@@ -22,6 +21,8 @@ pub use page::{
 };
 pub use router::{KeyHost, KeyRouter, ShellAction, ShellKeys};
 pub use status::{JobKey, StatusLine, StopHandle};
+pub use termrock_navigation::breadcrumb::Breadcrumb;
+pub use termrock_overlays::layer::LayerTag;
 
 use crate::runtime::Application;
 
@@ -59,8 +60,8 @@ mod startup_tests {
     use ratatui::Frame;
 
     use super::discard_startup_input;
-    use crate::core::event::{Input, Outcome};
     use crate::runtime::{Application, RawInputPolicy};
+    use termrock_core::event::{Input, Outcome};
 
     struct Limited(usize);
 

@@ -6,10 +6,10 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Position;
 
 use super::app::App;
-use crate::core::event::{Input, Mouse, MouseKind};
-use crate::core::hit::{Axis, Bar, HitRegistry};
-use crate::core::id::WidgetId;
 use crate::runtime::Application;
+use termrock_core::event::{Input, Mouse, MouseKind};
+use termrock_core::hit::{Axis, Bar, HitRegistry};
+use termrock_core::id::WidgetId;
 
 pub const SIZES: [(u16, u16); 8] = [
     (40, 12),
@@ -122,7 +122,7 @@ impl Words {
     }
 
     pub fn add_overflowed(&mut self) {
-        for hidden in crate::ui::reveal::overflowed() {
+        for hidden in termrock_runtime::reveal::overflowed() {
             for word in hidden.split(|c: char| !c.is_alphanumeric()) {
                 if word.chars().count() >= MIN_WORD {
                     self.cut.insert(word.to_owned());
@@ -171,7 +171,7 @@ impl<A: App + Application> Probe<A> {
 
     pub(crate) fn draw(&mut self) {
         self.term
-            .draw(|f| crate::shell::render(&mut self.app, f))
+            .draw(|f| crate::render(&mut self.app, f))
             .expect("test backend draws");
     }
 
@@ -423,9 +423,9 @@ fn gate(app: &str, found: &[(String, Reach)], allow: &str) -> Result<(), String>
             Some((name, plat)) => (name, Some(plat)),
             None => (scenario, None),
         };
-        let here = match crate::core::event::ClientPlatform::current() {
-            crate::core::event::ClientPlatform::MacOs => "macos",
-            crate::core::event::ClientPlatform::Other => "other",
+        let here = match termrock_core::event::ClientPlatform::current() {
+            termrock_core::event::ClientPlatform::MacOs => "macos",
+            termrock_core::event::ClientPlatform::Other => "other",
         };
         if only.is_some_and(|p| p != here) {
             continue;
@@ -640,7 +640,7 @@ macro_rules! reach_tests {
                 use super::*;
 
                 fn at(size: (u16, u16)) {
-                    $crate::shell::reach::check::<$h>($app, &$cases, $name, size, REACH_ALLOW);
+                    $crate::reach::check::<$h>($app, &$cases, $name, size, REACH_ALLOW);
                 }
 
                 #[test]
@@ -689,7 +689,7 @@ macro_rules! reach_tests {
         fn every_case_has_its_test() {
 
             assert_eq!(
-                $crate::shell::reach::SIZES,
+                $crate::reach::SIZES,
                 [(40, 12), (60, 18), (72, 20), (80, 24), (100, 25), (106, 29), (120, 40), (160, 50)]
             );
             let tested = [$($name),*];
@@ -700,7 +700,7 @@ macro_rules! reach_tests {
 
         #[test]
         fn reach_dump() {
-            $crate::shell::reach::dump::<$h>(&$cases);
+            $crate::reach::dump::<$h>(&$cases);
         }
     };
 }

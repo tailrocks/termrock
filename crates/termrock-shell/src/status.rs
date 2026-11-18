@@ -1,9 +1,9 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use crate::clock::Moment;
-use crate::core::event::{Input, MouseKind};
-use crate::theme::Tone;
+use termrock_core::event::{Input, MouseKind};
+use termrock_session::clock::Moment;
+use termrock_theme::Tone;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Message<P> {

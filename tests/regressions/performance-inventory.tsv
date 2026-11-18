@@ -75,7 +75,7 @@ T	work_budgets::scroll_panel::work_contract_scroll_panel_wrapped_builds_once_per
 S	terminal view and viewport budgets	junie-tui::regressions	/^work_budgets::/	tests/regressions/work_budgets/terminal.rs
 T	work_budgets::terminal::work_contract_terminal_prepared_paint
 T	work_budgets::terminal::work_contract_terminal_feed_and_copy_units
-S	runtime input and output budgets	junie-tui	/^runtime::raw_input_tests::work::/	src/runtime/raw_input_tests/work.rs
+S	runtime input and output budgets	termrock-shell	/^runtime::raw_input_tests::work::/	crates/termrock-shell/src/runtime/raw_input_tests/work.rs
 T	runtime::raw_input_tests::work::work_contract_runtime_raw_filtered_events_yield
 T	runtime::raw_input_tests::work::work_contract_runtime_startup_discard_is_not_input_work
 T	runtime::raw_input_tests::work::work_contract_runtime_flood_services_input

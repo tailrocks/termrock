@@ -1,0 +1,28 @@
+[package]
+name = "termrock-shell"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+description = "Application host for the Termrock terminal UI library: Shell, App, Page, router, chrome and the run loop"
+license = "MIT"
+
+[lib]
+doctest = false
+
+[features]
+default = []
+work-metrics = ["termrock-controls/work-metrics", "termrock-core/work-metrics", "termrock-feedback/work-metrics", "termrock-metrics/work-metrics", "termrock-navigation/work-metrics", "termrock-overlays/work-metrics", "termrock-runtime/work-metrics", "termrock-session/work-metrics"]
+
+[dependencies]
+ratatui = { workspace = true }
+termrock-controls = { workspace = true }
+termrock-core = { workspace = true }
+termrock-dialogs = { workspace = true }
+termrock-feedback = { workspace = true }
+termrock-metrics = { workspace = true }
+termrock-navigation = { workspace = true }
+termrock-overlays = { workspace = true }
+termrock-runtime = { workspace = true }
+termrock-session = { workspace = true }
+termrock-text = { workspace = true }
+termrock-theme = { workspace = true }
