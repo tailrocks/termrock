@@ -143,7 +143,7 @@ repository_ids = { repository = "1404951382" }
 [[tools.mr-boxington]]
 version = "1.30.0"
 backend = "packslip:github.com/jdx/mr-boxington"
-specifiers = ["v1.30.0"]
+specifiers = ["1.30.0"]
 
 [tools.mr-boxington."platforms.linux-x64"]
 checksum = "sha256:f4992b401fe65744b7c6e7400933d2106da205b499405621d088051a31a8f3f2"
