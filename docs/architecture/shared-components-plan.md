@@ -30,5 +30,5 @@ apps use them (exception: Jackin's brand-specific intro, outro and
 cockpit-to-capsule fade). The showcase itself stays a thin consumer:
 pages add wiring, demo data and option tables, never drawing,
 interaction or state logic of their own. Functional proof for every
-page lives in `tests/functional/showcase.rs`; see
+page lives in `crates/termrock-functional/tests/functional/showcase.rs`; see
 [functional testing](../functional-testing.md).

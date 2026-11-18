@@ -181,7 +181,10 @@ impl Sources {
                 })
                 .map(|(path, text)| (path.display().to_string(), text))
                 .collect(),
-            tests: api_inventory::test_names(root(), &["src", "tests", "apps"]),
+            tests: api_inventory::test_names(
+                root(),
+                &["src", "tests", "apps", "crates/termrock-functional/tests"],
+            ),
         }
     }
 }

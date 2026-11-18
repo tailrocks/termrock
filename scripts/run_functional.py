@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run the functional suite against freshly built candidate binaries.
 
-The Showcase, TablePro and Holla journeys (`tests/functional`) launch real
+The Showcase, TablePro and Holla journeys (`crates/termrock-functional`) launch real
 application binaries, but those binaries belong to other packages, so Cargo
 gives that test target no `CARGO_BIN_EXE_<name>`. This launcher closes the gap:
 

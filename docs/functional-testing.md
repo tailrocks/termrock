@@ -6,7 +6,7 @@ sends the same keyboard and mouse reports that a terminal sends, and asserts
 the visible consequences. It never constructs application state, calls widget
 handlers, injects hit-region IDs, or renders into a test backend.
 
-The reference source is [tests/functional](../tests/functional/main.rs). The
+The reference source is [tests/functional](../crates/termrock-functional/tests/functional/main.rs). The
 initial application review was against PR #26, commit
 `5b3dbd7ae799f325efbb4f4cc11b2f5518dec948`, on
 `design/interaction-polish`. This is the monolithic `junie-tui` package with four binaries. (The former
@@ -38,7 +38,7 @@ python3 scripts/run_functional.py --no-tests-fail
 
 The root journeys launch Showcase, TablePro and Holla, which are packages of
 their own, so the root `functional` target is given no `CARGO_BIN_EXE_<name>`.
-`tests/functional/bins.rs` reads `TERMROCK_TEST_SHOWCASE`, `TERMROCK_TEST_TABLEPRO`
+`crates/termrock-functional/tests/functional/bins.rs` reads `TERMROCK_TEST_SHOWCASE`, `TERMROCK_TEST_TABLEPRO`
 and `TERMROCK_TEST_HOLLA` at run time instead. A missing, relative or wrongly
 named path fails the test before a session opens, and nothing falls back to a
 `target/debug` file or an archived reference binary. `scripts/run_functional.py`
@@ -115,7 +115,7 @@ split larger existing gates as necessary.
 | --- | --- | --- |
 | Live driver | Registry `tuiscotti-tui-test = "=0.2.1"` (crate `tui_test`) | The only live driver: checked mouse/keyboard input, native PTY launch, owned terminal snapshots, bounded waits. |
 | Visual gate | Latest Tuiscotti main `f1fb3f276b8d49948881c07b3bbc619840b6cc93` (renamed dev-dependency `tuiscotti-latest`, 0.4.0) | Offline frozen check: every functional test ends with `App::visual("<id>")`, a `FrozenStore` check that asserts `is_pass()`. A missing or changed baseline fails. |
-| Tuiscotti CLI (latest, built from the pinned rev) | `tuiscotti accept --candidate <sample> --candidate-sha256 <sha> --expect-baseline missing --baselines tests/functional/baselines` | The only way a baseline is approved. Tests never approve baselines. |
+| Tuiscotti CLI (latest, built from the pinned rev) | `tuiscotti accept --candidate <sample> --candidate-sha256 <sha> --expect-baseline missing --baselines crates/termrock-functional/tests/functional/baselines` | The only way a baseline is approved. Tests never approve baselines. |
 
 ```toml
 [dev-dependencies]
@@ -145,7 +145,7 @@ oracle, scenario tables and the `baselines/oracle` pin. Its contract —
 "this screen looks like the approved frame" — is now carried per journey
 by the `App::visual` frozen check at the end of every functional test,
 with one approved protobuf `.tui.pb` baseline per test in
-`tests/functional/baselines/`. The frozen `visual-baseline` tag is not
+`crates/termrock-functional/tests/functional/baselines/`. The frozen `visual-baseline` tag is not
 moved, deleted or retargeted.
 
 ## Library data tests
@@ -429,7 +429,7 @@ that makes an unwanted earlier effect observable. Check disabled styling
 with the target held, then exercise a working control in the same session.
 Do not increase arbitrary sleeps until a flaky test appears green.
 
-Walk and look up through the shared helpers in `tests/functional/support.rs`,
+Walk and look up through the shared helpers in `crates/termrock-functional/tests/functional/support.rs`,
 never with a per-test loop that polls against a short deadline of its own. A
 deadline of 800 ms, 3 s or 5 s passes on an idle machine and fails when the
 harness shares CPU with other jobs, so these helpers end on the state they
@@ -623,7 +623,7 @@ exception below and no legacy-API tests:
    Tuiscotti state sample and compared with `FrozenStore` from latest
    Tuiscotti (`tuiscotti-latest`, main `f1fb3f2`). The test asserts
    `outcome.is_pass()`; a missing or changed baseline fails. A baseline
-   for every test that ends in `visual` lives in `tests/functional/baselines/`;
+   for every test that ends in `visual` lives in `crates/termrock-functional/tests/functional/baselines/`;
    each was approved once with the Tuiscotti CLI `accept` command — tests
    never approve.
    Checkpoints sit on deterministic screens (after `settle()`, not on
@@ -652,11 +652,11 @@ repository uses it.
 ## Suite composition
 
 Tests live one module per application — `showcase.rs`, `tablepro.rs`,
-`holla.rs` in `tests/functional`, and `jackin.rs` in
+`holla.rs` in `crates/termrock-functional/tests/functional`, and `jackin.rs` in
 `apps/jackin/tests/functional` (the `jackin-console` crate, because the test
 needs `CARGO_BIN_EXE_jackin`) — plus cross-cutting `lifecycle.rs` (resize and
 overlay ownership) and `visual.rs` (strict frozen check), all on the
-single shared harness in `tests/functional/support.rs`. The jackin test
+single shared harness in `crates/termrock-functional/tests/functional/support.rs`. The jackin test
 crate includes that file with `#[path]`; each crate keeps its approved
 baselines under its own `tests/functional/baselines`, and evidence goes to
 the workspace `target/functional` for both.
@@ -665,7 +665,7 @@ the workspace `target/functional` for both.
 `tuiscotti-latest`): a live `tui_test` snapshot is checked with
 `FrozenStore::check` and the test asserts `outcome.is_pass()` — an `Ok` result
 alone is not a pass, and a missing baseline fails. The approved baseline lives
-in `tests/functional/baselines/`; approval was done once with the Tuiscotti
+in `crates/termrock-functional/tests/functional/baselines/`; approval was done once with the Tuiscotti
 CLI `accept` command, never by the test itself.
 
 TablePro fix: the tab picker's Delete route now shares the Ctrl+W dirty-tab

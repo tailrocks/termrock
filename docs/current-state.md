@@ -34,9 +34,9 @@ does not exist in this tree yet.
 | `apps/jackin/src/fixtures/`, `apps/jackin/src/sim/` | `fixtures::Scenario`, `Surfaces::demo` and `Vocabulary::demo` and the 17 fixture worlds (`fixtures::world_for`; `capsule-terminal` is the Capsule with seven tabs of terminal panes, one in each link state, over scripted `sim::link::SimLink`s; `openshell-fixed` is the one with `Surfaces.fixed` and the OpenShell words; `launch-checks` is the one whose backend refuses a role the workspace does not allow and asks the env values a role prompts for), the start table `fixtures::entry_for` and the one demo constructor `fixtures::app_for`, which calls `app::assemble`; the simulated `Backend` (it owns the launch plan and `sim::launch::SimLaunch`), `OnePassword`, launch content and the scripted session player (`sim::pane`: `ScriptPane`, `AgentProcess`, `SessionScript`, `Step`). All behind the `demo` feature so the jackin repository can render the same worlds. The library `App` takes a `World`, an `app::Entry` (first page, outro when framed) and `app::AppOptions` (motion, frame, theme, `ClipboardMode`); it has no `Scenario`. |
 | `apps/jackin/src/bin/jackin-preview/` | The jackin demo binary: the command line over `fixtures` and `sim`. Binary name is `jackin-preview` (`cargo run --bin jackin-preview --features demo`). |
 | `apps/jackin/tests/*.rs` | Library tests of the `jackin-console` data API (`World`, `Snapshot`, the time source, external messages), run by `cargo nextest run --workspace --all-targets --all-features` (most files are gated on the `demo` feature and are empty targets without `--all-features`). They are not part of the CI `functional` suite. |
-| `apps/jackin/tests/functional/` | The jackin journeys and their approved baselines (`baselines/functional/jackin_*.tui.pb`), on the shared harness `tests/functional/support.rs`. |
+| `apps/jackin/tests/functional/` | The jackin journeys and their approved baselines (`baselines/functional/jackin_*.tui.pb`), on the shared harness `crates/termrock-functional/tests/functional/support.rs`. |
 | `crates/termrock/` | The facade: explicit re-exports, a small prelude and the feature set (`cli`, `terminal`, `product`, `work-metrics`). |
-| `tests/functional/` | The root crate's test estate: live PTY functional/integration tests plus the frozen visual gate. It launches the app binaries through `TERMROCK_TEST_<NAME>` (`bins.rs`, `scripts/run_functional.py`). See [functional testing](functional-testing.md). |
+| `crates/termrock-functional/tests/functional/` | The `termrock-functional` test estate: live PTY functional/integration tests plus the frozen visual gate. It launches the app binaries through `TERMROCK_TEST_<NAME>` (`bins.rs`, `scripts/run_functional.py`). See [functional testing](functional-testing.md). |
 | `tests/consumers/` | Four independent consumer fixtures, each its own workspace with a committed lockfile. See [API contract](api-contract.md). |
 | `.velnor/config.toml` | Source of truth for generated CI (`.github/` is generated, never hand-edited). See [CI](ci.md). |
 
@@ -274,7 +274,7 @@ raw `scan_started + scan_ticks` clock. A duration of 0 counts as one tick.
   (truecolor/256/16/mono/`NO_COLOR`), normal and small sizes.
 - Every test but the key tests of a refusal page ends in
   `App::visual("<id>")` (see [functional testing](functional-testing.md)), a `FrozenStore` check
-  against a committed baseline in `tests/functional/baselines/`.
+  against a committed baseline in `crates/termrock-functional/tests/functional/baselines/`.
   Baselines are approved only via the Tuiscotti CLI `accept` command.
 - Full account of the deleted legacy estate and its replacement
   mapping: [functional testing](functional-testing.md).

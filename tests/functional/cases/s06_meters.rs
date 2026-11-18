@@ -1116,9 +1116,9 @@ fn option_work_counters_card_follows_the_build() {
     let screen = app.wait_text("Work counters");
     let catalog = format!(
         "{} metrics, {} to {}",
-        junie_tui::metrics::METRIC_COUNT,
-        junie_tui::metrics::Metric::ALL[0].name(),
-        junie_tui::metrics::Metric::ALL[junie_tui::metrics::METRIC_COUNT - 1].name()
+        termrock::metrics::METRIC_COUNT,
+        termrock::metrics::Metric::ALL[0].name(),
+        termrock::metrics::Metric::ALL[termrock::metrics::METRIC_COUNT - 1].name()
     );
     let common = [
         catalog.as_str(),
@@ -1135,15 +1135,15 @@ fn option_work_counters_card_follows_the_build() {
     assert_size(&app, 120, 70);
     assert_eq!(
         flat(&screen).contains("compiled out"),
-        !junie_tui::metrics::ENABLED,
+        !termrock::metrics::ENABLED,
         "the Showcase binary and this test target disagree on `work-metrics` \
          (test target: {}). The app binaries must be built with the run's feature \
          set: see scripts/build-app-bins.sh (TCB_APP_FEATURES) and \
          scripts/run_functional.py.\n{}",
-        junie_tui::metrics::ENABLED,
+        termrock::metrics::ENABLED,
         text(&screen)
     );
-    if junie_tui::metrics::ENABLED {
+    if termrock::metrics::ENABLED {
         see(
             &screen,
             &[

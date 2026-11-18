@@ -1,0 +1,32 @@
+[package]
+name = "termrock-functional"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+description = "Showcase, TablePro and Holla pseudo-terminal journeys, and the frozen visual oracle"
+license = "MIT"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+doctest = false
+
+[features]
+# The `work-metrics` cases compare this target with the Showcase binary, which
+# `scripts/run_functional.py` builds with the run's features.
+work-metrics = ["termrock/work-metrics"]
+
+[[test]]
+name = "functional"
+path = "tests/functional/main.rs"
+
+[target.'cfg(unix)'.dev-dependencies]
+libc = "0.2"
+
+[dev-dependencies]
+termrock = { path = "../termrock", default-features = false, features = ["cli", "terminal"] }
+tui-test = { workspace = true }
+tuiscotti-latest = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+ratatui = { workspace = true }
