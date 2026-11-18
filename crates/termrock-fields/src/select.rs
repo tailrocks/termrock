@@ -3,23 +3,23 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Margin, Position, Rect};
 use ratatui::style::Color;
 
-use crate::core::event::{Key, Outcome};
-use crate::core::hints::{Binding, Bindings, HasHints, HintCx, nav_bindings, nav_hints};
-use crate::core::id::{Part, WidgetId};
-use crate::core::keymap::{Nav, NavKeys, unassigned_chord};
-use crate::core::list::{Cursor, KeyStep, Moved, Navigable, RowSource};
-use crate::core::refusal::{Control, Reason};
-use crate::core::response::Response;
-use crate::core::scroll::{Scrollable, TrackClick};
-use crate::theme::CursorStyle;
-use crate::ui::ctx::{RenderCtx, fill};
-use crate::ui::layer::{DismissReason, LayerSpec, Overlay};
-use crate::ui::popup::{Dismiss, Placement, backdrop_id, place_with, surface_for};
-use crate::widgets::keyhint::{Hint, hint};
-use crate::widgets::option_list::OptionList;
-use crate::widgets::scrollbar;
+use termrock_controls::keyhint::{Hint, hint};
+use termrock_controls::scrollbar;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::hints::{Binding, Bindings, HasHints, HintCx, nav_bindings, nav_hints};
+use termrock_core::id::{Part, WidgetId};
+use termrock_core::keymap::{Nav, NavKeys, unassigned_chord};
+use termrock_core::list::{Cursor, KeyStep, Moved, Navigable, RowSource};
+use termrock_core::refusal::{Control, Reason};
+use termrock_core::response::Response;
+use termrock_core::scroll::{Scrollable, TrackClick};
+use termrock_overlays::layer::{DismissReason, LayerSpec, Overlay};
+use termrock_overlays::option_list::OptionList;
+use termrock_runtime::ctx::{RenderCtx, fill};
+use termrock_runtime::popup::{Dismiss, Placement, backdrop_id, place_with, surface_for};
+use termrock_theme::CursorStyle;
 
-pub use crate::widgets::option_list::{SelectArrows, WheelMode};
+pub use termrock_overlays::option_list::{SelectArrows, WheelMode};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum TabInOpen {
@@ -55,7 +55,7 @@ pub struct Select {
 
     pub list: OptionList,
 
-    pub reveal: Option<crate::ui::reveal::Reveal>,
+    pub reveal: Option<termrock_runtime::reveal::Reveal>,
 
     pub arrows: SelectArrows,
 
@@ -63,7 +63,7 @@ pub struct Select {
 
     pub mixed: Option<String>,
 
-    pub type_ahead_precedence: Option<crate::core::list::TypeAheadPrecedence>,
+    pub type_ahead_precedence: Option<termrock_core::list::TypeAheadPrecedence>,
 
     pub press_drag: bool,
 
@@ -75,7 +75,7 @@ pub struct Select {
 
 impl Clone for Select {
     fn clone(&self) -> Self {
-        crate::record_work!(
+        termrock_metrics::record_work!(
             PayloadBytesCloned,
             self.options.iter().map(String::len).sum::<usize>()
         );
@@ -197,7 +197,7 @@ impl Select {
         self
     }
 
-    pub fn popup_fit(mut self, fit: crate::ui::popup::Place) -> Self {
+    pub fn popup_fit(mut self, fit: termrock_runtime::popup::Place) -> Self {
         self.list.fit = fit;
         self
     }
@@ -230,12 +230,12 @@ impl Select {
         self.control(Control::fixed(reason))
     }
 
-    fn typeahead_precedence(&self) -> crate::core::list::TypeAheadPrecedence {
+    fn typeahead_precedence(&self) -> termrock_core::list::TypeAheadPrecedence {
         if self.open {
-            crate::core::list::TypeAheadPrecedence::TypeAhead
+            termrock_core::list::TypeAheadPrecedence::TypeAhead
         } else {
             self.type_ahead_precedence
-                .unwrap_or_else(crate::core::list::TypeAheadPrecedence::current)
+                .unwrap_or_else(termrock_core::list::TypeAheadPrecedence::current)
         }
     }
 
@@ -315,7 +315,8 @@ impl Select {
         self.list.row_of(id, self.options.len())
     }
 
-    pub(crate) fn contains_id(&self, id: WidgetId) -> bool {
+    #[doc(hidden)]
+    pub fn contains_id(&self, id: WidgetId) -> bool {
         id == self.id
             || id == backdrop_id(self.id)
             || id == self.bar_id()
@@ -462,7 +463,7 @@ impl Select {
 
     pub fn type_ahead_precedence(
         mut self,
-        precedence: crate::core::list::TypeAheadPrecedence,
+        precedence: termrock_core::list::TypeAheadPrecedence,
     ) -> Self {
         self.type_ahead_precedence = Some(precedence);
         self
@@ -645,7 +646,8 @@ impl Select {
         buf.set_string(area.x + 2, area.y, &self.label, label_style);
         self.label_area = Rect::ZERO;
         if self.label_hit && !self.label.is_empty() {
-            let lw = crate::ui::text::width(&self.label).min(area.width.saturating_sub(2) as usize);
+            let lw =
+                termrock_text::cells::width(&self.label).min(area.width.saturating_sub(2) as usize);
             self.label_area = Rect::new(area.x, area.y, 2 + lw as u16, 1);
             ctx.clickable(self.id, self.label_area);
         }
@@ -663,7 +665,7 @@ impl Select {
             t.gutter(s, fs.bg.unwrap_or(bg), false),
         );
         let shown = self.mixed.as_deref().unwrap_or(self.value());
-        let value = crate::ui::text::truncate(shown, field.width.saturating_sub(5) as usize);
+        let value = termrock_text::cells::truncate(shown, field.width.saturating_sub(5) as usize);
         let vs = if self.mixed.is_some() {
             fs.patch(t.placeholder(s))
         } else {
@@ -672,7 +674,7 @@ impl Select {
         buf.set_string(field.x + 2, field.y, &value, vs);
         if !self.disabled && !self.open && self.mixed.is_none() {
             let cut = Rect::new(field.x + 2, field.y, field.width.saturating_sub(5), 1);
-            crate::ui::reveal::truncated(ctx, self.reveal, self.id, cut, self.value());
+            termrock_runtime::reveal::truncated(ctx, self.reveal, self.id, cut, self.value());
         }
         buf.set_string(
             field.right().saturating_sub(2),
@@ -693,7 +695,7 @@ impl Select {
             buf.set_string(
                 area.x + 2,
                 area.y + 2,
-                crate::ui::text::truncate(&self.help, area.width.saturating_sub(2) as usize),
+                termrock_text::cells::truncate(&self.help, area.width.saturating_sub(2) as usize),
                 t.muted().bg(bg),
             );
         }
@@ -722,7 +724,7 @@ impl Select {
         self.list.chosen = self.mixed.is_none().then_some(self.selected);
         let options = &self.options;
         let snapshot = self.list.snapshot(inner, &options[..], |i| {
-            crate::record_work!(PayloadBytesCloned, options[i].len());
+            termrock_metrics::record_work!(PayloadBytesCloned, options[i].len());
             options[i].clone()
         });
         let (id, dismiss, reveal) = (self.id, self.list.dismiss, self.reveal);
@@ -747,11 +749,17 @@ impl Select {
                     buf.set_string(
                         area.x + 3,
                         area.y,
-                        crate::ui::text::truncate(opt, area.width.saturating_sub(3) as usize),
+                        termrock_text::cells::truncate(opt, area.width.saturating_sub(3) as usize),
                         st,
                     );
                     let cut = Rect::new(area.x + 3, area.y, area.width.saturating_sub(3), 1);
-                    crate::ui::reveal::truncated(ctx, reveal, snapshot.row_id(row.index), cut, opt);
+                    termrock_runtime::reveal::truncated(
+                        ctx,
+                        reveal,
+                        snapshot.row_id(row.index),
+                        cut,
+                        opt,
+                    );
                 },
             );
 
@@ -777,7 +785,7 @@ impl Select {
     }
 }
 
-impl crate::core::focus::BlurTarget for Select {
+impl termrock_core::focus::BlurTarget for Select {
     fn blur_id(&self) -> WidgetId {
         self.id
     }
@@ -805,13 +813,13 @@ impl Navigable for Select {
     }
 }
 
-impl crate::ui::specimen::Specimen for Select {
+impl termrock_runtime::specimen::Specimen for Select {
     fn specimen_id(&self) -> WidgetId {
         self.id
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         match state {
             Rest | Hover | Pressed | Focused | FocusedHover | Disabled | Empty | Overflow
             | Narrow => true,
@@ -819,19 +827,19 @@ impl crate::ui::specimen::Specimen for Select {
         }
     }
 
-    fn specimen_height(&self, _state: crate::ui::specimen::SpecimenState) -> u16 {
+    fn specimen_height(&self, _state: termrock_runtime::specimen::SpecimenState) -> u16 {
         2
     }
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
         bg: Color,
     ) {
-        use crate::ui::specimen::SpecimenState;
+        use termrock_runtime::specimen::SpecimenState;
         let mut s = self.clone();
         s.open = false;
         s.help.clear();
@@ -849,7 +857,7 @@ impl crate::ui::specimen::Specimen for Select {
     }
 }
 
-impl crate::core::pointer::MouseTarget for Select {
+impl termrock_core::pointer::MouseTarget for Select {
     type Action = SelectAction;
 
     fn mouse_id(&self) -> WidgetId {
@@ -858,10 +866,10 @@ impl crate::core::pointer::MouseTarget for Select {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<SelectAction> {
-        use crate::core::intent::Phase;
-        use crate::core::response::Response;
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<SelectAction> {
+        use termrock_core::intent::Phase;
+        use termrock_core::response::Response;
         if let Some((axis, delta)) = ev.wheel() {
             if ev.part().part == Part::BACKDROP || !self.open || self.disabled {
                 return Response::ignored();
