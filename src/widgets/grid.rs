@@ -17,7 +17,7 @@ use crate::core::pointer::PointerEvent;
 use crate::core::response::Response;
 use crate::core::scroll::{HScroll, ScrollPane, Scrollable};
 use crate::core::selection::{ClickPolicy, RowSelection, SelectGesture};
-use crate::theme::{SyntaxTone, Theme};
+use crate::theme::SyntaxTone;
 use crate::ui::column_solver::ColumnSizing;
 use crate::ui::context::{ContextAnchor, ContextRequest, ContextSource, row_rect};
 use crate::ui::ctx::{RenderCtx, VisualState, fill};
@@ -440,14 +440,7 @@ impl PendingChanges {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RowState {
-    Clean,
-    Modified,
-    Inserted,
-    Deleted,
-    Error,
-}
+pub use crate::theme::RowState;
 
 #[derive(Debug, Clone)]
 pub struct EditState {
@@ -4071,18 +4064,6 @@ fn shown_prefix(w: usize, make: impl Fn(usize) -> (String, bool)) -> String {
             return text;
         }
         limit = limit.saturating_mul(2);
-    }
-}
-
-impl Theme {
-    pub fn change_glyph(&self, state: RowState) -> (&'static str, Color) {
-        match state {
-            RowState::Clean => (" ", self.text_faint),
-            RowState::Modified => (self.glyphs.dirty, self.warning),
-            RowState::Inserted => ("+", self.text_secondary),
-            RowState::Deleted => (self.glyphs.removed, self.text_muted),
-            RowState::Error => ("!", self.error),
-        }
     }
 }
 

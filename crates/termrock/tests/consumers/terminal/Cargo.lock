@@ -565,6 +565,7 @@ dependencies = [
  "termrock-core",
  "termrock-metrics",
  "termrock-text",
+ "termrock-theme",
  "unicode-segmentation",
  "unicode-width",
 ]
@@ -1478,6 +1479,14 @@ dependencies = [
  "termrock-metrics",
  "unicode-segmentation",
  "unicode-width",
+]
+
+[[package]]
+name = "termrock-theme"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "termrock-core",
 ]
 
 [[package]]

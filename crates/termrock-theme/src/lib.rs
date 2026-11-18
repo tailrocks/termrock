@@ -602,16 +602,16 @@ pub struct Theme {
 
     pub strings: Strings,
 
-    pub edit_entry: crate::core::edit::EditEntry,
+    pub edit_entry: termrock_core::edit::EditEntry,
 
-    pub field_keys: Option<crate::core::edit::FieldKeys>,
+    pub field_keys: Option<termrock_core::edit::FieldKeys>,
 
     pub card_heading: CardHeading,
 }
 
 impl Theme {
-    pub const DEFAULT_EDIT_ENTRY: crate::core::edit::EditEntry =
-        crate::core::edit::EditEntry::Immediate;
+    pub const DEFAULT_EDIT_ENTRY: termrock_core::edit::EditEntry =
+        termrock_core::edit::EditEntry::Immediate;
 
     pub const fn junie() -> Self {
         use palette::*;
@@ -997,7 +997,7 @@ impl Theme {
         self
     }
 
-    pub const fn with_edit_entry(mut self, entry: crate::core::edit::EditEntry) -> Self {
+    pub const fn with_edit_entry(mut self, entry: termrock_core::edit::EditEntry) -> Self {
         self.edit_entry = entry;
         self
     }
@@ -1012,7 +1012,7 @@ impl Theme {
         self
     }
 
-    pub const fn with_field_keys(mut self, keys: crate::core::edit::FieldKeys) -> Self {
+    pub const fn with_field_keys(mut self, keys: termrock_core::edit::FieldKeys) -> Self {
         self.field_keys = Some(keys);
         self
     }
@@ -1913,7 +1913,7 @@ pub enum HintAlign {
     Center,
 }
 
-impl crate::core::selection::CheckGlyphs for Glyphs {
+impl termrock_core::selection::CheckGlyphs for Glyphs {
     fn check_on(&self) -> &'static str {
         self.check_on
     }
@@ -2073,9 +2073,9 @@ impl Glyphs {
         sort_desc: "▾",
         ellipsis: "…",
         separator: " · ",
-        check_on: crate::core::selection::CHECK_ON,
-        check_off: crate::core::selection::CHECK_OFF,
-        check_mixed: crate::core::selection::CHECK_MIXED,
+        check_on: termrock_core::selection::CHECK_ON,
+        check_off: termrock_core::selection::CHECK_OFF,
+        check_mixed: termrock_core::selection::CHECK_MIXED,
         tick: "✓",
         check_off_narrow: "□",
         dash: "–",
@@ -2510,7 +2510,7 @@ impl HintBarStyle {
     };
 }
 
-impl crate::core::hints::PinnedKeys for HintBarStyle {
+impl termrock_core::hints::PinnedKeys for HintBarStyle {
     fn pinned_keys(&self) -> &[&str] {
         self.pinned_keys
     }
@@ -2668,6 +2668,28 @@ fn nearest_16(r: u8, g: u8, b: u8) -> Color {
             } else {
                 Color::Blue
             }
+        }
+    }
+}
+
+/// How a grid row differs from its source: the state `Theme::change_glyph` draws.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RowState {
+    Clean,
+    Modified,
+    Inserted,
+    Deleted,
+    Error,
+}
+
+impl Theme {
+    pub fn change_glyph(&self, state: RowState) -> (&'static str, Color) {
+        match state {
+            RowState::Clean => (" ", self.text_faint),
+            RowState::Modified => (self.glyphs.dirty, self.warning),
+            RowState::Inserted => ("+", self.text_secondary),
+            RowState::Deleted => (self.glyphs.removed, self.text_muted),
+            RowState::Error => ("!", self.error),
         }
     }
 }
