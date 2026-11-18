@@ -1468,3 +1468,64 @@ name the owner crates instead of `junie_tui::`.
   config, the generated manifest and `.velnor/config.toml`) are dev-dependencies
   of the crate at the pins `junie-tui` used; `junie-tui` keeps `syn` and `toml` for
   `layering`.
+
+## 2026-11-19: The root becomes a virtual workspace and `junie-tui` a re-export shim (#439, #452)
+
+Context: the root package `junie-tui` held the library. After #444 to #451 every module lives in a
+`crates/termrock-*` crate, the tests, the consumer fixtures and the functional suite live under
+`crates/`, and the root `src/` held only `pub use` lines. `docs/api-contract.md` promises that
+`junie_tui::` paths keep compiling and that removing the implementation names is a versioned decision.
+Two repositories depend on `junie-tui` by git rev (`jackin-project/jackin`, whose `xtask` baseline check
+requires the `junie-tui` and `jackin-console` pins to match, and `donbeave/essential-mise`). Cargo
+refuses two packages named `junie-tui` in one workspace, so the shim and the virtual root cannot land
+apart.
+
+Decision:
+
+- **The root `Cargo.toml` is a virtual manifest** with `resolver = "3"` set explicitly (a virtual manifest
+  does not infer it from an edition). It has no `[package]`, `[lib]`, `[features]` or `[dependencies]`, and
+  the repository has no `src/`, `tests/` or `examples/`. `layering` asserts it.
+- **`crates/termrock` depends on the 22 library crates itself** and carries the features the root package
+  held (`cli`, `terminal`, `product`, `work-metrics`; default empty). `core`, `metrics`, `ui` and `widgets`
+  are explicit `pub use` lists, never a glob over a crate, so the `#[doc(hidden)]` items listed in
+  `crates/termrock-catalog/tests/regressions/doc-hidden-items.txt` (and `termrock-core::{field, item}`)
+  stay out of the facade. `core::text` is `pub use termrock_text::buffer as text`. The id digest
+  `api-ids.sha256` is unchanged by this: the file only moved.
+- **`junie-tui` stays as `crates/junie-tui`**: `pub use termrock::*;`, the old defaults `cli` and
+  `terminal`, and every feature forwarded to `termrock`. It holds no code and has no `#[deprecated]`
+  attribute (an attribute on a glob does nothing, and wrapping each module would break consumers built with
+  `-D warnings`). Nothing in this workspace depends on it, and `layering` fails an edge to it. Its
+  `regressions` target holds the identity test. Removing it, or adding the attribute, is a later versioned
+  decision.
+- **The `junie-tui:fence` and `junie-tui:advance-clock:` protocol strings, and the screen text that says
+  `junie-tui`, are not renamed.** They are runtime protocol and baseline content.
+- **The #14 walker takes `crates/termrock/src` as the facade always.** The earlier rule read the root
+  `src/lib.rs` while it existed; with a leftover root `src/lib.rs` it would walk the wrong tree.
+- **The facade's `prelude` is spelled by the catalog where the items are defined** (`core::id::ItemKey`
+  and the eight others). The prelude's paths now resolve inside the walk, so the bare walk would spell
+  them `prelude::`; `MOVED_KEEPING_SPELLING` names the nine.
+- **Stage A of `layering` is deleted with the last module of the single package**, together with `[files]`
+  and `layering-allowlist.tsv`. Stage B stays, and now also covers the shim (nothing depends on it; it must
+  forward every feature of `termrock`).
+
+Root tests (#450). The tests that were left at the root move to the crate they import: `clipboard` to
+`termrock-shell`, `file_source` to `termrock-dialogs`, the six terminal files to `termrock-terminal`, and
+everything that includes the shared `common` harness or reads the facade paths to
+`crates/termrock/tests/regressions`. `deferred_api_calls` imports a widget of `termrock-grid` and one of
+`termrock-navigation`, which are siblings that may not depend on each other even as dev-dependencies
+(`layering` checks them), so it goes to the facade rather than to `termrock-grid` as #450's table said.
+`terminal_guard` installs a counting `#[global_allocator]`, which now applies to the whole `termrock-terminal`
+`regressions` binary; its peak measurements assume one test per process, which is how `cargo nextest` runs
+them. The #14 digest and the hidden-item list moved to `crates/termrock-catalog/tests/regressions`, beside
+the gate that reads them. Test names gain the module prefix of the file that held them (`terminal::` and so
+on); the sorted lists differ only by that prefix and the binary id.
+
+Consequences: the generated job set is unchanged (the same 68 `Rust /` names; the shim keeps
+`Rust / junie-tui` and its product job); the shim's task key moves from `root` to `crates/junie-tui`. The
+`nextest` filters that named `junie-tui` binary ids already name `termrock-conformance`,
+`termrock-shell` and `termrock-functional` (#449, #451).
+
+Rejected: removing `junie-tui` now (it breaks both git consumers at their next bump and needs consumer pull
+requests that do not exist); keeping the package at the root next to a virtual manifest (impossible, a
+virtual manifest has no package); a `[patch]` or `package =` alias in the facade (a second name for one
+crate); `#[deprecated]` on the shim (see above).

@@ -1,38 +1,37 @@
 # Architecture and layering
 
-The repository is moving from one package to a workspace of focused
-`termrock-*` crates, preserving the observable behaviour, the visual language
-and the `termrock::` public paths of the current code (see
-[current state](current-state.md) and [product](product.md)). Epic #439 tracks
-the split. A crate boundary is accepted only when real consumers use it and the
-gates below pass.
+The repository is a workspace of focused `termrock-*` crates, split from one
+package (epic #439) with the observable behaviour, the visual language and the
+`termrock::` public paths of the code before the split unchanged (see
+[current state](current-state.md) and [product](product.md)). A crate boundary
+is accepted only when real consumers use it and the gates below pass.
 
-## Where the code is today
+## Where the code is
 
-One package holds all library code: `junie-tui`, the repository root
-(`Cargo.toml`, library `junie_tui`, `src/`). Its modules are `core`, `theme`,
-`ui`, `widgets`, `shell`, `runtime` (with `clock`), `terminal`, `cli`,
-`metrics`, `motion`, `catalog` and `docs`. `crates/termrock` is the facade the
-four applications import. `apps/showcase`, `apps/tablepro`, `apps/holla` and
-`apps/jackin` are the applications. No other library crate exists yet.
+The root `Cargo.toml` is a virtual workspace manifest: no package, no `src/`,
+no `tests/`, no `examples/`. The library is the 22 crates of the table below
+under `crates/`. `crates/termrock` is the facade the four applications
+(`apps/showcase`, `apps/tablepro`, `apps/holla`, `apps/jackin`) import, and it
+re-exports every module at the path the single package exposed. `crates/junie-tui`
+is the deprecated shim for consumers that name the old package: it is
+`pub use termrock::*;` with the old default features, and nothing in this
+workspace depends on it. `crates/termrock-functional` and `crates/functional-cross`
+hold the pseudo-terminal journeys; nothing depends on them.
 
-Because everything is one crate, the compiler allows any module to use any
-other, and `ui` and `widgets` form one cycle. [`docs/layering.toml`](layering.toml)
-and the `layering` regression test make the target direction a checked
-artifact first, so the split cannot regress while it is in flight and cannot
-drift afterwards.
+The compiler enforces the direction of dependencies between crates; the
+[`docs/layering.toml`](layering.toml) table and the `layering` regression test
+make that direction a checked artifact, so it cannot drift.
 
 ## Target crates
 
-Every row is a package under `crates/`. Names are the real ones the programme
-creates; "Built from" names the current source. The exact crate each source
-file will land in is `[files]` in `docs/layering.toml`.
+Every row is a package under `crates/`. "Built from" names the source in the
+single package before the split, for tracing history.
 
-| Layer | Crate | Owns | Built from (today) |
+| Layer | Crate | Owns | Built from (before the split) |
 | --- | --- | --- | --- |
 | Foundations | `termrock-metrics` | Work counters, `Metric`, `record_work!`, measurement. | `src/metrics.rs`, `src/metrics/{measurement,state}.rs` |
 | Foundations | `termrock-text` | Cell width, truncate, wrap, `TextBuffer`, text index. | `ui/text.rs`, `core/text.rs`, `core/text_index.rs` |
-| Foundations | `termrock-core` | IDs, events, intents, response, hit testing, focus, key maps, list and keyed sources, scroll state, selection, edit grammar, motion, line-edit substrate. | `src/core/*`, `motion.rs`, `widgets/{edit,field_common,text_select}.rs` |
+| Foundations | `termrock-core` | IDs, events, intents, response, hit testing, focus, key maps, list and keyed sources, scroll state, selection, edit grammar, motion, line-edit substrate. | `core/*`, `motion.rs`, `widgets/{edit,field_common,text_select}.rs` |
 | Foundations | `termrock-theme` | `Theme`, palettes, glyphs, `VisualState`, `CardHeading`. | `src/theme.rs` |
 | Runtime | `termrock-runtime` | `RenderCtx`, reveal, tooltip, popup, measure, row, fade, specimen trait, column solver. | `ui/{ctx,popup,reveal,tooltip,measure,row,fade,fitting,columns,specimen}.rs` |
 | Runtime | `termrock-session` | `TerminalSession`, job control, external channel, raw-input sources and policies, `Coalesce`, panic bridge, clock. The `Application` trait and the run loop are in `termrock-shell` after #448 (see the decision below). | `src/runtime.rs` (the parts that do not name `Application`), `src/runtime/*`, `clock.rs` |
@@ -57,7 +56,7 @@ file will land in is `[files]` in `docs/layering.toml`.
 
 `termrock-functional` (the PTY journeys formerly in `tests/functional`) and
 `functional-cross` are test-only crates; nothing depends on them. `junie-tui`
-stays as a transitional deprecated shim once the split ends (#452).
+is a deprecated shim (#452); removing it is a later, versioned decision.
 
 ## Dependency direction
 
@@ -73,37 +72,29 @@ concept.
   may use whatever its dependencies already use.
 - `[layers]` puts each crate in a layer; a dependency may not point to a higher
   one.
-- `[files]` maps each source file of the single package to the crate that will
-  own it. It exists only until #452.
 
-The `layering` test (`tests/regressions/layering.rs`) enforces it:
+The `layering` test (`crates/termrock/tests/regressions/layering.rs`) reads
+`cargo metadata` and checks every `termrock-*` package's normal and dev
+dependencies against `[allow]`, rejects cycles, rejects a `termrock-*` package
+missing from the table, requires each application to depend on `termrock` and on
+no library crate, rejects any dependency on the `junie-tui` shim, rejects a
+feature that a crate declares but does not forward to a dependency that
+declares it, and rejects a `crates/termrock-*` or `apps/*` directory that is not
+a workspace member. It also asserts that the root manifest has no `[package]`
+and that the root has no `src/`, `tests/` or `examples/`. The message names the
+crate, the dependency and the fix: move the item down or invert the
+dependency. There is no allowlist. This check complements
+`crates/termrock/tests/regressions/facade_contract.rs` (applications import the
+facade only) and does not replace it.
 
-1. Stage A, modules. It parses every `.rs` file under `src/`, resolves each
-   `crate::`, `self::` and `super::` path to the module that defines it, maps
-   both ends to crates through `[files]` and fails on an edge `[allow]` does
-   not permit. The message names the file, the importing crate, the imported
-   crate and the fix: move the item down or invert the dependency; do not edit
-   the allowlist.
-2. Stage B, crates. It reads `cargo metadata` and checks every `termrock-*`
-   package's normal and dev dependencies against `[allow]`, rejects cycles,
-   rejects a `termrock-*` package missing from the table, and requires each
-   application to depend on `termrock` and on no library crate. It stays off
-   until the first `crates/termrock-*` directory exists (#444).
-
-The dependencies that already point up are recorded in
-`tests/regressions/layering-allowlist.tsv`. It may only shrink: #441 removes
-the `core` and `theme` rows, #442 the `ui` and `widgets` rows and the
-`ui::layers` test rows, and #447 the two `test_alloc` rows. A line that no longer
-matches a dependency fails as stale. This check complements `tests/regressions/facade_contract.rs`
-(applications import the facade only) and does not replace it.
+Before #452 the same table also had a `[files]` section and a module-level
+stage A that scanned the single package, with an allowlist that only shrank;
+both left with the last module of that package.
 
 ### Extending the check
 
-An extraction PR moves files with `git mv`, deletes the `[files]` entries of the
-files it moved (they now belong to a crate of their own) and adds the crate to
-`order`, `layers` and `allow` if the row is not there yet. While the shrinking
-package keeps a transitional `pub use termrock_x::module as name;`, stage A
-attributes a path through that shim to `termrock-x`.
+A new crate is added to `order`, `layers` and `allow` in the same PR that
+creates it.
 
 ## Where the target differs from the earlier plan
 

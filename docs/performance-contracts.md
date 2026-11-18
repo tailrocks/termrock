@@ -6,7 +6,7 @@ repository makes no latency claim from it.
 
 ## Counters
 
-`junie_tui::metrics` defines `Metric`, one variant per unit of work, and the
+`termrock::metrics` defines `Metric`, one variant per unit of work, and the
 macro `record_work!(Metric, amount)`. Production code marks the work site with
 the macro.
 
@@ -23,7 +23,7 @@ the macro.
 - Only metrics that have a production work site are listed. A metric that is
   not listed is not measured. That is different from zero.
 
-`jackin-console` forwards its `work-metrics` feature to `junie-tui`.
+`jackin-console` forwards its `work-metrics` feature to `termrock`.
 
 ### Terminal output boundary
 
@@ -436,7 +436,7 @@ checks both, and that each timing test is `#[ignore]`d.
 
 A timing report is a different file from a count report. It is
 `<target dir>/performance/<scenario>-<operation>-<records>.timing.json`, schema
-version 2, written by `junie_tui::metrics::measurement::MeasurementReport`.
+version 2, written by `termrock::metrics::measurement::MeasurementReport`.
 Fields:
 
 | Field | Meaning |

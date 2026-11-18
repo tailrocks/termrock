@@ -20,10 +20,12 @@ termrock = { git = "https://github.com/tailrocks/terminal-components-baseline", 
 ```
 
 Import from `termrock::` (`termrock::widgets`, `termrock::ui`, `termrock::core`,
-`termrock::prelude`). The repository root package `junie-tui` is the
-implementation behind it and keeps working for existing consumers. The
-supported imports, features, ownership rules and the v0.1 migration are in the
-[API contract](docs/api-contract.md).
+`termrock::prelude`). The library is a set of `termrock-*` crates under
+`crates/`, and `crates/termrock` re-exports them; the repository root is a
+virtual workspace. The package `junie-tui` (`crates/junie-tui`) is a deprecated
+re-export of `termrock` with the old default features, kept so existing git
+consumers keep compiling. The supported imports, features, ownership rules and
+the v0.1 migration are in the [API contract](docs/api-contract.md).
 
 Working consumers, each an independent package that compiles from its declared
 features alone (`bash scripts/check-consumers.sh` runs all four):

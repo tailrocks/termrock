@@ -17,11 +17,13 @@ root.
 | Lint, product shape | `cargo clippy --locked -p jackin-console --all-targets --no-default-features --features product -- -D warnings` |
 | Format check | `cargo fmt --all --check` |
 
-The workspace default members are `junie-tui`, `termrock`, the four app
-packages (`apps/holla`, `apps/jackin`, `apps/showcase`, `apps/tablepro`) and
-`functional-cross`, so these commands cover all of them. The `functional`
-profile selects the `functional` target of `junie-tui`, `jackin-console` and
-`functional-cross`. To run the root journeys against freshly built candidates,
+The workspace is virtual: the root `Cargo.toml` holds no package. The default
+members are the `termrock-*` library crates, `termrock`, the `junie-tui` shim,
+the four app packages (`apps/holla`, `apps/jackin`, `apps/showcase`,
+`apps/tablepro`), `termrock-functional` and `functional-cross`, so these commands
+cover all of them. The `functional` profile selects the `functional` target of
+`termrock-functional`, `jackin-console` and `functional-cross`. To run the
+journeys against freshly built candidates,
 use `python3 scripts/run_functional.py` (see
 [functional testing](functional-testing.md)).
 

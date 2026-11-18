@@ -25,32 +25,36 @@ change the config and run `velnor-actions generate`.
   from `cargo nextest list --all-features`, that every family and app still
   contributes its required tests. See
   [performance contracts](performance-contracts.md#the-performance-ci-suite).
-- **Rust / junie-tui** and **Rust / jackin-console** — one job per
-  default workspace member, built with `--all-features`. Each runs
+- **Rust / `<package>`** (for example **Rust / termrock-core**, **Rust /
+  termrock-grid** and **Rust / jackin-console**) — one job per default workspace
+  member, built with `--all-features`. The root `Cargo.toml` is virtual, so the
+  members are the `termrock-*` library crates under `crates/`, the facade, the
+  `junie-tui` shim, the apps, `termrock-functional` and `functional-cross`. Each runs
   `cargo nextest run --profile ci --package <crate> --no-tests fail
   --all-features`, which selects every test target of the package except
   `functional` (the `ci` profile's default filter is `not binary(functional)`:
   the `functional` targets run in `suite-functional`), plus clippy `-D warnings`
   on `--all-targets`, `cargo fmt --check` and `cargo doc`. Keep the filter
   that way, or the PTY journeys run twice.
-- **Rust / junie-tui (product)** and **Rust / jackin-console
-  (product)** — the same five tasks for the product shape. The second
-  configuration in `.velnor/config.toml` selects the feature `product`,
-  so `jackin-console` gets `--no-default-features --features product`
-  (no demo data, no `clap`, no `jackin-preview`). `junie-tui` declares
-  `product = ["terminal"]`, so its job builds the library shape that
-  jackin consumes (`default-features = false, features = ["terminal"]`):
-  `termpane` in, `clap` out. The root package has no binaries, and its
-  `functional` target requires `cli`, so it is skipped there.
-- **Rust / termrock** and **Rust / termrock (product)** — the facade
-  crate `crates/termrock`, which re-exports `junie-tui` under the supported
-  import path and has empty default features. The product job builds it with
-  `--no-default-features --features product`. Its tests live in the shared
+- **Rust / `<package>` (product)** — the same five tasks for the product shape.
+  The second configuration in `.velnor/config.toml` selects the feature
+  `product`, so `jackin-console` gets `--no-default-features --features product`
+  (no demo data, no `clap`, no `jackin-preview`). `termrock` declares
+  `product = ["terminal"]`, so its job builds the library shape that jackin
+  consumes (`default-features = false, features = ["terminal"]`): `termpane` in,
+  `clap` out.
+- **Rust / termrock** and **Rust / termrock (product)** — the facade crate
+  `crates/termrock`, which re-exports the `termrock-*` crates under the supported
+  import path and has empty default features. Its tests live in the shared
   `crates/termrock/tests/regressions` target.
+- **Rust / junie-tui** and **Rust / junie-tui (product)** — the deprecated shim
+  `crates/junie-tui`, which is `pub use termrock::*;` with the old default
+  features. Its one test target, `regressions`, holds the identity test of the
+  shim against the facade.
 - **Rust / termrock-catalog** and **termrock-catalog (product)** — the
   declared-API gate of #14: the source gate `catalog_contract` (the `catalog_`
-  tests, which also hold the committed id digest and the `doc-hidden-items.txt`
-  list) and the shared `regressions` target. The command that runs it with the
+  tests; the committed id digest and the `doc-hidden-items.txt` list are in
+  `crates/termrock-catalog/tests/regressions`) and the shared `regressions` target. The command that runs it with the
   Showcase scenarios is `cargo nextest run -p termrock-catalog -p
   termrock-showcase --all-features --no-tests fail -E 'test(catalog_)'`.
 - **Rust / termrock-conformance** and **termrock-conformance (product)** — the
@@ -70,8 +74,8 @@ change the config and run `velnor-actions generate`.
   each with a **(product)** job — the five tasks for the three application
   packages under `apps/`. They import `termrock` only. The binary unit tests
   (the work-metrics scenarios, the Showcase catalog and coverage gates) run
-  here. The journeys that launch them are the root package's `functional`
-  target, run by `suite-functional`; it takes each binary from
+  here. The journeys that launch them are the `functional` target of
+  `termrock-functional`, run by `suite-functional`; it takes each binary from
   `TERMROCK_TEST_<NAME>`, which the nextest setup script `app-bins` exports
   (see [functional testing](functional-testing.md)).
 - **Rust / termrock-consumer-minimal**, **-keyed-modal**, **-terminal** and
@@ -92,7 +96,7 @@ change the config and run `velnor-actions generate`.
 ## Test targets and generated CI
 
 The generated `ci.yml` and `state-seal.yml` embed the name of every
-top-level integration test target (`tests/*.rs`, `apps/jackin/tests/*.rs`)
+top-level integration test target (`crates/*/tests/*.rs`, `apps/jackin/tests/*.rs`)
 in `VELNOR_MBX_STATS_WORKSPACE`. A new top-level test file therefore changes
 the generated YAML, and the Plan job fails with `Files
 .github/workflows/ci.yml and <regenerated> differ` until the workflows are
@@ -102,8 +106,10 @@ generated YAML, which must never be resolved by hand.
 New integration tests go into the shared `regressions` target of their
 package, which keeps the target list stable:
 
-- `junie-tui`: `tests/regressions/<topic>.rs` plus `mod <topic>;` in
-  `tests/regressions/main.rs`.
+- Every library crate: `crates/<crate>/tests/regressions/<topic>.rs` plus
+  `mod <topic>;` in that crate's `tests/regressions/main.rs`. A test goes to the
+  highest crate it imports, and to `crates/termrock` when it needs the facade
+  paths or several sibling crates. There is no root `tests/` directory.
 - `termrock-conformance`: `crates/termrock-conformance/tests/regressions/<topic>.rs`
   plus `mod <topic>;` in its `main.rs` (the cost contracts of #56, the inventory
   gate and the default-branch guard).
@@ -111,7 +117,7 @@ package, which keeps the target list stable:
   `mod <topic>;` in `apps/jackin/tests/regressions/main.rs` (the target is
   gated by the `demo` feature).
 
-Add a new top-level `tests/*.rs` only when a test needs its own binary
+Add a new top-level `crates/<crate>/tests/*.rs` only when a test needs its own binary
 (different features, harness or process-wide state), and regenerate in the
 same change with `mise exec -- velnor-actions generate`.
 

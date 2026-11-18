@@ -17,17 +17,24 @@ termrock = { git = "https://github.com/tailrocks/terminal-components-baseline", 
 
 | Package | Import | Role |
 | --- | --- | --- |
-| `termrock` (`crates/termrock`) | `termrock::` | The supported import path. A re-export facade with a small prelude. |
-| `junie-tui` (repository root) | `junie_tui::` | The implementation package. It keeps its name during this migration. Existing consumers keep working. |
+| `termrock` (`crates/termrock`) | `termrock::` | The supported import path. A re-export facade over the `termrock-*` library crates, with a small prelude. |
+| `junie-tui` (`crates/junie-tui`) | `junie_tui::` | Deprecated. A re-export of `termrock` with the old default features (`cli`, `terminal`), kept so existing consumers keep compiling. It holds no code. |
 | `termrock-showcase`, `termrock-tablepro`, `termrock-holla` (`apps/*`) | none | Applications. They import `termrock` only. |
 | `jackin-console` (`apps/jackin`) | `jackin_console::` | The Jackin host library and its `jackin-preview` demo. It imports `termrock` only. |
 
-Every module of the facade is a `pub use` of the implementation module, so a
-type has one identity under both paths. `facade_basic_types_preserve_identity`
-in `crates/termrock/tests/regressions/type_identity.rs` passes a facade
-`Response`, `ItemKey`, `WidgetId` and `RowSource` to functions typed against
-`junie_tui`. A consumer that mixes both paths gets no conversion and no second
-type.
+Every module of the facade is a `pub use` of the module of the crate that owns
+it (`termrock-core`, `termrock-runtime`, `termrock-controls`, and so on), and
+`core`, `metrics`, `ui` and `widgets` are assembled from several crates with
+explicit lists, so a type has one identity under `termrock::`, under the owning
+crate and under `junie_tui::`. `facade_basic_types_preserve_identity` in
+`crates/termrock/tests/regressions/type_identity.rs` passes a facade `Response`,
+`ItemKey`, `WidgetId` and `RowSource` to functions typed against the owning
+crates, and `crates/junie-tui/tests/regressions/identity.rs` does the same
+against `junie_tui`. `facade_module_paths_resolve` fails when a module path that
+the single package exposed before the split stops resolving. A consumer that
+mixes the paths gets no conversion and no second type. Depend on `termrock`,
+not on the `termrock-*` crates: their names and boundaries are not part of this
+contract.
 
 The facade exports `clock`, `core`, `metrics`, `motion`, `record_work`,
 `runtime`, `shell`, `theme`, `ui` and `widgets` always; `cli` with the `cli`
@@ -46,12 +53,12 @@ The prelude holds `ItemKey`, `WidgetId`, `RowSource`, `KeyedRowSource`,
 | none (the default is empty) | The modules above that carry no optional dependency. | No `clap`, no `termpane`. |
 | `cli` | `termrock::cli`, `clap` | Command-line argument types, including `Motion` as a `clap::ValueEnum`. |
 | `terminal` | `termrock::terminal`, `termpane` | The terminal emulator, viewport and session controller. |
-| `product` | `terminal` and the implementation's `product` | The shape of a shipped product: no demo code. |
+| `product` | `terminal` | The shape of a shipped product: no demo code. |
 | `work-metrics` | The work counters behind `record_work!` | Opt-in: off unless a build enables it, whatever the profile. See [performance contracts](performance-contracts.md). |
 
-The implementation package keeps its old defaults (`cli` and `terminal`) so
-that an existing `junie-tui` consumer does not change silently. The facade
-does not inherit them.
+The `junie-tui` shim keeps the old defaults (`cli` and `terminal`) so that an
+existing `junie-tui` consumer does not change silently, and forwards every
+feature to `termrock`. The facade does not inherit them.
 
 Cargo unifies the features of one package across a whole build, so a workspace
 build with `--all-features` shows nothing about what a single consumer gets.
@@ -65,7 +72,7 @@ and each runs in its own Cargo invocation and target directory. See the
   exists for positional convenience constructors; a keyed provider must not
   return it, and `KeyedState::reconcile` rejects a provider that does.
 - A collection keeps its cursor, anchor, selection, expansion, edit target and
-  pointer press by key in `KeyedState` (`src/core/keyed.rs`). Indices are
+  pointer press by key in `KeyedState` (`crates/termrock-core/src/keyed.rs`). Indices are
   transient view positions. A consumer does not mirror selection in its own
   index fields.
 - A keyed provider implements `KeyedRowSource`: `stamp`, `source_len` and
@@ -171,8 +178,9 @@ terminal on drop and on panic.
 Version 0.1 is not a compatibility release. A consumer of an older checkout:
 
 1. Replaces `junie_tui::` with `termrock::` and depends on `crates/termrock`.
-   The facade names are the implementation names, so the replacement is
-   mechanical. The old path keeps compiling.
+   The facade names are the old implementation names, so the replacement is
+   mechanical. The old path keeps compiling: `junie-tui` is now a re-export of
+   `termrock` at `crates/junie-tui` (below).
 2. Declares the features it needs. The facade default is empty; add `cli`
    and `terminal` explicitly if the code used them through the old defaults.
 3. Reads collection selection by key (`ListBox::keyed`) and iterates
@@ -193,8 +201,15 @@ Version 0.1 is not a compatibility release. A consumer of an older checkout:
    | `Part::{ACTION, BADGE, BODY, BORDER, CHANGE, DETAIL, EMPTY, GUTTER, HELP, LABEL, META, PLACEHOLDER, PREFIX, RULE, SUMMARY, TEXT}` | `Part::custom("name")` for a region of the host's own. The numbers of the remaining parts are unchanged. |
    | `StateFlags` | A host-owned `bitflags` type, or the `VisualState` and `Theme` modifiers the widgets already use. |
 
-A rename or removal of the implementation names is a separate, versioned
-decision.
+6. If it depends on `junie-tui` by git, nothing breaks. The package `junie-tui`
+   is now at `crates/junie-tui`, and Cargo finds it by name in the repository.
+   It re-exports `termrock` with `cli` and `terminal` on by default, so
+   `default-features = false, features = ["terminal"]` keeps its meaning.
+   Replace `junie-tui` by `termrock` (`crates/termrock`, features declared
+   explicitly) and `junie_tui::` by `termrock::`; the paths are identical.
+   `junie-tui` receives no new API.
+
+The removal of `junie-tui` is a separate, versioned decision.
 
 ## Examples and fixtures that hold this contract
 
@@ -214,9 +229,9 @@ and prints each normal feature tree.
 | [`crates/termrock/tests/consumers/minimal`](../crates/termrock/tests/consumers/minimal/src/lib.rs) | none | `consumer_minimal_renders_input_and_list`; the examples `consumer_minimal_validated_input_reports_and_clears_errors`, `consumer_minimal_typed_grid_actions_arrive_in_order`, `consumer_minimal_nested_scroll_views_bubble_what_they_cannot_scroll` and `consumer_minimal_bounded_external_messages_return_the_overflow`. The normal tree has neither `clap` nor `termpane`. |
 | [`crates/termrock/tests/consumers/keyed-modal`](../crates/termrock/tests/consumers/keyed-modal/src/lib.rs) | none | `consumer_keyed_modal_preserves_selection`: a keyed list borrowed from a provider, under a modal layer, keeps its selected key when the provider is reordered, and focus returns. It is the borrowed-keyed-list and the modal-focus example. |
 | [`crates/termrock/tests/consumers/terminal`](../crates/termrock/tests/consumers/terminal/src/lib.rs) | `terminal` | `consumer_terminal_constructs_public_viewport`. No `clap`. |
-| [`crates/termrock/tests/consumers/jackin-host`](../crates/termrock/tests/consumers/jackin-host/src/lib.rs) | none, on `jackin-console` | `consumer_jackin_host_resolves_the_host_api`. The host keeps its intentional terminal dependency and resolves no `clap`; `tests/library_has_no_demo.rs` of `jackin-console` keeps demo names out of the host modules. |
+| [`crates/termrock/tests/consumers/jackin-host`](../crates/termrock/tests/consumers/jackin-host/src/lib.rs) | none, on `jackin-console` | `consumer_jackin_host_resolves_the_host_api`. The host keeps its intentional terminal dependency and resolves no `clap`; `apps/jackin/tests/library_has_no_demo.rs` of `jackin-console` keeps demo names out of the host modules. |
 
-`tests/regressions/facade_contract.rs` runs in the ordinary test suite: it
+`crates/termrock/tests/regressions/facade_contract.rs` runs in the ordinary test suite: it
 scans the four application packages for any manifest entry or Rust path that
 names `junie_tui` (`facade_apps_have_no_implementation_imports`) and checks the
 committed lockfile of each fixture, which holds exactly its normal graph
