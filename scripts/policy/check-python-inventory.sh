@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 set -euo pipefail
 umask 022
-repo_root=$(cd "$(dirname "$0")/.." && pwd -P)
+repo_root=$(cd "$(dirname "$0")/../.." && pwd -P)
 helper=${PYTHON_INVENTORY_UNDER_TEST:-$repo_root/scripts/python-inventory.sh}
 test_root=$(mktemp -d "${TMPDIR:-/tmp}/python-inventory-test.XXXXXX")
 trap 'find "$test_root" -depth -delete' EXIT

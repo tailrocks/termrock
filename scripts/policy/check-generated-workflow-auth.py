@@ -16,7 +16,7 @@ import tempfile
 import time
 import tomllib
 
-root = Path(__file__).resolve().parent.parent
+root = Path(__file__).resolve().parents[2]
 artifacts = os.environ.get("BASELINE_GUARD_TEST_ARTIFACT_ROOT")
 if not artifacts:
     raise SystemExit("set BASELINE_GUARD_TEST_ARTIFACT_ROOT to previously qualified artifacts")

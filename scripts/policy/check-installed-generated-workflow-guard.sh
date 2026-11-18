@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 set -euo pipefail
 
-repo_root=$(cd "$(dirname "$0")/.." && pwd -P)
+repo_root=$(cd "$(dirname "$0")/../.." && pwd -P)
 # A fresh clone has no untracked scripts/trusted-seed-cargo.lock; restore the
 # reviewed sentinel bytes from the tracked metadata pack before anything reads
 # them (this script is idempotent and never rewrites an existing sentinel).
@@ -105,7 +105,7 @@ git_command=$(command -v git)
 if [[ "$git_command" != /* ]]; then
   git_command="$(pwd -P)/$git_command"
 fi
-source "$repo_root/tests/policy-git-object-lifecycle.sh"
+source "$repo_root/scripts/policy/policy-git-object-lifecycle.sh"
 case "$(uname -s):$(uname -m)" in
   Darwin:arm64|Darwin:aarch64) hash_tool=/usr/bin/shasum; platform=macos-arm64 ;;
   Linux:x86_64|Linux:amd64) hash_tool=/usr/bin/sha256sum; platform=linux-x64 ;;
@@ -1746,7 +1746,7 @@ if [[ "$policy_case" == typed-workspace-boolean-int || "$policy_case" == typed-d
   mutant_checker_sha256=$(sha256_file "$repository/scripts/check-generated-workflows.sh")
 fi
 if [[ "$public_mutant" == relative-git-path ]]; then
-  (cd "$repository" && /usr/bin/patch --quiet -p1 < "$repo_root/tests/mutants/relative-git-path.patch")
+  (cd "$repository" && /usr/bin/patch --quiet -p1 < "$repo_root/scripts/policy/mutants/relative-git-path.patch")
   mutant_checker_sha256=$(sha256_file "$repository/scripts/check-generated-workflows.sh")
   /usr/bin/sed "s/^reviewed_checker_sha256=.*/reviewed_checker_sha256=$mutant_checker_sha256/" "$repository/scripts/install-generated-workflow-guard.sh" > "$test_root/mutant-installer"
   mv "$test_root/mutant-installer" "$repository/scripts/install-generated-workflow-guard.sh"

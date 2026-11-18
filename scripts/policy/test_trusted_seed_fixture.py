@@ -8,10 +8,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-BUILDER = ROOT / 'tests/build-trusted-seed-fixture.py'
+ROOT = Path(__file__).resolve().parents[2]
+BUILDER = ROOT / 'scripts/policy/build-trusted-seed-fixture.py'
 CHECKER = ROOT / 'scripts/check-generated-workflows.sh'
-PACK = 'tests/fixtures/trusted-seed-baselines.pack'
+PACK = 'scripts/policy/fixtures/trusted-seed-baselines.pack'
 DIGEST = '44f010a183cf42d933e61622c00b49c944842c096641063d7057345b951140f7'
 
 

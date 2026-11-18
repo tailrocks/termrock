@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 set -euo pipefail
 
-repo_root=$(cd "$(dirname "$0")/.." && pwd -P)
+repo_root=$(cd "$(dirname "$0")/../.." && pwd -P)
 root_checker="$repo_root/scripts/check-generated-workflows.sh"
 checker=${CHECKER_UNDER_TEST:-$root_checker}
 if [[ "$checker" != /* ]]; then
@@ -71,7 +71,7 @@ object_length=$(seed_git -C "$repo_root" rev-parse --show-object-format | awk '{
 zero_oid=$(printf '%0*d' "$object_length" 0)
 
 mkdir -p "$repository_template/.github/workflows" "$repository_template/.velnor" "$repository_template/docs" "$repository_template/apps/jackin"
-python3 -B -I -S "$repo_root/tests/build-trusted-seed-fixture.py" "$repo_root" "$checker" "$private_seed_repository"
+python3 -B -I -S "$repo_root/scripts/policy/build-trusted-seed-fixture.py" "$repo_root" "$checker" "$private_seed_repository"
 cp -p "$repo_root/Cargo.lock" "$repo_root/Cargo.toml" "$repo_root/mise.toml" "$repo_root/rust-toolchain.toml" "$repository_template/"
 cp -p "$repo_root/apps/jackin/Cargo.toml" "$repository_template/apps/jackin/Cargo.toml"
 printf 'schema = 1\n' > "$repository_template/.velnor/config.toml"
@@ -2624,8 +2624,8 @@ run_case() {
       test_approved_reference_blobs
       test_reference_size_faults
       test_reviewed_cargo_bundle
-      python3 -B -I -S "$repo_root/tests/test_trusted_seed_fixture.py"
-      python3 -B -I -S "$repo_root/tests/test_materialize_git_tree.py"
+      python3 -B -I -S "$repo_root/scripts/policy/test_trusted_seed_fixture.py"
+      python3 -B -I -S "$repo_root/scripts/policy/test_materialize_git_tree.py"
       test_hydrated_repeated_blob_occurrence_limit
       test_snapshot_rejects_gitlinks
       test_relative_tmpdir_public_hooks

@@ -9,7 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "accept-baseline.py"
+SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "accept-baseline.py"
 SPEC = importlib.util.spec_from_file_location("accept_baseline", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
 accept_baseline = importlib.util.module_from_spec(SPEC)

@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 SPEC = importlib.util.spec_from_file_location(
     "validate_snapshot_blob_sizes", ROOT / "scripts/validate-snapshot-blob-sizes.py"
 )
