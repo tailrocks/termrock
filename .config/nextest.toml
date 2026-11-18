@@ -32,7 +32,7 @@ slow-timeout = { period = "60s", terminate-after = 10 }
 # Run with the work counters compiled in:
 #   cargo nextest run --profile performance --workspace --all-features --no-tests fail
 # The filter is a union of one operand per required suite. The inventory gate
-# (tests/regressions/performance_inventory.rs) parses these operands, and under
+# (crates/termrock-conformance/tests/regressions/performance_inventory.rs) parses these operands, and under
 # this profile asks `cargo nextest list --profile performance` what runs; it
 # fails when a required suite or test is missing or ignored, so a suite cannot
 # drop out of the profile quietly.
@@ -44,7 +44,7 @@ default-filter = '''
   | binary_id(=termrock-conformance::regressions) & test(/^overflow_work::/)
   | binary_id(=termrock-conformance::regressions) & test(/^keyed_cost::/)
   | binary_id(=termrock-conformance::regressions) & test(/^search_detail_cost::/)
-  | binary_id(=junie-tui::regressions) & test(/^work_budgets::/)
+  | binary_id(=termrock-conformance::regressions) & test(/^work_budgets::/)
   | binary_id(=termrock-holla::bin/holla) & test(/^work_metrics_tests::/)
   | binary_id(=termrock-holla::bin/holla) & test(/holla_projection_/)
   | binary_id(=termrock-tablepro::bin/tablepro) & test(/^work_metrics_tests::/)
@@ -53,8 +53,8 @@ default-filter = '''
   | binary_id(=jackin-console) & test(/^sim::link::tests::work::/)
   | binary_id(=jackin-console::regressions) & test(/^work_budgets::/)
   | binary_id(=jackin-console::world) & test(/^projection_work::/)
-  | binary_id(=junie-tui::regressions) & test(=work_measurements::measurement_edit_samples_are_real_changes)
-  | binary_id(=junie-tui::regressions) & test(/^performance_inventory::/)
+  | binary_id(=termrock-conformance::regressions) & test(=work_measurements::measurement_edit_samples_are_real_changes)
+  | binary_id(=termrock-conformance::regressions) & test(/^performance_inventory::/)
 '''
 fail-fast = false
 slow-timeout = { period = "60s", terminate-after = 10 }
@@ -63,7 +63,7 @@ slow-timeout = { period = "60s", terminate-after = 10 }
 # build, so run them only through scripts/measure-performance.sh. One test at a
 # time: parallel tests would time each other.
 [profile.performance-measure]
-default-filter = 'binary_id(=junie-tui::regressions) & test(/^work_measurements::measurement_/) & not test(=work_measurements::measurement_edit_samples_are_real_changes)'
+default-filter = 'binary_id(=termrock-conformance::regressions) & test(/^work_measurements::measurement_/) & not test(=work_measurements::measurement_edit_samples_are_real_changes)'
 fail-fast = false
 test-threads = 1
 slow-timeout = { period = "120s", terminate-after = 5 }

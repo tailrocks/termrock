@@ -8,9 +8,9 @@
 //! wrapping panel caches its wrapped rows.
 
 use super::*;
-use junie_tui::core::scroll::HScroll;
-use junie_tui::widgets::panel::ScrollPanel;
 use ratatui::style::{Color, Style};
+use termrock_core::scroll::HScroll;
+use termrock_viewport::panel::ScrollPanel;
 
 const ROWS: u64 = 30;
 /// Bytes of the one line the append operations add.

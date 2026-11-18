@@ -148,6 +148,6 @@ fn default_branch_rejects_wrong_toml_shapes() {
 
 #[test]
 fn repository_config_default_branch_is_main() {
-    let config = include_str!("../.velnor/config.toml");
+    let config = include_str!("../../../../.velnor/config.toml");
     assert_eq!(check_default_branch(config, "main"), Ok(()));
 }

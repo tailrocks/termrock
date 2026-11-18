@@ -23,24 +23,24 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::time::Instant;
 
-use junie_tui::core::event::Key;
-use junie_tui::core::focus::FocusRing;
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::WidgetId;
-use junie_tui::metrics::ENABLED;
-use junie_tui::metrics::measurement::{Environment, MeasurementReport, SAMPLES, WARMUPS};
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::ui::scroll_view::ScrollView;
-use junie_tui::widgets::code::CodeEditor;
-use junie_tui::widgets::list::{ListBox, ListItem, SelectMode};
-use junie_tui::widgets::textarea::TextArea;
-use junie_tui::widgets::tree::{TreeNode, TreeView};
-use junie_tui::widgets::viewport::{Line, Span, TextViewport};
-use junie_tui::widgets::viewport_ops::ViewportOps;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Rect, Size};
+use termrock_collections::list::{ListBox, ListItem, SelectMode};
+use termrock_collections::tree::{TreeNode, TreeView};
+use termrock_core::event::Key;
+use termrock_core::focus::FocusRing;
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::WidgetId;
+use termrock_editors::code::CodeEditor;
+use termrock_editors::textarea::TextArea;
+use termrock_metrics::ENABLED;
+use termrock_metrics::measurement::{Environment, MeasurementReport, SAMPLES, WARMUPS};
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_theme::{ColorLevel, Theme};
+use termrock_viewport::scroll_view::ScrollView;
+use termrock_viewport::viewport::{Line, Span, TextViewport};
+use termrock_viewport::viewport_ops::ViewportOps;
 
 const VIEWPORT: Rect = Rect::new(0, 0, 100, 30);
 const SIZES: [usize; 3] = [1_000, 10_000, 100_000];
@@ -340,8 +340,8 @@ fn code_text(n: usize) -> String {
     (0..n).map(code_line).collect::<Vec<_>>().join("\n")
 }
 
-fn highlight_first_keyword(_: &str) -> Vec<(std::ops::Range<usize>, junie_tui::theme::SyntaxTone)> {
-    vec![(0..3, junie_tui::theme::SyntaxTone::Keyword)]
+fn highlight_first_keyword(_: &str) -> Vec<(std::ops::Range<usize>, termrock_theme::SyntaxTone)> {
+    vec![(0..3, termrock_theme::SyntaxTone::Keyword)]
 }
 
 fn one_block(text: &str) -> Vec<std::ops::Range<usize>> {
@@ -572,7 +572,7 @@ fn dirty() -> Option<bool> {
 fn target_dir() -> PathBuf {
     std::env::var_os("CARGO_TARGET_DIR")
         .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/target")))
+        .unwrap_or_else(|| PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/../../target")))
 }
 
 /// Refuses a build whose timing means nothing, then runs every size of one
