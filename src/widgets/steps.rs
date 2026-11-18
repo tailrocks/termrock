@@ -10,6 +10,7 @@ use crate::core::scroll::{ScrollPane, Scrollable};
 use crate::ui::ctx::{RenderCtx, VisualState};
 use crate::ui::list_core::ListCore;
 use crate::ui::row::{RowLook, RowUi};
+use crate::ui::specimen::{Specimen, SpecimenState};
 use crate::ui::text::{paint_clipped, paint_truncated};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
@@ -412,5 +413,40 @@ impl crate::core::pointer::MouseTarget for StepRail {
             Some(row) if ev.is(Phase::Click) => self.on_click(row).into(),
             _ => crate::core::response::Response::ignored(),
         }
+    }
+}
+
+impl Specimen for StepRail {
+    fn specimen_id(&self) -> WidgetId {
+        self.id
+    }
+
+    fn supports(&self, state: SpecimenState) -> bool {
+        use SpecimenState::*;
+        match state {
+            Rest | Focused | Narrow => true,
+
+            Selected => self.selectable,
+            _ => false,
+        }
+    }
+
+    fn specimen_height(&self, _state: SpecimenState) -> u16 {
+        self.steps.len() as u16
+    }
+
+    fn specimen(
+        &self,
+        state: SpecimenState,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: Color,
+    ) {
+        let mut r = self.clone();
+        if state == SpecimenState::Selected {
+            r.cursor = 1.min(r.steps.len().saturating_sub(1));
+        }
+        r.render(area, buf, ctx, bg);
     }
 }

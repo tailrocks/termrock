@@ -6,19 +6,25 @@ use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier};
 
 use crate::core::event::{Key, Outcome};
+use crate::core::hints::{
+    Binding, Bindings, HasHints, HintCx, actions_bindings, nav_bindings, nav_hints,
+};
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::core::keyed::{KeyedSourceError, KeyedState};
 use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup, unassigned_chord};
 use crate::core::list::{
     Cursor, KeyStep, KeyedRowSource, Moved, Navigable, RowSource, SourceStamp,
 };
+use crate::core::pointer::PointerEvent;
 use crate::core::response::Response;
 use crate::core::scroll::{ScrollPane, Scrollable};
 use crate::core::selection::ClickPolicy;
 use crate::theme::Tone;
+use crate::ui::context::{ContextAnchor, ContextRequest, ContextSource, row_rect};
 use crate::ui::ctx::RenderCtx;
 use crate::ui::list_core::ListCore;
 use crate::ui::row::{MarkKind, RowLook, RowUi};
+use crate::widgets::keyhint::{Hint, hint};
 
 #[derive(Debug, Clone)]
 pub struct TreeNode {
@@ -286,6 +292,46 @@ fn label_matches(label: &str, query: &str) -> bool {
     #[cfg(test)]
     work::record_label_test(lowered.len());
     lowered.contains(query)
+}
+
+impl HasHints for TreeView {
+    fn hints(&self, _: &HintCx) -> Vec<Hint> {
+        let mut v = nav_hints(&self.nav, self.type_ahead, false);
+        v.push(hint("←→", "Fold"));
+        v
+    }
+}
+
+impl Bindings for TreeView {
+    fn bindings(&self) -> Vec<Binding> {
+        let mut v = nav_bindings(&self.nav, self.type_ahead);
+        v.push(Binding::group("←→", "Fold / unfold"));
+        v.push(Binding::group("Enter", "Activate"));
+        v.extend(actions_bindings(&self.keymap));
+        v
+    }
+}
+
+impl ContextSource for TreeView {
+    type Target = usize;
+    fn context_target(&self, ev: &PointerEvent) -> Option<usize> {
+        self.row_at(ev)
+    }
+    fn context_select(&mut self, row: usize) {
+        if let Some(i) = Navigable::cursor(self).select(row, self).index() {
+            self.cursor = i;
+        }
+    }
+    fn context_cursor(&self) -> Option<ContextRequest<usize>> {
+        self.cursor_path()?;
+        Some(ContextRequest {
+            target: self.cursor,
+            anchor: ContextAnchor::Control {
+                id: self.row_id(self.cursor),
+                fallback: row_rect(self.area, self.cursor, self.scroll.offset),
+            },
+        })
+    }
 }
 
 #[cfg(test)]

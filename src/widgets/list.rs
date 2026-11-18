@@ -4,24 +4,30 @@ use ratatui::layout::Rect;
 use ratatui::style::Color;
 
 use crate::core::event::{Key, Outcome};
+use crate::core::hints::{
+    Binding, Bindings, HasHints, HintCx, actions_bindings, nav_bindings, nav_hints,
+};
 use crate::core::hit::Axis;
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::core::keyed::{KeyedSourceError, KeyedState};
 use crate::core::keymap::{
-    Actions, KeyBinding, KeyMap, NavKeys, lookup, select_all_bindings, unassigned_chord,
+    Actions, KeyBinding, KeyMap, NavKeys, hint_key, lookup, select_all_bindings, unassigned_chord,
 };
 use crate::core::list::{
     Cursor, KeyStep, KeyedRowSource, Moved, Navigable, RowSource, TypeAheadPrecedence,
 };
+use crate::core::pointer::PointerEvent;
 use crate::core::refusal::{Control, Reason};
 use crate::core::response::Response;
 use crate::core::scroll::{ScrollPane, Scrollable};
 use crate::core::selection::{ClickPolicy, RowSelection, SelectGesture};
 use crate::theme::Tone;
+use crate::ui::context::{ContextAnchor, ContextRequest, ContextSource, row_rect};
 use crate::ui::ctx::{RenderCtx, fill};
 use crate::ui::list_core::ListCore;
 use crate::ui::reveal::{Reveal, RevealLine};
 use crate::ui::row::{MarkKind, RowLook, RowUi};
+use crate::widgets::keyhint::{Hint, hint};
 use crate::widgets::scrollbar;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -1093,5 +1099,54 @@ impl crate::core::pointer::MouseTarget for ListBox {
                 .into(),
             None => Response::ignored(),
         }
+    }
+}
+
+impl HasHints for ListBox {
+    fn hints(&self, _: &HintCx) -> Vec<Hint> {
+        if self.items.is_empty() {
+            return vec![];
+        }
+        let mut v = nav_hints(&self.nav, self.type_ahead, false);
+        if self.mode == SelectMode::Multi {
+            v.push(hint("Space", "Toggle"));
+            if let Some(k) = hint_key(&self.keymap, ListCmd::SelectAll) {
+                v.push(Hint::new(k, "Select all"));
+            }
+        }
+        v
+    }
+}
+
+impl Bindings for ListBox {
+    fn bindings(&self) -> Vec<Binding> {
+        let mut v = nav_bindings(&self.nav, self.type_ahead);
+        v.push(Binding::group("Enter", "Activate"));
+        if self.mode == SelectMode::Multi {
+            v.push(Binding::group("Space", "Toggle"));
+            v.extend(actions_bindings(&self.keymap));
+        }
+        v
+    }
+}
+
+impl ContextSource for ListBox {
+    type Target = usize;
+    fn context_target(&self, ev: &PointerEvent) -> Option<usize> {
+        ev.on(self.id).then(|| ev.index_of(Part::ROW))?
+    }
+    fn context_select(&mut self, row: usize) {
+        if let Some(i) = Navigable::cursor(self).select(row, self).index() {
+            self.cursor = i;
+        }
+    }
+    fn context_cursor(&self) -> Option<ContextRequest<usize>> {
+        (self.cursor < self.items.len()).then(|| ContextRequest {
+            target: self.cursor,
+            anchor: ContextAnchor::Control {
+                id: self.row_id(self.cursor),
+                fallback: row_rect(self.area, self.cursor, self.scroll.offset),
+            },
+        })
     }
 }

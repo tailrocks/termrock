@@ -6,9 +6,11 @@ use crate::core::focus::{Focus, FocusFallback, FocusRing};
 use crate::core::id::WidgetId;
 use crate::ui::ctx::{Backdrop, RenderCtx, fill};
 use crate::ui::popup::{Dismiss, Place, Placement, place_with};
+use crate::ui::specimen::{Specimen, SpecimenState};
 use crate::ui::text::{truncate, width};
 use crate::ui::tooltip::Tip;
 use crate::widgets::icon_button::IconButton;
+use ratatui::style::Color;
 
 pub const CLOSE: WidgetId = WidgetId::of("modal.close");
 
@@ -17,6 +19,19 @@ pub const SURFACE: WidgetId = WidgetId::of("modal.surface");
 pub const BACKDROP: WidgetId = WidgetId::of("modal.backdrop");
 
 pub const CLOSE_WIDTH: u16 = 3;
+
+pub const OUTER_MARGIN: Margin = Margin {
+    horizontal: 3,
+    vertical: 1,
+};
+
+pub fn body_bounds(screen: Rect, top: u16, bottom: u16) -> Rect {
+    let h = screen.height.saturating_sub(top + bottom);
+    if h == 0 {
+        return screen;
+    }
+    Rect::new(screen.x, screen.y + top, screen.width, h)
+}
 
 pub fn refuse_outside_click(
     pointer: &mut crate::core::pointer::PointerState,
@@ -358,8 +373,8 @@ impl<'a> Frame<'a> {
     }
 
     pub fn area(&self, screen: Rect) -> Rect {
-        let bounds = crate::widgets::dialog::body_bounds(screen, self.top, self.bottom);
-        let m = crate::widgets::dialog::OUTER_MARGIN;
+        let bounds = body_bounds(screen, self.top, self.bottom);
+        let m = OUTER_MARGIN;
         let w = self
             .width
             .min(bounds.width.saturating_sub(2 * m.horizontal))
@@ -458,4 +473,47 @@ pub fn modal_frame(
         .placement(Placement::Center)
         .dismiss(dismiss)
         .render(screen, buf, ctx)
+}
+
+impl Specimen for Frame<'static> {
+    fn specimen_id(&self) -> WidgetId {
+        CLOSE
+    }
+
+    fn supports(&self, state: SpecimenState) -> bool {
+        use SpecimenState::*;
+        let close = self.dismiss.is_some_and(|d| d.shows_close());
+        match state {
+            Rest => true,
+            Hover | Pressed => close,
+            _ => false,
+        }
+    }
+
+    fn specimen_height(&self, _state: SpecimenState) -> u16 {
+        let m = OUTER_MARGIN;
+        self.height.max(self.min_height) + 2 * m.vertical + self.top + self.bottom + 2
+    }
+
+    fn specimen(
+        &self,
+        state: SpecimenState,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: Color,
+    ) {
+        let mut f = self.clone();
+        if f.placement != crate::ui::popup::Placement::Center {
+            let anchor = Rect::new(area.x + 4, area.y + f.top + 1, 8, 1).intersection(area);
+            f.anchor = anchor;
+            let t = ctx.theme;
+            buf.set_string(anchor.x, anchor.y, "▣ anchor", t.secondary().bg(bg));
+        }
+        let v = state.visual();
+        ctx.interaction.focus = None;
+        ctx.interaction.hover = v.hovered.then_some(CLOSE);
+        ctx.interaction.pressed = v.pressed.then_some(CLOSE);
+        f.render(area, buf, ctx);
+    }
 }

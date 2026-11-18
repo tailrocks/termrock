@@ -4,15 +4,23 @@ use crate::core::hints::{HasHints, HintCx};
 use crate::core::id::WidgetId;
 use crate::core::intent::DismissReason;
 use crate::core::keymap::{Nav, NavKeys};
+use crate::core::pointer::PointerEvent;
+use crate::core::response::Response;
 use crate::theme::{ButtonKind, Strings, Tone};
 use crate::ui::ctx::RenderCtx;
+use crate::ui::layer::{Layer, LayerCx, LayerOut, LayerResult, LayerSpec, Overlay, layer_out};
+use crate::ui::popup::Dismiss;
+use crate::ui::specimen::{Specimen, SpecimenState};
 use crate::ui::text::truncate;
 use crate::widgets::button::{Button, row_layout_right, row_lines};
 use crate::widgets::choice::RadioGroup;
+use crate::widgets::icon_button::IconButton;
 use crate::widgets::keyhint::Hint;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
+use ratatui::layout::Position;
 use ratatui::layout::Rect;
+use ratatui::style::Color;
 use ratatui::style::Style;
 
 #[derive(Clone)]
@@ -421,5 +429,105 @@ impl ChoiceDialog {
             return self.on_click(ev.id, focus).into();
         }
         Response::ignored()
+    }
+}
+
+impl Specimen for ChoiceDialog {
+    fn specimen_id(&self) -> WidgetId {
+        self.radio.id
+    }
+
+    fn supports(&self, state: SpecimenState) -> bool {
+        use SpecimenState::*;
+        match state {
+            Rest | Hover | Pressed | Focused | FocusedHover | Selected | Disabled => {
+                !self.buttons.is_empty()
+            }
+            Busy | Error | Editing | Empty | Loading | Overflow | Narrow => false,
+        }
+    }
+
+    fn specimen_height(&self, _state: SpecimenState) -> u16 {
+        self.height() + 2
+    }
+
+    fn specimen(
+        &self,
+        state: SpecimenState,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: Color,
+    ) {
+        let _ = bg;
+        let mut d = self.clone();
+        let primary = (0..d.buttons.len())
+            .rev()
+            .find(|&i| i != d.cancel_index)
+            .unwrap_or(0);
+        let v = state.visual();
+        if v.disabled {
+            d.buttons[primary].disabled = true;
+        }
+        if v.selected {
+            let last = d.radio.options.len().saturating_sub(1);
+            d.radio.selected = last;
+            d.radio.cursor = last;
+        }
+        let button = d.buttons.get(primary).map(|b| b.id);
+        ctx.interaction.hover = if v.hovered { button } else { None };
+        ctx.interaction.pressed = if v.pressed { button } else { None };
+        ctx.interaction.focus = match (v.focused, v.hovered) {
+            (true, false) => Some(d.radio.id),
+            (true, true) => button,
+            _ => None,
+        };
+        d.render(area, buf, ctx);
+    }
+}
+
+impl Overlay for ChoiceDialog {
+    type Action = Option<usize>;
+    fn dismiss(&self) -> Dismiss {
+        self.dismiss
+    }
+    fn spec(&self) -> LayerSpec {
+        LayerSpec::modal(self.dismiss).initial_focus(self.initial_focus())
+    }
+    fn on_dismiss(&mut self, _: DismissReason) -> Response<Option<usize>> {
+        self.cancel_implicit();
+        Response::emit(None)
+    }
+    fn close_button(&self) -> Option<&IconButton> {
+        Some(&self.close_button)
+    }
+}
+
+impl<R: From<LayerResult> + 'static, W: ?Sized + 'static> Layer<R, W> for ChoiceDialog {
+    fn hints(&self, focused: Option<WidgetId>) -> Vec<Hint> {
+        HasHints::hints(self, &HintCx::new(focused))
+    }
+    fn spec(&self) -> LayerSpec {
+        Overlay::spec(self)
+    }
+    fn render(&mut self, screen: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, _: &W) {
+        ChoiceDialog::render(self, screen, buf, ctx);
+    }
+    fn on_key(&mut self, key: &Key, cx: &mut LayerCx<'_, W>) -> Outcome {
+        ChoiceDialog::on_key(self, key, cx.focus, cx.ring).or(Outcome::Consumed)
+    }
+    fn pointer(&mut self, ev: &PointerEvent, cx: &mut LayerCx<'_, W>) -> Outcome {
+        ChoiceDialog::pointer_in(self, ev, cx.focus).outcome()
+    }
+    fn on_click(&mut self, id: WidgetId, _: Position, cx: &mut LayerCx<'_, W>) -> Outcome {
+        ChoiceDialog::on_click(self, id, cx.focus)
+    }
+    fn on_dismiss(&mut self, reason: DismissReason) {
+        let _ = Overlay::on_dismiss(self, reason);
+    }
+    fn take_result(&mut self) -> Option<LayerOut<R>> {
+        self.result
+            .take()
+            .map(|r| layer_out(LayerResult::Choice(r), true))
     }
 }

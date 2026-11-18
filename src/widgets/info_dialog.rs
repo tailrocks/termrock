@@ -5,13 +5,17 @@ use crate::core::hit::Axis;
 use crate::core::id::WidgetId;
 use crate::core::intent::DismissReason;
 use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
+use crate::core::pointer::PointerEvent;
 use crate::core::response::Response;
-use crate::core::scroll::ScrollPane;
-use crate::core::scroll::Scrollable;
+use crate::core::scroll::{ScrollPane, Scrollable};
 use crate::theme::Tone;
 use crate::ui::ctx::RenderCtx;
+pub use crate::ui::layer::InfoResult;
+use crate::ui::layer::{Layer, LayerCx, LayerOut, LayerResult, LayerSpec, Overlay, layer_out};
+use crate::ui::popup::Dismiss;
 use crate::ui::text::truncate;
 use crate::widgets::button::{Button, row_layout_right, row_lines};
+use crate::widgets::icon_button::IconButton;
 use crate::widgets::keyhint::Hint;
 use crate::widgets::props::{Prop, PropsAction, PropsList};
 use crate::widgets::scrollbar;
@@ -19,14 +23,6 @@ use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style};
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum InfoResult {
-    Closed,
-    Copy(String),
-
-    Action(usize),
-}
 
 pub struct InfoDialog {
     pub close_button: crate::widgets::icon_button::IconButton,
@@ -500,5 +496,67 @@ impl InfoDialog {
             Some(Phase::Click) => self.on_click(ev.id, ev.pos(), focus).into(),
             _ => Response::ignored(),
         }
+    }
+}
+
+impl Overlay for InfoDialog {
+    type Action = InfoResult;
+    fn dismiss(&self) -> Dismiss {
+        self.dismiss
+    }
+    fn spec(&self) -> LayerSpec {
+        LayerSpec::modal(self.dismiss).initial_focus(self.initial_focus())
+    }
+    fn on_dismiss(&mut self, _: DismissReason) -> Response<InfoResult> {
+        self.result = Some(InfoResult::Closed);
+        Response::emit(InfoResult::Closed)
+    }
+    fn close_button(&self) -> Option<&IconButton> {
+        Some(&self.close_button)
+    }
+}
+
+impl<R: From<LayerResult> + 'static, W: ?Sized + 'static> Layer<R, W> for InfoDialog {
+    fn hints(&self, focused: Option<WidgetId>) -> Vec<Hint> {
+        HasHints::hints(self, &HintCx::new(focused))
+    }
+    fn spec(&self) -> LayerSpec {
+        Overlay::spec(self)
+    }
+    fn render(&mut self, screen: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, _: &W) {
+        InfoDialog::render(self, screen, buf, ctx);
+    }
+    fn on_key(&mut self, key: &Key, cx: &mut LayerCx<'_, W>) -> Outcome {
+        InfoDialog::on_key(self, key, cx.focus, cx.ring).or(Outcome::Consumed)
+    }
+    fn pointer(&mut self, ev: &PointerEvent, cx: &mut LayerCx<'_, W>) -> Outcome {
+        InfoDialog::pointer_in(self, ev, cx.focus).outcome()
+    }
+    fn on_click(&mut self, id: WidgetId, pos: Position, cx: &mut LayerCx<'_, W>) -> Outcome {
+        InfoDialog::on_click(self, id, pos, cx.focus)
+    }
+
+    fn on_drag(&mut self, pressed: WidgetId, pos: Position) -> Outcome {
+        if pressed != crate::widgets::scrollbar::id_for(self.id) {
+            return Outcome::Ignored;
+        }
+
+        InfoDialog::on_click(
+            self,
+            pressed,
+            pos,
+            &mut crate::core::focus::Focus::default(),
+        )
+    }
+    fn on_wheel(&mut self, delta: i32, _: Position) -> Outcome {
+        Scrollable::wheel(self, Axis::Vertical, delta).outcome()
+    }
+    fn on_dismiss(&mut self, reason: DismissReason) {
+        let _ = Overlay::on_dismiss(self, reason);
+    }
+    fn take_result(&mut self) -> Option<LayerOut<R>> {
+        let r = self.result.take()?;
+        let closes = !matches!(r, InfoResult::Copy(_));
+        Some(layer_out(LayerResult::Info(r), closes))
     }
 }
