@@ -1,5 +1,5 @@
 #[cfg(feature = "cli")]
-pub mod cli;
+pub use termrock_cli as cli;
 pub mod core;
 pub mod metrics;
 pub use termrock_catalog::{catalog, docs};

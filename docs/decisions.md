@@ -1166,3 +1166,15 @@ plus `unicode-width`; `libc` is not used by the moved files.
   dependency that has the feature (`controls`, `core`, `metrics`, `runtime`,
   `viewport`), so `cargo check -p termrock-terminal --all-features` builds on its
   own and does not rely on workspace feature unification.
+
+## 2026-11-18: `termrock-cli` (#448)
+
+`termrock-cli` holds `ColorArg`, `GlyphsArg`, `CommonArgs`, `motion_help` and
+`parse` (`src/cli.rs` is its `lib.rs`). It depends on `clap`, `termrock-core`
+with `features = ["cli"]` (for `Motion: ValueEnum`) and `termrock-theme`, which
+is what the layering table allows (`core`, `theme`). `junie-tui` keeps
+`#[cfg(feature = "cli")] pub use termrock_cli as cli;`, and its `cli` feature is
+`dep:termrock-cli`, which now carries both `clap` and `termrock-core/cli`. The
+root package has no `clap` dependency left. The facade and the consumer
+lockfiles need no edit: no fixture resolves the optional crate, and
+`termrock::cli::*` still resolves through `junie-tui`.
