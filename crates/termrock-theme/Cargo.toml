@@ -1,0 +1,14 @@
+[package]
+name = "termrock-theme"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+description = "Theme, palettes, glyphs and visual state for the Termrock terminal UI library"
+license = "MIT"
+
+[lib]
+doctest = false
+
+[dependencies]
+ratatui = { workspace = true }
+termrock-core = { workspace = true }

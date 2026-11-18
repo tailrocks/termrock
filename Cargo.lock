@@ -1000,6 +1000,7 @@ dependencies = [
  "termrock-core",
  "termrock-metrics",
  "termrock-text",
+ "termrock-theme",
  "toml 1.2.1+spec-1.1.0",
  "tuiscotti",
  "tuiscotti-tui-test",
@@ -2221,6 +2222,14 @@ dependencies = [
  "termrock-metrics",
  "unicode-segmentation",
  "unicode-width",
+]
+
+[[package]]
+name = "termrock-theme"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "termrock-core",
 ]
 
 [[package]]

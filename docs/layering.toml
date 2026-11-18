@@ -124,9 +124,6 @@ functional = ["termrock"]
 # Re-exports `termrock-text` at `core::text`; the buffer itself is in the crate.
 "src/core/text.rs" = "text"
 
-# theme
-"src/theme.rs" = "theme"
-
 # runtime
 "src/ui/columns.rs" = "runtime"
 "src/ui/ctx.rs" = "runtime"

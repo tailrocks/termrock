@@ -12,7 +12,7 @@ pub mod shell;
 pub mod terminal;
 #[cfg(test)]
 mod test_alloc;
-pub mod theme;
+pub use termrock_theme as theme;
 pub mod ui;
 pub mod widgets;
 
