@@ -936,7 +936,10 @@ impl Walker<'_> {
         }
         for module in &names {
             for (index, entry) in self.modules[module].uses.iter().enumerate() {
-                if entry.public && !resolved.contains(&(module.clone(), index)) {
+                if entry.public
+                    && !resolved.contains(&(module.clone(), index))
+                    && !self.generated_by_a_manifest_macro(module, &entry.path)
+                {
                     self.errors.push(format!(
                         "unsupported public re-export `{}` in `{module}`: it does not resolve inside the crate",
                         entry.path.join("::")
@@ -944,6 +947,24 @@ impl Walker<'_> {
                 }
             }
         }
+    }
+
+    /// True when `path` names an item that a macro of the manifest generates, so no definition of it
+    /// exists to resolve: the last segment sits in a module that holds a manifest site
+    /// (`pub use termrock_metrics::Metric`, where `metrics!` writes `Metric`). The manifest lists the
+    /// ids such a macro generates, so the re-export adds nothing to resolve.
+    fn generated_by_a_manifest_macro(&self, from: &str, path: &[String]) -> bool {
+        let Some((_, parent)) = path.split_last() else {
+            return false;
+        };
+        let Some(Target::Module(source)) = self.resolve(from, parent) else {
+            return false;
+        };
+        self.manifest.iter().any(|e| {
+            e.site
+                .rsplit_once("::")
+                .is_some_and(|(site_module, _)| site_module == source)
+        })
     }
 
     /// Every module a consumer can reach from the facade root, with each path it is spelled by there.
@@ -1175,7 +1196,16 @@ pub fn build_crates(
             .site
             .rsplit_once("::")
             .unwrap_or(("", expansion.site));
-        if reachable.contains_key(module) || module.is_empty() {
+        // A macro invoked at the root of another crate (`@termrock_metrics::metrics`) generates ids
+        // the facade spells through its re-exports, so the crate counts as reachable once any of its
+        // items is.
+        let exposed_root = module.starts_with('@')
+            && !module.contains("::")
+            && spellings.keys().any(|def| {
+                def.strip_prefix(module)
+                    .is_some_and(|rest| rest.starts_with("::"))
+            });
+        if reachable.contains_key(module) || module.is_empty() || exposed_root {
             for id in expansion.ids {
                 add((*id).to_owned(), ApiKind::Expansion, &mut inventory);
             }

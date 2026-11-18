@@ -51,7 +51,7 @@ const EXPANSIONS: &[Expansion] = &[
         ],
     },
     Expansion {
-        site: "metrics::metrics",
+        site: "@termrock_metrics::metrics",
         ids: &[
             "metrics::Metric",
             "metrics::Metric::SegmentedLines",
@@ -1433,6 +1433,71 @@ fn crate_inventory(facade: &str, row: usize, preferred: &[&str]) -> Inventory {
         .unwrap_or_else(|e| panic!("{}", e.join("\n")))
 }
 
+/// An item-position macro at the root of a second crate generates ids that the facade spells through
+/// its re-exports (`metrics!` in `termrock-metrics`, #444): the manifest site names that root.
+#[test]
+fn catalog_a_macro_at_the_root_of_a_second_crate_expands_through_the_facade() {
+    let tree = SourceTree::from_files(&[
+        (
+            "src/lib.rs",
+            "pub mod metrics { pub use termrock_metrics::{Counter, Kind}; }\n",
+        ),
+        (
+            "crates/metrics/src/lib.rs",
+            "pub struct Counter;\nkinds! { A, B }\n",
+        ),
+    ]);
+    let crates = [
+        CrateRoot {
+            name: "termrock",
+            dir: "src",
+        },
+        CrateRoot {
+            name: "termrock_metrics",
+            dir: "crates/metrics/src",
+        },
+    ];
+    let manifest = [Expansion {
+        site: "@termrock_metrics::kinds",
+        ids: &["metrics::Kind", "metrics::Kind::A", "metrics::Kind::B"],
+    }];
+    let inv = build_crates(&tree, &crates, &MATRIX[2], &manifest, &BTreeSet::new())
+        .unwrap_or_else(|e| panic!("{}", e.join("\n")));
+    let ids: Vec<_> = inv.exports.keys().map(String::as_str).collect();
+    assert_eq!(
+        ids,
+        [
+            "metrics::Counter",
+            "metrics::Kind",
+            "metrics::Kind::A",
+            "metrics::Kind::B"
+        ]
+    );
+    let unexposed = [
+        CrateRoot {
+            name: "termrock",
+            dir: "src",
+        },
+        CrateRoot {
+            name: "termrock_metrics",
+            dir: "crates/metrics/src",
+        },
+    ];
+    let bare = SourceTree::from_files(&[
+        ("src/lib.rs", ""),
+        (
+            "crates/metrics/src/lib.rs",
+            "pub struct Counter;\nkinds! { A, B }\n",
+        ),
+    ]);
+    let none = build_crates(&bare, &unexposed, &MATRIX[2], &manifest, &BTreeSet::new())
+        .unwrap_or_else(|e| panic!("{}", e.join("\n")));
+    assert!(
+        none.exports.is_empty(),
+        "a crate the facade does not expose adds no ids"
+    );
+}
+
 #[test]
 fn catalog_ids_of_a_second_crate_use_the_facade_spelling() {
     let inv = crate_inventory(FACADE, 2, &[]);
@@ -2119,7 +2184,7 @@ fn catalog_metric_expansion_matches_the_compiled_consumer() {
     use crate::metrics::Metric;
     let manifest = EXPANSIONS
         .iter()
-        .find(|e| e.site == "metrics::metrics")
+        .find(|e| e.site == "@termrock_metrics::metrics")
         .expect("the metrics! manifest");
     let listed: BTreeSet<&str> = manifest.ids.iter().copied().collect();
     // The enum and its two members are what `metrics!` generates. The variants

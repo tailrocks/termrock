@@ -16,5 +16,8 @@ pub mod theme;
 pub mod ui;
 pub mod widgets;
 
+// Transitional: `crate::record_work!` keeps resolving for the files that have not moved yet (#452 removes this).
+pub use termrock_metrics::record_work;
+
 #[cfg(test)]
 mod catalog_contract;

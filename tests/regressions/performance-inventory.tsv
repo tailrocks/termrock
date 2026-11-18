@@ -8,10 +8,10 @@ T	metrics::tests::metrics_delta_rejects_reset
 T	metrics::tests::metrics_delta_rejects_a_counter_that_went_backwards
 T	metrics::tests::metrics_record_panics_on_counter_overflow
 T	metrics::tests::metrics_check_exact_flags_undercounts_overcounts_and_unlisted_work
-S	timing report schema and statistics	junie-tui	/^metrics::/	src/metrics/measurement.rs
-T	metrics::measurement::tests::measurement_required_fields_are_all_present
-T	metrics::measurement::tests::measurement_unavailable_values_are_null_not_zero
-T	metrics::measurement::tests::measurement_percentiles_follow_the_specified_indices
+S	timing report schema and statistics	termrock-metrics	/^measurement::/	crates/termrock-metrics/src/measurement.rs
+T	measurement::tests::measurement_required_fields_are_all_present
+T	measurement::tests::measurement_unavailable_values_are_null_not_zero
+T	measurement::tests::measurement_percentiles_follow_the_specified_indices
 S	responsive fit linearity	junie-tui	/^ui::overflow_work_tests::/	src/ui/overflow_work_tests.rs
 T	ui::overflow_work_tests::large_overflow_chip_prefix_work_is_linear
 T	ui::overflow_work_tests::large_overflow_breadcrumb_work_is_linear

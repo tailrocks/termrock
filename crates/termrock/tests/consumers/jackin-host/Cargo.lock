@@ -571,6 +571,7 @@ dependencies = [
  "ratatui",
  "serde_json",
  "termpane",
+ "termrock-metrics",
  "unicode-segmentation",
  "unicode-width",
 ]
@@ -1456,6 +1457,13 @@ name = "termrock-consumer-jackin-host"
 version = "0.0.0"
 dependencies = [
  "jackin-console",
+]
+
+[[package]]
+name = "termrock-metrics"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
 ]
 
 [[package]]
