@@ -1,0 +1,17 @@
+[package]
+name = "termrock-metrics"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+description = "Deterministic work counters for the Termrock terminal UI library"
+license = "MIT"
+
+[lib]
+doctest = false
+
+[features]
+default = []
+work-metrics = []
+
+[dependencies]
+serde_json = { workspace = true }

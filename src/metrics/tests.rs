@@ -1,5 +1,6 @@
-use super::state::{epoch_for_test, set_for_test};
 use super::*;
+use crate::record_work;
+use termrock_metrics::state::{epoch_for_test, set_for_test};
 
 #[test]
 fn metrics_delta_counts_units_between_snapshots() {

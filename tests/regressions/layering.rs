@@ -13,7 +13,7 @@
 //!   fails as stale.
 //! * Stage B, crates. Once `crates/termrock-*` exist, `cargo metadata` gives
 //!   the real dependency graph, which is checked against the same table. It
-//!   returns early with a printed reason until the first extraction (#444).
+//!   runs since the first extraction (#444) and a test asserts that it did.
 //!
 //! The scan is syntactic, like the module-graph measurement in #439: an item
 //! reached through a re-export is attributed to the re-exporting module, and
@@ -1004,11 +1004,6 @@ fn print_edges(edges: &[Edge]) {
 // Stage B: crate level, from `cargo metadata`
 // ---------------------------------------------------------------------------
 
-enum StageB {
-    Skipped(String),
-    Checked { packages: usize },
-}
-
 /// Checks the workspace packages in `metadata` (the output of `cargo metadata
 /// --no-deps`) against the table.
 fn check_metadata(metadata: &serde_json::Value, layering: &Layering) -> (usize, Vec<String>) {
@@ -1160,22 +1155,8 @@ fn package_directories() -> Vec<String> {
     found
 }
 
-/// Stage B stays off until a `crates/termrock-*` directory other than the
-/// facade exists. #444 removes this early return.
-fn crate_level(layering: &Layering) -> Result<StageB, Vec<String>> {
-    let extracted = std::fs::read_dir(root().join("crates"))
-        .map(|dir| {
-            dir.filter_map(Result::ok)
-                .filter(|e| e.path().is_dir())
-                .filter(|e| e.file_name().to_string_lossy().starts_with("termrock-"))
-                .count()
-        })
-        .unwrap_or(0);
-    if extracted == 0 {
-        return Ok(StageB::Skipped(
-            "no crates/termrock-* directory besides crates/termrock exists yet".to_string(),
-        ));
-    }
+/// Stage B: the real crate graph from `cargo metadata`, checked against the table.
+fn crate_level(layering: &Layering) -> Result<usize, Vec<String>> {
     let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
     let output = std::process::Command::new(cargo)
         .args([
@@ -1199,7 +1180,7 @@ fn crate_level(layering: &Layering) -> Result<StageB, Vec<String>> {
     let (packages, mut problems) = check_metadata(&metadata, layering);
     problems.extend(unlisted_directories(&metadata, &package_directories()));
     if problems.is_empty() {
-        Ok(StageB::Checked { packages })
+        Ok(packages)
     } else {
         Err(problems)
     }
@@ -1247,10 +1228,7 @@ fn layering_modules_follow_the_table() {
 #[test]
 fn layering_crates_follow_the_table() {
     match crate_level(&Layering::load()) {
-        Ok(StageB::Skipped(reason)) => {
-            eprintln!("layering stage B (crates) skipped: {reason}");
-        }
-        Ok(StageB::Checked { packages }) => {
+        Ok(packages) => {
             eprintln!("layering stage B (crates) checked {packages} packages");
         }
         Err(problems) => report("layering violations (stage B, crates)", &problems),
@@ -1750,17 +1728,23 @@ fn layering_crate_level_rejects_a_directory_outside_the_workspace() {
 }
 
 #[test]
-fn layering_stage_b_is_off_until_a_crate_is_extracted() {
-    let extracted = std::fs::read_dir(root().join("crates"))
+fn layering_stage_b_runs_on_the_extracted_crates() {
+    let extracted: Vec<_> = std::fs::read_dir(root().join("crates"))
         .expect("crates/")
         .filter_map(Result::ok)
-        .any(|e| e.file_name().to_string_lossy().starts_with("termrock-"));
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .filter(|name| name.starts_with("termrock-"))
+        .collect();
+    assert!(
+        extracted.iter().any(|name| name == "termrock-metrics"),
+        "crates/termrock-metrics must exist: #444 extracted it first"
+    );
     match crate_level(&Layering::load()) {
-        Ok(StageB::Skipped(_)) => assert!(!extracted, "stage B skipped although crates exist"),
-        Ok(StageB::Checked { packages }) => {
-            assert!(extracted, "stage B ran with no extracted crate");
-            assert!(packages > 0);
-        }
+        Ok(packages) => assert!(
+            packages > extracted.len(),
+            "stage B checked {packages} packages, fewer than the {} extracted crates plus the facade",
+            extracted.len()
+        ),
         Err(problems) => panic!("{problems:?}"),
     }
 }

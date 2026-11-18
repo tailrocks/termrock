@@ -16,16 +16,12 @@
 //! metric that is not listed is not measured, which is different from zero.
 
 #[cfg(feature = "work-metrics")]
-mod state;
+#[doc(hidden)]
+pub mod state;
 #[cfg(feature = "work-metrics")]
 pub use state::{measure, record, reset, snapshot, suspended};
 
 pub mod measurement;
-
-#[cfg(feature = "work-metrics")]
-pub mod harness;
-#[cfg(feature = "work-metrics")]
-pub mod report;
 
 /// Whether this build records work. A report states this so a reader can tell
 /// a measured zero from a build that measured nothing.
@@ -306,8 +302,8 @@ impl WorkDelta {
 #[macro_export]
 macro_rules! record_work {
     ($metric:ident, $amount:expr) => {{
-        $crate::metrics::record(
-            $crate::metrics::Metric::$metric,
+        $crate::record(
+            $crate::Metric::$metric,
             u64::try_from($amount).expect("work metric amount must fit u64"),
         );
     }};
@@ -335,6 +331,3 @@ mod disabled_tests {
         const { assert!(!super::ENABLED) };
     }
 }
-
-#[cfg(all(test, feature = "work-metrics"))]
-mod tests;
