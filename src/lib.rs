@@ -9,7 +9,7 @@ pub use termrock_session::clock;
 pub mod runtime;
 pub mod shell;
 #[cfg(feature = "terminal")]
-pub mod terminal;
+pub use termrock_terminal as terminal;
 #[cfg(test)]
 mod test_alloc;
 pub use termrock_theme as theme;

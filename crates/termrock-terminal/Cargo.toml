@@ -1,0 +1,32 @@
+[package]
+name = "termrock-terminal"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+description = "Terminal pane emulator, viewport and session controller for the Termrock terminal UI library"
+license = "MIT"
+
+[lib]
+doctest = false
+
+[features]
+default = []
+work-metrics = [
+    "termrock-controls/work-metrics",
+    "termrock-core/work-metrics",
+    "termrock-metrics/work-metrics",
+    "termrock-runtime/work-metrics",
+    "termrock-viewport/work-metrics",
+]
+
+[dependencies]
+ratatui = { workspace = true }
+termpane = { git = "https://github.com/tailrocks/termpane", rev = "d05d114bdce504d184b00836376a350851806f61", default-features = false }
+termrock-controls = { workspace = true }
+termrock-core = { workspace = true }
+termrock-metrics = { workspace = true }
+termrock-runtime = { workspace = true }
+termrock-text = { workspace = true }
+termrock-theme = { workspace = true }
+termrock-viewport = { workspace = true }
+unicode-width = "0.2.3"

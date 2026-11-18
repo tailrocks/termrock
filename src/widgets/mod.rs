@@ -45,7 +45,6 @@ pub use termrock_controls::{
     action_row, brand, button, choice, hintbar, icon_button, keyhint, keyref, scrollbar, segments,
     widget_hints,
 };
-pub(crate) use termrock_core::field::text_select;
 pub use termrock_core::field::{edit, field_common};
 pub use termrock_feedback::{
     empty, meter_list, notice, page_header, progress, statusbar, too_small,

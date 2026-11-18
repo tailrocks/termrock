@@ -800,3 +800,41 @@ the #445 entries were applied up front: every `impl` in the moved files and ever
   - `viewport_specimen` is a hidden `pub` module, because `widgets::diff` reads
     `SAMPLE_ROWS` from it until #447 moves `diff`. `widgets/mod.rs` re-exports it
     `pub(crate)`; no new path appears under `termrock::widgets`.
+
+## 2026-11-18: `termrock-terminal` (#448)
+
+`termrock-terminal` holds the termpane emulator, `TerminalViewport` and the
+session controller (`src/terminal.rs` is its `lib.rs`; `forward`, `guard`,
+`session` and `viewport` keep their names). `junie-tui` keeps
+`#[cfg(feature = "terminal")] pub use termrock_terminal as terminal;`, and its
+`terminal` feature is `dep:termrock-terminal`, so `termrock::terminal::*` and
+the consumer trees (`termpane` present only with the feature, never `clap`) are
+unchanged. `termpane` moved to the crate as a normal dependency; the root
+package keeps it as a dev-dependency because `tests/terminal_guard.rs` builds a
+`termpane::DamageGrid`. The crate depends only on what the layering table
+allows (`viewport`, `controls`, `runtime`, `theme`, `core`, `text`, `metrics`),
+plus `unicode-width`; `libc` is not used by the moved files.
+
+- **No hidden items, no coherence break.** Every path the files used from
+  `junie-tui` already resolves in a lower crate
+  (`termrock_core::field::{field_common, text_select}`,
+  `termrock_viewport::{viewport::CellPos, viewport_ops}`,
+  `termrock_runtime::{ctx, fade}`, `termrock_text::cells::thousands`,
+  `termrock_controls::scrollbar`), so no `pub(crate)` item became `pub`.
+- **`widgets::text_select`.** The `pub(crate) use termrock_core::field::text_select`
+  line of `src/widgets/mod.rs` had one user left, `terminal/viewport.rs`, so the
+  line is gone.
+- **The facade is untouched.** `#448` planned to add `dep:termrock-terminal`
+  under the facade's features. `termrock`'s `terminal` feature forwards to
+  `junie-tui/terminal`, which now pulls the crate, so the facade needs no edit
+  until #452 re-points its re-exports.
+- **Path edits.** `tests/terminal/session_catalog.rs` reads
+  `crates/termrock-terminal/src/session.rs`. The `terminal` and `jackin-host`
+  consumer lockfiles gain the crate; `minimal` and `keyed-modal` do not resolve
+  it.
+- **`work-metrics`.** The root feature forwards as
+  `termrock-terminal?/work-metrics`, so it does not enable the optional crate.
+- **Feature forwarding.** `termrock-terminal/work-metrics` forwards to every
+  dependency that has the feature (`controls`, `core`, `metrics`, `runtime`,
+  `viewport`), so `cargo check -p termrock-terminal --all-features` builds on its
+  own and does not rely on workspace feature unification.
