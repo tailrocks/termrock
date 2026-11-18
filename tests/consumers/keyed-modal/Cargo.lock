@@ -542,6 +542,7 @@ dependencies = [
  "libc",
  "ratatui",
  "serde_json",
+ "termrock-core",
  "termrock-metrics",
  "termrock-text",
  "unicode-segmentation",
@@ -1419,6 +1420,15 @@ version = "0.0.0"
 dependencies = [
  "ratatui",
  "termrock",
+]
+
+[[package]]
+name = "termrock-core"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "termrock-metrics",
+ "termrock-text",
 ]
 
 [[package]]
