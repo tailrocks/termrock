@@ -1235,23 +1235,38 @@ fn layering_crates_follow_the_table() {
     }
 }
 
-/// The check is not vacuous on the real tree: a core file that imports a
-/// controls widget fails, and the message names the file, both crates and
+/// The check is not vacuous on the real tree: a file of a crate below
+/// `controls` that imports a controls widget fails, and the message names the file, both crates and
 /// the fix.
 #[test]
 fn layering_flags_core_importing_a_widget_in_the_real_tree() {
     let layering = Layering::load();
     let mut tree = Tree::load();
+    // A file of a crate below `controls` that is still a module of the package. The extraction
+    // issues move the files of the lowest crates out one crate at a time, so the test takes
+    // whichever remains rather than naming one.
+    let controls = layering
+        .order
+        .iter()
+        .position(|c| c == "controls")
+        .expect("controls is in the order");
+    let (file, owner) = layering
+        .files
+        .iter()
+        .filter(|(file, _)| tree.files.contains_key(*file))
+        .find(|(_, owner)| layering.order.iter().position(|c| c == *owner) < Some(controls))
+        .expect("a file of a crate below controls is still in the package");
     tree.files
-        .get_mut("src/core/id.rs")
-        .expect("src/core/id.rs")
+        .get_mut(file)
+        .expect("the file is in the tree")
         .push_str("\nuse crate::widgets::button::Button;\n");
     let scan = scan_tree(&tree, &layering);
     let problems = judge(&scan.edges, &load_allowlist());
     let message = problems.join("\n");
+    let owner = format!("`termrock-{owner}`");
     for needle in [
-        "src/core/id.rs",
-        "`termrock-core`",
+        file.as_str(),
+        owner.as_str(),
         "`termrock-controls`",
         "move the item down or invert the dependency; do not edit the allowlist",
     ] {
