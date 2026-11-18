@@ -1,13 +1,13 @@
 use super::*;
-use crate::core::event::Key;
-use crate::core::focus::BlurAction;
-use crate::core::hit::HitRegistry;
-use crate::core::refusal::{Reason, clear_refusal, take_refusal};
-use crate::theme::{ColorLevel, Theme};
-use crate::ui::ctx::{Interaction, RenderCtx};
-use crate::widgets::input::TextInput;
-use crate::widgets::select::Select;
 use ratatui::crossterm::event::KeyModifiers;
+use termrock_core::event::Key;
+use termrock_core::focus::BlurAction;
+use termrock_core::hit::HitRegistry;
+use termrock_core::refusal::{Reason, clear_refusal, take_refusal};
+use termrock_fields::input::TextInput;
+use termrock_fields::select::Select;
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_theme::{ColorLevel, Theme};
 
 const FORM: WidgetId = WidgetId::of("t.form");
 const SCREEN: Rect = Rect::new(0, 0, 100, 40);
@@ -594,8 +594,8 @@ fn form_hidden_focus_falls_back_and_escape_works() {
 
 #[test]
 fn form_hidden_layer_paste_has_one_focused_owner() {
-    use crate::ui::layer::Layer;
-    use crate::ui::layers::LayerResult;
+    use crate::layers::LayerResult;
+    use termrock_overlays::layer::Layer;
     type L = dyn Layer<LayerResult, ()>;
 
     let mut rig = Rig::with(source_form());

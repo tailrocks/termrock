@@ -3,7 +3,7 @@ name = "termrock-dialogs"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.99"
-description = "Dialogs, forms and the leave guard for the Termrock terminal UI library"
+description = "Dialogs, forms, file browser and change inspector for the Termrock terminal UI library"
 license = "MIT"
 
 [lib]
@@ -14,7 +14,10 @@ ratatui = { workspace = true }
 termrock-collections = { workspace = true }
 termrock-controls = { workspace = true }
 termrock-core = { workspace = true }
+termrock-editors = { workspace = true }
 termrock-fields = { workspace = true }
+termrock-layout = { workspace = true }
+termrock-navigation = { workspace = true }
 termrock-overlays = { workspace = true }
 termrock-runtime = { workspace = true }
 termrock-text = { workspace = true }

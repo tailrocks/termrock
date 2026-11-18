@@ -580,7 +580,7 @@ mod showcase_coverage {
             std::fs::read_to_string(root.join(path)).unwrap_or_else(|e| panic!("{path}: {e}"))
         };
         (
-            read("src/widgets/inspect_changes.rs"),
+            read("crates/termrock-dialogs/src/inspect_changes.rs"),
             read("src/catalog.rs"),
             read("apps/showcase/src/pages/diff.rs"),
         )

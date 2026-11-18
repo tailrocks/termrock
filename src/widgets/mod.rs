@@ -1,7 +1,3 @@
-pub mod file_browser;
-pub mod form_dialog;
-pub mod inspect_changes;
-
 #[cfg(all(test, feature = "work-metrics"))]
 mod keyed_cost_tests;
 // Drives a `Select` and a `TextInput`, so it sits above the collections crate; #449 moves it to `termrock-conformance`.
@@ -16,7 +12,9 @@ pub use termrock_controls::{
     widget_hints,
 };
 pub use termrock_core::field::{edit, field_common};
-pub use termrock_dialogs::{choice_dialog, dialog, help, info_dialog};
+pub use termrock_dialogs::{
+    choice_dialog, dialog, file_browser, form_dialog, help, info_dialog, inspect_changes,
+};
 pub use termrock_editors::{code, diff, textarea};
 pub use termrock_feedback::{
     empty, meter_list, notice, page_header, progress, statusbar, too_small,
