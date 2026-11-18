@@ -120,6 +120,10 @@ functional = ["termrock"]
 # to the facade.
 [files]
 
+# text
+# Re-exports `termrock-text` at `core::text`; the buffer itself is in the crate.
+"src/core/text.rs" = "text"
+
 # theme
 "src/theme.rs" = "theme"
 
