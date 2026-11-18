@@ -7,6 +7,5 @@
 # (move the item down or invert the dependency), never extend the list.
 #
 # Owners: the core and theme rows are removed by #441, the ui and widgets rows
-# and the ui::layers test rows by #442, and the two test_alloc rows by #449.
-test	src/widgets/code/tests.rs	test_alloc
-test	src/widgets/textarea/tests.rs	test_alloc
+# and the ui::layers test rows by #442, and the two test_alloc rows by #447 (the
+# allocation counter moved into `termrock-editors` with the only tests that use it).
