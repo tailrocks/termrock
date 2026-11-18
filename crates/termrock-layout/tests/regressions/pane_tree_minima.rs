@@ -1,8 +1,8 @@
-use junie_tui::core::event::{MouseKind, Outcome};
-use junie_tui::core::id::WidgetId;
-use junie_tui::ui::layout::{Split, SplitDir};
-use junie_tui::ui::pane_tree::{Direction, Frames, PaneId, PaneNode, PaneRefusal, PaneTree};
 use ratatui::layout::{Position, Rect};
+use termrock_core::event::{MouseKind, Outcome};
+use termrock_core::id::WidgetId;
+use termrock_layout::layout::{Split, SplitDir};
+use termrock_layout::pane_tree::{Direction, Frames, PaneId, PaneNode, PaneRefusal, PaneTree};
 
 use crate::pane_rig::Rig;
 
