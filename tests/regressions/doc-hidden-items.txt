@@ -46,6 +46,7 @@ crates/termrock-overlays/src/context.rs  row_rect
 crates/termrock-overlays/src/layer.rs  layer_out
 crates/termrock-overlays/src/menu.rs  ContextMenu::contains_id
 crates/termrock-overlays/src/modal.rs  Frame::inner_width
+crates/termrock-overlays/src/option_editor.rs  ChoiceEditor::contains_id
 crates/termrock-runtime/src/ctx.rs  RenderCtx::note_render_mutation
 crates/termrock-runtime/src/ctx.rs  RenderCtx::pop_shift
 crates/termrock-runtime/src/ctx.rs  RenderCtx::push_shift

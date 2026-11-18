@@ -22,7 +22,6 @@ pub mod inspect_changes;
 pub mod list;
 pub mod list_detail;
 pub mod nav_list;
-pub mod option_editor;
 pub mod panel;
 pub mod props;
 pub mod rail;
@@ -55,4 +54,4 @@ pub use termrock_core::field::{edit, field_common};
 pub use termrock_feedback::{
     empty, meter_list, notice, page_header, progress, statusbar, too_small,
 };
-pub use termrock_overlays::{completion, menu, option_list, picker, row_menu};
+pub use termrock_overlays::{completion, menu, option_editor, option_list, picker, row_menu};
