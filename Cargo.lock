@@ -2163,8 +2163,10 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "ratatui",
+ "serde_json",
  "termrock-metrics",
  "termrock-text",
+ "unicode-segmentation",
 ]
 
 [[package]]

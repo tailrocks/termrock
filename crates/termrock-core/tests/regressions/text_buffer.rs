@@ -1,5 +1,5 @@
-use super::TextBuffer;
-use crate::core::edit::{EditKind, UndoStack};
+use termrock_core::edit::{EditKind, UndoStack};
+use termrock_text::buffer::TextBuffer;
 
 #[test]
 fn text_revision_follows_undo_and_redo() {

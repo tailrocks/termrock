@@ -12,9 +12,7 @@ pub mod detail_card;
 pub mod dialog;
 pub mod diff;
 pub mod document_workspace;
-pub mod edit;
 pub mod empty;
-pub mod field_common;
 pub mod file_browser;
 pub mod form_dialog;
 pub mod grid;
@@ -56,7 +54,6 @@ pub mod steps;
 pub mod table;
 mod table_specimen;
 pub mod tabs;
-pub(crate) mod text_select;
 pub mod textarea;
 pub mod too_small;
 pub mod toolbar;
@@ -70,3 +67,7 @@ pub mod widget_hints;
 mod collection_edit_tests;
 #[cfg(all(test, feature = "work-metrics"))]
 mod keyed_cost_tests;
+
+// Transitional: the line-edit fields live in `termrock-core` (#444); #452 removes this.
+pub(crate) use termrock_core::field::text_select;
+pub use termrock_core::field::{edit, field_common};
