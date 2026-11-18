@@ -6,11 +6,11 @@ use super::TextArea;
 use crate::core::focus::FocusRing;
 use crate::core::hit::HitRegistry;
 use crate::core::id::WidgetId;
-use crate::core::text_index::work;
 use crate::test_alloc;
 use crate::theme::{ColorLevel, Theme};
 use crate::ui::ctx::{Interaction, RenderCtx};
 use crate::ui::measure::Measure;
+use termrock_text::text_index::work;
 
 fn document(lines: usize) -> String {
     (0..lines)

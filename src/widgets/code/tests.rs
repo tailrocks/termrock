@@ -15,10 +15,10 @@ use crate::core::focus::FocusRing;
 use crate::core::hit::HitRegistry;
 use crate::core::id::WidgetId;
 use crate::core::text::TextBuffer;
-use crate::core::text_index::work as text_work;
 use crate::test_alloc;
 use crate::theme::{ColorLevel, SyntaxTone, Theme};
 use crate::ui::ctx::{Interaction, RenderCtx};
+use termrock_text::text_index::work as text_work;
 
 thread_local! {
     static HIGHLIGHTS: Cell<usize> = const { Cell::new(0) };

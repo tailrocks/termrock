@@ -120,12 +120,6 @@ functional = ["termrock"]
 # to the facade.
 [files]
 
-# text
-"src/core/text.rs" = "text"
-"src/core/text_index.rs" = "text"
-"src/ui/text.rs" = "text"
-"src/ui/text/wrap_tests.rs" = "text"
-
 # core
 "src/core/data.rs" = "core"
 "src/core/edit.rs" = "core"
@@ -146,6 +140,8 @@ functional = ["termrock"]
 "src/core/scroll.rs" = "core"
 "src/core/selection.rs" = "core"
 "src/core/shape.rs" = "core"
+# Re-exports `termrock-text` and holds the buffer tests, which drive `core::edit`, until #444 moves them to `termrock-core`.
+"src/core/text.rs" = "core"
 "src/core/text/tests.rs" = "core"
 "src/core/typeahead.rs" = "core"
 "src/motion.rs" = "core"

@@ -989,6 +989,7 @@ dependencies = [
  "syn 3.0.10",
  "termpane",
  "termrock-metrics",
+ "termrock-text",
  "toml 1.2.1+spec-1.1.0",
  "tuiscotti",
  "tuiscotti-tui-test",
@@ -2201,6 +2202,16 @@ dependencies = [
  "serde_json",
  "sha2 0.11.1",
  "termrock",
+]
+
+[[package]]
+name = "termrock-text"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "termrock-metrics",
+ "unicode-segmentation",
+ "unicode-width",
 ]
 
 [[package]]
