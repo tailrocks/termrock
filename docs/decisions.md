@@ -800,3 +800,34 @@ the #445 entries were applied up front: every `impl` in the moved files and ever
   - `viewport_specimen` is a hidden `pub` module, because `widgets::diff` reads
     `SAMPLE_ROWS` from it until #447 moves `diff`. `widgets/mod.rs` re-exports it
     `pub(crate)`; no new path appears under `termrock::widgets`.
+
+## 2026-11-18: The component family crates (#447)
+
+`termrock-fields`, `-editors`, `-layout`, `-collections`, `-navigation` and `-grid`
+are extracted in a stack of branches, one crate each, in dependency order. Each
+crate depends only on the crates the layering table allows, and `junie-tui`
+re-exports each module at its old path (`widgets::*`, `ui::*`), so no
+`termrock::` path, type identity or catalog id changes. The rules of "Three
+coherence breaks of `termrock-core`" were applied up front: every `impl` in the
+moved files, and every `impl` of a moved type or trait in the files that stay,
+was listed before the move.
+
+- **`termrock-fields`** (`chips`, `input`, `select`). No coherence break:
+  `Select` implements `Overlay` (the trait is in `termrock-overlays`, the type
+  is local), which is the legal direction, and nothing implements a trait for a
+  moved type from outside. `ChipBar::intrinsic_width`, `chips::overflow_run_cells`
+  and `Select::contains_id` were `pub(crate)` and are used by the intrinsic-width
+  tests and by the lists and dialogs that stay in `junie-tui`, so they are
+  `#[doc(hidden)] pub` and listed in `tests/regressions/doc-hidden-items.txt`.
+- **Features forward to every dependency that has them.** The root
+  `work-metrics` feature enables each crate's feature, and a workspace build
+  unifies them, which hid a gap in #446: a crate's `work-metrics` that names only
+  `termrock-metrics/work-metrics` fails alone (`cargo check -p <crate>
+  --all-features`) once a dependency such as `termrock-core` needs its own
+  counters. Each #447 crate therefore forwards `work-metrics` to
+  `termrock-metrics` and to every `termrock-*` dependency that has the feature
+  (`termrock-layout` has none: it records no work), and
+  `cargo check -p <crate>` passes with `--all-features`, `--no-default-features`
+  and `--all-targets` on every branch. `termrock-editors` reads the line-index
+  counters of `termrock-text` in its tests, so it enables `termrock-text/test-support`
+  in its own `[dev-dependencies]` (see #444); nothing else in the stack does.
