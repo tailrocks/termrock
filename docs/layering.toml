@@ -107,7 +107,7 @@ terminal = ["viewport", "controls", "runtime", "theme", "core", "text", "metrics
 cli = ["core", "theme"]
 catalog = ["grid", "navigation", "collections", "editors", "fields", "viewport", "controls", "session", "runtime", "core"]
 conformance = ["metrics", "text", "core", "theme", "runtime", "session", "controls", "feedback", "overlays", "viewport", "fields", "editors", "layout", "collections", "navigation", "grid", "dialogs", "shell", "terminal", "cli", "catalog"]
-"junie-tui" = ["metrics", "text", "core", "theme", "runtime", "session", "controls", "feedback", "overlays", "viewport", "fields", "editors", "layout", "collections", "navigation", "grid", "dialogs", "shell", "terminal", "cli", "catalog"]
+"junie-tui" = ["metrics", "text", "core", "theme", "runtime", "session", "controls", "feedback", "overlays", "viewport", "fields", "editors", "layout", "collections", "navigation", "grid", "dialogs", "shell", "terminal", "cli", "catalog", "conformance"]
 termrock = ["metrics", "text", "core", "theme", "runtime", "session", "controls", "feedback", "overlays", "viewport", "fields", "editors", "layout", "collections", "navigation", "grid", "dialogs", "shell", "terminal", "cli", "catalog", "conformance", "junie-tui"]
 functional = ["termrock"]
 
@@ -123,11 +123,6 @@ functional = ["termrock"]
 
 
 # conformance
-# `src/metrics.rs` re-exports `termrock-metrics` and declares the three files below, so it goes with them until #449.
-"src/metrics.rs" = "conformance"
-"src/metrics/harness.rs" = "conformance"
-"src/metrics/report.rs" = "conformance"
-"src/metrics/tests.rs" = "conformance"
 "src/ui/intrinsic_tests.rs" = "conformance"
 "src/ui/intrinsic_wide_tests.rs" = "conformance"
 "src/ui/overflow_parity_tests.rs" = "conformance"
@@ -139,6 +134,7 @@ functional = ["termrock"]
 # termrock
 "src/core/mod.rs" = "termrock"
 "src/lib.rs" = "termrock"
+"src/metrics.rs" = "termrock"
 "src/ui/columns.rs" = "termrock"
 "src/ui/mod.rs" = "termrock"
 "src/widgets/mod.rs" = "termrock"

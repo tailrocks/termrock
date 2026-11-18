@@ -51,7 +51,7 @@ file will land in is `[files]` in `docs/layering.toml`.
 | Optional | `termrock-terminal` | Terminal emulator pane, viewport, session controller (feature `terminal`). | `src/terminal.rs`, `src/terminal/*` |
 | Optional | `termrock-cli` | `clap` argument types (feature `cli`). | `src/cli.rs` |
 | Proof | `termrock-catalog` | Declared-API catalog, docs tables, inventory gate (#14). | `catalog.rs`, `docs.rs`, `catalog_contract.rs`, `inventory.rs`, `scenario_reach.rs` |
-| Proof | `termrock-conformance` | Work-metrics harness and report, allocation counter, cross-crate regression tests. | `metrics/{harness,report,tests}.rs`, `test_alloc.rs`, the cross-module `*_tests.rs` files |
+| Proof | `termrock-conformance` | Work-metrics harness and report, cross-crate regression tests. The allocation counter is a `#[cfg(test)]` module of `termrock-editors` (see the #447 decision). | `metrics/{harness,report,tests}.rs`, the cross-module `*_tests.rs` files |
 | Facade | `termrock` | The public surface applications depend on: `pub use` of the crates above. | `crates/termrock` |
 | Applications | `apps/*` | Routes, demo or simulated data, composition. They import `termrock::` only and hold no shared widget behaviour. | `apps/showcase`, `apps/tablepro`, `apps/holla`, `apps/jackin` |
 
@@ -93,7 +93,7 @@ The `layering` test (`tests/regressions/layering.rs`) enforces it:
 The dependencies that already point up are recorded in
 `tests/regressions/layering-allowlist.tsv`. It may only shrink: #441 removes
 the `core` and `theme` rows, #442 the `ui` and `widgets` rows and the
-`ui::layers` test rows, and #449 the `test_alloc` rows. A line that no longer
+`ui::layers` test rows, and #447 the two `test_alloc` rows. A line that no longer
 matches a dependency fails as stale. This check complements `tests/regressions/facade_contract.rs`
 (applications import the facade only) and does not replace it.
 
