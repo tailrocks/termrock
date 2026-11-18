@@ -2,11 +2,11 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::Color;
 
-use crate::core::id::WidgetId;
-use crate::core::selection::SelectionMode;
-use crate::ui::ctx::RenderCtx;
-use crate::ui::specimen::{Specimen, SpecimenState};
-use crate::widgets::table::DataTable;
+use crate::table::DataTable;
+use termrock_core::id::WidgetId;
+use termrock_core::selection::SelectionMode;
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::specimen::{Specimen, SpecimenState};
 
 const SAMPLE_ROWS: usize = 3;
 

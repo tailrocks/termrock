@@ -14,7 +14,7 @@
 use std::collections::{HashMap, HashSet};
 
 use super::{DataGrid, GridChangeSet, GridCommitReceipt, GridInstanceId, GridRevision};
-use crate::core::id::ItemKey;
+use termrock_core::id::ItemKey;
 
 /// Proof that one captured change set is locked in a particular grid. It can
 /// only be obtained from [`DataGrid::begin_submission`].

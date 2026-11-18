@@ -908,3 +908,21 @@ was listed before the move.
   `MOVED_KEEPING_SPELLING` gained `("shell::Breadcrumb",
   "widgets::breadcrumb::Breadcrumb")`. The catalog line and the id digest keep
   `widgets::breadcrumb::Breadcrumb`.
+- **`termrock-grid`** (`table`, `grid`, `grid_changes`, `grid_submission`,
+  `grid_specimen`, `table_specimen` and five test files), in one branch.
+  `table` calls `grid::header_style` and `grid` uses `table::SortDir`, and
+  `grid.rs` declares `grid_changes.rs` and `grid_submission.rs` by `#[path]`
+  (and those two declare their test files the same way), so the cycle and the
+  relative layout are kept inside the crate; splitting it across branches would
+  not build. The crate depends on `termrock-{overlays, feedback, controls}` and
+  the foundations, as the layering table allows. Its `impl`s are the trait
+  families of the files (`TableRows` for the row sources of `table.rs`, foreign
+  traits on local types) and the test-only `F64` helper in `table.rs`; there is
+  no coherence break. The `ui::columns` shim keeps re-exporting
+  `HeaderAction`, `HeaderLabels` and `header_menu` through `widgets::table`,
+  which is now a re-export of `termrock_grid::table`; the ids and their
+  `MOVED_KEEPING_SPELLING` rows did not change. No `pub(crate)` item needed to
+  become hidden `pub`. The 34 `regression_test:` strings of the Showcase
+  coverage tables that named the moved `grid_*_tests.rs` files were rewritten
+  with `scripts/rewrite-regression-paths.py`. The crate carries the
+  `work-metrics` feature because its code records work.

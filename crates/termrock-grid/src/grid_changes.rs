@@ -19,7 +19,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use super::{CellValue, DataGrid, GridRevision, same_edit_value};
-use crate::core::id::ItemKey;
+use termrock_core::id::ItemKey;
 
 static NEXT_INSTANCE: AtomicU64 = AtomicU64::new(1);
 

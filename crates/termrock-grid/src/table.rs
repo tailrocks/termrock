@@ -5,29 +5,29 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Constraint, Layout, Position, Rect};
 use ratatui::style::{Color, Modifier};
 
-use crate::core::data::{DataError, ShapeError, validate_rectangular};
-use crate::core::event::{ClientPlatform, Key, Outcome};
-use crate::core::focus::BlurAction;
-use crate::core::hit::{Axis, PartMap};
-use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::core::keyed::{KeyedSourceError, KeyedState, KeyedVec};
-use crate::core::keymap::{
+use termrock_controls::scrollbar;
+use termrock_core::data::{DataError, ShapeError, validate_rectangular};
+use termrock_core::event::{ClientPlatform, Key, Outcome};
+use termrock_core::field::edit::{EditExit, EditField, Validator};
+use termrock_core::focus::BlurAction;
+use termrock_core::hit::{Axis, PartMap};
+use termrock_core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock_core::keyed::{KeyedSourceError, KeyedState, KeyedVec};
+use termrock_core::keymap::{
     Actions, KeyBinding, KeyMap, Nav, NavKeys, hint_key, lookup, select_all_bindings,
     unassigned_chord,
 };
-use crate::core::list::{Cursor, KeyStep, KeyedRowSource, Moved, Navigable, RowSource};
-use crate::core::response::Response;
-use crate::core::scroll::{HScroll, ScrollPane, Scrollable};
-use crate::core::selection::{ClickPolicy, RowSelection, SelectGesture, SelectionMode, TriState};
-use crate::ui::columns::ColumnSizing;
-use crate::ui::ctx::{RenderCtx, fill};
-use crate::ui::row::{MarkKind, RowLook, RowUi};
-use crate::widgets::edit::{EditExit, EditField, Validator};
-use crate::widgets::menu::MenuItem;
-use crate::widgets::option_editor::{
+use termrock_core::list::{Cursor, KeyStep, KeyedRowSource, Moved, Navigable, RowSource};
+use termrock_core::response::Response;
+use termrock_core::scroll::{HScroll, ScrollPane, Scrollable};
+use termrock_core::selection::{ClickPolicy, RowSelection, SelectGesture, SelectionMode, TriState};
+use termrock_overlays::menu::MenuItem;
+use termrock_overlays::option_editor::{
     Affordance, ChoiceEditor, ChoiceResult, ColumnEditor, EditorConfig,
 };
-use crate::widgets::scrollbar;
+use termrock_runtime::columns::ColumnSizing;
+use termrock_runtime::ctx::{RenderCtx, fill};
+use termrock_runtime::row::{MarkKind, RowLook, RowUi};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SortDir {
@@ -180,7 +180,7 @@ pub struct Cell {
     pub tone: Tone,
 }
 
-pub use crate::theme::Tone;
+pub use termrock_theme::Tone;
 
 impl Cell {
     pub fn new(text: impl Into<String>) -> Self {
@@ -387,7 +387,7 @@ pub struct EditState {
     generation: u64,
 }
 
-impl crate::ui::measure::Measure for DataTable {
+impl termrock_runtime::measure::Measure for DataTable {
     fn measure(&self, _avail: ratatui::layout::Size, _ctx: &RenderCtx) -> ratatui::layout::Size {
         let n = self.columns.len();
         let check_w: u16 = if self.multi() && self.selection_column {
@@ -408,11 +408,11 @@ impl crate::ui::measure::Measure for DataTable {
                         .rows
                         .iter()
                         .filter_map(|r| r.get(i))
-                        .map(|cell| crate::ui::text::width(&cell.text) as u16)
+                        .map(|cell| termrock_text::cells::width(&cell.text) as u16)
                         .max()
                         .unwrap_or(0);
                     c.min_width()
-                        .max(crate::ui::text::width(&c.title) as u16 + 2)
+                        .max(termrock_text::cells::width(&c.title) as u16 + 2)
                         .max(cells)
                 }
             }
@@ -455,9 +455,9 @@ pub struct DataTable {
     pub blur_action: BlurAction,
     pub empty_text: String,
 
-    strings: crate::theme::Strings,
+    strings: termrock_theme::Strings,
 
-    pub empty: Option<crate::widgets::empty::EmptyState>,
+    pub empty: Option<termrock_feedback::empty::EmptyState>,
     pub area: Rect,
     body: Rect,
     col_rects: Vec<Rect>,
@@ -468,7 +468,7 @@ pub struct DataTable {
 
     pub numeric: Vec<bool>,
 
-    pub reveal: Option<crate::ui::reveal::Reveal>,
+    pub reveal: Option<termrock_runtime::reveal::Reveal>,
 
     pub horizontal: Option<HScroll>,
 
@@ -496,8 +496,8 @@ pub struct DataTable {
 
     pub type_ahead_column: Option<usize>,
 
-    pub type_ahead_precedence: Option<crate::core::list::TypeAheadPrecedence>,
-    typeahead: crate::core::typeahead::TypeAhead,
+    pub type_ahead_precedence: Option<termrock_core::list::TypeAheadPrecedence>,
+    typeahead: termrock_core::typeahead::TypeAhead,
 
     pub choice: Option<ChoiceEdit>,
     structural_generation: u64,
@@ -578,8 +578,8 @@ impl DataTable {
             edit: None,
             validator: None,
             blur_action: BlurAction::Commit,
-            empty_text: crate::theme::Strings::DEFAULT.no_rows.to_owned(),
-            strings: crate::theme::Strings::DEFAULT,
+            empty_text: termrock_theme::Strings::DEFAULT.no_rows.to_owned(),
+            strings: termrock_theme::Strings::DEFAULT,
             empty: None,
             area: Rect::ZERO,
             parts: PartMap::default(),
@@ -632,7 +632,7 @@ impl DataTable {
 
     pub fn type_ahead_precedence(
         mut self,
-        precedence: crate::core::list::TypeAheadPrecedence,
+        precedence: termrock_core::list::TypeAheadPrecedence,
     ) -> Self {
         self.type_ahead_precedence = Some(precedence);
         self
@@ -1021,14 +1021,14 @@ impl DataTable {
     }
 
     pub fn seam_id(&self, c: usize) -> WidgetId {
-        self.id.part(crate::ui::columns::seam_part(c))
+        self.id.part(termrock_runtime::columns::seam_part(c))
     }
 
     fn seam_of(&self, id: WidgetId) -> Option<usize> {
         self.id.item_of(id, Part::SEAM, 0..self.columns.len())
     }
 
-    pub fn header_menu_at(&self, ev: &crate::core::pointer::PointerEvent) -> Option<usize> {
+    pub fn header_menu_at(&self, ev: &termrock_core::pointer::PointerEvent) -> Option<usize> {
         if !ev.on(self.id) {
             return None;
         }
@@ -1074,7 +1074,7 @@ impl DataTable {
             return;
         };
         let cap = (self.area.width.saturating_sub(4) as usize).max(6);
-        let mut need = crate::ui::text::width(&col.title)
+        let mut need = termrock_text::cells::width(&col.title)
             + if self.sort.is_some_and(|(sc, _)| sc == c) {
                 2
             } else {
@@ -1082,7 +1082,7 @@ impl DataTable {
             };
         for d in self.scroll.visible_range() {
             if let Some(cell) = self.order.get(d).and_then(|&r| self.rows[r].get(c)) {
-                need = need.max(crate::ui::text::width_capped(&cell.text, cap));
+                need = need.max(termrock_text::cells::width_capped(&cell.text, cap));
             }
         }
         self.sizing.set(c, need.min(cap) as u16);
@@ -1129,7 +1129,7 @@ impl DataTable {
         Outcome::Changed
     }
 
-    pub fn reveal(mut self, config: crate::ui::reveal::Reveal) -> Self {
+    pub fn reveal(mut self, config: termrock_runtime::reveal::Reveal) -> Self {
         self.reveal = Some(config);
         self
     }
@@ -1154,7 +1154,7 @@ impl DataTable {
         self
     }
 
-    pub fn empty(mut self, state: crate::widgets::empty::EmptyState) -> Self {
+    pub fn empty(mut self, state: termrock_feedback::empty::EmptyState) -> Self {
         self.empty = Some(state);
         self
     }
@@ -1550,7 +1550,7 @@ impl DataTable {
         &mut self,
         rows: &mut R,
         out: Outcome,
-        results: crate::core::response::Actions<ChoiceResult>,
+        results: termrock_core::response::Actions<ChoiceResult>,
     ) -> Response<TableAction> {
         let mut resp = Response::from(out);
         for result in results {
@@ -1640,7 +1640,7 @@ impl DataTable {
         }
         if let Err(message) = rows.commit(src, e.col, text) {
             e.field
-                .set_error(Some(crate::widgets::edit::FieldError::new(message)));
+                .set_error(Some(termrock_core::field::edit::FieldError::new(message)));
             self.edit = Some(e);
             return None;
         }
@@ -1761,7 +1761,7 @@ impl DataTable {
             &self.nav,
             self.type_ahead,
             self.type_ahead_precedence
-                .unwrap_or_else(crate::core::list::TypeAheadPrecedence::current),
+                .unwrap_or_else(termrock_core::list::TypeAheadPrecedence::current),
         ) {
             let mut ta = std::mem::take(&mut self.typeahead);
             let moved = self
@@ -2187,9 +2187,9 @@ impl DataTable {
     fn pointer_keyed<R: TableRows + ?Sized>(
         &mut self,
         rows: &mut R,
-        ev: &crate::core::pointer::PointerEvent,
+        ev: &termrock_core::pointer::PointerEvent,
     ) -> Response<TableAction<ItemKey>> {
-        use crate::core::intent::Phase;
+        use termrock_core::intent::Phase;
         self.keyed.note_pointer(ev.phase());
         let hit = [Part::CELL, Part::ROW, Part::MARKER]
             .into_iter()
@@ -2214,7 +2214,7 @@ impl DataTable {
     /// carry the row key, so a press can only complete on the row it began on.
     pub fn on_pointer_source<S: TableSource + ?Sized>(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
+        ev: &termrock_core::pointer::PointerEvent,
         source: &S,
     ) -> Result<Response<TableAction<ItemKey>>, KeyedSourceError> {
         self.bind(source)?;
@@ -2224,7 +2224,7 @@ impl DataTable {
     /// Pointer input over a borrowed editable keyed provider.
     pub fn on_pointer_edit_source<S: TableEditSource + ?Sized>(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
+        ev: &termrock_core::pointer::PointerEvent,
         source: &mut S,
     ) -> Result<Response<TableAction<ItemKey>>, KeyedSourceError> {
         self.bind(&*source)?;
@@ -2276,7 +2276,7 @@ impl DataTable {
         Ok(())
     }
 
-    pub fn track_click(mut self, click: crate::core::scroll::TrackClick) -> Self {
+    pub fn track_click(mut self, click: termrock_core::scroll::TrackClick) -> Self {
         self.scroll.track_click = Some(click);
         self
     }
@@ -2296,7 +2296,7 @@ impl DataTable {
         self.parts.clear();
         let s = ctx.theme.strings;
         let old = std::mem::replace(&mut self.strings, s);
-        crate::theme::Strings::follow(&mut self.empty_text, old.no_rows, s.no_rows);
+        termrock_theme::Strings::follow(&mut self.empty_text, old.no_rows, s.no_rows);
         self.scroll.begin(ctx.track_click);
         let area = area.intersection(*buf.area());
         if area.is_empty() || area.height < 2 {
@@ -2363,21 +2363,23 @@ impl DataTable {
             }
             let hid = self.header_id(ci);
             let sorted = self.sort.map(|(c, _)| c == ci).unwrap_or(false);
-            let st = crate::widgets::grid::header_style(ctx, hid, header_bg, col.sortable, sorted);
+            let st = crate::grid::header_style(ctx, hid, header_bg, col.sortable, sorted);
             let ind = match self.sort {
                 Some((c, SortDir::Asc)) if c == ci => format!(" {}", t.glyphs.sort_asc),
                 Some((c, SortDir::Desc)) if c == ci => format!(" {}", t.glyphs.sort_desc),
                 _ => String::new(),
             };
             let ind = ind.as_str();
-            let ind_w = crate::ui::text::width(ind);
-            let shown =
-                crate::ui::text::truncate(&col.title, (r.width as usize).saturating_sub(ind_w));
+            let ind_w = termrock_text::cells::width(ind);
+            let shown = termrock_text::cells::truncate(
+                &col.title,
+                (r.width as usize).saturating_sub(ind_w),
+            );
             let cut = shown != col.title;
             let title = format!("{shown}{ind}");
             let text = match col.align {
-                Align::Left => crate::ui::text::fit(&title, r.width as usize),
-                Align::Right => crate::ui::text::fit_right(&title, r.width as usize),
+                Align::Left => termrock_text::cells::fit(&title, r.width as usize),
+                Align::Right => termrock_text::cells::fit_right(&title, r.width as usize),
             };
             buf.set_string(r.x, header_y, &text, st);
             let head = Rect::new(r.x, header_y, r.width, 1);
@@ -2391,11 +2393,11 @@ impl DataTable {
                 ctx.hits.register_hover(hid, head);
             }
             if cut {
-                crate::ui::reveal::truncated(ctx, self.reveal, hid, head, &col.title);
+                termrock_runtime::reveal::truncated(ctx, self.reveal, hid, head, &col.title);
             }
             if self.sizing.resizable {
                 let hit = self.sizing.seam_rect(r.right(), header_y, 2, area);
-                crate::ui::columns::render_seam(
+                termrock_runtime::columns::render_seam(
                     buf,
                     ctx,
                     (self.id, ci),
@@ -2410,7 +2412,7 @@ impl DataTable {
             let cid = self.check_all_id();
             let state = self.selection_state_in(rows);
             let lifted = ctx.interaction.hovered(cid) || ctx.interaction.pressed(cid);
-            let st = crate::widgets::grid::header_style(ctx, cid, header_bg, true, false);
+            let st = crate::grid::header_style(ctx, cid, header_bg, true, false);
             let st = match state {
                 _ if lifted => st,
                 TriState::None => st,
@@ -2442,22 +2444,22 @@ impl DataTable {
 
         if rows.len() == 0 {
             if let Some(e) = &self.empty {
-                crate::widgets::empty::render(body, buf, t, e, bg);
+                termrock_feedback::empty::render(body, buf, t, e, bg);
                 return;
             }
-            let msg = crate::ui::text::truncate(&self.empty_text, area.width as usize);
+            let msg = termrock_text::cells::truncate(&self.empty_text, area.width as usize);
             let y = body.y + body.height / 2;
             let x = body.x
                 + body
                     .width
-                    .saturating_sub(crate::ui::text::width(&msg) as u16)
+                    .saturating_sub(termrock_text::cells::width(&msg) as u16)
                     / 2;
             buf.set_string(x, y, &msg, t.muted().bg(bg));
             return;
         }
 
         for (i, di) in self.scroll.visible_range().enumerate() {
-            crate::record_work!(VisibleRowsPainted, 1usize);
+            termrock_metrics::record_work!(VisibleRowsPainted, 1usize);
             let y = body.y + i as u16;
             let src = self.order[di];
             let row_rect = Rect::new(
@@ -2572,7 +2574,7 @@ impl DataTable {
                 }
                 if is_edit {
                     let e = self.edit.as_ref().unwrap();
-                    let es = t.field_style(crate::ui::ctx::VisualState {
+                    let es = t.field_style(termrock_runtime::ctx::VisualState {
                         editing: true,
                         ..Default::default()
                     });
@@ -2581,7 +2583,7 @@ impl DataTable {
                     let cw = r.width.saturating_sub(1) as usize;
                     let cur = e.field.buffer.cursor_pos().col;
                     let off = cur.saturating_sub(cw.saturating_sub(1));
-                    let shown = crate::ui::text::slice_cells(text, off, cw);
+                    let shown = termrock_text::cells::slice_cells(text, off, cw);
                     let mut ts = es
                         .add_modifier(Modifier::UNDERLINED)
                         .underline_color(t.accent);
@@ -2626,14 +2628,14 @@ impl DataTable {
                         };
                     let text_w = if affordance { r.width - 2 } else { r.width } as usize;
                     let text = match col.align {
-                        Align::Left => crate::ui::text::fit(&shown, text_w),
-                        Align::Right => crate::ui::text::fit_right(&shown, text_w),
+                        Align::Left => termrock_text::cells::fit(&shown, text_w),
+                        Align::Right => termrock_text::cells::fit_right(&shown, text_w),
                     };
                     if affordance {
                         fill(buf, cell_rect, st);
                     }
                     buf.set_string(r.x, y, &text, st);
-                    let cut = crate::ui::reveal::truncated(
+                    let cut = termrock_runtime::reveal::truncated(
                         ctx,
                         self.reveal,
                         cell_id(ci),
@@ -2644,7 +2646,7 @@ impl DataTable {
                     if cut && s.focused && (!self.cell_nav || ci == self.cursor_col) {
                         let cfg = self.reveal.unwrap_or(ctx.reveal);
                         if cfg.hover || cfg.keyboard.is_some() {
-                            crate::ui::reveal::peek(ctx, &shown);
+                            termrock_runtime::reveal::peek(ctx, &shown);
                         }
                     }
                     if affordance {
@@ -2704,7 +2706,7 @@ impl DataTable {
 
         ctx.scrollable(self.id, area);
         if has_sb {
-            crate::ui::fade::scroll_edges_except(
+            termrock_runtime::fade::scroll_edges_except(
                 buf,
                 ctx,
                 Rect::new(
@@ -2758,7 +2760,7 @@ impl DataTable {
         Some(e.field.buffer.offset_at(0, c))
     }
 
-    fn on_edit_cell(&self, ev: &crate::core::pointer::PointerEvent, keyed: bool) -> bool {
+    fn on_edit_cell(&self, ev: &termrock_core::pointer::PointerEvent, keyed: bool) -> bool {
         let Some(e) = &self.edit else {
             return false;
         };
@@ -2777,13 +2779,13 @@ impl DataTable {
     }
 }
 
-use crate::core::hints::{
+use ratatui::style::Style;
+use termrock_controls::keyhint::Hint;
+use termrock_core::hints::{
     Binding, Bindings, HasHints, HintCx, actions_bindings, nav_bindings, nav_hints,
 };
-use crate::core::pointer::PointerEvent;
-use crate::ui::context::{ContextAnchor, ContextRequest, ContextSource, row_rect};
-use crate::widgets::keyhint::Hint;
-use ratatui::style::Style;
+use termrock_core::pointer::PointerEvent;
+use termrock_overlays::context::{ContextAnchor, ContextRequest, ContextSource, row_rect};
 
 fn parse_num(s: &str) -> Option<ordered::F64> {
     let cleaned: String = s
@@ -2813,7 +2815,7 @@ mod ordered {
     }
 }
 
-impl crate::core::focus::BlurTarget for DataTable {
+impl termrock_core::focus::BlurTarget for DataTable {
     fn blur_id(&self) -> WidgetId {
         self.id
     }
@@ -2863,7 +2865,7 @@ impl Navigable for DataTable {
     }
 }
 
-impl crate::core::pointer::MouseTarget for DataTable {
+impl termrock_core::pointer::MouseTarget for DataTable {
     type Action = TableAction;
 
     fn mouse_id(&self) -> WidgetId {
@@ -2872,16 +2874,16 @@ impl crate::core::pointer::MouseTarget for DataTable {
 
     fn route(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> Option<crate::core::response::Response<TableAction>> {
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> Option<termrock_core::response::Response<TableAction>> {
         let editor = self.choice.as_ref().map(|c| c.editor.id);
         (ev.on(self.id) || editor.is_some_and(|e| ev.on(e))).then(|| self.pointer(ev))
     }
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<TableAction> {
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<TableAction> {
         self.with_rows(|me, rows| me.pointer_in(rows, ev, false))
     }
 }
@@ -2891,7 +2893,7 @@ impl DataTable {
     /// by the row key carried in the hit for a keyed one.
     fn hit_row(
         &self,
-        ev: &crate::core::pointer::PointerEvent,
+        ev: &termrock_core::pointer::PointerEvent,
         part: Part,
         keyed: bool,
     ) -> Option<usize> {
@@ -2906,22 +2908,22 @@ impl DataTable {
     fn pointer_in<R: TableRows + ?Sized>(
         &mut self,
         rows: &mut R,
-        ev: &crate::core::pointer::PointerEvent,
+        ev: &termrock_core::pointer::PointerEvent,
         keyed: bool,
     ) -> Response<TableAction> {
-        use crate::core::intent::Phase;
+        use termrock_core::intent::Phase;
 
         if let Some(c) = self.choice.as_mut()
             && ev.on(c.editor.id)
             && ev.wheel().is_none()
         {
             let (out, results) =
-                crate::core::pointer::MouseTarget::pointer(&mut c.editor, ev).into_parts();
+                termrock_core::pointer::MouseTarget::pointer(&mut c.editor, ev).into_parts();
             return self.on_choices(rows, out, results);
         }
 
         if (ev.on(self.id) || ev.wheel().is_some())
-            && let Some(r) = crate::core::pointer::scroll_input(self, ev)
+            && let Some(r) = termrock_core::pointer::scroll_input(self, ev)
         {
             return r.lift();
         }
@@ -3109,7 +3111,7 @@ impl RowSource for KeyedTable {
 }
 
 impl KeyedRowSource for KeyedTable {
-    fn stamp(&self) -> crate::core::list::SourceStamp {
+    fn stamp(&self) -> termrock_core::list::SourceStamp {
         self.rows.stamp()
     }
 
@@ -3179,7 +3181,7 @@ impl<R: TableRows + ?Sized> RowSource for View<'_, R> {
 impl HasHints for DataTable {
     fn hints(&self, _: &HintCx) -> Vec<Hint> {
         if self.is_editing() {
-            return crate::widgets::keyhint::EDIT_FIELD.to_vec();
+            return termrock_controls::keyhint::EDIT_FIELD.to_vec();
         }
         let mut v = nav_hints(&self.nav, self.type_ahead, false);
         if let Some(k) = hint_key(&self.keymap, TableCmd::SortByColumn) {

@@ -4,20 +4,20 @@ use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Rect;
 
-use crate::core::event::Key;
-use crate::core::focus::FocusRing;
-use crate::core::hit::HitRegistry;
-use crate::core::id::{ItemKey, WidgetId};
-use crate::core::list::RowSource;
-use crate::core::selection::SelectGesture;
-use crate::theme::{ColorLevel, Theme};
-use crate::ui::ctx::{Interaction, RenderCtx};
-use crate::widgets::grid::{
+use crate::grid::{
     CellEditResult, CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridCmd, GridDataError,
     GridEditError, GridKeyError, GridRevision, GridRows, GridUndo, GridUndoKind, PendingChanges,
     RowState, RowTotal,
 };
-use crate::widgets::table::SortDir;
+use crate::table::SortDir;
+use termrock_core::event::Key;
+use termrock_core::focus::FocusRing;
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::{ItemKey, WidgetId};
+use termrock_core::list::RowSource;
+use termrock_core::selection::SelectGesture;
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_theme::{ColorLevel, Theme};
 
 fn commit(g: &mut DataGrid) {
     let snapshot = g.snapshot_changes();
@@ -675,7 +675,7 @@ fn codex196_undo_keeps_the_appended_row_selection_anchor() {
 fn codex196_paste_into_cell_runs_the_edit_gateway() {
     let mut g = grid(2);
     let (out, actions) = g.paste_into_cell("pasted").into_parts();
-    assert_eq!(out, crate::core::event::Outcome::Changed);
+    assert_eq!(out, termrock_core::event::Outcome::Changed);
     assert!(matches!(
         actions.into_iter().next(),
         Some(GridAction::CellChanged { row: 0, col: 0 })
