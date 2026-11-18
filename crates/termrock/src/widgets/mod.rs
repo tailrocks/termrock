@@ -1,4 +1,6 @@
-// Transitional: the line-edit fields live in `termrock-core` (#444); #452 removes this.
+//! The widgets, each a `pub use` of the crate that owns it. The line-edit fields
+//! (`edit`, `field_common`) live in `termrock-core::field`.
+
 pub use termrock_collections::{detail_card, list, list_detail, props, search_detail, tree};
 pub use termrock_controls::{
     action_row, brand, button, choice, hintbar, icon_button, keyhint, keyref, scrollbar, segments,
