@@ -19,8 +19,12 @@ use std::path::Path;
 const LAYERING: &str = "docs/layering.toml";
 const FIX: &str = "Move the item down or invert the dependency; there is no allowlist.";
 
+/// The repository root: `termrock` sits at `crates/termrock`, two levels below it.
 fn root() -> &'static Path {
     Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(2)
+        .expect("termrock sits at crates/termrock")
 }
 
 // ---------------------------------------------------------------------------

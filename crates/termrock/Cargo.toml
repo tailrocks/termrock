@@ -42,7 +42,9 @@ termrock-viewport = { workspace = true }
 
 [dev-dependencies]
 ratatui = { workspace = true }
+serde_json = { workspace = true }
 syn = { version = "=3.0.10", features = ["full", "visit"] }
+toml = "=1.2.1"
 
 # The six examples run headless: scripted events, a ratatui `TestBackend`, no
 # terminal. `test = true` lets `cargo nextest run --examples` run the `#[test]`

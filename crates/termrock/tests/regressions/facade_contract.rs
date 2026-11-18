@@ -13,8 +13,12 @@ use syn::visit::Visit;
 const APPS: [&str; 4] = ["holla", "jackin", "showcase", "tablepro"];
 const IMPLEMENTATION: &str = "junie_tui";
 
+/// The repository root: `termrock` sits at `crates/termrock`, two levels below it.
 fn root() -> &'static Path {
     Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(2)
+        .expect("termrock sits at crates/termrock")
 }
 
 fn rust_files(dir: &Path, out: &mut Vec<PathBuf>) {

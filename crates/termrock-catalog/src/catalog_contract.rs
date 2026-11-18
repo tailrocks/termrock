@@ -790,7 +790,7 @@ fn replaced(text: &str, old: &str, new: &str) -> String {
 
 /// The golden API id lists: one line per matrix row, `<row> <id count> <sha256>`, where the digest
 /// is of the sorted ids of that row, one per line. A PR that moves code must leave it as it is.
-const API_IDS: &str = "tests/regressions/api-ids.sha256";
+const API_IDS: &str = "crates/termrock-catalog/tests/regressions/api-ids.sha256";
 
 fn api_id_lines(rows: &[(&'static str, Inventory)]) -> String {
     rows.iter()
@@ -865,7 +865,7 @@ fn catalog_api_ids_match_the_committed_digest() {
 /// Every `#[doc(hidden)] pub` item of the crates of the walk, `<file>  <item>` per line. The
 /// inventory gives such an item no id, so without this list a new public item could skip the
 /// catalog by carrying the attribute (#444). Adding one is a reviewed line in this file.
-const DOC_HIDDEN: &str = "tests/regressions/doc-hidden-items.txt";
+const DOC_HIDDEN: &str = "crates/termrock-catalog/tests/regressions/doc-hidden-items.txt";
 
 fn doc_hidden_lines(tree: &SourceTree) -> String {
     let mut lines = BTreeSet::new();
