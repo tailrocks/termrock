@@ -779,3 +779,6 @@ the #445 entries were applied up front: every `impl` in the moved files and ever
 - **Hidden plumbing.** `context::row_rect`, `layer::layer_out`,
   `ContextMenu::contains_id` and `modal::Frame::inner_width` are used by the
   dialogs, lists, tables and chips that stay in `junie-tui` until #447 and #448.
+- **`option_editor`** is the last file of `termrock-overlays`. It reads
+  `option_list`, `edit` and the layer stack, all in the crate or below.
+  `ChoiceEditor::contains_id` is hidden `pub` for the grid.
