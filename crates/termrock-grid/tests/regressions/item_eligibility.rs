@@ -1,20 +1,20 @@
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::focus::FocusRing;
-use junie_tui::core::hints::{HasHints, HintCx};
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::WidgetId;
-use junie_tui::core::intent::Phase;
-use junie_tui::core::pointer::{MouseTarget, PointerEvent};
-use junie_tui::core::text::TextBuffer;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::widgets::completion::{Completion, CompletionAction};
-use junie_tui::widgets::option_editor::{Affordance, ColumnEditor, EditorConfig, Options};
-use junie_tui::widgets::option_list::Item;
-use junie_tui::widgets::table::{Cell, Column, DataTable, TableAction};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Constraint, Position, Rect};
+use termrock_core::event::{Key, Outcome};
+use termrock_core::focus::FocusRing;
+use termrock_core::hints::{HasHints, HintCx};
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::WidgetId;
+use termrock_core::intent::Phase;
+use termrock_core::pointer::{MouseTarget, PointerEvent};
+use termrock_grid::table::{Cell, Column, DataTable, TableAction};
+use termrock_overlays::completion::{Completion, CompletionAction};
+use termrock_overlays::option_editor::{Affordance, ColumnEditor, EditorConfig, Options};
+use termrock_overlays::option_list::Item;
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_text::buffer::TextBuffer;
+use termrock_theme::{ColorLevel, Theme};
 
 const SCREEN: Rect = Rect::new(0, 0, 60, 14);
 
@@ -59,7 +59,7 @@ fn click(hits: &HitRegistry, id: WidgetId, count: u8) -> PointerEvent {
     )
 }
 
-fn parts<A>(r: junie_tui::core::response::Response<A>) -> (Outcome, Option<A>) {
+fn parts<A>(r: termrock_core::response::Response<A>) -> (Outcome, Option<A>) {
     let (out, actions) = r.into_parts();
     (out, actions.into_iter().next())
 }
