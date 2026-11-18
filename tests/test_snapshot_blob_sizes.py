@@ -19,7 +19,7 @@ SPEC.loader.exec_module(VALIDATOR)
 
 class SnapshotBlobSizeTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.path = "tests/functional/reference-bins/aarch64-apple-darwin/tool"
+        self.path = "crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/tool"
         self.oid = "a" * 40
         self.entry = f"100755 blob {self.oid}\t{self.path}\0".encode()
         self.size = 20_000_000
@@ -42,7 +42,7 @@ class SnapshotBlobSizeTests(unittest.TestCase):
         self.validate()
 
     def test_different_path_is_rejected(self) -> None:
-        wrong = f"100755 blob {self.oid}\ttests/functional/reference-bins/aarch64-apple-darwin/other\0".encode()
+        wrong = f"100755 blob {self.oid}\tcrates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/other\0".encode()
         with self.assertRaisesRegex(ValueError, "per-object size limit"):
             self.validate(entry=wrong)
 

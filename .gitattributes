@@ -2,4 +2,4 @@
 # the HTML and PNG tools lay out, not noise.
 snapshots/**/*.txt -whitespace
 snapshots/**/*.ansi -whitespace
-tests/functional/reference-bins/** binary
+crates/termrock-functional/tests/functional/reference-bins/** binary

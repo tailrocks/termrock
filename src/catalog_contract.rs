@@ -719,13 +719,15 @@ fn catalog_reports_the_proof_layers_separately() {
     let rows = rows(&s).expect("inventory builds");
     let (errors, report) = validate(&rows, &s);
     assert!(errors.is_empty());
-    let functional = std::fs::read_dir(root().join("tests/functional/baselines/functional"))
-        .map(|dir| {
-            dir.flatten()
-                .filter(|e| e.file_name().to_string_lossy().starts_with("showcase_"))
-                .count()
-        })
-        .unwrap_or(0);
+    let functional = std::fs::read_dir(
+        root().join("crates/termrock-functional/tests/functional/baselines/functional"),
+    )
+    .map(|dir| {
+        dir.flatten()
+            .filter(|e| e.file_name().to_string_lossy().starts_with("showcase_"))
+            .count()
+    })
+    .unwrap_or(0);
     let all = &rows.last().expect("rows").1;
     eprintln!(
         "[source coverage] {} exports ({:?}); {} inherit their owner; {} proofs, {} exceptions",
@@ -740,7 +742,7 @@ fn catalog_reports_the_proof_layers_separately() {
         report.proofs, report.scenarios
     );
     eprintln!(
-        "[visual evidence] {functional} Showcase captures under tests/functional/baselines/functional"
+        "[visual evidence] {functional} Showcase captures under crates/termrock-functional/tests/functional/baselines/functional"
     );
     assert!(report.proofs > 0 && report.scenarios > 0);
 }

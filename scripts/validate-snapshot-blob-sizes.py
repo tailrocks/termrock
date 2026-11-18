@@ -28,7 +28,7 @@ def validate(
             raise ValueError(f"generated-workflows: malformed large-blob allowlist row {number}")
         path, object_id, size_text = fields
         if (
-            not path.startswith("tests/functional/reference-bins/")
+            not path.startswith(("tests/functional/reference-bins/", "crates/termrock-functional/tests/functional/reference-bins/"))
             or ".." in Path(path).parts
             or not size_text.isascii()
             or not size_text.isdigit()

@@ -55,65 +55,65 @@
   },
   "binaries": {
     "showcase": {
-      "path": "tests/functional/reference-bins/aarch64-apple-darwin/showcase",
+      "path": "crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/showcase",
       "worktree": "",
       "sha256": "430460e90a752587d7f1f6d2e37b4d8343076a2787a343048fbd3448b3d54a0b",
       "built_from": "fffe002e936d3621f22f9132144066a1374d5d74",
       "platforms": {
         "aarch64-apple-darwin": {
-          "path": "tests/functional/reference-bins/aarch64-apple-darwin/showcase",
+          "path": "crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/showcase",
           "sha256": "430460e90a752587d7f1f6d2e37b4d8343076a2787a343048fbd3448b3d54a0b"
         },
         "x86_64-unknown-linux-gnu": {
-          "path": "tests/functional/reference-bins/x86_64-unknown-linux-gnu/showcase",
+          "path": "crates/termrock-functional/tests/functional/reference-bins/x86_64-unknown-linux-gnu/showcase",
           "sha256": "c6cac7998489a8ed6bb427c126e25a3a8bb1027823809beb578c3cec28bebf4a"
         }
       }
     },
     "tablepro": {
-      "path": "tests/functional/reference-bins/aarch64-apple-darwin/tablepro",
+      "path": "crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/tablepro",
       "worktree": "",
       "sha256": "018f598830a0c6ea8912660be87dc16cb40b2c2fcd58f1867dab3ea4eb57a186",
       "built_from": "fffe002e936d3621f22f9132144066a1374d5d74",
       "platforms": {
         "aarch64-apple-darwin": {
-          "path": "tests/functional/reference-bins/aarch64-apple-darwin/tablepro",
+          "path": "crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/tablepro",
           "sha256": "018f598830a0c6ea8912660be87dc16cb40b2c2fcd58f1867dab3ea4eb57a186"
         },
         "x86_64-unknown-linux-gnu": {
-          "path": "tests/functional/reference-bins/x86_64-unknown-linux-gnu/tablepro",
+          "path": "crates/termrock-functional/tests/functional/reference-bins/x86_64-unknown-linux-gnu/tablepro",
           "sha256": "02567d634afa9af1a555c654f917c4cb0636d35016897adad5ed03288f6a28f7"
         }
       }
     },
     "holla": {
-      "path": "tests/functional/reference-bins/aarch64-apple-darwin/holla",
+      "path": "crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/holla",
       "worktree": "",
       "sha256": "2ea3328773dce7ab202de90711341081aba74f0001d3d05f80ff1812e4bb40d5",
       "built_from": "fffe002e936d3621f22f9132144066a1374d5d74",
       "platforms": {
         "aarch64-apple-darwin": {
-          "path": "tests/functional/reference-bins/aarch64-apple-darwin/holla",
+          "path": "crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/holla",
           "sha256": "2ea3328773dce7ab202de90711341081aba74f0001d3d05f80ff1812e4bb40d5"
         },
         "x86_64-unknown-linux-gnu": {
-          "path": "tests/functional/reference-bins/x86_64-unknown-linux-gnu/holla",
+          "path": "crates/termrock-functional/tests/functional/reference-bins/x86_64-unknown-linux-gnu/holla",
           "sha256": "7a0c8edd7a5f656ecaa861016f3487d1a88f9e4ba77c11c028baf127e53d6f7a"
         }
       }
     },
     "jackin": {
-      "path": "tests/functional/reference-bins/aarch64-apple-darwin/jackin",
+      "path": "crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/jackin",
       "worktree": "",
       "sha256": "bdb8b27fb925ec10d7511013d0ab82fad4faf5b0c27797aca87eebf2f0802ceb",
       "built_from": "fffe002e936d3621f22f9132144066a1374d5d74",
       "platforms": {
         "aarch64-apple-darwin": {
-          "path": "tests/functional/reference-bins/aarch64-apple-darwin/jackin",
+          "path": "crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/jackin",
           "sha256": "bdb8b27fb925ec10d7511013d0ab82fad4faf5b0c27797aca87eebf2f0802ceb"
         },
         "x86_64-unknown-linux-gnu": {
-          "path": "tests/functional/reference-bins/x86_64-unknown-linux-gnu/jackin",
+          "path": "crates/termrock-functional/tests/functional/reference-bins/x86_64-unknown-linux-gnu/jackin",
           "sha256": "5fb58a3679191ef0e939d02bed8579519f320fe48d62bac60f78b6f306459f0c"
         }
       }

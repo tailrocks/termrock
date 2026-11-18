@@ -2021,9 +2021,9 @@ test_approved_reference_blobs() {
   canary="$test_root/approved-reference-canary"
   status="$test_root/approved-reference-status"
   for path in \
-    tests/functional/reference-bins/aarch64-apple-darwin/holla \
-    tests/functional/reference-bins/aarch64-apple-darwin/showcase \
-    tests/functional/reference-bins/aarch64-apple-darwin/pr2-3cbe13c/jackin; do
+    crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/holla \
+    crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/showcase \
+    crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/pr2-3cbe13c/jackin; do
     directory=$(new_repo "approved-$(basename "$path")-$(basename "$(dirname "$path")")")
     use_trusted_manifests "$directory"
     oid=$(git -C "$directory" hash-object -w --stdin < "$repo_root/$path")
@@ -2041,7 +2041,7 @@ test_approved_reference_blobs() {
     fi
     assert_no_temporary_snapshot
   done
-  path=tests/functional/reference-bins/aarch64-apple-darwin/holla
+  path=crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/holla
   directory=$(new_repo reference-wrong-path)
   oid=$(git -C "$directory" hash-object -w --stdin < "$repo_root/$path")
   git -C "$directory" update-index --add --cacheinfo "100755,$oid,docs/unapproved-reference"
@@ -2080,7 +2080,7 @@ PYTHON
 
 test_reference_size_faults() {
   local directory path oid size variant wrapper_dir
-  path=tests/functional/reference-bins/aarch64-apple-darwin/holla
+  path=crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/holla
   size=16835672
   directory=$(new_repo reference-size-faults)
   use_trusted_manifests "$directory"

@@ -25,7 +25,7 @@ qualified_cache_root = Path("/Users/donbeave/Projects/jackin-project/wt/baseline
 qualified_cache_generation = qualified_cache_root / "cache/tools/9a0ed85e2b52adbaf29bddccde72f00f702e0cc7f33ce352e3dd806cd231a3ee"
 qualified_source_manifest_sha256 = "e10ba791a6eee5777d094a11f591d8a1fb4b9d0b8754d9b571aac7d21ad1015e"
 qualified_payload_sha256 = "6a0ba692733d2590cb07d65de6c45a9a7bceffb1e4004062961418130b24cbbb"
-qualified_checker_sha256 = "b7fb4264b6b863073f62a56e941590dd11d6f051f586d5e6f2cb5139bec54f4e"
+qualified_checker_sha256 = "17ec8f27937e9bb3cc75aefad75e37bc859eaf012b39ac25da997f2b81d821b3"
 qualified_manifest_key = "9a0ed85e2b52adbaf29bddccde72f00f702e0cc7f33ce352e3dd806cd231a3ee"
 qualified_fixture_head = "1d7f63dbb13ecb2bf3e3295e7a296dc2080a62b1"
 qualified_seed_commit = "f4d9999ace7d6deb4294cd89c00afcc80e748d49"
@@ -686,7 +686,7 @@ else:
 
     def isolate_missing_blob():
         seed_listing = run(["/usr/bin/git", "-C", source, "ls-tree", "-r", seed_tree]).stdout.decode().splitlines()
-        prefixes = ("tests/functional/baselines/functional/", "apps/jackin/tests/functional/baselines/functional/")
+        prefixes = ("tests/functional/baselines/functional/", "crates/termrock-functional/tests/functional/baselines/functional/", "apps/jackin/tests/functional/baselines/functional/")
         excluded = set()
         included = set()
         for line in seed_listing:
