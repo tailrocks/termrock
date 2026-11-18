@@ -19,6 +19,7 @@ members = [
     "crates/termrock-collections",
     "crates/termrock-controls",
     "crates/termrock-core",
+    "crates/termrock-dialogs",
     "crates/termrock-editors",
     "crates/termrock-feedback",
     "crates/termrock-fields",
@@ -48,6 +49,7 @@ default-members = [
     "crates/termrock-collections",
     "crates/termrock-controls",
     "crates/termrock-core",
+    "crates/termrock-dialogs",
     "crates/termrock-editors",
     "crates/termrock-feedback",
     "crates/termrock-fields",
@@ -76,6 +78,7 @@ termrock-cli = { path = "crates/termrock-cli", version = "0.1.0" }
 termrock-collections = { path = "crates/termrock-collections", version = "0.1.0" }
 termrock-controls = { path = "crates/termrock-controls", version = "0.1.0" }
 termrock-core = { path = "crates/termrock-core", version = "0.1.0" }
+termrock-dialogs = { path = "crates/termrock-dialogs", version = "0.1.0" }
 termrock-editors = { path = "crates/termrock-editors", version = "0.1.0" }
 termrock-feedback = { path = "crates/termrock-feedback", version = "0.1.0" }
 termrock-fields = { path = "crates/termrock-fields", version = "0.1.0" }
@@ -116,6 +119,7 @@ termrock-cli = { workspace = true, optional = true }
 termrock-collections = { workspace = true }
 termrock-controls = { workspace = true }
 termrock-core = { workspace = true }
+termrock-dialogs = { workspace = true }
 termrock-editors = { workspace = true }
 termrock-feedback = { workspace = true }
 termrock-fields = { workspace = true }
