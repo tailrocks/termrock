@@ -1239,6 +1239,37 @@ fn catalog_resolves_reexports_and_cfg() {
     );
 }
 
+/// `#[doc(hidden)] pub` is how an item crosses a crate boundary of the split without joining the
+/// declared API (#444): nothing hidden has an id, through its own path or a re-export of its module.
+#[test]
+fn catalog_a_doc_hidden_item_is_not_declared_api() {
+    let tree = SourceTree::from_files(&[(
+        "src/lib.rs",
+        "pub mod shown {\n\
+         pub struct Visible { pub a: u8, #[doc(hidden)] pub b: u8 }\n\
+         impl Visible { pub fn open(&self) {} #[doc(hidden)] pub fn crossing(&self) {} }\n\
+         #[doc(hidden)] pub struct Hidden;\n\
+         #[doc(hidden)] pub trait Key {}\n\
+         #[doc(hidden)] pub fn helper() {}\n\
+         #[doc(hidden)] pub mod internals { pub fn inner() {} }\n\
+         }\n\
+         pub mod facade { pub use crate::shown::*; #[doc(hidden)] pub use crate::shown::Visible as Alias; }\n",
+    )]);
+    let ids: Vec<_> = build(&tree, &MATRIX[2], &[], &BTreeSet::new())
+        .expect("fixture builds")
+        .exports
+        .into_keys()
+        .collect();
+    assert_eq!(
+        ids,
+        [
+            "shown::Visible",
+            "shown::Visible::a",
+            "shown::Visible::open"
+        ]
+    );
+}
+
 const MOVED_HOME: &str = "pub mod new_home { pub struct Moved; impl Moved { pub fn go(&self) {} } }\npub mod old_home { pub use crate::new_home::Moved; }\n";
 
 fn moved_ids(preferred: &[&str]) -> Inventory {
