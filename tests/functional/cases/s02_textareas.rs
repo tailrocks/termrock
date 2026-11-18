@@ -3,7 +3,6 @@
 //! Tuiscotti state ids allow only `[a-z0-9_-]` segments. Dotted case ids are stored as
 //! `pre_refactor/s02_textareas/<case id with '.' replaced by '_'>`.
 
-use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use tui_test::{SnapshotColor, TerminalSnapshot};
@@ -75,7 +74,7 @@ fn see(session: &AppSession, case_id: &str, _precondition: &str) {
 }
 
 fn check_frame(app: &crate::support::App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/functional/baselines");
+    let root = crate::support::oracle_baselines();
     let sample = tuiscotti_latest::sample::Sample::state(
         test_id,
         screen.clone(),

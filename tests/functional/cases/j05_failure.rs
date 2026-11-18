@@ -150,7 +150,7 @@ fn shot(app: &App, checkpoint: &str, cols: u32, rows: u32) {
 }
 
 fn frame_matches(app: &App, screen: &TerminalSnapshot, test_id: &str) -> bool {
-    let root = crate::support::workspace_root().join("tests/functional/baselines");
+    let root = crate::support::oracle_baselines();
     let sample = tuiscotti_latest::sample::Sample::state(
         test_id,
         screen.clone(),
