@@ -5,7 +5,7 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 
-use crate::widgets::keyed_cost_tests::nz;
+use crate::keyed_cost::nz;
 use termrock_collections::list_detail::SourceFrame;
 use termrock_collections::search_detail::{
     QueryRequest, ResultRowKind, SearchAction, SearchConfig, SearchDetail, SearchSource,

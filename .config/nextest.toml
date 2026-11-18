@@ -41,9 +41,9 @@ slow-timeout = { period = "60s", terminate-after = 10 }
 default-filter = '''
     binary_id(=termrock-conformance) & test(/^metrics_tests::/)
   | binary_id(=termrock-metrics) & test(/^measurement::/)
-  | binary_id(=junie-tui) & test(/^ui::overflow_work_tests::/)
-  | binary_id(=junie-tui) & test(/^widgets::keyed_cost_tests::/)
-  | binary_id(=junie-tui) & test(/^widgets::search_detail_cost_tests::/)
+  | binary_id(=termrock-conformance::regressions) & test(/^overflow_work::/)
+  | binary_id(=termrock-conformance::regressions) & test(/^keyed_cost::/)
+  | binary_id(=termrock-conformance::regressions) & test(/^search_detail_cost::/)
   | binary_id(=junie-tui::regressions) & test(/^work_budgets::/)
   | binary_id(=termrock-holla::bin/holla) & test(/^work_metrics_tests::/)
   | binary_id(=termrock-holla::bin/holla) & test(/holla_projection_/)

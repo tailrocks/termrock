@@ -217,8 +217,9 @@ list, table, grid and tree widget in the frame.
   to the screen is bounded by the window.
 - Drawing a `TextViewport` through a shared reference after a change, without
   preparing it first, clones the whole history.
-- Keyed collections (#41) are measured by `widgets::keyed_cost_tests` and
-  `widgets::search_detail_cost_tests` with the metrics above, in the
+- Keyed collections (#41) are measured by `keyed_cost::` and
+  `search_detail_cost::` (the `termrock-conformance::regressions` target, in
+  `crates/termrock-conformance/tests/regressions/`) with the metrics above, in the
   `performance` profile. A `KeyedState` whose `SourceStamp` is unchanged
   enumerates 0 source rows; a data revision enumerates the authoritative and the
   visible rows once each (1,000 for a 500-row store). `Picker` indexes n items
