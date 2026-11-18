@@ -2084,14 +2084,14 @@ fn catalog_rejects_an_exception_test_in_another_file() {
     let mut s = Sources::load();
     s.coverage = replaced(
         &s.coverage,
-        "tests/forward_policy.rs::one_line_is_sent_and_many_lines_ask_first",
-        "tests/terminal.rs::one_line_is_sent_and_many_lines_ask_first",
+        "crates/termrock-terminal/tests/regressions/forward_policy.rs::one_line_is_sent_and_many_lines_ask_first",
+        "crates/termrock-terminal/tests/regressions/terminal.rs::one_line_is_sent_and_many_lines_ask_first",
     );
     expect_error(&check(&s), "which is no #[test] fn at that");
     let mut s = Sources::load();
     s.coverage = replaced(
         &s.coverage,
-        "tests/forward_policy.rs::one_line_is_sent_and_many_lines_ask_first",
+        "crates/termrock-terminal/tests/regressions/forward_policy.rs::one_line_is_sent_and_many_lines_ask_first",
         "one_line_is_sent_and_many_lines_ask_first",
     );
     expect_error(&check(&s), "which is no #[test] fn at that");
@@ -2101,7 +2101,7 @@ fn catalog_rejects_an_exception_test_in_another_file() {
 fn catalog_rejects_an_ignored_exception_test() {
     let mut s = Sources::load();
     s.tests
-        .get_mut("tests/forward_policy.rs::one_line_is_sent_and_many_lines_ask_first")
+        .get_mut("crates/termrock-terminal/tests/regressions/forward_policy.rs::one_line_is_sent_and_many_lines_ask_first")
         .expect("the named test exists")
         .ignored = true;
     expect_error(&check(&s), "which never runs");

@@ -120,8 +120,6 @@ termrock = { workspace = true }
 
 [dev-dependencies]
 ratatui = { workspace = true }
-# tests/terminal_guard.rs builds a `termpane::DamageGrid` directly.
-termpane = { git = "https://github.com/tailrocks/termpane", rev = "d05d114bdce504d184b00836376a350851806f61", default-features = false }
 syn = { version = "=3.0.10", features = ["full", "visit"] }
 toml = "=1.2.1"
 

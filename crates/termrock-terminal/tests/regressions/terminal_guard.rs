@@ -1,17 +1,19 @@
-#![cfg(feature = "terminal")]
-
 //! What untrusted program output may cost the host, and what it may leave in
 //! a cell. Everything goes through `TerminalState::feed`.
+//!
+//! This file installs a counting `#[global_allocator]`, which applies to the whole
+//! `regressions` binary. The peak measurements assume one test per process, which is how
+//! `cargo nextest` runs them; the repository does not use `cargo test`.
 
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc;
 use std::time::Duration;
 
-use junie_tui::terminal::{TermEvent, TerminalState, TerminalView};
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::widgets::Widget;
+use termrock_terminal::{TermEvent, TerminalState, TerminalView};
 
 struct Counting;
 

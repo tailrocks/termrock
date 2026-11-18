@@ -1,12 +1,3 @@
-#![cfg(feature = "terminal")]
-
-#[path = "terminal/session.rs"]
-mod session;
-
-use junie_tui::core::event::Key;
-use junie_tui::terminal::{
-    Modes, RowWrap, TermEvent, TermView, TerminalState, TerminalView, encode_key,
-};
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 use ratatui::buffer::{Buffer, CellWidth};
@@ -14,6 +5,10 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::widgets::Widget;
+use termrock_core::event::Key;
+use termrock_terminal::{
+    Modes, RowWrap, TermEvent, TermView, TerminalState, TerminalView, encode_key,
+};
 
 fn lines(from: u32, to: u32) -> Vec<u8> {
     (from..=to)

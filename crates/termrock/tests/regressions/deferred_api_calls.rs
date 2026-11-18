@@ -2,10 +2,10 @@
 //! The catalog gate names these tests, so each must call the API on its own
 //! type.
 
-use junie_tui::core::id::WidgetId;
-use junie_tui::widgets::table::{Cell, Column, DataTable};
-use junie_tui::widgets::tabs::{TabItem, Tabs};
 use ratatui::layout::Constraint;
+use termrock::core::id::WidgetId;
+use termrock::widgets::table::{Cell, Column, DataTable};
+use termrock::widgets::tabs::{TabItem, Tabs};
 
 #[test]
 fn tabs_push_appends_the_item_after_the_existing_ones() {

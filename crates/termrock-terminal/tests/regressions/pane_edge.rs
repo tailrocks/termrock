@@ -1,15 +1,13 @@
-#![cfg(feature = "terminal")]
-
-use junie_tui::core::focus::FocusRing;
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::WidgetId;
-use junie_tui::terminal::{TerminalState, TerminalViewport};
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::widgets::scrollbar::{THUMB, TRACK};
-use junie_tui::widgets::viewport_ops::ViewportOps;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
+use termrock_controls::scrollbar::{THUMB, TRACK};
+use termrock_core::focus::FocusRing;
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::WidgetId;
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_terminal::{TerminalState, TerminalViewport};
+use termrock_theme::{ColorLevel, Theme};
+use termrock_viewport::viewport_ops::ViewportOps;
 
 const ID: WidgetId = WidgetId::of("t.pane.edge");
 const AREA: Rect = Rect::new(1, 1, 11, 10);
@@ -189,7 +187,7 @@ fn cursor_visibility_rules() {
         paint(&scrolled, true).1,
         Some(Position::new(AREA.x + 8, AREA.y + 9))
     );
-    scrolled.wheel(junie_tui::core::hit::Axis::Vertical, -3);
+    scrolled.wheel(termrock_core::hit::Axis::Vertical, -3);
     assert_eq!(
         paint(&scrolled, true).1,
         None,

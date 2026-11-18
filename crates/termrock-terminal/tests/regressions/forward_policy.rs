@@ -1,6 +1,4 @@
-#![cfg(feature = "terminal")]
-
-use junie_tui::terminal::{ForwardPolicy, Paste};
+use termrock_terminal::{ForwardPolicy, Paste};
 
 const OPEN: &[u8] = b"\x1b[200~";
 const CLOSE: &[u8] = b"\x1b[201~";

@@ -1,4 +1,4 @@
-use junie_tui::widgets::file_browser::{FileEntry, FileSource};
+use termrock_dialogs::file_browser::{FileEntry, FileSource};
 
 struct Remote;
 

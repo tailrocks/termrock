@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use junie_tui::clock::Moment;
-use junie_tui::core::edit::FieldKeys;
-use junie_tui::core::event::Key;
-use junie_tui::core::id::WidgetId;
-use junie_tui::shell::{Clipboard, Copied, NativeClipboard, Shell};
-use junie_tui::widgets::input::TextInput;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use termrock_core::edit::FieldKeys;
+use termrock_core::event::Key;
+use termrock_core::id::WidgetId;
+use termrock_fields::input::TextInput;
+use termrock_session::clock::Moment;
+use termrock_shell::{Clipboard, Copied, NativeClipboard, Shell};
 
 #[derive(Debug)]
 struct Sink(bool);
@@ -57,7 +57,7 @@ impl NativeClipboard for Counting {
 }
 
 fn queued() -> Vec<String> {
-    junie_tui::shell::clipboard::take_output()
+    termrock_shell::clipboard::take_output()
 }
 
 #[test]
@@ -302,11 +302,11 @@ fn a_dropped_shell_leaves_no_clipboard_hook_behind() {
     let native = Arc::new(Counting::default());
     let mut shell = Shell::<()>::new();
     shell.set_clipboard(Clipboard::new().native(native.clone()));
-    junie_tui::core::edit::clipboard::copy(TEXT);
+    termrock_core::edit::clipboard::copy(TEXT);
     assert_eq!(native.0.load(std::sync::atomic::Ordering::SeqCst), 1);
 
     drop(shell);
-    junie_tui::core::edit::clipboard::copy(TEXT);
+    termrock_core::edit::clipboard::copy(TEXT);
 
     assert_eq!(
         native.0.load(std::sync::atomic::Ordering::SeqCst),
@@ -327,14 +327,14 @@ fn dropping_one_shell_keeps_the_clipboard_hook_of_the_shell_that_replaced_it() {
     second.set_clipboard(Clipboard::new().native(second_sink.clone()));
 
     drop(first);
-    junie_tui::core::edit::clipboard::copy(TEXT);
+    termrock_core::edit::clipboard::copy(TEXT);
 
     let count = |sink: &Counting| sink.0.load(std::sync::atomic::Ordering::SeqCst);
     assert_eq!(count(&second_sink), 1, "the live shell still owns the hook");
     assert_eq!(count(&first_sink), 0);
 
     drop(second);
-    junie_tui::core::edit::clipboard::copy(TEXT);
+    termrock_core::edit::clipboard::copy(TEXT);
     assert_eq!(count(&second_sink), 1, "its own drop still removes it");
 }
 
@@ -349,13 +349,13 @@ fn dropping_a_shell_keeps_the_hook_of_another_shell_given_a_clone_of_the_same_cl
     second.set_clipboard(configured.clone());
 
     drop(first);
-    junie_tui::core::edit::clipboard::copy(TEXT);
+    termrock_core::edit::clipboard::copy(TEXT);
 
     let count = || sink.0.load(std::sync::atomic::Ordering::SeqCst);
     assert_eq!(count(), 1, "the live shell still owns the hook");
 
     drop(second);
-    junie_tui::core::edit::clipboard::copy(TEXT);
+    termrock_core::edit::clipboard::copy(TEXT);
     assert_eq!(count(), 1, "its own drop still removes it");
 }
 
@@ -368,10 +368,10 @@ fn installing_the_same_clipboard_twice_leaves_one_live_hook() {
     shell.set_clipboard(configured.clone());
     shell.set_clipboard(configured.clone());
 
-    junie_tui::core::edit::clipboard::copy(TEXT);
+    termrock_core::edit::clipboard::copy(TEXT);
 
     assert_eq!(sink.0.load(std::sync::atomic::Ordering::SeqCst), 1);
     drop(shell);
-    junie_tui::core::edit::clipboard::copy(TEXT);
+    termrock_core::edit::clipboard::copy(TEXT);
     assert_eq!(sink.0.load(std::sync::atomic::Ordering::SeqCst), 1);
 }
