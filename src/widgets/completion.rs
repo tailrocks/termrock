@@ -4,14 +4,18 @@ use ratatui::layout::Rect;
 use ratatui::style::Modifier;
 
 use crate::core::event::{Key, Outcome};
+use crate::core::hints::{HasHints, HintCx, nav_hints};
 use crate::core::id::{ItemKey, WidgetId};
 use crate::core::keymap::{Nav, NavKeys};
 use crate::core::list::{Cursor, Moved, Navigable, RowSource};
 use crate::core::refusal::Reason;
+use crate::core::response::Response;
 use crate::theme::CursorStyle;
 use crate::ui::ctx::RenderCtx;
+use crate::ui::layer::{DismissReason, LayerSpec, Overlay};
 use crate::ui::popup::{Dismiss, Placement, backdrop_id, place_with, surface_for};
 use crate::ui::text::{TextClip, paint_graphemes, width};
+use crate::widgets::keyhint::{Hint, hint};
 use crate::widgets::option_list::{Item, OptionList, PopupSnapshot, paint_reason};
 
 pub const TEXT_INSET: u16 = 4;
@@ -395,5 +399,34 @@ impl crate::core::pointer::MouseTarget for Completion {
             },
             _ => Response::ignored(),
         }
+    }
+}
+
+impl HasHints for Completion {
+    fn hints(&self, _: &HintCx) -> Vec<Hint> {
+        if !self.is_open() {
+            return vec![];
+        }
+
+        let mut v = nav_hints(&self.list.nav, false, false);
+        if self.has_eligible() {
+            v.push(hint("Enter", "Accept"));
+        }
+        v.push(hint("Esc", "Close"));
+        v
+    }
+}
+
+impl Overlay for Completion {
+    type Action = CompletionAction;
+    fn dismiss(&self) -> Dismiss {
+        self.list.dismiss
+    }
+    fn spec(&self) -> LayerSpec {
+        LayerSpec::popover(self.list.dismiss).hides_page_focus(false)
+    }
+    fn on_dismiss(&mut self, _: DismissReason) -> Response<CompletionAction> {
+        self.close();
+        Response::emit(CompletionAction::Dismiss)
     }
 }

@@ -25,6 +25,8 @@ use crate::widgets::field_common::{EditAction, PointerField};
 use crate::widgets::scrollbar;
 
 mod index;
+use crate::core::hints::{HasHints, HintCx};
+use crate::widgets::keyhint::Hint;
 use index::{
     BracketMap, DiagnosticIndex, ProviderKey, RunIndex, SegmentSnapshot, SyntaxCache,
     next_generation,
@@ -1495,6 +1497,12 @@ impl EditMenuHost for CodeEditor {
         let edited = self.field.run_as(cmd, self.read_only).edited;
         self.after_change();
         edited
+    }
+}
+
+impl HasHints for CodeEditor {
+    fn hints(&self, _: &HintCx) -> Vec<Hint> {
+        CodeEditor::hints(self)
     }
 }
 

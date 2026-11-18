@@ -8,23 +8,32 @@ use ratatui::style::{Modifier, Style};
 use crate::core::edit::TextCmd;
 use crate::core::event::{Key, Outcome};
 use crate::core::hints::{HasHints, HintCx, nav_hints};
+use crate::core::hit::Axis;
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::core::keymap::{
     Actions, KeyBinding, KeyMap, KeyboardCapabilities, Nav, NavKeys, deliverable_binding_for_with,
 };
 use crate::core::list::{Cursor, KeyStep, Navigable, RowSource};
+use crate::core::pointer::{MouseTarget, PointerEvent};
+use crate::core::response::Response;
 use crate::theme::CursorStyle;
-use crate::ui::columns::{self, Col};
+use crate::ui::column_solver::{Col, solve};
 use crate::ui::ctx::{Backdrop, RenderCtx, fill};
 use crate::ui::edit_menu::{
     EditCaps, EditMenu, EditMenuHost, edit_menu_key, edit_menu_pointer, edit_menu_route,
     point_field,
 };
-use crate::ui::popup::{Placement, place_with};
+use crate::ui::layer::{
+    DismissReason, Layer, LayerCx, LayerOut, LayerResult, LayerSpec, Overlay, layer_out,
+};
+use crate::ui::popup::{Dismiss, Placement, place_with};
+use crate::ui::specimen::{Specimen, SpecimenState};
 use crate::ui::text::{TextClip, paint_graphemes, truncate, wider_than, width};
 use crate::widgets::edit::EditField;
 use crate::widgets::keyhint::Hint;
 use crate::widgets::option_list::{Item, OptionList};
+use ratatui::layout::Position;
+use ratatui::style::Color;
 
 pub const DEFAULT_GLYPH: &str = "·";
 
@@ -1252,7 +1261,7 @@ impl Picker {
         if group_col > 0 {
             cols.push(Col::fixed(group_col));
         }
-        let widths = columns::solve(&cols, row_w.saturating_sub(4), 2);
+        let widths = solve(&cols, row_w.saturating_sub(4), 2);
         let label_col = widths[0];
         let detail_col = widths[1];
         let rows = VisibleRows {
@@ -1521,6 +1530,168 @@ fn picker_content_rows(count: usize, max_rows: u16, ready: bool) -> usize {
     count.clamp(min, max)
 }
 
+impl Specimen for Picker {
+    fn specimen_id(&self) -> WidgetId {
+        self.id
+    }
+
+    fn supports(&self, state: SpecimenState) -> bool {
+        use SpecimenState::*;
+        match state {
+            Rest | Empty | Loading | Error => true,
+            Hover | Pressed | Disabled => self.visible_len() > 1,
+            Overflow => self.visible_len() > 3,
+            Focused | FocusedHover | Selected | Busy | Editing | Narrow => false,
+        }
+    }
+
+    fn specimen_height(&self, state: SpecimenState) -> u16 {
+        picker_sample(self, state).height() + 2
+    }
+
+    fn specimen(
+        &self,
+        state: SpecimenState,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: Color,
+    ) {
+        let _ = bg;
+        let mut p = picker_sample(self, state);
+        let w = p.list().width.1.min(area.width);
+        p.set_width(w);
+        let v = state.visual();
+        let row = p.row_id(1.min(p.visible_len().saturating_sub(1)));
+        ctx.interaction.focus = None;
+        ctx.interaction.hover = v.hovered.then_some(row);
+        ctx.interaction.pressed = v.pressed.then_some(row);
+        p.draw(area, buf, ctx);
+    }
+}
+
+fn picker_sample(p: &Picker, state: SpecimenState) -> Picker {
+    let mut p = p.clone();
+    p.set_placement(crate::ui::popup::Placement::Center);
+    p.anchor = Rect::ZERO;
+    p.backdrop = crate::ui::ctx::Backdrop::FULL;
+    match state {
+        SpecimenState::Disabled => {
+            let mut items: Vec<_> = p
+                .visible_items()
+                .map(|v| v.item.clone().matched(v.matched.to_vec()))
+                .collect();
+            if let Some(item) = items.get_mut(1) {
+                item.disabled = true;
+            }
+            p.set_items(items)
+                .unwrap_or_else(|error| p.report_item_error(error));
+        }
+        SpecimenState::Empty => {
+            p.set_items(vec![])
+                .unwrap_or_else(|error| p.report_item_error(error));
+        }
+        SpecimenState::Loading => {
+            p.set_items(vec![])
+                .unwrap_or_else(|error| p.report_item_error(error));
+            p.status = PickerStatus::Loading("Fetching branches…".into());
+        }
+        SpecimenState::Error => {
+            p.set_items(vec![])
+                .unwrap_or_else(|error| p.report_item_error(error));
+            p.status = PickerStatus::Error {
+                message: "Could not reach origin".into(),
+                detail: Some("r retries".into()),
+            };
+        }
+        SpecimenState::Overflow => p.set_max_rows(3),
+        _ => {}
+    }
+    p
+}
+
+impl Overlay for Picker {
+    type Action = PickerAction;
+    fn dismiss(&self) -> Dismiss {
+        self.list().dismiss
+    }
+    fn spec(&self) -> LayerSpec {
+        LayerSpec::modal(self.list().dismiss).initial_focus(self.id)
+    }
+    fn on_dismiss(&mut self, _: DismissReason) -> Response<PickerAction> {
+        Response::emit(PickerAction::Cancelled)
+    }
+}
+
+fn picker_events(p: &mut Picker, actions: impl IntoIterator<Item = PickerAction>) {
+    p.pending.extend(actions);
+}
+
+fn picker_closes(ev: &PickerAction) -> bool {
+    matches!(
+        ev,
+        PickerAction::Chosen(_)
+            | PickerAction::ChosenAlt(_)
+            | PickerAction::ChosenMany(_)
+            | PickerAction::Cancelled
+    )
+}
+
+impl<R: From<LayerResult> + 'static, W: ?Sized + 'static> Layer<R, W> for Picker {
+    fn hints(&self, focused: Option<WidgetId>) -> Vec<Hint> {
+        HasHints::hints(self, &HintCx::new(focused))
+    }
+    fn spec(&self) -> LayerSpec {
+        Overlay::spec(self)
+    }
+    fn render(&mut self, screen: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, _: &W) {
+        Picker::draw(self, screen, buf, ctx);
+    }
+    fn on_key(&mut self, key: &Key, _: &mut LayerCx<'_, W>) -> Outcome {
+        let (o, ev) = Picker::on_key(self, key);
+        picker_events(self, ev);
+        o.or(Outcome::Consumed)
+    }
+
+    fn pointer(&mut self, ev: &PointerEvent, _: &mut LayerCx<'_, W>) -> Outcome {
+        if ev.part().part == crate::core::id::Part::BACKDROP && !self.edit_menu.owns(ev) {
+            return Outcome::Ignored;
+        }
+        let mut r = MouseTarget::pointer(self, ev);
+        let actions = r.take_actions();
+        picker_events(self, actions);
+        r.outcome()
+    }
+    fn on_click(&mut self, id: WidgetId, _: Position, _: &mut LayerCx<'_, W>) -> Outcome {
+        let ev = Picker::on_click(self, id);
+        let changed = ev.is_some();
+        picker_events(self, ev);
+        if changed {
+            Outcome::Changed
+        } else {
+            Outcome::Consumed
+        }
+    }
+    fn on_wheel(&mut self, delta: i32, _: Position) -> Outcome {
+        self.wheel(Axis::Vertical, delta)
+    }
+    fn on_paste(&mut self, text: &str) -> Outcome {
+        let (o, ev) = Picker::on_paste(self, text);
+        picker_events(self, ev);
+        o
+    }
+    fn on_dismiss(&mut self, reason: DismissReason) {
+        let actions = Overlay::on_dismiss(self, reason).into_actions();
+        self.pending.clear();
+        picker_events(self, actions);
+    }
+    fn take_result(&mut self) -> Option<LayerOut<R>> {
+        let next = self.pending.next(picker_closes)?;
+        let closes = next.closes();
+        Some(layer_out(LayerResult::Picker(next.into_inner()), closes))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use ratatui::crossterm::event::{KeyCode, KeyModifiers};
@@ -1538,8 +1709,8 @@ mod tests {
     use crate::theme::{ColorLevel, Theme};
     use crate::ui::context::ContextAnchor;
     use crate::ui::ctx::{Interaction, RenderCtx};
+    use crate::ui::layer::LayerResult;
     use crate::ui::layer::{Layer, LayerCx, LayerOut};
-    use crate::ui::layers::LayerResult;
     use crate::widgets::hintbar::{HintBar, HintKeys, HintLayer};
     use crate::widgets::keyhint::key_of;
     use crate::widgets::menu::MenuItem;

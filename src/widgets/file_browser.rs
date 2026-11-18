@@ -14,7 +14,8 @@ use crate::core::pointer::{MouseTarget, PointerEvent, scroll_input};
 use crate::core::response::Response;
 use crate::core::scroll::Scrollable;
 use crate::ui::ctx::RenderCtx;
-use crate::ui::layer::{LayerSpec, Overlay};
+pub use crate::ui::layer::FileBrowserResult;
+use crate::ui::layer::{Layer, LayerCx, LayerOut, LayerResult, LayerSpec, Overlay, layer_out};
 use crate::ui::popup::{Dismiss, Placement};
 use crate::ui::text::truncate;
 use crate::widgets::breadcrumb::Breadcrumb;
@@ -356,14 +357,6 @@ impl std::fmt::Debug for UrlEntry {
             .field("label", &self.label)
             .finish_non_exhaustive()
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum FileBrowserResult {
-    Chosen { path: String, checked: bool },
-
-    Url(String),
-    Cancelled,
 }
 
 pub struct FileBrowser {
@@ -1120,5 +1113,40 @@ impl Overlay for FileBrowser {
     fn on_dismiss(&mut self, _: DismissReason) -> Response<FileBrowserResult> {
         self.result = Some(FileBrowserResult::Cancelled);
         Response::emit(FileBrowserResult::Cancelled)
+    }
+}
+
+impl<R: From<LayerResult> + 'static, W: ?Sized + 'static> Layer<R, W> for FileBrowser {
+    fn hints(&self, focused: Option<WidgetId>) -> Vec<Hint> {
+        FileBrowser::hints(self, focused)
+    }
+    fn is_editing(&self) -> bool {
+        FileBrowser::is_editing(self)
+    }
+    fn spec(&self) -> LayerSpec {
+        Overlay::spec(self)
+    }
+    fn render(&mut self, screen: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, _: &W) {
+        FileBrowser::render(self, screen, buf, ctx);
+    }
+    fn on_key(&mut self, key: &Key, cx: &mut LayerCx<'_, W>) -> Outcome {
+        FileBrowser::on_key(self, key, cx.focus, cx.ring).or(Outcome::Consumed)
+    }
+    fn pointer(&mut self, ev: &PointerEvent, cx: &mut LayerCx<'_, W>) -> Outcome {
+        FileBrowser::pointer(self, ev, cx.focus)
+    }
+    fn on_paste(&mut self, text: &str) -> Outcome {
+        FileBrowser::on_paste(self, text)
+    }
+    fn on_blur(&mut self, change: FocusChange) -> Outcome {
+        FileBrowser::on_blur(self, change)
+    }
+    fn on_dismiss(&mut self, reason: DismissReason) {
+        let _ = Overlay::on_dismiss(self, reason);
+    }
+    fn take_result(&mut self) -> Option<LayerOut<R>> {
+        self.result
+            .take()
+            .map(|r| layer_out(LayerResult::File(r), true))
     }
 }

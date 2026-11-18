@@ -8,20 +8,22 @@ use ratatui::style::{Color, Modifier};
 use crate::core::data::{DataError, ShapeError, validate_rectangular};
 use crate::core::event::{ClientPlatform, Key, Outcome};
 use crate::core::focus::BlurAction;
-use crate::core::hit::Axis;
-use crate::core::hit::PartMap;
+use crate::core::hit::{Axis, PartMap};
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::core::keyed::{KeyedSourceError, KeyedState, KeyedVec};
-use crate::core::keymap::unassigned_chord;
-use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup, select_all_bindings};
+use crate::core::keymap::{
+    Actions, KeyBinding, KeyMap, Nav, NavKeys, hint_key, lookup, select_all_bindings,
+    unassigned_chord,
+};
 use crate::core::list::{Cursor, KeyStep, KeyedRowSource, Moved, Navigable, RowSource};
 use crate::core::response::Response;
 use crate::core::scroll::{HScroll, ScrollPane, Scrollable};
 use crate::core::selection::{ClickPolicy, RowSelection, SelectGesture, SelectionMode, TriState};
-use crate::ui::columns::{ColumnSizing, HeaderAction, HeaderLabels};
+use crate::ui::column_solver::ColumnSizing;
 use crate::ui::ctx::{RenderCtx, fill};
 use crate::ui::row::{MarkKind, RowLook, RowUi};
 use crate::widgets::edit::{EditExit, EditField, Validator};
+use crate::widgets::menu::MenuItem;
 use crate::widgets::option_editor::{
     Affordance, ChoiceEditor, ChoiceResult, ColumnEditor, EditorConfig,
 };
@@ -31,6 +33,94 @@ use crate::widgets::scrollbar;
 pub enum SortDir {
     Asc,
     Desc,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HeaderAction {
+    SortAsc,
+    SortDesc,
+    ClearSort,
+
+    Autofit,
+
+    ResetWidths,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct HeaderLabels {
+    pub sort_asc: &'static str,
+    pub sort_desc: &'static str,
+    pub clear_sort: &'static str,
+    pub autofit: &'static str,
+    pub reset_widths: &'static str,
+}
+
+impl HeaderLabels {
+    pub const DEFAULT: Self = Self {
+        sort_asc: "Sort Ascending",
+        sort_desc: "Sort Descending",
+        clear_sort: "Clear Sort",
+        autofit: "Size Column to Fit",
+        reset_widths: "Reset Column Widths",
+    };
+}
+
+impl Default for HeaderLabels {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
+}
+
+pub fn header_menu(
+    labels: &HeaderLabels,
+    sortable: bool,
+    sorted: Option<SortDir>,
+    resizable: bool,
+    has_user_widths: bool,
+) -> Vec<(HeaderAction, MenuItem)> {
+    let no_sort = (!sortable).then_some("This column does not sort");
+    let item = |label: &str, off: Option<&str>| {
+        let it = MenuItem::new(label);
+        match off {
+            Some(r) => it.reason(r),
+            None => it,
+        }
+    };
+    let mut v = vec![
+        (
+            HeaderAction::SortAsc,
+            item(
+                labels.sort_asc,
+                no_sort.or((sorted == Some(SortDir::Asc)).then_some("Already sorted ascending")),
+            ),
+        ),
+        (
+            HeaderAction::SortDesc,
+            item(
+                labels.sort_desc,
+                no_sort.or((sorted == Some(SortDir::Desc)).then_some("Already sorted descending")),
+            ),
+        ),
+        (
+            HeaderAction::ClearSort,
+            item(
+                labels.clear_sort,
+                no_sort.or(sorted.is_none().then_some("Not sorted")),
+            )
+            .separator_if(resizable),
+        ),
+    ];
+    if resizable {
+        v.push((HeaderAction::Autofit, item(labels.autofit, None)));
+        v.push((
+            HeaderAction::ResetWidths,
+            item(
+                labels.reset_widths,
+                (!has_user_widths).then_some("Columns have their default widths"),
+            ),
+        ));
+    }
+    v
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -931,7 +1021,7 @@ impl DataTable {
     }
 
     pub fn seam_id(&self, c: usize) -> WidgetId {
-        self.id.part(crate::ui::columns::seam_part(c))
+        self.id.part(crate::ui::column_solver::seam_part(c))
     }
 
     fn seam_of(&self, id: WidgetId) -> Option<usize> {
@@ -998,10 +1088,10 @@ impl DataTable {
         self.sizing.set(c, need.min(cap) as u16);
     }
 
-    pub fn header_menu(&self, c: usize) -> Vec<(HeaderAction, crate::widgets::menu::MenuItem)> {
+    pub fn header_menu(&self, c: usize) -> Vec<(HeaderAction, MenuItem)> {
         let sortable = self.columns.get(c).is_some_and(|col| col.sortable);
         let sorted = self.sort.and_then(|(sc, d)| (sc == c).then_some(d));
-        crate::ui::columns::header_menu(
+        header_menu(
             &self.header_labels,
             sortable,
             sorted,
@@ -2305,7 +2395,7 @@ impl DataTable {
             }
             if self.sizing.resizable {
                 let hit = self.sizing.seam_rect(r.right(), header_y, 2, area);
-                crate::ui::columns::render_seam(
+                crate::ui::column_solver::render_seam(
                     buf,
                     ctx,
                     (self.id, ci),
@@ -2687,6 +2777,12 @@ impl DataTable {
     }
 }
 
+use crate::core::hints::{
+    Binding, Bindings, HasHints, HintCx, actions_bindings, nav_bindings, nav_hints,
+};
+use crate::core::pointer::PointerEvent;
+use crate::ui::context::{ContextAnchor, ContextRequest, ContextSource, row_rect};
+use crate::widgets::keyhint::Hint;
 use ratatui::style::Style;
 
 fn parse_num(s: &str) -> Option<ordered::F64> {
@@ -3077,6 +3173,77 @@ impl<R: TableRows + ?Sized> RowSource for View<'_, R> {
         self.rows
             .cell(self.table.order[d], col)
             .map_or("", |cell| cell.text)
+    }
+}
+
+impl HasHints for DataTable {
+    fn hints(&self, _: &HintCx) -> Vec<Hint> {
+        if self.is_editing() {
+            return crate::widgets::keyhint::EDIT_FIELD.to_vec();
+        }
+        let mut v = nav_hints(&self.nav, self.type_ahead, false);
+        if let Some(k) = hint_key(&self.keymap, TableCmd::SortByColumn) {
+            v.push(Hint::new(k, "Sort"));
+        }
+        v
+    }
+}
+
+impl Bindings for DataTable {
+    fn bindings(&self) -> Vec<Binding> {
+        let mut v = nav_bindings(&self.nav, self.type_ahead);
+        v.push(Binding::group("Enter", "Activate"));
+        v.extend(actions_bindings(&self.keymap));
+        v
+    }
+}
+
+impl ContextSource for DataTable {
+    type Target = (usize, usize);
+    fn context_target(&self, ev: &PointerEvent) -> Option<(usize, usize)> {
+        if !ev.on(self.id) {
+            return None;
+        }
+        if let Some(r) = ev.index_of(Part::ROW) {
+            return Some((r, self.cursor_col));
+        }
+        let r = ev.index_of(Part::CELL)?;
+        Some((r, self.column_at(ev.pos().x).unwrap_or(self.cursor_col)))
+    }
+
+    fn context_select(&mut self, (row, col): (usize, usize)) {
+        if let Some(r) = Navigable::cursor(self).select(row, self).index() {
+            self.cursor_row = r;
+            if self.cell_nav && col < self.columns().len() {
+                self.cursor_col = col;
+            }
+            self.context_selection(r);
+        }
+    }
+    fn context_cursor(&self) -> Option<ContextRequest<(usize, usize)>> {
+        (self.cursor_row < self.rows().len()).then(|| {
+            let id = if self.cell_nav {
+                self.cell_id(self.cursor_row, self.cursor_col)
+            } else {
+                self.row_id(self.cursor_row)
+            };
+            ContextRequest {
+                target: (self.cursor_row, self.cursor_col),
+                anchor: ContextAnchor::Control {
+                    id,
+
+                    fallback: row_rect(
+                        Rect {
+                            y: self.area.y.saturating_add(1),
+                            height: self.area.height.saturating_sub(1),
+                            ..self.area
+                        },
+                        self.cursor_row,
+                        self.scroll.offset,
+                    ),
+                },
+            }
+        })
     }
 }
 

@@ -6,15 +6,19 @@ use ratatui::style::Modifier;
 use crate::core::edit::{EditEntry, EditKind, FieldKeys, FocusSelect, TextCmd};
 use crate::core::event::{Key, Outcome};
 use crate::core::focus::{BlurAction, request_focus_next};
+use crate::core::hints::{HasHints, HintCx};
 use crate::core::id::WidgetId;
 use crate::ui::ctx::RenderCtx;
 use crate::ui::edit_menu::{
     EditCaps, EditMenu, EditMenuHost, edit_menu_key, edit_menu_pointer, edit_menu_route,
     editable_target, point_editable,
 };
+use crate::ui::specimen::{Specimen, SpecimenState};
 use crate::ui::text::width;
 use crate::widgets::edit::{EditField, Editable, FieldError, LineLook, ValidateWhen, Validator};
 use crate::widgets::field_common::{EditAction, PointerField, PointerSelect, paste_clipboard};
+use crate::widgets::keyhint::Hint;
+use ratatui::style::Color;
 
 impl crate::ui::measure::Measure for TextInput {
     fn measure(
@@ -1001,6 +1005,79 @@ impl EditMenuHost for TextInput {
         }
         self.sync_required();
         self.field.run(cmd).edited
+    }
+}
+
+impl HasHints for TextInput {
+    fn hints(&self, _: &HintCx) -> Vec<Hint> {
+        TextInput::hints(self)
+    }
+}
+
+impl Specimen for TextInput {
+    fn specimen_id(&self) -> WidgetId {
+        self.id
+    }
+
+    fn supports(&self, state: SpecimenState) -> bool {
+        use SpecimenState::*;
+        match state {
+            Rest | Hover | Focused | FocusedHover | Editing | Error | Disabled | Empty
+            | Overflow | Narrow => true,
+            Pressed | Selected | Busy | Loading => false,
+        }
+    }
+
+    fn specimen_height(&self, state: SpecimenState) -> u16 {
+        if state == SpecimenState::Error || self.field.error.is_some() {
+            3
+        } else {
+            2
+        }
+    }
+
+    fn specimen(
+        &self,
+        state: SpecimenState,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: Color,
+    ) {
+        let mut f = self.clone();
+        f.help.clear();
+        let v = state.visual();
+        f.disabled |= v.disabled;
+        f.editing = v.editing;
+        if v.error && f.field.error.is_none() {
+            f.field.error = Some("Enter a valid value".into());
+        }
+        match state {
+            SpecimenState::Empty => {
+                if f.placeholder.is_empty() {
+                    f.placeholder = "Type a value…".into();
+                }
+                f = f.value("");
+            }
+            SpecimenState::Overflow => {
+                let long = format!(
+                    "{} and a value longer than the field",
+                    f.field.buffer.text()
+                );
+                f = f.value(&long);
+            }
+            _ => {}
+        }
+        f.render(area, buf, ctx, bg);
+
+        if v.editing && f.area.width > 3 {
+            let field = f.area;
+            let text_w = crate::ui::text::width(f.field.buffer.text()) as u16;
+            let x = (field.x + 2 + text_w).min(field.right().saturating_sub(2));
+            if let Some(c) = buf.cell_mut(Position::new(x, field.y)) {
+                c.bg = ctx.theme.text_primary;
+            }
+        }
     }
 }
 

@@ -125,7 +125,7 @@ functional = ["termrock"]
 "src/core/text.rs" = "text"
 
 # runtime
-"src/ui/columns.rs" = "runtime"
+"src/ui/column_solver.rs" = "runtime"
 "src/ui/ctx.rs" = "runtime"
 "src/ui/fade.rs" = "runtime"
 "src/ui/fitting.rs" = "runtime"
@@ -306,5 +306,6 @@ functional = ["termrock"]
 # termrock
 "src/core/mod.rs" = "termrock"
 "src/lib.rs" = "termrock"
+"src/ui/columns.rs" = "termrock"
 "src/ui/mod.rs" = "termrock"
 "src/widgets/mod.rs" = "termrock"

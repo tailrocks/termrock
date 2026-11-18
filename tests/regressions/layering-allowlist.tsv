@@ -8,41 +8,5 @@
 #
 # Owners: the core and theme rows are removed by #441, the ui and widgets rows
 # and the ui::layers test rows by #442, and the two test_alloc rows by #449.
-production	src/ui/columns.rs	widgets::menu
-production	src/ui/columns.rs	widgets::table
-production	src/ui/context.rs	widgets::grid
-production	src/ui/context.rs	widgets::list
-production	src/ui/context.rs	widgets::table
-production	src/ui/context.rs	widgets::tabs
-production	src/ui/context.rs	widgets::tree
-production	src/ui/layer.rs	widgets::choice_dialog
-production	src/ui/layer.rs	widgets::dialog
-production	src/ui/layer.rs	widgets::form_dialog
-production	src/ui/layer.rs	widgets::help
-production	src/ui/layer.rs	widgets::info_dialog
-production	src/ui/layer.rs	widgets::select
-production	src/ui/modal.rs	widgets::dialog
-production	src/ui/specimen.rs	ui::modal
-production	src/ui/specimen.rs	widgets::button
-production	src/ui/specimen.rs	widgets::choice_dialog
-production	src/ui/specimen.rs	widgets::dialog
-production	src/ui/specimen.rs	widgets::input
-production	src/ui/specimen.rs	widgets::menu
-production	src/ui/specimen.rs	widgets::picker
-production	src/ui/specimen.rs	widgets::tabs
-production	src/widgets/viewport_specimen.rs	widgets::diff
-production	src/widgets/viewport_specimen.rs	widgets::steps
-production	src/widgets/widget_hints.rs	widgets::code
-production	src/widgets/widget_hints.rs	widgets::completion
-production	src/widgets/widget_hints.rs	widgets::grid
-production	src/widgets/widget_hints.rs	widgets::input
-production	src/widgets/widget_hints.rs	widgets::list
-production	src/widgets/widget_hints.rs	widgets::select
-production	src/widgets/widget_hints.rs	widgets::table
-production	src/widgets/widget_hints.rs	widgets::tabs
-production	src/widgets/widget_hints.rs	widgets::textarea
-production	src/widgets/widget_hints.rs	widgets::tree
-test	src/ui/layer.rs	ui::layers
 test	src/widgets/code/tests.rs	test_alloc
-test	src/widgets/picker.rs	ui::layers
 test	src/widgets/textarea/tests.rs	test_alloc

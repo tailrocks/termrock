@@ -1378,7 +1378,7 @@ fn catalog_without_a_preferred_spelling_the_definition_path_wins() {
 }
 
 /// Definitions that moved to a lower module while their old public path stayed
-/// the catalog's spelling (#441): `(defined at, spelled in the catalog as)`.
+/// the catalog's spelling (#441, #442): `(defined at, spelled in the catalog as)`.
 /// Without the catalog the walk would pick the definition's own path, so this
 /// table is what the preferred-spelling pin has to undo.
 const MOVED_KEEPING_SPELLING: &[(&str, &str)] = &[
@@ -1417,6 +1417,18 @@ const MOVED_KEEPING_SPELLING: &[(&str, &str)] = &[
     ("theme::CardHeading", "widgets::panel::CardHeading"),
     ("theme::RowState", "widgets::grid::RowState"),
     ("theme::VisualState", "ui::ctx::VisualState"),
+    (
+        "ui::layer::FileBrowserResult",
+        "widgets::file_browser::FileBrowserResult",
+    ),
+    ("ui::layer::FormAction", "widgets::form_dialog::FormAction"),
+    ("ui::layer::InfoResult", "widgets::info_dialog::InfoResult"),
+    ("ui::layer::LayerResult", "ui::layers::LayerResult"),
+    ("ui::modal::OUTER_MARGIN", "widgets::dialog::OUTER_MARGIN"),
+    ("ui::modal::body_bounds", "widgets::dialog::body_bounds"),
+    ("widgets::table::HeaderAction", "ui::columns::HeaderAction"),
+    ("widgets::table::HeaderLabels", "ui::columns::HeaderLabels"),
+    ("widgets::table::header_menu", "ui::columns::header_menu"),
 ];
 
 fn respelled(id: &str) -> String {

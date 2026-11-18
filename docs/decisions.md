@@ -555,3 +555,46 @@ core's hidden `PinnedKeys` (for `HintBarStyle`) and `CheckGlyphs` (for `Glyphs`)
 which is the reason those traits are `#[doc(hidden)] pub` and not private
 (#441). `cargo tree -p termrock-theme -e normal` lists `termrock-core`,
 `termrock-metrics` and `termrock-text` and nothing above them.
+
+## 2026-11-18: Where the ui and widgets cycle fixes landed (#442)
+
+Context. #442 breaks every upward edge between `ui` and `widgets`. Three of its
+instructions did not survive contact with the layering scan, so the code
+follows the evidence and this entry records the differences.
+
+- `ui::columns` is a re-export shim. #442 moves `HeaderAction`, `HeaderLabels`
+  and `header_menu` into `widgets/table.rs` and says to re-export them from
+  `ui::columns`. A re-export is a reference, so a runtime file naming a grid
+  item is the same upward edge the move removes. The solver now lives in
+  `ui/column_solver.rs` (`pub(crate)`, runtime) and `ui/columns.rs` holds only
+  `pub use` lines for both halves, mapped to the facade in `[files]` like the
+  other shim modules. Every `ui::columns::*` path and catalog id is unchanged.
+  #445 and #447 extract the two halves into different crates and keep this
+  shim as the one place the old module is composed; #452 deletes it with the
+  rest of `[files]`.
+- `PickerAction` stays in `widgets/picker.rs`. #442 moves it beside
+  `ui/layer.rs`, but `picker` and `layer` are both in `termrock-overlays`, so
+  `LayerResult::Picker(PickerAction)` is not an edge. Only `FormAction`,
+  `InfoResult` and `FileBrowserResult`, which are produced by
+  `termrock-dialogs` types, moved, into `ui/layer.rs` together with
+  `LayerResult`. `ui::layers` and the three widget modules re-export them.
+- Specimen impls and the other moved impls went into the owning widget file,
+  not into new `*_specimen.rs` files, so no `[files]` row was added. The
+  acceptance line "`ui/layer.rs` has no production reference to `widgets`" is
+  read as "to a higher crate": `ui/layer.rs` still names `icon_button`,
+  `keyhint`, `menu` and `picker`, all in its own or a lower crate.
+
+- The #443 PR A test `catalog_the_catalog_spelling_leaves_the_repository_ids_unchanged`
+  compared the pinned inventory with the bare walk, which only holds while no
+  definition has moved. Moving `LayerResult`, `FormAction`, `InfoResult`,
+  `FileBrowserResult`, `HeaderAction`, `HeaderLabels`, `header_menu`,
+  `OUTER_MARGIN` and `body_bounds` makes the bare walk spell them at their new
+  home. The test keeps its name and its strength: `MOVED_KEEPING_SPELLING`
+  lists each moved definition with the spelling the catalog keeps, and the
+  pinned id set must equal the bare id set after exactly that respelling. A
+  moved id that is missing from the table, or an id that vanishes or appears,
+  fails the test.
+
+No `termrock::` path, type identity or catalog id changed. The allowlist lost
+every `src/ui/**` and `src/widgets/**` row and the two `ui::layers` test rows;
+the core and theme rows (#441) and the two `test_alloc` rows (#449) remain.

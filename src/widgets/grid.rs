@@ -8,26 +8,30 @@ use ratatui::style::{Color, Modifier, Style};
 use crate::core::data::{DataError, ShapeError};
 use crate::core::event::{Key, Outcome};
 use crate::core::focus::BlurAction;
-use crate::core::hit::Axis;
-use crate::core::hit::PartMap;
+use crate::core::hints::{Binding, Bindings, HasHints, HintCx, actions_bindings};
+use crate::core::hit::{Axis, PartMap};
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
+use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, hint_key, lookup};
 use crate::core::list::{Cursor, KeyStep, Moved, Navigable, RowFn, RowSource};
+use crate::core::pointer::PointerEvent;
 use crate::core::response::Response;
 use crate::core::scroll::{HScroll, ScrollPane, Scrollable};
 use crate::core::selection::{ClickPolicy, RowSelection, SelectGesture};
 use crate::theme::SyntaxTone;
-use crate::ui::columns::{ColumnSizing, HeaderAction, HeaderLabels};
+use crate::ui::column_solver::ColumnSizing;
+use crate::ui::context::{ContextAnchor, ContextRequest, ContextSource, row_rect};
 use crate::ui::ctx::{RenderCtx, VisualState, fill};
 use crate::ui::row::{MarkKind, RowLook, RowUi};
 use crate::ui::text::{fit, fit_right, truncate, truncate_middle, wider_than, width, width_capped};
 use crate::widgets::button::{Button, row_layout_right};
 use crate::widgets::edit::{EditExit, EditField, FieldError, Validator, parsers};
+use crate::widgets::keyhint::{EDIT_CELL, Hint, hint};
 use crate::widgets::option_editor::{
     Affordance, ChoiceEditor, ChoiceResult, ColumnEditor, EditorConfig,
 };
 use crate::widgets::scrollbar;
-use crate::widgets::table::SortDir;
+use crate::widgets::table::{HeaderAction, HeaderLabels, SortDir, header_menu};
+use crate::widgets::widget_hints::EDIT;
 
 #[path = "grid_changes.rs"]
 mod changes;
@@ -677,6 +681,72 @@ impl crate::ui::measure::Measure for DataGrid {
 }
 
 const FETCH_MORE_KEY: ItemKey = ItemKey::text("datagrid.fetch-more");
+
+impl HasHints for DataGrid {
+    fn hints(&self, _: &HintCx) -> Vec<Hint> {
+        if self.is_editing() {
+            return EDIT_CELL.to_vec();
+        }
+        let mut v = vec![hint("↑↓←→", "Cell")];
+        if self.cell_editable() {
+            v.push(EDIT);
+        }
+        if let Some(k) = hint_key(&self.keymap, GridCmd::Copy) {
+            v.push(Hint::new(k, "Copy"));
+        }
+        v
+    }
+}
+
+impl Bindings for DataGrid {
+    fn bindings(&self) -> Vec<Binding> {
+        let mut v = vec![Binding::group("↑↓←→", "Cell")];
+        if self.editable {
+            v.push(Binding::group("Enter F2", "Edit"));
+        }
+        v.extend(actions_bindings(&self.keymap));
+        v
+    }
+}
+
+impl ContextSource for DataGrid {
+    type Target = (usize, usize);
+    fn context_target(&self, ev: &PointerEvent) -> Option<(usize, usize)> {
+        if !ev.on(self.id) {
+            return None;
+        }
+        if let Some(r) = ev.index_of(Part::ROW_NUMBER) {
+            return Some((r, self.cursor.1));
+        }
+        let r = ev.index_of(Part::CELL)?;
+        Some((r, self.column_at(ev.pos().x)?))
+    }
+
+    fn context_select(&mut self, cell: (usize, usize)) {
+        if cell.1 < self.columns().len()
+            && let Some(r) = Navigable::cursor(self).select(cell.0, self).index()
+        {
+            self.context_selection(r, cell.1);
+        }
+    }
+    fn context_cursor(&self) -> Option<ContextRequest<(usize, usize)>> {
+        (self.cursor.0 < self.len()).then(|| ContextRequest {
+            target: self.cursor,
+            anchor: ContextAnchor::Control {
+                id: self.cell_id(self.cursor.0, self.cursor.1),
+                fallback: row_rect(
+                    Rect {
+                        y: self.area.y.saturating_add(1),
+                        height: self.area.height.saturating_sub(1),
+                        ..self.area
+                    },
+                    self.cursor.0,
+                    self.scroll.offset,
+                ),
+            },
+        })
+    }
+}
 
 #[cfg(test)]
 thread_local! {
@@ -1332,7 +1402,7 @@ impl DataGrid {
     pub fn header_menu(&self, c: usize) -> Vec<(HeaderAction, crate::widgets::menu::MenuItem)> {
         let sortable = self.columns.get(c).is_some_and(|col| col.sortable);
         let sorted = self.sort.and_then(|(sc, d)| (sc == c).then_some(d));
-        crate::ui::columns::header_menu(
+        header_menu(
             &self.header_labels,
             sortable,
             sorted,
@@ -2804,7 +2874,7 @@ impl DataGrid {
     }
 
     pub fn seam_id(&self, c: usize) -> WidgetId {
-        self.id.part(crate::ui::columns::seam_part(c))
+        self.id.part(crate::ui::column_solver::seam_part(c))
     }
 
     fn seam_of(&self, id: WidgetId) -> Option<usize> {
@@ -3465,7 +3535,7 @@ impl DataGrid {
             if self.sizing.resizable {
                 let hit = self.sizing.seam_rect(rect.right(), header_y, 2, grid_area);
                 let held = self.sizing.dragging() == Some(ci);
-                crate::ui::columns::render_seam(
+                crate::ui::column_solver::render_seam(
                     buf,
                     ctx,
                     (self.id, ci),

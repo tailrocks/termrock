@@ -3,20 +3,29 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Constraint, Margin, Position, Rect};
 
 use crate::core::event::{Key, Outcome};
+use crate::core::focus::FocusChange;
 use crate::core::hints::{HasHints, HintCx};
 use crate::core::hit::Axis;
 use crate::core::id::WidgetId;
 use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
+use crate::core::pointer::PointerEvent;
 use crate::core::response::Response;
 use crate::core::scroll::{HScroll, ScrollPane, ScrollState, Scrollable};
 use crate::theme::{ButtonKind, StatusKind, Strings};
 use crate::ui::ctx::{Backdrop, RenderCtx, fill};
+use crate::ui::layer::{
+    DismissReason, Layer, LayerCx, LayerOut, LayerResult, LayerSpec, Overlay, layer_out,
+};
+pub use crate::ui::modal::{OUTER_MARGIN, body_bounds};
 use crate::ui::popup::{Dismiss, Place, Placement, place_with};
+use crate::ui::specimen::{Specimen, SpecimenState};
 use crate::widgets::button::{Button, ButtonRow, RowAlign, RowOverflow};
+use crate::widgets::icon_button::IconButton;
 use crate::widgets::input::{InputAction, TextInput};
 use crate::widgets::keyhint::{Hint, hint};
 use crate::widgets::panel::Panel;
 use crate::widgets::scrollbar;
+use ratatui::style::Color;
 
 #[derive(Debug, Clone)]
 pub enum DialogBody {
@@ -131,11 +140,6 @@ impl Actions for DialogCmd {
         vec![]
     }
 }
-
-pub const OUTER_MARGIN: Margin = Margin {
-    horizontal: 3,
-    vertical: 1,
-};
 
 impl HasHints for Dialog {
     fn hints(&self, cx: &HintCx) -> Vec<Hint> {
@@ -1299,14 +1303,6 @@ impl Dialog {
     }
 }
 
-pub fn body_bounds(screen: Rect, top: u16, bottom: u16) -> Rect {
-    let h = screen.height.saturating_sub(top + bottom);
-    if h == 0 {
-        return screen;
-    }
-    Rect::new(screen.x, screen.y + top, screen.width, h)
-}
-
 fn blit_rows(src: &Buffer, from: u16, dst: &mut Buffer, at: Rect) {
     let at = at.intersection(*dst.area());
     for dy in 0..at.height {
@@ -1371,5 +1367,182 @@ impl Dialog {
             Some(Phase::Click) => self.on_click_count(id, pos, ev.count(), focus).into(),
             _ => Response::ignored(),
         }
+    }
+}
+
+impl Specimen for Dialog {
+    fn specimen_id(&self) -> WidgetId {
+        self.id
+    }
+
+    fn supports(&self, state: SpecimenState) -> bool {
+        use SpecimenState::*;
+        match state {
+            Rest | Hover | Pressed | Focused | FocusedHover | Disabled | Overflow => {
+                !self.actions.is_empty()
+            }
+            Editing => dialog_field(self).is_some(),
+            Selected | Busy | Error | Empty | Loading | Narrow => false,
+        }
+    }
+
+    fn specimen_height(&self, _state: SpecimenState) -> u16 {
+        self.height(self.width)
+    }
+
+    fn specimen(
+        &self,
+        state: SpecimenState,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx,
+        bg: Color,
+    ) {
+        let _ = bg;
+        let mut d = self.clone();
+        d.outer_margin = ratatui::layout::Margin::new(0, 0);
+        d.placement = crate::ui::popup::Placement::Center;
+        d.backdrop = crate::ui::ctx::Backdrop::FULL;
+        d.width = area.width;
+        let target = dialog_target(&d);
+        let v = state.visual();
+        if v.disabled
+            && let Some(b) = d.actions.get_mut(target)
+        {
+            b.disabled = true;
+        }
+        if state == SpecimenState::Overflow {
+            d.max_height = Some(self.height(self.width));
+            if let DialogBody::Text(t) = &mut d.body {
+                t.push_str(
+                    " The rest of this text is longer than the dialog has room for, \
+                     so the body scrolls and says how much is below.",
+                );
+            }
+        }
+        let field = dialog_field(&d);
+        if v.editing
+            && let DialogBody::Input(i)
+            | DialogBody::Facts {
+                ack: Some(AckInput { input: i, .. }),
+                ..
+            } = &mut d.body
+        {
+            i.editing = true;
+        }
+        let button = d.actions.get(target).map(|b| b.id);
+        ctx.interaction.hover = if v.hovered { button } else { None };
+        ctx.interaction.pressed = if v.pressed { button } else { None };
+        ctx.interaction.focus = match (v.focused, v.editing) {
+            (true, true) => field,
+            (true, false) => button,
+            _ => None,
+        };
+        d.render_in(area, area, buf, ctx);
+    }
+}
+
+fn dialog_target(d: &Dialog) -> usize {
+    d.confirm_index
+        .or_else(|| {
+            d.actions.iter().position(|b| {
+                matches!(
+                    b.kind,
+                    crate::theme::ButtonKind::Primary | crate::theme::ButtonKind::Danger
+                )
+            })
+        })
+        .unwrap_or(d.actions.len().saturating_sub(1))
+}
+
+fn dialog_field(d: &Dialog) -> Option<WidgetId> {
+    match &d.body {
+        DialogBody::Input(i) => Some(i.id),
+        DialogBody::Facts { ack: Some(a), .. } => Some(a.input.id),
+        _ => None,
+    }
+}
+
+impl Overlay for Dialog {
+    type Action = DialogResult;
+
+    fn dismiss(&self) -> Dismiss {
+        self.dismiss_in_force()
+    }
+    fn spec(&self) -> LayerSpec {
+        LayerSpec::modal(Overlay::dismiss(self)).initial_focus(self.initial_focus)
+    }
+
+    fn on_dismiss(&mut self, _: DismissReason) -> Response<DialogResult> {
+        let _ = self.dismissed();
+        Response::emit(self.result.unwrap_or(DialogResult::Cancelled))
+    }
+    fn close_button(&self) -> Option<&IconButton> {
+        Some(&self.close_button)
+    }
+}
+
+impl<R: From<LayerResult> + 'static, W: ?Sized + 'static> Layer<R, W> for Dialog {
+    fn spec(&self) -> LayerSpec {
+        Overlay::spec(self)
+    }
+    fn is_editing(&self) -> bool {
+        Dialog::is_editing(self)
+    }
+    fn render(&mut self, screen: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, _: &W) {
+        Dialog::render(self, screen, buf, ctx);
+    }
+    fn on_key(&mut self, key: &Key, cx: &mut LayerCx<'_, W>) -> Outcome {
+        Dialog::on_key(self, key, cx.focus, cx.ring).or(Outcome::Consumed)
+    }
+    fn pointer(&mut self, ev: &PointerEvent, cx: &mut LayerCx<'_, W>) -> Outcome {
+        Dialog::pointer_in(self, ev, cx.focus).outcome()
+    }
+    fn on_click_count(
+        &mut self,
+        id: WidgetId,
+        pos: Position,
+        count: u8,
+        cx: &mut LayerCx<'_, W>,
+    ) -> Outcome {
+        Dialog::on_click_count(self, id, pos, count, cx.focus)
+    }
+    fn on_click(&mut self, id: WidgetId, pos: Position, cx: &mut LayerCx<'_, W>) -> Outcome {
+        Dialog::on_click_count(self, id, pos, 1, cx.focus)
+    }
+    fn on_press(&mut self, id: WidgetId, pos: Position, count: u8) -> Outcome {
+        Dialog::on_press(self, id, pos, count)
+    }
+    fn on_drag(&mut self, pressed: WidgetId, pos: Position) -> Outcome {
+        Dialog::on_drag(self, pressed, pos)
+    }
+    fn on_wheel(&mut self, delta: i32, _: Position) -> Outcome {
+        Scrollable::wheel(self, Axis::Vertical, delta).outcome()
+    }
+    fn on_wheel_h(&mut self, delta: i32, _: Position) -> Outcome {
+        Scrollable::wheel(self, Axis::Horizontal, delta).outcome()
+    }
+    fn on_paste(&mut self, text: &str) -> Outcome {
+        Dialog::on_paste(self, text)
+    }
+    fn on_blur(&mut self, change: FocusChange) -> Outcome {
+        Dialog::on_blur(self, change)
+    }
+    fn hints(&self, focused: Option<WidgetId>) -> Vec<Hint> {
+        Dialog::hints(self, focused)
+    }
+    fn on_dismiss(&mut self, reason: DismissReason) {
+        let _ = Overlay::on_dismiss(self, reason);
+    }
+    fn take_result(&mut self) -> Option<LayerOut<R>> {
+        let action = match self.result.take()? {
+            DialogResult::Action(i) => Some(i),
+            DialogResult::Cancelled => None,
+        };
+        let text = match &self.body {
+            DialogBody::Input(i) => Some(i.text().to_owned()),
+            _ => None,
+        };
+        Some(layer_out(LayerResult::Dialog { action, text }, true))
     }
 }

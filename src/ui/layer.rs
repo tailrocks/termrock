@@ -16,6 +16,8 @@ use crate::ui::modal::{FocusOnOpen, Modal, ModalStack};
 use crate::ui::popup::{Dismiss, Placement};
 use crate::widgets::icon_button::IconButton;
 use crate::widgets::keyhint::Hint;
+use crate::widgets::menu::MenuAction;
+use crate::widgets::picker::PickerAction;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LayerKind {
@@ -487,190 +489,66 @@ impl<R: 'static, W: ?Sized + 'static, O> ModalStack<LayerEntry<R, W, O>> {
     }
 }
 
-use crate::widgets::choice_dialog::ChoiceDialog;
-use crate::widgets::completion::{Completion, CompletionAction};
-use crate::widgets::dialog::{Dialog, DialogResult};
-use crate::widgets::form_dialog::{FormAction, FormDialog};
-use crate::widgets::help::HelpOverlay;
-use crate::widgets::info_dialog::{InfoDialog, InfoResult};
-use crate::widgets::menu::{ContextMenu, MenuAction, MenuBar, MenuBarAction};
-use crate::widgets::picker::{Picker, PickerAction};
-use crate::widgets::select::{Select, SelectAction};
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LayerResult {
+    Dialog {
+        action: Option<usize>,
+        text: Option<String>,
+    },
 
-impl Overlay for Dialog {
-    type Action = DialogResult;
+    Picker(PickerAction),
 
-    fn dismiss(&self) -> Dismiss {
-        self.dismiss_in_force()
-    }
-    fn spec(&self) -> LayerSpec {
-        LayerSpec::modal(Overlay::dismiss(self)).initial_focus(self.initial_focus)
-    }
+    Menu(MenuAction),
 
-    fn on_dismiss(&mut self, _: DismissReason) -> Response<DialogResult> {
-        let _ = self.dismissed();
-        Response::emit(self.result.unwrap_or(DialogResult::Cancelled))
-    }
-    fn close_button(&self) -> Option<&IconButton> {
-        Some(&self.close_button)
+    Form(FormAction),
+
+    Choice(Option<usize>),
+
+    Info(InfoResult),
+
+    Help,
+
+    File(FileBrowserResult),
+}
+
+pub(crate) fn layer_out<R: From<LayerResult>>(r: LayerResult, closes: bool) -> LayerOut<R> {
+    if closes {
+        LayerOut::Close(r.into())
+    } else {
+        LayerOut::Event(r.into())
     }
 }
 
-impl Overlay for FormDialog {
-    type Action = FormAction;
-    fn dismiss(&self) -> Dismiss {
-        self.dismiss
-    }
-    fn spec(&self) -> LayerSpec {
-        LayerSpec::modal(self.dismiss).initial_focus(self.initial_focus())
-    }
-    fn on_dismiss(&mut self, _: DismissReason) -> Response<FormAction> {
-        self.events.push(FormAction::Cancel);
-        Response::emit(FormAction::Cancel)
-    }
-    fn close_button(&self) -> Option<&IconButton> {
-        Some(&self.close_button)
-    }
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FormAction {
+    Changed(String),
+
+    Choose(String),
+
+    Action(String),
+    Save,
+    Cancel,
 }
 
-impl Overlay for ChoiceDialog {
-    type Action = Option<usize>;
-    fn dismiss(&self) -> Dismiss {
-        self.dismiss
-    }
-    fn spec(&self) -> LayerSpec {
-        LayerSpec::modal(self.dismiss).initial_focus(self.initial_focus())
-    }
-    fn on_dismiss(&mut self, _: DismissReason) -> Response<Option<usize>> {
-        self.cancel_implicit();
-        Response::emit(None)
-    }
-    fn close_button(&self) -> Option<&IconButton> {
-        Some(&self.close_button)
-    }
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum InfoResult {
+    Closed,
+    Copy(String),
+
+    Action(usize),
 }
 
-impl Overlay for InfoDialog {
-    type Action = InfoResult;
-    fn dismiss(&self) -> Dismiss {
-        self.dismiss
-    }
-    fn spec(&self) -> LayerSpec {
-        LayerSpec::modal(self.dismiss).initial_focus(self.initial_focus())
-    }
-    fn on_dismiss(&mut self, _: DismissReason) -> Response<InfoResult> {
-        self.result = Some(InfoResult::Closed);
-        Response::emit(InfoResult::Closed)
-    }
-    fn close_button(&self) -> Option<&IconButton> {
-        Some(&self.close_button)
-    }
-}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FileBrowserResult {
+    Chosen { path: String, checked: bool },
 
-impl Overlay for HelpOverlay {
-    type Action = ();
-    fn dismiss(&self) -> Dismiss {
-        self.dismiss
-    }
-
-    fn spec(&self) -> LayerSpec {
-        LayerSpec::modal(self.dismiss).initial_focus(self.done.id)
-    }
-    fn on_dismiss(&mut self, _: DismissReason) -> Response<()> {
-        self.closed = true;
-        Response::changed()
-    }
-    fn close_button(&self) -> Option<&IconButton> {
-        Some(&self.close_button)
-    }
-}
-
-impl Overlay for Picker {
-    type Action = PickerAction;
-    fn dismiss(&self) -> Dismiss {
-        self.list().dismiss
-    }
-    fn spec(&self) -> LayerSpec {
-        LayerSpec::modal(self.list().dismiss).initial_focus(self.id)
-    }
-    fn on_dismiss(&mut self, _: DismissReason) -> Response<PickerAction> {
-        Response::emit(PickerAction::Cancelled)
-    }
-}
-
-impl Overlay for ContextMenu {
-    type Action = MenuAction;
-    fn dismiss(&self) -> Dismiss {
-        self.list.dismiss
-    }
-    fn spec(&self) -> LayerSpec {
-        LayerSpec::popover(self.list.dismiss)
-            .initial_focus(self.id)
-            .hides_page_focus(self.hides_page_focus())
-    }
-    fn on_dismiss(&mut self, _: DismissReason) -> Response<MenuAction> {
-        Response::emit(MenuAction::Dismissed)
-    }
-}
-
-impl Overlay for MenuBar {
-    type Action = MenuBarAction;
-    fn dismiss(&self) -> Dismiss {
-        self.dismiss
-    }
-    fn spec(&self) -> LayerSpec {
-        LayerSpec::popover(self.dismiss).hides_page_focus(self.hides_page_focus())
-    }
-    fn on_dismiss(&mut self, _: DismissReason) -> Response<MenuBarAction> {
-        self.close();
-        Response::emit(MenuBarAction::Closed)
-    }
-}
-
-impl Overlay for Select {
-    type Action = SelectAction;
-    fn dismiss(&self) -> Dismiss {
-        self.list.dismiss
-    }
-    fn spec(&self) -> LayerSpec {
-        LayerSpec::popover(self.list.dismiss)
-    }
-    fn on_dismiss(&mut self, _: DismissReason) -> Response<SelectAction> {
-        self.close().into()
-    }
-}
-
-impl Overlay for Completion {
-    type Action = CompletionAction;
-    fn dismiss(&self) -> Dismiss {
-        self.list.dismiss
-    }
-    fn spec(&self) -> LayerSpec {
-        LayerSpec::popover(self.list.dismiss).hides_page_focus(false)
-    }
-    fn on_dismiss(&mut self, _: DismissReason) -> Response<CompletionAction> {
-        self.close();
-        Response::emit(CompletionAction::Dismiss)
-    }
-}
-
-impl Overlay for crate::widgets::option_editor::ChoiceEditor {
-    type Action = crate::widgets::option_editor::ChoiceResult;
-    fn dismiss(&self) -> Dismiss {
-        self.list.dismiss
-    }
-    fn spec(&self) -> LayerSpec {
-        LayerSpec::popover(self.list.dismiss)
-    }
-    fn on_dismiss(&mut self, _: DismissReason) -> Response<Self::Action> {
-        Response::emit(crate::widgets::option_editor::ChoiceResult::Cancel)
-    }
+    Url(String),
+    Cancelled,
 }
 
 #[cfg(test)]
 mod queue_tests {
     use super::*;
-    use crate::ui::layers::LayerResult;
     use crate::widgets::menu::{ContextMenu, MenuAction, MenuItem};
     use crate::widgets::picker::{Picker, PickerAction};
 
