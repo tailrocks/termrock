@@ -1007,3 +1007,65 @@ API id changes.
   `work-metrics` counter, so the crate has no feature and the root feature does
   not forward to it; the guard added in #446 only applies to a crate that
   declares the feature.
+
+## 2026-11-18: `termrock-shell` takes the run loop (#448)
+
+`termrock-shell` holds `Shell`, `App`, `Page`, the router, chrome, footer,
+clipboard and the reach harness (`src/shell/*`, with `mod.rs` as `lib.rs`), and
+`Application` with the run loop that is generic over it (`src/runtime.rs`).
+`App` and `Application` are now in one crate, so `impl<A: App> Application for A`
+is legal, as #445 planned (decision "`termrock-session` holds the session, not
+the run loop"). Nothing about the blanket impl changed.
+
+- **Where the loop is exposed.** `termrock_shell::runtime` is the module of the
+  old `runtime.rs`, unchanged: it declares `Application`, `run`,
+  `pump_external`, `InputPump`, `drain_ready_inputs` and `DRAIN_BUDGET`, and it
+  still re-exports the public `termrock-session` items by an explicit list (never
+  a glob, so the hidden `termrock_session::runtime` items stay unlisted). The
+  crate root keeps the shell items at their old `shell::` spelling. `junie-tui`
+  has `pub use termrock_shell as shell;`, `pub use termrock_shell::runtime;` and
+  `pub use termrock_shell::reach_tests;`, so `junie_tui::runtime::*` shows the
+  session items and the loop items at the same paths as before. #452 can export
+  `termrock::runtime` as `pub use termrock_shell::runtime;`; it needs no
+  assembled module, and the facade `runtime` and `shell` paths and every API id
+  are unchanged (the digest test passes).
+- **`reach_tests!`** names `$crate::reach::{check, dump, SIZES}`, because
+  `$crate` is `termrock-shell` and `reach` is a root module there. `check` and
+  `dump` stay `pub`.
+- **The #56 tests stay with the loop.** `runtime::raw_input_tests::work::*`
+  (six `work_contract_runtime_*` tests) drive `service_turn`, `input_turn`,
+  `paint`, `deliver_resume_resize` and the inline test fixtures, so they stay a
+  child of `raw_input_tests` in `termrock-shell` as unit tests, with no hidden
+  item. Their only use of the harness was `assert_exact`, a four-line pure
+  function over `WorkDelta::check_exact`; `work.rs` has a local copy. The
+  conformance `harness::assert_exact` is untouched. `termrock-shell` must not
+  depend on `termrock-conformance`, even as a dev-dependency: conformance
+  depends on shell, and a unit test that passes a shell type to the harness
+  would see two copies of the crate (E0277). #449 drops `work.rs` from its list.
+- **The performance profile.** The operand is now
+  `binary_id(=termrock-shell) & test(/^runtime::raw_input_tests::work::/)`, the
+  inventory row names the same binary id and the new source path, and
+  `docs/performance-contracts.md` follows. `cargo nextest list --profile
+  performance` selects the same 168 tests; only the binary id of those six
+  changed. The required `rust-termrock-shell` job (generated) runs them under
+  `--all-features`, which `performance_contracts_run_in_required_all_features_ci_jobs`
+  demands.
+- **The session plumbing stays hidden `pub`.** The issue asked to make the
+  loop-only hidden items of `termrock-session` private again where possible. None
+  can be: the loop is still in a different crate, and every one of `RawBudget`
+  (`new`, `read`, `filtered`), `RawRead`, `RawSource`, `CrosstermSource`,
+  `scan_next`, `RawModeControl`, `discard_pending`, `discard_ready`,
+  `poll_uninterrupted`, `RawInputPolicy::event_limit`,
+  `ExternalPolicy::normalized`, `ExternalReceiver::wait_latency` and `metered` is
+  named by `termrock-shell` (the loop, `shell::run`, or the #56 tests). No hidden
+  item is added or removed.
+- **Dependencies and features.** `termrock-shell` depends on `dialogs`,
+  `navigation`, `overlays`, `feedback`, `controls`, `session` and `runtime`
+  (`reveal::hover_wait`, `reveal::on_pointer_wheel` and `tooltip::on_input` are
+  called by the loop), plus the foundations. Its `work-metrics` feature forwards
+  to every dependency that declares one (`controls`, `core`, `feedback`,
+  `metrics`, `navigation`, `overlays`, `runtime`, `session`); `dialogs` declares
+  none. The root feature gains `termrock-shell/work-metrics`.
+- **`x02_suspend.rs`.** Its header named `src/runtime.rs` for job control; it
+  now names `crates/termrock-session/src/runtime.rs` (where `job_control` is) and
+  the loop's new file.
