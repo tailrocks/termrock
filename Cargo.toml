@@ -1,18 +1,12 @@
-[package]
-name = "junie-tui"
-version = "0.1.0"
-edition = "2024"
-rust-version = "1.99"
-description = "Junie-inspired Ratatui design-system laboratory"
-license = "MIT"
-
+# Virtual workspace manifest (#452): the packages live under apps/ and crates/.
 [workspace]
+resolver = "3"
 members = [
-    ".",
     "apps/holla",
     "apps/jackin",
     "apps/showcase",
     "apps/tablepro",
+    "crates/junie-tui",
     "crates/termrock",
     "crates/termrock-catalog",
     "crates/termrock-cli",
@@ -40,11 +34,11 @@ members = [
     "crates/termrock-functional",
 ]
 default-members = [
-    ".",
     "apps/holla",
     "apps/jackin",
     "apps/showcase",
     "apps/tablepro",
+    "crates/junie-tui",
     "crates/termrock",
     "crates/termrock-catalog",
     "crates/termrock-cli",
@@ -102,21 +96,6 @@ termrock-theme = { path = "crates/termrock-theme", version = "0.1.0" }
 termrock-viewport = { path = "crates/termrock-viewport", version = "0.1.0" }
 tui-test = { package = "tuiscotti-tui-test", version = "=0.2.1" }
 tuiscotti-latest = { package = "tuiscotti", git = "https://github.com/tailrocks/tuiscotti", rev = "f1fb3f276b8d49948881c07b3bbc619840b6cc93" }
-
-[features]
-default = ["cli", "terminal"]
-cli = ["termrock/cli"]
-terminal = ["termrock/terminal"]
-product = ["termrock/product"]
-work-metrics = ["termrock/work-metrics"]
-
-[lib]
-name = "junie_tui"
-path = "src/lib.rs"
-doctest = false
-
-[dependencies]
-termrock = { workspace = true }
 
 [profile.dev.package."*"]
 opt-level = 3
