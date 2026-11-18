@@ -93,3 +93,6 @@ crates/termrock-text/src/cells.rs  paint_graphemes
 crates/termrock-text/src/cells.rs  paint_truncated
 crates/termrock-text/src/cells.rs  wrap_mapped
 crates/termrock-text/src/lib.rs  text_index
+crates/termrock-viewport/src/lib.rs  viewport_specimen
+crates/termrock-viewport/src/scroll_view.rs  VisibleWindow::content_rows
+crates/termrock-viewport/src/viewport_specimen.rs  SAMPLE_ROWS

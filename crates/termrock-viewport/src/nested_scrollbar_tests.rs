@@ -1,18 +1,18 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect, Size};
 
-use crate::core::event::{Mouse, MouseKind, Outcome};
-use crate::core::focus::{Focus, FocusRing};
-use crate::core::hit::HitRegistry;
-use crate::core::id::WidgetId;
-use crate::core::intent::Phase;
-use crate::core::pointer::{PointerEvent, PointerHost, PointerParts, PointerRouter};
-use crate::core::response::Response;
-use crate::core::scroll::TrackClick;
-use crate::theme::{ColorLevel, Theme};
-use crate::ui::ctx::{Interaction, RenderCtx};
-use crate::ui::scroll_view::{Axes, ScrollView};
-use crate::widgets::scrollbar::{h_id_for, id_for};
+use crate::scroll_view::{Axes, ScrollView};
+use termrock_controls::scrollbar::{h_id_for, id_for};
+use termrock_core::event::{Mouse, MouseKind, Outcome};
+use termrock_core::focus::{Focus, FocusRing};
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::WidgetId;
+use termrock_core::intent::Phase;
+use termrock_core::pointer::{PointerEvent, PointerHost, PointerParts, PointerRouter};
+use termrock_core::response::Response;
+use termrock_core::scroll::TrackClick;
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_theme::{ColorLevel, Theme};
 
 const INNER: WidgetId = WidgetId::of("nested_scrollbar.inner");
 const OUTER: WidgetId = WidgetId::of("nested_scrollbar.outer");

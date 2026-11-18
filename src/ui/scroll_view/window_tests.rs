@@ -4,13 +4,13 @@ use ratatui::layout::{Position, Rect, Size};
 use ratatui::style::{Color, Style};
 use ratatui::widgets::Padding;
 
-use super::{Axes, ScrollView, ScrollWork, VisibleWindow};
 use crate::core::event::{Key, Outcome};
 use crate::core::focus::FocusRing;
 use crate::core::hit::{HitRegion, HitRegistry};
 use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
 use crate::theme::{ColorLevel, Theme};
 use crate::ui::ctx::{Interaction, RenderCtx};
+use crate::ui::scroll_view::{Axes, ScrollView, ScrollWork, VisibleWindow};
 use crate::widgets::scrollbar::id_for;
 use crate::widgets::select::Select;
 

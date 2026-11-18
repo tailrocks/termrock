@@ -6,22 +6,22 @@ use ratatui::layout::{Position, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::core::edit::TextCmd;
-use crate::core::event::{Key, Outcome};
-use crate::core::hit::Axis;
-use crate::core::id::WidgetId;
-use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
-use crate::core::response::Response;
-use crate::core::scroll::{HScroll, ScrollPane, ScrollState, Scrollable, TrackClick};
-use crate::theme::Tone;
-use crate::ui::ctx::{RenderCtx, fill};
-use crate::ui::edit_menu::{
+use termrock_controls::scrollbar;
+use termrock_core::edit::TextCmd;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::field::field_common::PointerSelect;
+use termrock_core::field::text_select::{self, TextSelect};
+use termrock_core::hit::Axis;
+use termrock_core::id::WidgetId;
+use termrock_core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
+use termrock_core::response::Response;
+use termrock_core::scroll::{HScroll, ScrollPane, ScrollState, Scrollable, TrackClick};
+use termrock_overlays::edit_menu::{
     EditCaps, EditMenu, EditMenuHost, edit_menu_key, edit_menu_pointer, edit_menu_route,
 };
-use crate::ui::text::width;
-use crate::widgets::field_common::PointerSelect;
-use crate::widgets::scrollbar;
-use crate::widgets::text_select::{self, TextSelect};
+use termrock_runtime::ctx::{RenderCtx, fill};
+use termrock_text::cells::width;
+use termrock_theme::Tone;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Span {
@@ -80,12 +80,12 @@ pub fn render_spans(
     x: u16,
     y: u16,
     max: u16,
-    t: &crate::theme::Theme,
+    t: &termrock_theme::Theme,
     line: &[Span],
     bg: Color,
 ) -> u16 {
     let full = line_text(line);
-    let shown = crate::ui::text::truncate(&full, max as usize);
+    let shown = termrock_text::cells::truncate(&full, max as usize);
     let w = width(&shown) as u16;
     if w == 0 {
         return 0;
@@ -130,7 +130,7 @@ pub fn wrap_spans(line: &[Span], w: usize) -> Vec<Line> {
     let text: String = full.iter().map(|(c, _)| c).collect();
     let mut at = 0;
     let mut out = Vec::new();
-    for part in crate::ui::text::wrap_with(&text, w, crate::ui::text::WrapOpts::PLAIN) {
+    for part in termrock_text::cells::wrap_with(&text, w, termrock_text::cells::WrapOpts::PLAIN) {
         let mut pieces: Line = Vec::new();
         for pc in part.chars() {
             let found = full[at..].iter().position(|(c, _)| *c == pc);
@@ -349,7 +349,7 @@ impl Logical {
             let src = start..start + g.len();
             let style = style_at(start);
             if g == "\t" {
-                for _ in 0..crate::ui::text::TAB_SPACES.len() {
+                for _ in 0..termrock_text::cells::TAB_SPACES.len() {
                     cells.push(Cell {
                         g: " ".into(),
                         w: 1,
@@ -549,7 +549,7 @@ impl Actions for ViewportCmd {
             (KeyBinding::cmd('c'), ViewportCmd::Copy),
             (KeyBinding::char('y'), ViewportCmd::Copy),
         ];
-        map.extend(crate::core::keymap::select_all_bindings(
+        map.extend(termrock_core::keymap::select_all_bindings(
             ViewportCmd::SelectAll,
         ));
         map
@@ -712,7 +712,7 @@ impl TextViewport {
         work.lines += self.lines.len();
         let bytes = self.lines.iter().map(|l| l.text.len()).sum::<usize>();
         work.bytes += bytes;
-        crate::record_work!(PayloadBytesCloned, bytes);
+        termrock_metrics::record_work!(PayloadBytesCloned, bytes);
         self.draw_work.set(work);
         self.clone()
     }
@@ -771,7 +771,7 @@ impl TextViewport {
         }
         self.indexed_lines = self.indexed_lines.saturating_sub(drop);
         self.work.index_shifts += 1;
-        crate::record_work!(IndexShifts, 1usize);
+        termrock_metrics::record_work!(IndexShifts, 1usize);
         self.scroll.set_content(self.visual.len());
         if !self.follow {
             self.scroll.offset = self.scroll.offset.saturating_sub(gone);
@@ -997,12 +997,12 @@ impl TextViewport {
                 if !l.segmented {
                     l.segment();
                     self.work.segmented_lines += 1;
-                    crate::record_work!(SegmentedLines, 1usize);
+                    termrock_metrics::record_work!(SegmentedLines, 1usize);
                 }
                 if !l.has_rows(key) {
                     l.reflow(text_w, wrap);
                     self.work.reflowed_lines += 1;
-                    crate::record_work!(ReflowedLines, 1usize);
+                    termrock_metrics::record_work!(ReflowedLines, 1usize);
                 }
                 for &(s, e) in self.lines[li].rows_at(key) {
                     self.visual.push(VisualRow {
@@ -1016,7 +1016,7 @@ impl TextViewport {
             self.indexed_lines = self.lines.len();
             if extended {
                 self.work.index_extends += 1;
-                crate::record_work!(IndexExtends, 1usize);
+                termrock_metrics::record_work!(IndexExtends, 1usize);
                 self.scroll.set_content(self.visual.len());
                 self.clip_selection();
             }
@@ -1026,12 +1026,12 @@ impl TextViewport {
             if !l.segmented {
                 l.segment();
                 self.work.segmented_lines += 1;
-                crate::record_work!(SegmentedLines, 1usize);
+                termrock_metrics::record_work!(SegmentedLines, 1usize);
             }
             if !l.has_rows((text_w, wrap)) {
                 l.reflow(text_w, wrap);
                 self.work.reflowed_lines += 1;
-                crate::record_work!(ReflowedLines, 1usize);
+                termrock_metrics::record_work!(ReflowedLines, 1usize);
             }
         }
         self.layout_width = text_w;
@@ -1055,7 +1055,7 @@ impl TextViewport {
         self.index_valid = true;
         self.indexed_lines = self.lines.len();
         self.work.index_rebuilds += 1;
-        crate::record_work!(IndexRebuilds, 1usize);
+        termrock_metrics::record_work!(IndexRebuilds, 1usize);
         self.scroll.set_content(self.visual.len());
         self.clip_selection();
     }
@@ -2107,7 +2107,7 @@ fn paint_projection(
     PaintResult { hardware_cursor }
 }
 
-impl crate::ui::measure::Measure for TextViewport {
+impl termrock_runtime::measure::Measure for TextViewport {
     fn measure(&self, _avail: ratatui::layout::Size, _ctx: &RenderCtx) -> ratatui::layout::Size {
         let widest = self.lines.iter().map(|l| width(&l.text)).max().unwrap_or(0) as u16;
         let bar = 1 + self.scrollbar_gap;
@@ -2143,7 +2143,7 @@ impl Scrollable for TextViewport {
     }
 }
 
-impl crate::core::pointer::MouseTarget for TextViewport {
+impl termrock_core::pointer::MouseTarget for TextViewport {
     type Action = ();
 
     fn mouse_id(&self) -> WidgetId {
@@ -2152,14 +2152,14 @@ impl crate::core::pointer::MouseTarget for TextViewport {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<()> {
-        use crate::core::intent::Phase;
-        use crate::core::response::Response;
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<()> {
+        use termrock_core::intent::Phase;
+        use termrock_core::response::Response;
         if let Some(o) = edit_menu_pointer(self, ev) {
             return o.into();
         }
-        if let Some(r) = crate::core::pointer::scroll_input(self, ev) {
+        if let Some(r) = termrock_core::pointer::scroll_input(self, ev) {
             return r;
         }
         match ev.phase() {
@@ -2171,7 +2171,7 @@ impl crate::core::pointer::MouseTarget for TextViewport {
         }
     }
 
-    fn route(&mut self, ev: &crate::core::pointer::PointerEvent) -> Option<Response<()>> {
+    fn route(&mut self, ev: &termrock_core::pointer::PointerEvent) -> Option<Response<()>> {
         edit_menu_route(self, ev)
     }
 }
@@ -2192,9 +2192,9 @@ impl EditMenuHost for TextViewport {
             TextCmd::SelectAll => ViewportCmd::SelectAll,
             _ => return None,
         };
-        crate::core::keymap::label_for(&self.keymap, cmd)
+        termrock_core::keymap::label_for(&self.keymap, cmd)
     }
-    fn edit_target(&self, ev: &crate::core::pointer::PointerEvent) -> bool {
+    fn edit_target(&self, ev: &termrock_core::pointer::PointerEvent) -> bool {
         ev.id == self.id
     }
     fn edit_run(&mut self, cmd: TextCmd) -> bool {
@@ -2204,7 +2204,7 @@ impl EditMenuHost for TextViewport {
             }
             TextCmd::Copy => {
                 if let Some(t) = self.selected_text() {
-                    crate::core::edit::clipboard::copy(&t);
+                    termrock_core::edit::clipboard::copy(&t);
                 }
             }
             _ => {}
@@ -2216,11 +2216,11 @@ impl EditMenuHost for TextViewport {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::focus::FocusRing;
-    use crate::core::hit::HitRegistry;
-    use crate::theme::{ColorLevel, Theme};
-    use crate::ui::ctx::Interaction;
-    use crate::widgets::viewport_ops::ViewportOps;
+    use crate::viewport_ops::ViewportOps;
+    use termrock_core::focus::FocusRing;
+    use termrock_core::hit::HitRegistry;
+    use termrock_runtime::ctx::Interaction;
+    use termrock_theme::{ColorLevel, Theme};
 
     const AREA: Rect = Rect::new(0, 0, 80, 24);
 

@@ -7,7 +7,3 @@ pub use termrock_core::{
 };
 
 pub mod text;
-
-#[cfg(test)]
-#[path = "pointer/nested_scrollbar_tests.rs"]
-mod nested_scrollbar_tests;
