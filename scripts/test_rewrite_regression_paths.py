@@ -110,6 +110,8 @@ class RunTests(unittest.TestCase):
     def test_dry_run_lists_every_table_and_writes_nothing(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = self.workspace(tmp)
+            (root / MOVED).parent.mkdir(parents=True)
+            (root / MOVED).write_text("")
             out = io.StringIO()
             unresolved = rewrite.run(root, {MOVE: MOVED}, True, out)
             self.assertEqual(unresolved, 0)
@@ -137,6 +139,22 @@ class RunTests(unittest.TestCase):
             again = io.StringIO()
             self.assertEqual(rewrite.run(root, {MOVE: MOVED}, False, again), 0)
             self.assertIn("0 path(s) rewritten", again.getvalue())
+
+    def test_a_destination_that_is_no_file_is_unresolved_and_not_written(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.workspace(tmp)
+            for typo in ("crates/typo/src/lib.rs", "../outside.rs"):
+                out = io.StringIO()
+                self.assertGreaterEqual(rewrite.run(root, {MOVE: typo}, False, out), 1)
+                self.assertIn("the destination is no file of the repository", out.getvalue())
+            self.assertEqual(
+                (root / "apps/showcase/src/coverage.rs").read_text(), COVERAGE
+            )
+
+    def test_a_range_that_could_be_an_option_is_refused(self):
+        for bad in ("--output=x", "-p", "a b", "HEAD;ls"):
+            with self.assertRaises(SystemExit):
+                rewrite.git_renames(Path("."), bad)
 
     def test_a_deleted_file_makes_the_run_unresolved(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -171,7 +189,7 @@ class GitMoveTests(unittest.TestCase):
 
     def run_script(self, root, *flags):
         with contextlib.redirect_stdout(io.StringIO()):
-            return rewrite.main(["--root", str(root), "--range", "HEAD", *flags])
+            return rewrite.main(["--range", "HEAD", *flags], root=root)
 
     def check_move(self, root):
         coverage = root / "apps/showcase/src/coverage.rs"

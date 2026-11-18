@@ -9,16 +9,18 @@ in `apps/showcase/src/coverage.rs` and `apps/showcase/src/coverage/lane_*.rs`.
 Only the path part before `::` changes; the test name is kept.
 
 The renames come from `git diff -B -M --name-status`, by default against
-`origin/main...HEAD`, or from `--renames FILE` (the same lines, or `old -> new`).
+`origin/main...HEAD`, or from standard input with `--stdin` (the same lines, or
+`old -> new`).
 `-B` matters: an extraction leaves a `pub use` shim at the old path, and without
 `-B` git sees a modified file and a new file, not a move:
 
     python3 scripts/rewrite-regression-paths.py --dry
     python3 scripts/rewrite-regression-paths.py
-    git diff -B -M --name-status HEAD | python3 scripts/rewrite-regression-paths.py --renames -
+    git diff -B -M --name-status HEAD | python3 scripts/rewrite-regression-paths.py --stdin
 
 Git's rename detection can miss a very small file; list such a move in a
-`--renames` file as `old -> new`.
+`--stdin` list as `old -> new`. A destination that is no file of the repository is
+reported as unresolved and nothing is rewritten to it.
 
 `--dry` lists the candidates and writes nothing. A path whose file was deleted
 or no longer exists on disk and has no rename is listed as unresolved, and the
@@ -33,6 +35,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 TABLES = ["apps/showcase/src/coverage.rs", "apps/showcase/src/coverage/lane_*.rs"]
+# A git revision or range: no leading dash, so it cannot be read as an option.
+GIT_RANGE = re.compile(r"[A-Za-z0-9_@{}~^/.][A-Za-z0-9_@{}~^/.:-]*")
 REGRESSION = re.compile(r'(regression_test:\s*")([^"]*?\.rs)(::[^"]*")')
 
 
@@ -112,6 +116,8 @@ def stale_paths(text, root, renames):
 def git_renames(root, git_range):
     args = ["git", "diff", "-B", "-M", "--name-status"]
     if git_range:
+        if not GIT_RANGE.fullmatch(git_range):
+            sys.exit(f"--range {git_range!r} is not a git revision range")
         args.append(git_range)
     result = subprocess.run(
         args, cwd=root, capture_output=True, text=True, check=False
@@ -121,10 +127,25 @@ def git_renames(root, git_range):
     return result.stdout
 
 
+def is_repository_file(root, path):
+    """Whether `path` names a file inside `root`."""
+    resolved = (root / path).resolve()
+    return resolved.is_relative_to(root.resolve()) and resolved.is_file()
+
+
 def run(root, renames, dry, out):
     """Rewrite or list; return the number of unresolved paths."""
     unresolved = 0
     rewritten = 0
+    missing = {
+        old: new
+        for old, new in renames.items()
+        if new is not None and not is_repository_file(root, new)
+    }
+    for old, new in sorted(missing.items()):
+        unresolved += 1
+        print(f"{old} -> {new}: the destination is no file of the repository", file=out)
+    renames = {old: new for old, new in renames.items() if old not in missing}
     for path in table_files(root):
         text = path.read_text()
         new_text, changes = rewrite_text(text, renames)
@@ -146,28 +167,22 @@ def run(root, renames, dry, out):
     return unresolved
 
 
-def main(argv=None):
+def main(argv=None, root=ROOT):
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--dry", action="store_true", help="list the changes and write nothing")
     parser.add_argument(
-        "--renames",
-        metavar="FILE",
-        help="rename list (`-` for stdin); default is `git diff -M --name-status`",
+        "--stdin",
+        action="store_true",
+        help="read the rename list from standard input instead of running git",
     )
     parser.add_argument(
         "--range",
         default="origin/main...HEAD",
         help="git range for the default rename list (default %(default)s)",
     )
-    parser.add_argument("--root", type=Path, default=ROOT, help="repository root")
     args = parser.parse_args(argv)
-    if args.renames == "-":
-        text = sys.stdin.read()
-    elif args.renames:
-        text = Path(args.renames).read_text()
-    else:
-        text = git_renames(args.root, args.range)
-    return 1 if run(args.root, parse_renames(text), args.dry, sys.stdout) else 0
+    text = sys.stdin.read() if args.stdin else git_renames(root, args.range)
+    return 1 if run(root, parse_renames(text), args.dry, sys.stdout) else 0
 
 
 if __name__ == "__main__":
