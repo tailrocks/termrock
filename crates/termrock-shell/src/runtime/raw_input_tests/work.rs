@@ -6,10 +6,16 @@
 //! or does the same work twice, changes the exact counts.
 
 use super::*;
-use crate::metrics::harness::assert_exact;
-use crate::metrics::{Metric, WorkDelta, measure};
 use ratatui::layout::Rect;
 use ratatui::{Terminal, TerminalOptions, Viewport};
+use termrock_metrics::{Metric, WorkDelta, measure};
+
+#[track_caller]
+fn assert_exact(work: &WorkDelta, what: &str, expected: &[(Metric, u64)]) {
+    if let Err(violations) = work.check_exact(expected) {
+        panic!("{what}: {violations}");
+    }
+}
 
 const SIZES: [usize; 3] = [1_000, 10_000, 100_000];
 

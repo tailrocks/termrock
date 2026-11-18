@@ -121,22 +121,6 @@ functional = ["termrock"]
 # Re-exports `termrock-text` at `core::text`; the buffer itself is in the crate.
 "src/core/text.rs" = "text"
 
-# shell
-# `src/runtime.rs` is `Application` and the run loop generic over it. They stay in
-# `junie-tui` until #448 moves them next to `App` (see docs/decisions.md, #445).
-"src/runtime.rs" = "shell"
-"src/shell/app.rs" = "shell"
-"src/shell/chrome.rs" = "shell"
-"src/shell/clipboard.rs" = "shell"
-"src/shell/cx.rs" = "shell"
-"src/shell/footer.rs" = "shell"
-"src/shell/mod.rs" = "shell"
-"src/shell/nav.rs" = "shell"
-"src/shell/page.rs" = "shell"
-"src/shell/reach.rs" = "shell"
-"src/shell/router.rs" = "shell"
-"src/shell/status.rs" = "shell"
-
 
 # conformance
 # `src/metrics.rs` re-exports `termrock-metrics` and declares the three files below, so it goes with them until #449.
@@ -144,7 +128,6 @@ functional = ["termrock"]
 "src/metrics/harness.rs" = "conformance"
 "src/metrics/report.rs" = "conformance"
 "src/metrics/tests.rs" = "conformance"
-"src/runtime/raw_input_tests/work.rs" = "conformance"
 "src/ui/intrinsic_tests.rs" = "conformance"
 "src/ui/intrinsic_wide_tests.rs" = "conformance"
 "src/ui/overflow_parity_tests.rs" = "conformance"

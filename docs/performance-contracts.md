@@ -98,7 +98,7 @@ apps:
 | --- | --- |
 | `work_contract_scroll_panel_flat_measures_once_and_appends_incrementally`, `work_contract_scroll_panel_wrapped_builds_once_per_content_change` | `tests/regressions/work_budgets/scroll_panel.rs` |
 | `work_contract_terminal_prepared_paint`, `work_contract_terminal_feed_and_copy_units` | `tests/regressions/work_budgets/terminal.rs` |
-| `work_contract_runtime_raw_filtered_events_yield`, `work_contract_runtime_flood_services_input`, `work_contract_runtime_frame_diff_and_bytes_written` | `src/runtime/raw_input_tests/work.rs` (lib unit tests: they drive the private `scan_next`, `service_turn`, `drain_ready_inputs` and `paint`) |
+| `work_contract_runtime_raw_filtered_events_yield`, `work_contract_runtime_flood_services_input`, `work_contract_runtime_frame_diff_and_bytes_written` | `crates/termrock-shell/src/runtime/raw_input_tests/work.rs` (lib unit tests of `termrock-shell`: they drive the private `scan_next`, `service_turn`, `drain_ready_inputs` and `paint`) |
 | `work_contract_jackin_scripted_output_budget` | `apps/jackin/src/sim/link/tests/work.rs` (lib unit test over the real `SimLink` and `TerminalPane`) |
 | `work_contract_holla_idle_and_source_update`, `work_contract_holla_background_updates_keep_projection`, `work_contract_holla_file_preview_prefix` | `apps/holla/src/work_metrics_tests.rs` |
 | `work_contract_tablepro_idle_and_cell_edit`, `work_contract_tablepro_background_tab_edit` | `apps/tablepro/src/work_metrics_tests.rs` |
@@ -533,6 +533,8 @@ cargo nextest run -p jackin-console --features demo,work-metrics --test regressi
     --no-tests fail -E 'test(/^work_budgets::/)'
 cargo nextest run -p junie-tui --features work-metrics --lib --no-tests fail \
     -E 'test(/metrics/) | test(/work_contract_/)'
+cargo nextest run -p termrock-shell --features work-metrics --lib --no-tests fail \
+    -E 'test(/work_contract_/)'
 cargo nextest run -p jackin-console --features demo,work-metrics --lib --no-tests fail \
     -E 'test(/work_contract_/)'
 cargo nextest run --profile performance --workspace --all-features --no-tests fail
@@ -541,7 +543,7 @@ scripts/performance-report.sh
 ```
 
 CI builds the Rust jobs with `--all-features`, so these tests already run in
-the `Rust / junie-tui`, `Rust / jackin-console` and `Rust / termrock-holla`,
+the `Rust / junie-tui`, `Rust / termrock-shell`, `Rust / jackin-console` and `Rust / termrock-holla`,
 `-tablepro` and `-showcase` jobs. The product
 shape builds without `work-metrics`, where the tests compile away and
 `metrics_disabled_does_not_evaluate_arguments` runs instead.

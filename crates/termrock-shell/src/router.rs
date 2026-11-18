@@ -1,9 +1,9 @@
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 
-use crate::core::event::{Input, Key, Outcome};
-use crate::core::keymap::{KeyBinding, KeyMap, lookup};
-use crate::core::list::route_key;
-use crate::ui::leave::{KeyContext, LeaveKey, QuitKeys};
+use termrock_core::event::{Input, Key, Outcome};
+use termrock_core::keymap::{KeyBinding, KeyMap, lookup};
+use termrock_core::list::route_key;
+use termrock_dialogs::leave::{KeyContext, LeaveKey, QuitKeys};
 
 use super::App;
 
@@ -130,11 +130,11 @@ impl<C> ShellKeys<C> {
         &self,
         title: &str,
         app: impl Fn(C) -> Option<&'static str>,
-    ) -> crate::widgets::help::HelpSection
+    ) -> termrock_dialogs::help::HelpSection
     where
         C: Copy,
     {
-        use crate::core::hints::Binding;
+        use termrock_core::hints::Binding;
         let label = |a: ShellAction<C>| -> Option<&'static str> {
             Some(match a {
                 ShellAction::Quit => "Quit",
@@ -170,7 +170,7 @@ impl<C> ShellKeys<C> {
             quit.push(Binding::key(KeyBinding::ctrl('c'), "Copy, else quit"));
         }
         rows.extend(quit);
-        crate::widgets::help::HelpSection::new(title).bindings(&rows)
+        termrock_dialogs::help::HelpSection::new(title).bindings(&rows)
     }
 
     pub fn dirty_letter_note(mut self, note: Option<&str>) -> Self {

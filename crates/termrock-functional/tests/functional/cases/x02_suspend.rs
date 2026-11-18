@@ -1,7 +1,8 @@
 //! Cross-application suspend, before the refactor.
 //!
-//! Suspend is `job_control` in `src/runtime.rs`: the SIGTSTP handler only
-//! sets a flag, and the event loop calls `TerminalSession::suspend`.
+//! Suspend is `job_control` in `crates/termrock-session/src/runtime.rs`: the
+//! SIGTSTP handler only sets a flag, and the event loop in
+//! `crates/termrock-shell/src/runtime.rs` calls `TerminalSession::suspend`.
 //! `tests/functional/support.rs` keeps `App.session` private. The only public
 //! signal is `kill_child`, which sends `Operation::Signal` with name `KILL`.
 //! `App::key("ctrl+z")` is `Operation::Key`. That key stays on Overview, and
