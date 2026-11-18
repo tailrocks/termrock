@@ -30,7 +30,7 @@ pub struct MeteredWriter<W: Write> {
 impl<W: Write> Write for MeteredWriter<W> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         let written = self.inner.write(buf)?;
-        crate::record_work!(TerminalBytesWritten, written);
+        termrock_metrics::record_work!(TerminalBytesWritten, written);
         Ok(written)
     }
 
@@ -73,7 +73,7 @@ impl<'a, I: Iterator<Item = (u16, u16, &'a Cell)>> Iterator for Counted<I> {
     fn next(&mut self) -> Option<Self::Item> {
         let item = self.0.next();
         if item.is_some() {
-            crate::record_work!(DiffCellsVisited, 1usize);
+            termrock_metrics::record_work!(DiffCellsVisited, 1usize);
         }
         item
     }
