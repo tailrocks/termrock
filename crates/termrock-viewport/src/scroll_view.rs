@@ -2,14 +2,14 @@ use ratatui::buffer::{Buffer, Cell};
 use ratatui::layout::{Position, Rect, Size};
 use ratatui::widgets::Padding;
 
-use crate::core::event::{Key, Outcome};
-use crate::core::hit::{Axis, HitMark};
-use crate::core::id::WidgetId;
-use crate::core::keymap::{Actions, KeyMap};
-use crate::core::pointer::PointerEvent;
-use crate::core::response::Response;
-use crate::core::scroll::{ScrollPane, Scrollable, ScrollbarVisibility, TrackClick};
-use crate::ui::ctx::{RenderCtx, Shift, copy_cells, scratch_buffer};
+use termrock_core::event::{Key, Outcome};
+use termrock_core::hit::{Axis, HitMark};
+use termrock_core::id::WidgetId;
+use termrock_core::keymap::{Actions, KeyMap};
+use termrock_core::pointer::PointerEvent;
+use termrock_core::response::Response;
+use termrock_core::scroll::{ScrollPane, Scrollable, ScrollbarVisibility, TrackClick};
+use termrock_runtime::ctx::{RenderCtx, Shift, copy_cells, scratch_buffer};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Axes {
@@ -59,8 +59,8 @@ pub enum ScrollCmd {
 
 impl Actions for ScrollCmd {
     fn default_keymap() -> KeyMap<Self> {
-        use crate::core::keymap::KeyBinding;
         use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+        use termrock_core::keymap::KeyBinding;
         let none = KeyModifiers::NONE;
         let alt = KeyModifiers::ALT;
         vec![
@@ -133,7 +133,8 @@ pub struct VisibleWindow {
     pub viewport: Rect,
     pub screen: Rect,
     pub content_origin: Position,
-    content_rows: (u16, u16),
+    #[doc(hidden)]
+    pub content_rows: (u16, u16),
 }
 
 impl VisibleWindow {
@@ -239,7 +240,7 @@ impl ScrollView {
             axes: Axes::BOTH,
             bars: ScrollbarVisibility::Auto,
             padding: Padding::ZERO,
-            scrollbar_gap: crate::widgets::scrollbar::GAP,
+            scrollbar_gap: termrock_controls::scrollbar::GAP,
             keys: ScrollCmd::default_keymap(),
             follow_focus: true,
             context: 1,
@@ -475,17 +476,17 @@ impl ScrollView {
         let mut scratch = Buffer::filled(viewport, blank);
         self.work.allocated = scratch.content().len();
         self.work.filled = scratch.content().len();
-        crate::record_work!(AllocatedBufferCells, self.work.allocated);
-        crate::record_work!(BufferCellsFilled, self.work.filled);
+        termrock_metrics::record_work!(AllocatedBufferCells, self.work.allocated);
+        termrock_metrics::record_work!(BufferCellsFilled, self.work.filled);
         if overflows {
             ctx.scrollable(self.id, viewport);
         }
         let mark = ctx.hits.mark();
-        let cuts = crate::ui::reveal::cuts_len();
+        let cuts = termrock_runtime::reveal::cuts_len();
         let cursor = ctx.cursor;
         draw(window, &mut scratch, ctx);
         ctx.hits.clip_mark(mark, viewport);
-        crate::ui::reveal::clip_cuts_since(cuts, viewport);
+        termrock_runtime::reveal::clip_cuts_since(cuts, viewport);
         if let Some(p) = ctx.cursor
             && ctx.cursor != cursor
             && !viewport.contains(p)
@@ -575,14 +576,14 @@ impl ScrollView {
             for x in l.content.left()..l.content.right() {
                 off[(x, y)] = blank.clone();
                 self.work.filled += 1;
-                crate::record_work!(BufferCellsFilled, 1usize);
+                termrock_metrics::record_work!(BufferCellsFilled, 1usize);
             }
         }
         ScrollFrame {
             layout: l,
             off: Some(off),
             mark: ctx.hits.mark(),
-            cuts: crate::ui::reveal::cuts_len(),
+            cuts: termrock_runtime::reveal::cuts_len(),
             cursor: ctx.cursor,
             shift: Some(shift),
         }
@@ -611,13 +612,13 @@ impl ScrollView {
                     if !l.content.contains(p) {
                         buf[(x, y)] = off[(x, y)].clone();
                         self.work.copied += 1;
-                        crate::record_work!(BufferCellsCopied, 1usize);
+                        termrock_metrics::record_work!(BufferCellsCopied, 1usize);
                     }
                 }
             }
             self.work.copied += copy_cells(&off, window, buf, to);
             ctx.hits.scroll_since(frame.mark, l.content, window, to);
-            crate::ui::reveal::scroll_cuts_since(frame.cuts, l.content, window, to);
+            termrock_runtime::reveal::scroll_cuts_since(frame.cuts, l.content, window, to);
             if ctx.cursor != frame.cursor {
                 ctx.cursor = match ctx.cursor {
                     Some(p) if window.contains(p) => Some(Position::new(p.x - ox, p.y - oy)),
@@ -693,7 +694,7 @@ impl ScrollView {
     }
 
     pub fn on_key(&mut self, key: &Key) -> Option<Outcome> {
-        let cmd = crate::core::keymap::lookup(&self.keys, key)?;
+        let cmd = termrock_core::keymap::lookup(&self.keys, key)?;
         let (v, h) = (&mut self.pane.v, &mut self.pane.h);
         let moved = match cmd {
             ScrollCmd::PageUp | ScrollCmd::PageDown | ScrollCmd::Bottom if !v.overflows() => {
@@ -719,7 +720,7 @@ impl ScrollView {
         if !ev.on(self.id) {
             return None;
         }
-        crate::core::pointer::scroll_input(self, ev)
+        termrock_core::pointer::scroll_input(self, ev)
     }
 }
 
@@ -777,6 +778,3 @@ impl ScrollFrame {
         }
     }
 }
-
-#[cfg(test)]
-mod window_tests;

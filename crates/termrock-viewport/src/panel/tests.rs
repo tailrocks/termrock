@@ -4,12 +4,12 @@ use ratatui::layout::{Position, Rect};
 use ratatui::style::Color;
 
 use super::*;
-use crate::core::focus::FocusRing;
-use crate::core::hit::HitRegistry;
-use crate::core::intent::Phase;
-use crate::core::pointer::{MouseTarget, PointerEvent};
-use crate::theme::{ColorLevel, Theme};
-use crate::ui::ctx::Interaction;
+use termrock_core::focus::FocusRing;
+use termrock_core::hit::HitRegistry;
+use termrock_core::intent::Phase;
+use termrock_core::pointer::{MouseTarget, PointerEvent};
+use termrock_runtime::ctx::Interaction;
+use termrock_theme::{ColorLevel, Theme};
 
 const ID: WidgetId = WidgetId::of("t.scroll-panel");
 
@@ -541,7 +541,7 @@ fn issue45_selection_survives_resize_and_append() {
 
 #[test]
 fn issue45_copying_a_tiny_selection_reads_only_the_selected_source_lines() {
-    use crate::core::edit::{TextCmd, clipboard};
+    use termrock_core::edit::{TextCmd, clipboard};
 
     let lines: Vec<String> = (0..10_000)
         .map(|i| format!("line {i:05} with some words to wrap around the panel"))
@@ -558,7 +558,7 @@ fn issue45_copying_a_tiny_selection_reads_only_the_selected_source_lines() {
     let measured = panel.work.width_measurements.get();
     clipboard::store("");
     #[cfg(feature = "work-metrics")]
-    let (_, work) = crate::metrics::measure(|| panel.edit_run(TextCmd::Copy));
+    let (_, work) = termrock_metrics::measure(|| panel.edit_run(TextCmd::Copy));
     #[cfg(not(feature = "work-metrics"))]
     let _ = panel.edit_run(TextCmd::Copy);
 
@@ -576,7 +576,7 @@ fn issue45_copying_a_tiny_selection_reads_only_the_selected_source_lines() {
     );
     #[cfg(feature = "work-metrics")]
     assert_eq!(
-        work.get(crate::metrics::Metric::SourceRowsRead),
+        work.get(termrock_metrics::Metric::SourceRowsRead),
         1,
         "a selection inside one source line reads that line, not the 10k-line source: {:?}",
         work.nonzero().collect::<Vec<_>>()
@@ -707,8 +707,8 @@ fn issue45_double_and_triple_click_select_logical_text() {
 
 #[test]
 fn issue45_keyboard_and_menu_copy_use_logical_text() {
-    use crate::core::edit::{TextCmd, clipboard};
     use ratatui::crossterm::event::KeyCode;
+    use termrock_core::edit::{TextCmd, clipboard};
 
     let lines = vec!["abcdefghijkl".to_owned(), "mn  op".to_owned()];
     let all = joined(&lines);
