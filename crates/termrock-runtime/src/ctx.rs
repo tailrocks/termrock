@@ -246,9 +246,6 @@ impl<'a> RenderCtx<'a> {
         }
     }
 
-    /// Records that a widget changed its own state while rendering, after
-    /// widgets drawn earlier in the frame already read the old state. The
-    /// shell settle repaints the frame once when this is set.
     #[doc(hidden)]
     pub fn push_shift(&mut self, shift: Shift) {
         self.shifts.push(shift);
@@ -259,6 +256,9 @@ impl<'a> RenderCtx<'a> {
         self.shifts.pop();
     }
 
+    /// Records that a widget changed its own state while rendering, after
+    /// widgets drawn earlier in the frame already read the old state. The
+    /// shell settle repaints the frame once when this is set.
     #[doc(hidden)]
     pub fn note_render_mutation(&mut self) {
         self.render_mutated = true;
