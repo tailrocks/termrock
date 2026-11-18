@@ -4,7 +4,7 @@
 # and tell the tests where they are.
 #
 # The binaries must carry the feature set of the run that launches them. The
-# test targets compile `junie_tui::metrics::ENABLED` from `work-metrics`, and
+# test targets compile `termrock::metrics::ENABLED` from `work-metrics`, and
 # Showcase's Work counters card shows "compiled out" when the binary lacks it,
 # so a default-feature build under `--all-features` fails
 # `s06_meters::option_work_counters_card_follows_the_build`.
