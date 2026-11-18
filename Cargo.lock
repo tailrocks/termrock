@@ -2400,7 +2400,7 @@ dependencies = [
 [[package]]
 name = "tuiscotti"
 version = "0.4.0"
-source = "git+https://github.com/tailrocks/tuiscotti?rev=92ef2d9ee082b35f68e066c5129fedbf07675a80#92ef2d9ee082b35f68e066c5129fedbf07675a80"
+source = "git+https://github.com/tailrocks/tuiscotti?rev=f1fb3f276b8d49948881c07b3bbc619840b6cc93#f1fb3f276b8d49948881c07b3bbc619840b6cc93"
 dependencies = [
  "base64 0.23.1",
  "bitflags 2.13.2",
