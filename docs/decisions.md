@@ -1233,3 +1233,31 @@ is what the layering table allows (`core`, `theme`). `junie-tui` keeps
 root package has no `clap` dependency left. The facade and the consumer
 lockfiles need no edit: no fixture resolves the optional crate, and
 `termrock::cli::*` still resolves through `junie-tui`.
+
+## 2026-11-18: `termrock-dialogs` (#448)
+
+`termrock-dialogs` holds `dialog`, `choice_dialog`, `info_dialog`, `help`,
+`form_dialog` (with its `tests.rs`), `file_browser`, `inspect_changes`, and the
+two `ui` modules `layers` and `leave`. It is cut in two branches, as the issue
+planned: part 1 creates the crate with `dialog`, `choice_dialog`, `info_dialog`,
+`help`, `leave` and `layers`; part 2 adds `form_dialog`, `file_browser` and
+`inspect_changes`. `junie-tui` re-exports each module at its old path
+(`widgets::*`, `ui::{layers, leave}`), so no `termrock::` path, type identity or
+API id changes.
+
+- **One crate, no hidden items.** Every item the moved files use from a lower
+  crate was already `pub` (or hidden `pub` from #446 and #447), so no
+  `pub(crate)` item became hidden `pub` and `doc-hidden-items.txt` is unchanged.
+  No `impl` crosses the crate boundary: each dialog implements `Layer` for a
+  local type.
+- **`ui/layers.rs`** is the one line `pub use termrock_overlays::layer::LayerResult`;
+  it moves with the dialogs because the issue maps it there, and the spelling
+  `ui::layers::LayerResult` is kept.
+- **Dependencies.** `ratatui` and the twelve termrock crates the sources name
+  (`collections`, `controls`, `core`, `editors`, `fields`, `layout`,
+  `navigation`, `overlays`, `runtime`, `text`, `theme`, `viewport`), all
+  allowed for `dialogs` by `docs/layering.toml`.
+- **No `work-metrics` feature.** No file of the crate records work or reads a
+  `work-metrics` counter, so the crate has no feature and the root feature does
+  not forward to it; the guard added in #446 only applies to a crate that
+  declares the feature.
