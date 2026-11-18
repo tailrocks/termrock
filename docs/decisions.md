@@ -847,3 +847,40 @@ Rejected options:
   satisfy the orphan rule, but it breaks every call site that relies on
   `App` implying `Application`, in `Shell`, the four applications and the
   consumer fixtures, which the epic forbids.
+
+## 2026-11-18: The base component crates (#446)
+
+`termrock-controls`, `-feedback`, `-overlays` and `-viewport` are extracted in a
+stack of branches, one crate each (overlays in two). Each crate depends only on
+the crates the layering table allows, and `junie-tui` re-exports each module at
+its old path (`widgets::*`, `ui::*`), so no `termrock::` path, type identity or
+catalog id changes. The rules from "Three coherence breaks of `termrock-core`" and
+the #445 entries were applied up front: every `impl` in the moved files and every
+`impl` of a moved trait or type in the files that stay was listed before the move.
+
+- **No coherence break arose.** The scan found no inherent `impl` on a moved type
+  outside its file (E0116), no foreign trait implemented for a slice or other
+  foreign type (E0117), no exhaustive match on a foreign `#[non_exhaustive]` enum
+  (E0004), and no blanket impl over a trait that sits in a different crate
+  (E0210, the #445 case). The impls that cross a boundary are the legal kind: a
+  type of `junie-tui` (`Dialog`, `Select`, `ListBox`, `TextInput`, ...) implements
+  a trait of a lower crate (`Overlay`, `Layer`, `ContextSource`, `EditMenuHost`,
+  `ViewportOps`). The one blanket impl, `impl<O: Overlay> Modal for O`, has both
+  traits in `termrock-overlays`. The compiler agreed; nothing needed a hidden
+  trait, a respelled id or a `MOVED_KEEPING_SPELLING` row.
+- **Hidden plumbing, not new API.** Items that stayed `pub(crate)` and that a
+  higher crate or a `junie-tui` test still reaches are `#[doc(hidden)] pub` and
+  listed in `tests/regressions/doc-hidden-items.txt`. Every one was found by the
+  compiler; none is re-exported by the facade.
+- **`termrock-controls`.** `widgets::scrollbar` keeps its geometry, hit-testing
+  and `Bars`; the painters and `impl ScrollPaint for RenderCtx` are in
+  `termrock-runtime` since #445, and the file re-exports them. `record_work!`
+  needs no feature of its own beyond `termrock-metrics/work-metrics`, which the
+  crate's `work-metrics` feature forwards.
+- **The #443 scratch-crate fixtures moved a file that has moved.** Two catalog
+  tests (`catalog_a_scratch_move_into_a_crate_...`, `catalog_a_move_that_drops_its_
+  reexport_...`) put `src/widgets/brand.rs` into a scratch crate and leave a
+  `pub use` behind. `brand.rs` now lives in `termrock-controls`, so the fixture
+  moves it from there, and the facade reaches it as `widgets::brand` through the
+  re-export, which is the chain a real extraction produces. The tests assert the
+  same things.
