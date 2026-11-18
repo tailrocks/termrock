@@ -18,7 +18,7 @@ use crate::core::response::Response;
 use crate::core::scroll::{HScroll, ScrollPane, Scrollable};
 use crate::core::selection::{ClickPolicy, RowSelection, SelectGesture};
 use crate::theme::SyntaxTone;
-use crate::ui::column_solver::ColumnSizing;
+use crate::ui::columns::ColumnSizing;
 use crate::ui::context::{ContextAnchor, ContextRequest, ContextSource, row_rect};
 use crate::ui::ctx::{RenderCtx, VisualState, fill};
 use crate::ui::row::{MarkKind, RowLook, RowUi};
@@ -2874,7 +2874,7 @@ impl DataGrid {
     }
 
     pub fn seam_id(&self, c: usize) -> WidgetId {
-        self.id.part(crate::ui::column_solver::seam_part(c))
+        self.id.part(crate::ui::columns::seam_part(c))
     }
 
     fn seam_of(&self, id: WidgetId) -> Option<usize> {
@@ -3535,7 +3535,7 @@ impl DataGrid {
             if self.sizing.resizable {
                 let hit = self.sizing.seam_rect(rect.right(), header_y, 2, grid_area);
                 let held = self.sizing.dragging() == Some(ci);
-                crate::ui::column_solver::render_seam(
+                crate::ui::columns::render_seam(
                     buf,
                     ctx,
                     (self.id, ci),

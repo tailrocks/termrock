@@ -7,10 +7,11 @@
 ///
 /// Keys are unique, so the unstable sort is deterministic. One sort replaces a
 /// scan of every survivor per removal.
-pub(crate) fn removal_order(keys: &[(u8, u8, usize)]) -> Vec<usize> {
+#[doc(hidden)]
+pub fn removal_order(keys: &[(u8, u8, usize)]) -> Vec<usize> {
     let mut order: Vec<usize> = (0..keys.len()).collect();
     order.sort_unstable_by(|&a, &b| {
-        crate::record_work!(FitCompares, 1usize);
+        termrock_metrics::record_work!(FitCompares, 1usize);
         keys[a].cmp(&keys[b])
     });
     order

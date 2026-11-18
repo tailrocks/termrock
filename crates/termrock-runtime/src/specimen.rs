@@ -2,11 +2,11 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 
-use crate::core::focus::FocusRing;
-use crate::core::hit::HitRegistry;
-use crate::core::id::WidgetId;
-use crate::theme::{ColorLevel, Kind, Plane, Theme};
-use crate::ui::ctx::{Interaction, RenderCtx, VisualState};
+use crate::ctx::{Interaction, RenderCtx, VisualState};
+use termrock_core::focus::FocusRing;
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::WidgetId;
+use termrock_theme::{ColorLevel, Kind, Plane, Theme};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SpecimenState {
@@ -182,7 +182,7 @@ impl std::fmt::Debug for StateGrid {
     }
 }
 
-impl crate::ui::measure::Measure for StateGrid {
+impl crate::measure::Measure for StateGrid {
     fn measure(&self, _avail: ratatui::layout::Size, _ctx: &RenderCtx) -> ratatui::layout::Size {
         let (w, h) = self.size();
         ratatui::layout::Size::new(w, h)
@@ -358,7 +358,7 @@ impl StateGrid {
             &own
         };
         let bg = t.surface;
-        crate::ui::ctx::fill(buf, pane, Style::new().bg(bg));
+        crate::ctx::fill(buf, pane, Style::new().bg(bg));
         buf.set_string(pane.x, pane.y, level.label(), t.muted().bg(bg));
         let body = Rect::new(
             pane.x,
@@ -401,7 +401,7 @@ impl StateGrid {
                 buf.set_string(
                     col_x(k),
                     area.y,
-                    crate::ui::text::fit(label, room),
+                    termrock_text::cells::fit(label, room),
                     t.muted().bg(bg),
                 );
             }
@@ -418,7 +418,10 @@ impl StateGrid {
             buf.set_string(
                 area.x,
                 y,
-                crate::ui::text::fit(state.label(), self.label_width.saturating_sub(1) as usize),
+                termrock_text::cells::fit(
+                    state.label(),
+                    self.label_width.saturating_sub(1) as usize,
+                ),
                 t.secondary().bg(bg),
             );
             for (k, (_, specimen)) in self.columns.iter().enumerate() {
@@ -496,18 +499,18 @@ impl KindSample {
             return;
         }
         let plane_bg = t.ladder(self.plane).rest;
-        crate::ui::ctx::fill(buf, area, Style::new().bg(plane_bg));
+        crate::ctx::fill(buf, area, Style::new().bg(plane_bg));
         let r = t.interactive(self.kind, s, self.plane);
         let row = Rect::new(area.x, area.y, area.width, 1);
 
         let body = Style::new().bg(plane_bg).patch(r.style);
         let gutter = Style::new().bg(plane_bg).patch(r.gutter_style);
         buf.set_string(row.x, row.y, r.gutter, gutter);
-        let w = crate::ui::text::width(r.gutter) as u16;
+        let w = termrock_text::cells::width(r.gutter) as u16;
         let room = row.width.saturating_sub(w) as usize;
-        let text = crate::ui::text::fit(&format!(" {} ", self.label), room);
-        let tw = crate::ui::text::width(&text) as u16;
-        crate::ui::ctx::fill(buf, Rect::new(row.x + w, row.y, tw, 1), body);
+        let text = termrock_text::cells::fit(&format!(" {} ", self.label), room);
+        let tw = termrock_text::cells::width(&text) as u16;
+        crate::ctx::fill(buf, Rect::new(row.x + w, row.y, tw, 1), body);
         buf.set_string(row.x + w, row.y, text, body);
     }
 }

@@ -5,12 +5,12 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
 
-use crate::core::event::{Input, Outcome};
-use crate::core::id::WidgetId;
-use crate::theme::ColorLevel;
-use crate::ui::ctx::{RenderCtx, fill};
-use crate::ui::popup::{self, Placement};
-use crate::ui::text::{truncate, width, wrap};
+use crate::ctx::{RenderCtx, fill};
+use crate::popup::{self, Placement};
+use termrock_core::event::{Input, Outcome};
+use termrock_core::id::WidgetId;
+use termrock_text::cells::{truncate, width, wrap};
+use termrock_theme::ColorLevel;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Tooltips {
@@ -122,7 +122,7 @@ pub fn show(
         return;
     }
 
-    if on_owner && !crate::ui::reveal::hover_ready(ctx, policy.delay_ms) {
+    if on_owner && !crate::reveal::hover_ready(ctx, policy.delay_ms) {
         return;
     }
     QUEUED.with(|q| q.set(true));

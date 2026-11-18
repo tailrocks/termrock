@@ -1,6 +1,6 @@
 use ratatui::layout::Size;
 
-use crate::ui::ctx::RenderCtx;
+use crate::ctx::RenderCtx;
 
 /// Natural size of a widget, before it is fitted to an allocation.
 ///
@@ -25,7 +25,8 @@ pub trait Measure {
 /// many cells", never a request to allocate that much. Fitters must read the
 /// widget's wide intrinsic value instead of recovering a `usize` from a
 /// saturated public width, because saturation is not reversible.
-pub(crate) fn terminal_extent(cells: usize) -> u16 {
+#[doc(hidden)]
+pub fn terminal_extent(cells: usize) -> u16 {
     u16::try_from(cells).unwrap_or(u16::MAX)
 }
 

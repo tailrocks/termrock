@@ -1,11 +1,11 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
 
-use crate::core::focus::FocusRing;
-use crate::core::hit::HitRegistry;
-use crate::core::id::WidgetId;
-use crate::theme::Theme;
-pub use crate::theme::VisualState;
+use termrock_core::focus::FocusRing;
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::WidgetId;
+use termrock_theme::Theme;
+pub use termrock_theme::VisualState;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Interaction {
@@ -93,15 +93,15 @@ pub struct RenderCtx<'a> {
 
     overlays: Vec<(bool, OverlayFn)>,
 
-    pub reveal: crate::ui::reveal::Reveal,
+    pub reveal: crate::reveal::Reveal,
 
-    pub tooltips: crate::ui::tooltip::Tooltips,
+    pub tooltips: crate::tooltip::Tooltips,
 
-    pub hscroll: crate::core::scroll::HScroll,
+    pub hscroll: termrock_core::scroll::HScroll,
 
-    pub track_click: crate::core::scroll::TrackClick,
+    pub track_click: termrock_core::scroll::TrackClick,
 
-    pub(crate) reveal_slot: crate::ui::reveal::Slot,
+    pub(crate) reveal_slot: crate::reveal::Slot,
 
     pub reveal_hint: Option<(&'static str, &'static str)>,
 
@@ -112,9 +112,11 @@ pub struct RenderCtx<'a> {
     render_mutated: bool,
 }
 
-pub(crate) type Shift = std::rc::Rc<std::cell::Cell<(u16, u16)>>;
+#[doc(hidden)]
+pub type Shift = std::rc::Rc<std::cell::Cell<(u16, u16)>>;
 
-pub(crate) fn total_shift(shifts: &[Shift]) -> (u16, u16) {
+#[doc(hidden)]
+pub fn total_shift(shifts: &[Shift]) -> (u16, u16) {
     shifts.iter().fold((0, 0), |(x, y), s| {
         let (a, b) = s.get();
         (x.saturating_add(a), y.saturating_add(b))
@@ -159,12 +161,14 @@ fn shifted(shifts: Vec<Shift>, draw: OverlayFn) -> OverlayFn {
 
 /// An off-screen buffer. Every production scratch allocation goes through here
 /// so `AllocatedBufferCells` counts it.
-pub(crate) fn scratch_buffer(area: Rect) -> Buffer {
-    crate::record_work!(AllocatedBufferCells, area.area());
+#[doc(hidden)]
+pub fn scratch_buffer(area: Rect) -> Buffer {
+    termrock_metrics::record_work!(AllocatedBufferCells, area.area());
     Buffer::empty(area)
 }
 
-pub(crate) fn copy_cells(from: &Buffer, area: Rect, to: &mut Buffer, at: Position) -> usize {
+#[doc(hidden)]
+pub fn copy_cells(from: &Buffer, area: Rect, to: &mut Buffer, at: Position) -> usize {
     let area = area.intersection(from.area);
     let mut copied = 0;
     for y in 0..area.height {
@@ -177,7 +181,7 @@ pub(crate) fn copy_cells(from: &Buffer, area: Rect, to: &mut Buffer, at: Positio
             if to.area.contains(p) {
                 to[(p.x, p.y)] = from[(area.x + x, area.y + y)].clone();
                 copied += 1;
-                crate::record_work!(BufferCellsCopied, 1usize);
+                termrock_metrics::record_work!(BufferCellsCopied, 1usize);
             }
         }
     }
@@ -199,19 +203,19 @@ impl<'a> RenderCtx<'a> {
             cursor: None,
             inert: false,
             overlays: Vec::new(),
-            reveal: crate::ui::reveal::Reveal::default(),
-            tooltips: crate::ui::tooltip::Tooltips::default(),
-            hscroll: crate::core::scroll::HScroll::default(),
-            track_click: crate::core::scroll::TrackClick::Page,
+            reveal: crate::reveal::Reveal::default(),
+            tooltips: crate::tooltip::Tooltips::default(),
+            hscroll: termrock_core::scroll::HScroll::default(),
+            track_click: termrock_core::scroll::TrackClick::Page,
             reveal_hint: None,
             peek: None,
             shifts: Vec::new(),
             render_mutated: false,
             reveal_slot: {
-                crate::ui::reveal::clear_cuts();
-                crate::ui::reveal::begin_frame();
-                crate::ui::tooltip::begin_frame();
-                crate::ui::reveal::Slot::default()
+                crate::reveal::clear_cuts();
+                crate::reveal::begin_frame();
+                crate::tooltip::begin_frame();
+                crate::reveal::Slot::default()
             },
         }
     }
@@ -230,26 +234,38 @@ impl<'a> RenderCtx<'a> {
             cursor: None,
             inert: true,
             overlays: Vec::new(),
-            reveal: crate::ui::reveal::Reveal::OFF,
-            tooltips: crate::ui::tooltip::Tooltips::OFF,
-            hscroll: crate::core::scroll::HScroll::default(),
-            track_click: crate::core::scroll::TrackClick::Page,
+            reveal: crate::reveal::Reveal::OFF,
+            tooltips: crate::tooltip::Tooltips::OFF,
+            hscroll: termrock_core::scroll::HScroll::default(),
+            track_click: termrock_core::scroll::TrackClick::Page,
             reveal_hint: None,
             peek: None,
             shifts: Vec::new(),
             render_mutated: false,
-            reveal_slot: crate::ui::reveal::Slot::default(),
+            reveal_slot: crate::reveal::Slot::default(),
         }
     }
 
     /// Records that a widget changed its own state while rendering, after
     /// widgets drawn earlier in the frame already read the old state. The
     /// shell settle repaints the frame once when this is set.
-    pub(crate) fn note_render_mutation(&mut self) {
+    #[doc(hidden)]
+    pub fn push_shift(&mut self, shift: Shift) {
+        self.shifts.push(shift);
+    }
+
+    #[doc(hidden)]
+    pub fn pop_shift(&mut self) {
+        self.shifts.pop();
+    }
+
+    #[doc(hidden)]
+    pub fn note_render_mutation(&mut self) {
         self.render_mutated = true;
     }
 
-    pub(crate) fn render_mutated(&self) -> bool {
+    #[doc(hidden)]
+    pub fn render_mutated(&self) -> bool {
         self.render_mutated
     }
 
@@ -284,7 +300,7 @@ impl<'a> RenderCtx<'a> {
     pub fn register_part(
         &mut self,
         owner: WidgetId,
-        part: crate::core::id::PartRef,
+        part: termrock_core::id::PartRef,
         area: Rect,
     ) -> WidgetId {
         let id = owner.part(part);
@@ -296,7 +312,7 @@ impl<'a> RenderCtx<'a> {
         &mut self,
         id: WidgetId,
         owner: WidgetId,
-        part: crate::core::id::PartRef,
+        part: termrock_core::id::PartRef,
         area: Rect,
     ) {
         if !self.inert {
@@ -304,7 +320,7 @@ impl<'a> RenderCtx<'a> {
         }
     }
 
-    pub fn pointer_shape(&mut self, id: WidgetId, shape: crate::core::shape::PointerShape) {
+    pub fn pointer_shape(&mut self, id: WidgetId, shape: termrock_core::shape::PointerShape) {
         if !self.inert {
             self.hits.set_shape(id, shape);
         }
@@ -321,10 +337,10 @@ impl<'a> RenderCtx<'a> {
         id: WidgetId,
         track: Rect,
         owner: WidgetId,
-        axis: crate::core::hit::Axis,
+        axis: termrock_core::hit::Axis,
     ) {
         if !self.inert {
-            self.hits.register_bar(crate::core::hit::Bar {
+            self.hits.register_bar(termrock_core::hit::Bar {
                 id,
                 owner,
                 axis,
@@ -385,7 +401,7 @@ impl<'a> RenderCtx<'a> {
         let t = self.theme;
         let mut s = self.state(id);
         s.focused = false;
-        t.interactive(crate::theme::Kind::Title, s, t.plane_of(bg))
+        t.interactive(termrock_theme::Kind::Title, s, t.plane_of(bg))
             .style
     }
 
@@ -446,7 +462,7 @@ impl<'a> RenderCtx<'a> {
     }
 
     pub fn flush_overlays(&mut self, buf: &mut Buffer) {
-        crate::ui::reveal::flush_cuts(self);
+        crate::reveal::flush_cuts(self);
         while !self.overlays.is_empty() {
             let queued = std::mem::take(&mut self.overlays);
             for (inert, draw) in queued {

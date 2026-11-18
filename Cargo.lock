@@ -999,6 +999,7 @@ dependencies = [
  "termpane",
  "termrock-core",
  "termrock-metrics",
+ "termrock-runtime",
  "termrock-text",
  "termrock-theme",
  "toml 1.2.1+spec-1.1.0",
@@ -2187,6 +2188,17 @@ name = "termrock-metrics"
 version = "0.1.0"
 dependencies = [
  "serde_json",
+]
+
+[[package]]
+name = "termrock-runtime"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "termrock-core",
+ "termrock-metrics",
+ "termrock-text",
+ "termrock-theme",
 ]
 
 [[package]]

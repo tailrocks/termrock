@@ -2,11 +2,11 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 
-use crate::core::id::WidgetId;
-use crate::theme::{CursorRow, CursorStyle, Kind};
-use crate::ui::ctx::{RenderCtx, VisualState, fill};
-use crate::ui::reveal::RevealState;
-use crate::ui::text::truncate;
+use crate::ctx::{RenderCtx, VisualState, fill};
+use crate::reveal::RevealState;
+use termrock_core::id::WidgetId;
+use termrock_text::cells::truncate;
+use termrock_theme::{CursorRow, CursorStyle, Kind};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum RowLook {
