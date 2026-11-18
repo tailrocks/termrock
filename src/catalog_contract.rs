@@ -988,6 +988,37 @@ fn catalog_without_a_preferred_spelling_the_definition_path_wins() {
     );
 }
 
+/// Definitions that moved to a lower module while their old public path stayed
+/// the catalog's spelling (#442): `(defined at, spelled in the catalog as)`.
+/// Without the catalog the walk would pick the definition's own path, so this
+/// table is what the preferred-spelling pin has to undo.
+const MOVED_KEEPING_SPELLING: &[(&str, &str)] = &[
+    (
+        "ui::layer::FileBrowserResult",
+        "widgets::file_browser::FileBrowserResult",
+    ),
+    ("ui::layer::FormAction", "widgets::form_dialog::FormAction"),
+    ("ui::layer::InfoResult", "widgets::info_dialog::InfoResult"),
+    ("ui::layer::LayerResult", "ui::layers::LayerResult"),
+    ("ui::modal::OUTER_MARGIN", "widgets::dialog::OUTER_MARGIN"),
+    ("ui::modal::body_bounds", "widgets::dialog::body_bounds"),
+    ("widgets::table::HeaderAction", "ui::columns::HeaderAction"),
+    ("widgets::table::HeaderLabels", "ui::columns::HeaderLabels"),
+    ("widgets::table::header_menu", "ui::columns::header_menu"),
+];
+
+fn respelled(id: &str) -> String {
+    for (home, spelled) in MOVED_KEEPING_SPELLING {
+        if id == *home {
+            return (*spelled).to_owned();
+        }
+        if let Some(rest) = id.strip_prefix(home).and_then(|r| r.strip_prefix("::")) {
+            return format!("{spelled}::{rest}");
+        }
+    }
+    id.to_owned()
+}
+
 #[test]
 fn catalog_the_catalog_spelling_leaves_the_repository_ids_unchanged() {
     let s = Sources::load();
@@ -995,9 +1026,10 @@ fn catalog_the_catalog_spelling_leaves_the_repository_ids_unchanged() {
     for (name, inv) in &with_catalog {
         let row = MATRIX.iter().find(|r| r.name == *name).expect("row");
         let bare = build(&s.tree, row, EXPANSIONS, &BTreeSet::new()).expect("builds");
+        let expected: BTreeSet<String> = bare.exports.keys().map(|id| respelled(id)).collect();
         assert_eq!(
-            inv.exports.keys().collect::<Vec<_>>(),
-            bare.exports.keys().collect::<Vec<_>>(),
+            inv.exports.keys().cloned().collect::<BTreeSet<_>>(),
+            expected,
             "row {name}"
         );
     }

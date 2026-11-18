@@ -335,6 +335,17 @@ follows the evidence and this entry records the differences.
   read as "to a higher crate": `ui/layer.rs` still names `icon_button`,
   `keyhint`, `menu` and `picker`, all in its own or a lower crate.
 
+- The #443 PR A test `catalog_the_catalog_spelling_leaves_the_repository_ids_unchanged`
+  compared the pinned inventory with the bare walk, which only holds while no
+  definition has moved. Moving `LayerResult`, `FormAction`, `InfoResult`,
+  `FileBrowserResult`, `HeaderAction`, `HeaderLabels`, `header_menu`,
+  `OUTER_MARGIN` and `body_bounds` makes the bare walk spell them at their new
+  home. The test keeps its name and its strength: `MOVED_KEEPING_SPELLING`
+  lists each moved definition with the spelling the catalog keeps, and the
+  pinned id set must equal the bare id set after exactly that respelling. A
+  moved id that is missing from the table, or an id that vanishes or appears,
+  fails the test.
+
 No `termrock::` path, type identity or catalog id changed. The allowlist lost
 every `src/ui/**` and `src/widgets/**` row and the two `ui::layers` test rows;
 the core and theme rows (#441) and the two `test_alloc` rows (#449) remain.
