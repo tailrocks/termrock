@@ -1,4 +1,4 @@
-use crate::core::event::Outcome;
+use termrock_core::event::Outcome;
 
 use std::time::{Duration, Instant};
 
@@ -156,9 +156,9 @@ impl SimClock {
         } else if delta < 86_400 {
             format!(
                 "resets in {}",
-                crate::ui::text::duration(
+                termrock_text::cells::duration(
                     std::time::Duration::from_secs(delta as u64),
-                    crate::ui::text::DurationStyle::Spoken,
+                    termrock_text::cells::DurationStyle::Spoken,
                 )
             )
         } else {

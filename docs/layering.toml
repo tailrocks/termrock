@@ -124,16 +124,6 @@ functional = ["termrock"]
 # Re-exports `termrock-text` at `core::text`; the buffer itself is in the crate.
 "src/core/text.rs" = "text"
 
-# session
-"src/clock.rs" = "session"
-"src/runtime.rs" = "session"
-"src/runtime/isolated.rs" = "session"
-"src/runtime/job_control/tests.rs" = "session"
-"src/runtime/metered.rs" = "session"
-"src/runtime/panic_bridge.rs" = "session"
-"src/runtime/panic_bridge/tests.rs" = "session"
-"src/runtime/tests.rs" = "session"
-
 # controls
 "src/widgets/action_row.rs" = "controls"
 "src/widgets/brand.rs" = "controls"
@@ -246,6 +236,9 @@ functional = ["termrock"]
 "src/widgets/inspect_changes.rs" = "dialogs"
 
 # shell
+# `src/runtime.rs` is `Application` and the run loop generic over it. They stay in
+# `junie-tui` until #448 moves them next to `App` (see docs/decisions.md, #445).
+"src/runtime.rs" = "shell"
 "src/shell/app.rs" = "shell"
 "src/shell/chrome.rs" = "shell"
 "src/shell/clipboard.rs" = "shell"
