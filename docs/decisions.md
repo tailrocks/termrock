@@ -648,3 +648,20 @@ declared API.
 The test module `core/pointer/nested_scrollbar_tests.rs` imports `ScrollView`,
 the scrollbar and the theme, so it cannot sit in core. It stays at its path,
 declared from `src/core/mod.rs`, until #446 moves it to `termrock-viewport`.
+
+## 2026-11-18: The line-edit fields sit in `termrock-core::field` (#444)
+
+`widgets::{edit, field_common}` and the crate-private `text_select` move into
+`termrock-core` as the `field` module, as the issue says. `widgets::edit` and
+`widgets::field_common` keep their paths through a `pub use` in
+`src/widgets/mod.rs`. `text_select` was `pub(crate)`, so `field::text_select`
+is `#[doc(hidden)]` and `junie-tui` re-exports it `pub(crate)`; its items that
+the panel, viewport and terminal views reach are `#[doc(hidden)] pub` and listed
+in `tests/regressions/doc-hidden-items.txt`.
+
+The test `text_revision_follows_undo_and_redo` left `termrock-text` for lack of
+`core::edit`. It is now `crates/termrock-core/tests/regressions/text_buffer.rs`,
+a `regressions` target of `termrock-core` that nothing else in the workspace
+needs to know about (`main.rs` holds one `mod` line per file, as the root
+target does). The `[files]` entry of `src/core/text.rs` is gone: the file is a
+one-line `pub use` of `termrock-text`.
