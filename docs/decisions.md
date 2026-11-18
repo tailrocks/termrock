@@ -641,3 +641,71 @@ Choices that differ from the issue's wording or settle what it left open:
   outside the moved files. The only `impl` for a moved type outside it is
   `impl From<FramePlacement> for Placement` in `ui/modal.rs`, which stays legal
   because `FramePlacement` is local there.
+
+## 2026-11-18: `termrock-session` holds the session, not the run loop (#445)
+
+The issue puts `src/runtime.rs` whole into `termrock-session`. That cannot build.
+`src/shell/app.rs:463` has `impl<A: App> Application for A`, so every `App` is
+an `Application` and `Shell` runs through `runtime::run`. With `Application` in
+`termrock-session` and `App` in `termrock-shell` the impl is neither local to
+the trait's crate nor to the type parameter's, and rustc rejects it with E0210
+(an uncovered type parameter). Two attempts failed: the direct blanket impl,
+and a blanket impl over a hidden marker trait in a lower crate.
+
+Decision: `Application` and the code that is generic over it stay in
+`junie-tui`, in `src/runtime.rs`, until #448 moves them into `termrock-shell`
+next to `App`. Both traits are then in one crate and the blanket impl is legal.
+`termrock-session` takes everything that does not name `Application`:
+
+- `clock`; `TerminalSession`, `SessionTerminal` and the terminal-mode restore;
+  `job_control`; the panic bridge;
+- the external channel (`ExternalPolicy`, `ExternalSender`, `ExternalReceiver`,
+  `ExternalSendError`, `ExternalTurn`, `external_channel`,
+  `bounded_external_channel`);
+- the raw-input side: `RawInputPolicy`, `Coalesce`, `SizeWatch`,
+  `FocusClickGuard`, the raw-event sources and budget, `scan_next`,
+  `drain_pending_input` and `drain_pending_input_bounded`.
+
+`junie-tui` keeps `Application`, `run`, `pump_external`, `InputPump`,
+`drain_ready_inputs`, `DRAIN_BUDGET`, and the private loop (`event_loop`,
+`loop_turn`, `service_turn`, `input_turn`, the frame painter). `junie-tui`
+re-exports every moved item at its old `runtime::` path, so no
+`termrock::runtime::*`, `junie_tui::runtime::*` or `termrock::clock::*` path,
+type identity or API id changes, and no `MOVED_KEEPING_SPELLING` row is needed:
+the catalog spells each moved item by the same `runtime::` path. The layering
+table maps `src/runtime.rs` to `shell`, its future crate, and the architecture
+doc says the run loop belongs to `termrock-shell`.
+
+Consequences:
+
+- `termrock-session` does not depend on `termrock-runtime`: the three calls the
+  loop makes into `reveal` and `tooltip` are in the loop code, which stays up.
+  The `session` row of `docs/layering.toml` keeps `runtime` in its allowed list.
+- Items the loop and its tests need from the session crate were private. They
+  are `#[doc(hidden)] pub` and listed in `tests/regressions/doc-hidden-items.txt`:
+  `RawBudget` (with `new`, `read`, `filtered`), `RawRead`, `RawSource`,
+  `CrosstermSource`, `scan_next`, `RawModeControl`, `discard_pending`,
+  `discard_ready`, `poll_uninterrupted`, `RawInputPolicy::event_limit`,
+  `ExternalPolicy::normalized`, `ExternalReceiver::wait_latency` and the
+  `metered` module (feature `work-metrics`, used by the #56 tests). #448 makes
+  the loop-only ones private again where it can.
+- The #56 tests `runtime::raw_input_tests::work::*` drive the loop through
+  `super::*` and `crate::metrics::harness`, which stays in `junie-tui` until
+  #449, so they stay with the loop in `src/runtime/raw_input_tests/work.rs`.
+  The `performance` nextest profile and `performance-inventory.tsv` select the
+  same 168 tests as before. The rest of `raw_input_tests`, `external_tests`,
+  `render_pending_tests` and `draw_lag_tests` also stay: each drives an
+  `Application`. The panic-bridge, job-control and session tests
+  (`runtime/tests.rs`, `job_control/tests.rs`, `panic_bridge/tests.rs`,
+  `isolated.rs`) move with the code and run in the `termrock-session` binary.
+
+Rejected options:
+
+- **Move the whole of `runtime.rs` and `shell` together now.** It builds only
+  after #448 has moved `shell`, so `split/445-b` would carry #448's content and
+  could not be reviewed or merged alone, and the stack would no longer build at
+  each branch.
+- **Require an explicit `impl Application for T` for every app.** It would
+  satisfy the orphan rule, but it breaks every call site that relies on
+  `App` implying `Application`, in `Shell`, the four applications and the
+  consumer fixtures, which the epic forbids.

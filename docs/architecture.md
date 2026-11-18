@@ -35,7 +35,7 @@ file will land in is `[files]` in `docs/layering.toml`.
 | Foundations | `termrock-core` | IDs, events, intents, response, hit testing, focus, key maps, list and keyed sources, scroll state, selection, edit grammar, motion, line-edit substrate. | `src/core/*`, `motion.rs`, `widgets/{edit,field_common,text_select}.rs` |
 | Foundations | `termrock-theme` | `Theme`, palettes, glyphs, `VisualState`, `CardHeading`. | `src/theme.rs` |
 | Runtime | `termrock-runtime` | `RenderCtx`, reveal, tooltip, popup, measure, row, fade, specimen trait, column solver. | `ui/{ctx,popup,reveal,tooltip,measure,row,fade,fitting,columns,specimen}.rs` |
-| Runtime | `termrock-session` | Run loop, `TerminalSession`, external channel, panic bridge, clock. | `src/runtime.rs`, `src/runtime/*`, `clock.rs` |
+| Runtime | `termrock-session` | `TerminalSession`, job control, external channel, raw-input sources and policies, `Coalesce`, panic bridge, clock. The `Application` trait and the run loop are in `termrock-shell` after #448 (see the decision below). | `src/runtime.rs` (the parts that do not name `Application`), `src/runtime/*`, `clock.rs` |
 | Components | `termrock-controls` | Key hints, hint bar, key reference, button, icon button, choice, action row, brand, scrollbar, segments. | `widgets/{keyhint,hintbar,keyref,button,icon_button,choice,action_row,brand,scrollbar,segments,widget_hints}.rs` |
 | Components | `termrock-feedback` | Progress, notice, empty, too-small, meter list, status bar, page header. | `widgets/{progress,notice,empty,too_small,meter_list,statusbar,page_header}.rs` |
 | Components | `termrock-overlays` | Layer stack, modal, menu, option list, completion, row menu, context menu, edit menu, option editor, picker. | `ui/{layer,modal,context,edit_menu}.rs`, `widgets/{menu,option_list,completion,row_menu,option_editor,picker}.rs` |
@@ -47,7 +47,7 @@ file will land in is `[files]` in `docs/layering.toml`.
 | Components | `termrock-navigation` | Breadcrumb, rail, nav list, tabs, toolbar, steps, document workspace. | `widgets/{breadcrumb,rail,nav_list,tabs,toolbar,steps,document_workspace}.rs` |
 | Components | `termrock-grid` | Table, grid, grid changes and submission. | `widgets/{table,grid,grid_changes,grid_submission}.rs` |
 | Components | `termrock-dialogs` | Dialog, choice and info dialogs, help, form dialog, file browser, inspect changes, leave guard, `LayerResult`. | `ui/{layers,leave}.rs`, `widgets/{dialog,choice_dialog,info_dialog,help,form_dialog,file_browser,inspect_changes}.rs` |
-| Application host | `termrock-shell` | `Shell`, `App`, `Page`, router, chrome, footer, clipboard, reach harness. | `src/shell/*` |
+| Application host | `termrock-shell` | `Shell`, `App`, `Page`, router, chrome, footer, clipboard, reach harness, and (from #448) the `Application` trait with the run loop. | `src/shell/*`, `src/runtime.rs` |
 | Optional | `termrock-terminal` | Terminal emulator pane, viewport, session controller (feature `terminal`). | `src/terminal.rs`, `src/terminal/*` |
 | Optional | `termrock-cli` | `clap` argument types (feature `cli`). | `src/cli.rs` |
 | Proof | `termrock-catalog` | Declared-API catalog, docs tables, inventory gate (#14). | `catalog.rs`, `docs.rs`, `catalog_contract.rs`, `tests/support/api_inventory.rs` |
@@ -121,10 +121,14 @@ are recorded in [decisions](decisions.md).
    `termrock-dialogs` (dialogs, forms, file browser). `input` needs a context
    menu and the dialogs need `input`, so one crate would be a cycle. There is
    no `forms` crate; `form_dialog` lives in `termrock-dialogs`.
-3. Session and runtime are separate. `termrock-session` holds the run loop and
-   terminal lifecycle; `termrock-runtime` holds `RenderCtx` and its plumbing.
-   The facade module `termrock::runtime` therefore comes from the crate named
-   `session`.
+3. Session and runtime are separate. `termrock-session` holds the terminal
+   lifecycle, the external channel and the raw-input sources and policies;
+   `termrock-runtime` holds `RenderCtx` and its plumbing. `Application` and the
+   run loop that is generic over it belong with `App` in `termrock-shell`,
+   because `impl<A: App> Application for A` is legal only when both traits are
+   in one crate; until #448 moves them they stay in `junie-tui`. The facade
+   module `termrock::runtime` is `junie-tui`'s `runtime`, which re-exports
+   `termrock-session`'s `runtime` next to them.
 4. Focus, hit testing and key maps stay in `termrock-core`, not in runtime.
    `list`, `keyed` and `intent` depend on them, and `core::{hit, intent,
    pointer, scroll, shape}` and `core::{keymap, list}` form a five-module cycle
