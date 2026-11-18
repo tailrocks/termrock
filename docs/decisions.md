@@ -972,7 +972,10 @@ plus `unicode-width`; `libc` is not used by the moved files.
 with `features = ["cli"]` (for `Motion: ValueEnum`) and `termrock-theme`, which
 is what the layering table allows (`core`, `theme`). `junie-tui` keeps
 `#[cfg(feature = "cli")] pub use termrock_cli as cli;`, and its `cli` feature is
-`dep:termrock-cli`, which now carries both `clap` and `termrock-core/cli`. The
+`dep:termrock-cli` plus `termrock-core/cli`: `termrock-cli` carries `clap` and enables
+`termrock-core/cli` itself, and the root list repeats the forward because the
+feature-forwarding guard of #446 requires a crate that declares `cli` to forward
+it to every dependency that also declares it. The
 root package has no `clap` dependency left. The facade and the consumer
 lockfiles need no edit: no fixture resolves the optional crate, and
 `termrock::cli::*` still resolves through `junie-tui`.
