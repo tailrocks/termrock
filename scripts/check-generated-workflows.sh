@@ -1185,7 +1185,7 @@ maximum_blob_bytes = 4 * 1024 * 1024
 maximum_json_bytes = 6 * 1024 * 1024
 maximum_header_bytes = 32 * 1024
 phase_deadline = float(Path(deadline_path).read_text())
-endpoint = "https://api.github.com/repos/tailrocks/terminal-components-baseline/git/blobs/"
+endpoint = "https://api.github.com/repos/tailrocks/termrock/git/blobs/"
 redirect_statuses = {300, 301, 302, 303, 304, 305, 307, 308}
 
 def reject(message):

@@ -16,7 +16,7 @@ empty. Termrock is not published to crates.io, so use a path or git dependency:
 
 ```toml
 [dependencies]
-termrock = { git = "https://github.com/tailrocks/terminal-components-baseline", default-features = false, features = ["terminal"] }
+termrock = { git = "https://github.com/tailrocks/termrock", default-features = false, features = ["terminal"] }
 ```
 
 Import from `termrock::` (`termrock::widgets`, `termrock::ui`, `termrock::core`,

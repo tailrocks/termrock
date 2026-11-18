@@ -8,9 +8,9 @@ Termrock is not published to crates.io. Depend on it by path or by git:
 
 ```toml
 [dependencies]
-termrock = { git = "https://github.com/tailrocks/terminal-components-baseline", default-features = false }
+termrock = { git = "https://github.com/tailrocks/termrock", default-features = false }
 # or, in a checkout:
-# termrock = { path = "../terminal-components-baseline/crates/termrock", default-features = false }
+# termrock = { path = "../termrock/crates/termrock", default-features = false }
 ```
 
 ## Packages and imports

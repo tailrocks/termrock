@@ -190,7 +190,7 @@ while read -r repository revision tree; do
     exit 0
   fi
 done < "$metadata_routes"
-if [[ "$url" =~ ^https://api[.]github[.]com/repos/tailrocks/terminal-components-baseline/git/blobs/([0-9a-f]{40}|[0-9a-f]{64})$ ]]; then
+if [[ "$url" =~ ^https://api[.]github[.]com/repos/tailrocks/termrock/git/blobs/([0-9a-f]{40}|[0-9a-f]{64})$ ]]; then
   :
 elif [[ "$url" =~ ^https://[sS][tT][aA][tT][iI][cC][.][rR][uU][sS][tT][-][lL][aA][nN][gG][.][oO][rR][gG]/rustup/dist/(aarch64-apple-darwin|x86_64-unknown-linux-gnu)/rustup-init([.]sha256)?$ ]]; then
   :
@@ -791,7 +791,7 @@ test_clean_boundary() {
   assert_contains 'network boundary returns the fixed HTTP failure' 'rustup bootstrap response has an unexpected status'
   assert_request_count 1
   assert_equal 'first request uses the fixed official checksum path' "https://static.rust-lang.org$checksum_path" "$(sed -n '1p' "$request_log")"
-  assert_request_not_contains 'complete trusted seed performs no GitHub blob request' 'https://api.github.com/repos/tailrocks/terminal-components-baseline/git/blobs/'
+  assert_request_not_contains 'complete trusted seed performs no GitHub blob request' 'https://api.github.com/repos/tailrocks/termrock/git/blobs/'
   assert_equal 'curl environment excludes inherited proxy and CA settings' clean "$(cat "$environment_trace")"
   assert_equal 'pre-commit preserves the source index' "$index_before" "$(file_sha256 "$index_file")"
   assert_equal 'checker preserves the source Git config' "$config_before" "$(file_sha256 "$git_config")"
@@ -872,7 +872,7 @@ test_trusted_seed_blob_hydration() {
   local record
   local mode
   object_id=$(seed_blob_oid "$path")
-  endpoint="https://api.github.com/repos/tailrocks/terminal-components-baseline/git/blobs/$object_id"
+  endpoint="https://api.github.com/repos/tailrocks/termrock/git/blobs/$object_id"
   write_blob_response_variant "$object_id" "$raw" "$body" wrapped-base64
   directory=$(new_repo_with_missing_seed_object missing-trusted-included-blob blob "$path")
   configure_promisor_canaries "$directory"
@@ -966,7 +966,7 @@ test_selected_empty_blob_hydration() {
   objects_before=$(source_object_inventory "$directory")
   checkout_before=$(source_checkout_inventory "$directory")
   refs_before=$(source_ref_inventory "$directory")
-  endpoint="https://api.github.com/repos/tailrocks/terminal-components-baseline/git/blobs/$empty_oid"
+  endpoint="https://api.github.com/repos/tailrocks/termrock/git/blobs/$empty_oid"
   set_response_plan 200 - "$body" 502 - -
   set_materialization_observer index docs/empty-selected-blob "$observed" "$canary" "$status"
   run_checker "$directory" pre-commit
@@ -1012,7 +1012,7 @@ assert_blob_hydration_rejected() {
   local location=$5
   local body=$6
   local expected=$7
-  local endpoint="https://api.github.com/repos/tailrocks/terminal-components-baseline/git/blobs/$object_id"
+  local endpoint="https://api.github.com/repos/tailrocks/termrock/git/blobs/$object_id"
   set_response_plan "$status" "$location" "$body"
   run_checker "$directory" pre-commit
   assert_failed "$label fails closed"
@@ -1049,7 +1049,7 @@ test_blob_http_headers() {
   assert_failed 'HTTP/2 blob hydration reaches the downstream boundary'
   assert_contains 'ordinary HTTP/2 headers accept the verified Cargo.lock blob' 'rustup bootstrap response has an unexpected status'
   assert_request_count 2
-  assert_equal 'Cargo.lock hydration requests the fixed blob OID' "https://api.github.com/repos/tailrocks/terminal-components-baseline/git/blobs/$object_id" "$(sed -n '1p' "$request_log")"
+  assert_equal 'Cargo.lock hydration requests the fixed blob OID' "https://api.github.com/repos/tailrocks/termrock/git/blobs/$object_id" "$(sed -n '1p' "$request_log")"
   assert_equal 'successful blob hydration preserves source objects' "$objects_before" "$(source_object_inventory "$directory")"
   assert_no_temporary_snapshot
   printf 'HTTP/2 200\r\ninvalid name: value\r\n\r\n' > "$header_fixture"
@@ -1109,9 +1109,9 @@ test_trusted_seed_blob_response_validation() {
   assert_no_temporary_snapshot
 
   for location in \
-    'https://api.github.com/repos/tailrocks/terminal-components-baseline/git/blobs/other' \
+    'https://api.github.com/repos/tailrocks/termrock/git/blobs/other' \
     'https://mirror.example.invalid/redirect' \
-    'http://api.github.com/repos/tailrocks/terminal-components-baseline/git/blobs/other'; do
+    'http://api.github.com/repos/tailrocks/termrock/git/blobs/other'; do
     set_response_plan 302 "$location" -
     run_checker "$directory" pre-commit
     assert_failed "redirect to $location fails closed"
@@ -1151,7 +1151,7 @@ test_trusted_seed_excluded_baseline_blob_is_not_hydrated() {
     return 1
   fi
   object_id=$(seed_blob_oid "$path")
-  endpoint="https://api.github.com/repos/tailrocks/terminal-components-baseline/git/blobs/$object_id"
+  endpoint="https://api.github.com/repos/tailrocks/termrock/git/blobs/$object_id"
   directory=$(new_repo_with_missing_seed_object missing-trusted-excluded-blob blob "$path")
   set_denied_response
   run_checker "$directory" pre-commit
@@ -1485,7 +1485,7 @@ test_pushed_missing_objects() {
       tree) assert_contains 'missing pushed tree has a stable diagnostic' 'cannot resolve pushed tree' ;;
       blob)
         assert_contains 'missing pushed blob stops at the denied official hydration response' 'selected snapshot blob hydration endpoint returned HTTP 502'
-        assert_equal 'missing pushed blob requests its fixed official endpoint' "https://api.github.com/repos/tailrocks/terminal-components-baseline/git/blobs/$missing_push_blob_oid" "$(sed -n '1p' "$request_log")"
+        assert_equal 'missing pushed blob requests its fixed official endpoint' "https://api.github.com/repos/tailrocks/termrock/git/blobs/$missing_push_blob_oid" "$(sed -n '1p' "$request_log")"
         ;;
     esac
     if [[ "$kind" == blob ]]; then
@@ -1544,7 +1544,7 @@ test_staged_missing_blob() {
   objects_before=$(source_object_inventory "$directory")
   checkout_before=$(source_checkout_inventory "$directory")
   refs_before=$(source_ref_inventory "$directory")
-  endpoint="https://api.github.com/repos/tailrocks/terminal-components-baseline/git/blobs/$blob_oid"
+  endpoint="https://api.github.com/repos/tailrocks/termrock/git/blobs/$blob_oid"
   write_selected_blob_response "$blob_oid" "$raw" "$body"
   set_response_plan 200 - "$body" 502 - -
   set_materialization_observer index docs/missing-staged-blob.txt "$observed" "$canary" "$status"
@@ -1651,7 +1651,7 @@ test_pushed_missing_blob_hydration() {
   refs_before=$(source_ref_inventory "$directory")
   checkout_before=$(source_checkout_inventory "$directory")
   record=$(push_record refs/heads/missing-pushed "$pushed_commit" refs/heads/missing-pushed "$zero_oid")
-  endpoint="https://api.github.com/repos/tailrocks/terminal-components-baseline/git/blobs/$blob_oid"
+  endpoint="https://api.github.com/repos/tailrocks/termrock/git/blobs/$blob_oid"
   write_selected_blob_response "$blob_oid" "$raw" "$body"
   set_response_plan 200 - "$body" 502 - -
   set_materialization_observer push-1 docs/missing-pushed-blob.txt "$observed" "$canary" "$status"
@@ -1707,7 +1707,7 @@ test_shared_blob_reuse_across_readers() {
   objects_before=$(source_object_inventory "$directory")
   checkout_before=$(source_checkout_inventory "$directory")
   refs_before=$(source_ref_inventory "$directory")
-  endpoint="https://api.github.com/repos/tailrocks/terminal-components-baseline/git/blobs/$object_id"
+  endpoint="https://api.github.com/repos/tailrocks/termrock/git/blobs/$object_id"
   set_response_plan 200 - "$body" 502 - - 200 - "$body"
   set_materialization_observer index docs/shared-seed-cargo.toml "$observed" "$canary" "$status"
   run_checker "$directory" pre-commit '' "GIT_EXEC_PATH=$fixture_bin"
@@ -1791,8 +1791,8 @@ test_distinct_blob_budget_across_readers() {
   objects_before=$(source_object_inventory "$directory")
   checkout_before=$(source_checkout_inventory "$directory")
   refs_before=$(source_ref_inventory "$directory")
-  selected_endpoint="https://api.github.com/repos/tailrocks/terminal-components-baseline/git/blobs/$selected_oid"
-  seed_endpoint="https://api.github.com/repos/tailrocks/terminal-components-baseline/git/blobs/$seed_oid"
+  selected_endpoint="https://api.github.com/repos/tailrocks/termrock/git/blobs/$selected_oid"
+  seed_endpoint="https://api.github.com/repos/tailrocks/termrock/git/blobs/$seed_oid"
   set_response_plan 200 - "$selected_body" 200 - "$seed_body" 502 - -
   set_materialization_observer index docs/distinct-selected-blob.txt "$observed" "$canary" "$status"
   run_checker "$directory" pre-commit '' "GIT_EXEC_PATH=$fixture_bin"
@@ -2230,7 +2230,7 @@ test_hydrated_repeated_blob_occurrence_limit() {
   objects_before=$(source_object_inventory "$directory")
   checkout_before=$(source_checkout_inventory "$directory")
   refs_before=$(source_ref_inventory "$directory")
-  endpoint="https://api.github.com/repos/tailrocks/terminal-components-baseline/git/blobs/$blob_oid"
+  endpoint="https://api.github.com/repos/tailrocks/termrock/git/blobs/$blob_oid"
   write_selected_blob_response "$blob_oid" "$raw" "$body"
   set_response_plan 200 - "$body"
   run_checker "$directory" pre-commit '' "GIT_EXEC_PATH=$fixture_bin"
