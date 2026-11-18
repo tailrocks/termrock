@@ -1422,6 +1422,7 @@ const MOVED_KEEPING_SPELLING: &[(&str, &str)] = &[
     ("core::hints::range", "widgets::keyhint::range"),
     ("core::hints::toggle_hint", "widgets::keyhint::toggle_hint"),
     ("theme::CardHeading", "widgets::panel::CardHeading"),
+    ("theme::RowState", "widgets::grid::RowState"),
     ("theme::VisualState", "ui::ctx::VisualState"),
     (
         "ui::layer::FileBrowserResult",
