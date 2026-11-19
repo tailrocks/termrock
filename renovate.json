@@ -3,6 +3,10 @@
   "extends": [
     "config:best-practices"
   ],
+  "ignorePaths": [
+    ".github/workflows/**",
+    ".github/actions/**"
+  ],
   "customManagers": [
     {
       "customType": "regex",
