@@ -58,6 +58,17 @@ fn visual_id(checkpoint: &str) -> String {
 }
 
 fn open(name: &str, scenario: &str) -> App {
+    launch_on(name, scenario, false)
+}
+
+/// The app clock moves only on [`App::advance_clock`]. The refresh delays and
+/// the broker age then depend on the steps the journey takes, never on how many
+/// wall ticks a slow or lagging draw loop got through.
+fn open_stepped(name: &str, scenario: &str) -> App {
+    launch_on(name, scenario, true)
+}
+
+fn launch_on(name: &str, scenario: &str, clock: bool) -> App {
     let mut launch = Launch::new(name, JACKIN);
     launch.args = vec!["--scenario".to_string(), scenario.to_string()];
     launch.cols = 120;
@@ -65,8 +76,8 @@ fn open(name: &str, scenario: &str) -> App {
     launch.color = Some("truecolor".to_string());
     launch.motion = Some("reduced".to_string());
     // `Launch::new` leaves the clock off. `App::new` would enable it for jackin.
-    // Refresh delays run on the sim clock, which advances from wall ticks.
-    launch.clock = false;
+    // Off, refresh delays run on the sim clock, which advances from wall ticks.
+    launch.clock = clock;
     try_launch(launch).unwrap_or_else(|error| panic!("{error}"))
 }
 
@@ -154,6 +165,25 @@ fn failed_go(screen: &TerminalSnapshot) -> bool {
         && !visible.contains("76%")
         && !visible.contains(BROKER_DOWN)
         && SECRETS.iter().all(|secret| !visible.contains(secret))
+}
+
+/// Steps the stepped clock by `step_ms` until `ready` accepts the screen. Each
+/// step is fenced, so the screen read is the one the step produced.
+fn advance_until(
+    app: &App,
+    label: &str,
+    step_ms: u64,
+    ready: impl Fn(&TerminalSnapshot) -> bool,
+) -> TerminalSnapshot {
+    for _ in 0..60 {
+        app.advance_clock(step_ms);
+        app.fence();
+        let screen = app.screen();
+        if ready(&screen) {
+            return screen;
+        }
+    }
+    panic!("{label}\n{}", text(&app.screen()));
 }
 
 fn nudge(app: &App, quiet_frame: impl Fn(&TerminalSnapshot) -> bool) {
@@ -453,8 +483,7 @@ fn j04_usage_route() {
 
 #[test]
 fn j04_usage_usage() {
-    let started = Instant::now();
-    let app = open("j04-usage-usage", "accounts-mixed");
+    let app = open_stepped("j04-usage-usage", "accounts-mixed");
     app.wait_text(ACCOUNTS);
     remove_experiments(&app);
     app.key("m");
@@ -518,11 +547,20 @@ fn j04_usage_usage() {
         "duplicate refresh\n{}",
         text(&duplicate)
     );
-    app.wait_screen("refresh finished", |screen| {
+    advance_until(&app, "refresh finished", 1_000, |screen| {
         let visible = text(screen);
         visible.contains(RATE) && visible.contains("57%") && !visible.contains("refreshing")
     });
     app.key("escape");
+    // Escape repaints late. Stepping before the list frame arrives takes the
+    // stale detail frame as the baseline, so the first step is read as the
+    // Escape and the walk overshoots the Work row by one.
+    app.wait_screen("back on the account list", |screen| {
+        let visible = text(screen);
+        visible.contains("Enter Details")
+            && !visible.contains("Back to list")
+            && focused_line(screen).contains("Go subscription")
+    });
     let current = up_until(&app, "refreshed work account", |visible| {
         visible.contains("Usage › Claude › Work") && visible.contains(SAFE_OP)
     });
@@ -538,19 +576,10 @@ fn j04_usage_usage() {
         visible.contains(GO) && visible.contains(RATE) && visible.contains("57%")
     });
     app.key("enter");
-    let deadline = started + Duration::from_secs(85);
-    let quiet = loop {
-        let screen = app.screen();
-        if failed_go(&screen) {
-            break screen;
-        }
-        assert!(
-            Instant::now() < deadline,
-            "failed refresh did not settle\n{}",
-            text(&screen)
-        );
-        std::thread::sleep(Duration::from_millis(100));
-    };
+    // The broker age reads "1 min ago" once a minute of app time has passed
+    // since the refresh finished.
+    app.advance_clock(60_000);
+    let quiet = app.wait_screen("failed refresh settled", failed_go);
     assert!(
         failed_go(&quiet),
         "checkpoint left the failure\n{}",
