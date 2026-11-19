@@ -32,6 +32,8 @@ const SCOPE: &str = "1 container · 2 preserved sessions · worktree w";
 const RISK: &str = "uncommitted changes in the worktree are lost";
 const TWO: &str = "2 running";
 const ONE: &str = "1 running";
+/// Seconds of simulated clock a step may take before the test gives up.
+const STEP_LIMIT: usize = 10;
 
 fn visual_id(checkpoint: &str) -> String {
     format!(
@@ -40,13 +42,16 @@ fn visual_id(checkpoint: &str) -> String {
     )
 }
 
-fn open(name: &str) -> App {
+/// `clock` moves the simulated clock only through `advance_clock`, so the age
+/// labels and the purge job wait on the case instead of on wall time.
+fn open(name: &str, clock: bool) -> App {
     let mut launch = Launch::new(name, JACKIN);
     launch.args = vec!["--scenario".to_string(), "returning".to_string()];
     launch.cols = 120;
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());
     launch.motion = Some("reduced".to_string());
+    launch.clock = clock;
     try_launch(launch).unwrap_or_else(|error| panic!("{error}"))
 }
 
@@ -195,62 +200,81 @@ fn narrow_open(screen: &TerminalSnapshot) -> bool {
     screen.cols() == 80 && screen.rows() == 24 && mismatch_open(screen)
 }
 
-fn baseline_hit(app: &App, checkpoint: &str) -> bool {
-    let root = crate::support::oracle_baselines();
-    let outcome = app.check_visual(&root, &visual_id(checkpoint));
-    app.accepts(&outcome)
+/// Steps the stepped test clock one second at a time until `accept` holds on a
+/// frame the step produced. Nothing reads wall time: the age labels and the
+/// purge job move only when the clock steps.
+fn step_until(
+    app: &App,
+    reason: &str,
+    accept: impl Fn(&TerminalSnapshot) -> bool,
+) -> TerminalSnapshot {
+    for _ in 0..STEP_LIMIT {
+        app.fence();
+        let screen = app.screen();
+        if accept(&screen) {
+            return screen;
+        }
+        app.advance_clock(1_000);
+    }
+    app.fence();
+    let screen = app.screen();
+    assert!(
+        accept(&screen),
+        "{reason} not seen in {STEP_LIMIT} seconds\n{}",
+        text(&screen)
+    );
+    screen
 }
 
-/// Detail ages and the narrow uptime tail change every sim second. The 700 ms
-/// stable window overruns a compare that starts when the baseline second
-/// appears. Waiting out the previous second lets that boundary restart the
-/// window, so the frame that stays still is the next one.
-fn shoot_after(
-    app: &App,
-    checkpoint: &str,
-    ready: impl Fn(&TerminalSnapshot) -> bool + Copy,
-    predecessor: &[&str],
-) {
-    for _ in 0..4 {
-        app.wait_screen("before the clock second", |screen| {
-            let visible = text(screen);
-            ready(screen) && predecessor.iter().all(|item| !visible.contains(item))
-        });
-        app.wait_screen("clock second", |screen| {
-            let visible = text(screen);
-            ready(screen) && predecessor.iter().all(|item| visible.contains(item))
-        });
-        std::thread::sleep(Duration::from_millis(250));
-        if ready(&app.screen()) && baseline_hit(app, checkpoint) {
-            return;
-        }
+/// The wide baseline pins sim second 2. `last seen 2 s ago` paints only on that
+/// second, since the `last seen ` prefix rules out `12 s`. The step stops on
+/// that frame and the strict visual compares it, with no search and no retry.
+fn shoot_wide(app: &App) {
+    step_until(app, WIDE, |screen| {
+        let visible = text(screen);
+        wide_open(screen)
+            && visible.contains("last seen 2 s ago")
+            && visible.contains("daemon · 2 s ago")
+    });
+    app.visual(&visual_id(WIDE));
+}
+
+/// The narrow baseline is nine one-second steps past the frame the narrow shot
+/// starts on. Stepping one second at a time, the frame matches the baseline at
+/// nine steps and at no other step from one to fourteen. At 80 columns the
+/// tail's tens digit sits under the dialog border, so the tail reads `3 s` at
+/// several seconds: the step count names the second, and the strict visual
+/// compares that one frame.
+fn shoot_narrow(app: &App) {
+    for _ in 0..9 {
+        app.advance_clock(1_000);
+        app.fence();
     }
-    app.visual(&visual_id(checkpoint));
+    let screen = app.screen();
+    assert!(
+        narrow_open(&screen) && text(&screen).contains("│3 s  │"),
+        "narrow frame after nine steps\n{}",
+        text(&screen)
+    );
+    app.visual(&visual_id(NARROW));
 }
 
 fn shots(app: &App) {
     app.wait_screen("mismatch open", mismatch_open);
     nudge(app, mismatch_open);
     app.wait_screen("wide", wide_open);
-    shoot_after(
-        app,
-        WIDE,
-        wide_open,
-        &["last seen 1 s ago", "daemon · 1 s ago"],
-    );
+    shoot_wide(app);
     app.resize(80, 24);
     app.wait_screen("narrow", narrow_open);
     nudge(app, mismatch_open);
-    // At 80 the tens digit sits under the dialog border, so second 1 and
-    // second 11 paint the same tail.
-    shoot_after(app, NARROW, narrow_open, &["│1 s  │"]);
+    shoot_narrow(app);
     app.resize(120, 40);
     app.wait_screen("wide restored", wide_open);
 }
 
 #[test]
 fn j01_purge_route() {
-    let app = open("j01-purge-route");
+    let app = open("j01-purge-route", false);
     dismiss_intro(&app);
     reach_7f3a(&app);
     open_purge(&app);
@@ -281,8 +305,10 @@ fn j01_purge_route() {
 
 #[test]
 fn j01_purge_purge() {
-    let app = open("j01-purge-purge");
-    dismiss_intro(&app);
+    let app = open("j01-purge-purge", true);
+    app.leave_intro("manager after intro", |screen| {
+        text(screen).contains("Current directory")
+    });
     reach_7f3a(&app);
     open_purge(&app);
     submit_token(&app, PARTIAL);
@@ -297,7 +323,8 @@ fn j01_purge_purge() {
     shots(&app);
     submit_token(&app, EXACT);
     app.wait_text(PURGING);
-    let purged = app.wait_text(PURGED);
+    // The purge job takes 2200 ms of the simulated clock, so it lands on a step.
+    let purged = step_until(&app, "purged", |screen| text(screen).contains(PURGED));
     see(
         &purged,
         &[PURGED, ROW_9B02, ONE],

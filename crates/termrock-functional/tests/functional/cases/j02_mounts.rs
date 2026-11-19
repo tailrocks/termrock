@@ -6,8 +6,6 @@
 //! before Save. A same-size resize does not force a frame, and the cursor
 //! column is part of the hash, so each shot nudges the width and comes back.
 
-use std::time::{Duration, Instant};
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{App, JACKIN, Launch, Point, button, row_text, step_until, text, try_launch};
@@ -66,28 +64,9 @@ fn open(name: &str) -> App {
 }
 
 fn reach_manager(app: &App) -> TerminalSnapshot {
-    let started = Instant::now();
-    let screen = loop {
-        let screen = app.screen();
-        let visible = text(&screen);
-        if visible.contains(DIRECTORY) || visible.contains("Stand up, operator") {
-            break screen;
-        }
-        assert!(
-            app.child_running(),
-            "jackin exited before the first frame\n{visible}"
-        );
-        assert!(
-            started.elapsed() < Duration::from_secs(25),
-            "timed out: manager or intro\n{visible}"
-        );
-        std::thread::sleep(Duration::from_millis(25));
-    };
-    if text(&screen).contains("Stand up, operator") {
-        app.key("space");
-        return app.wait_text(DIRECTORY);
-    }
-    screen
+    app.leave_intro("manager after intro", |screen| {
+        text(screen).contains(DIRECTORY)
+    })
 }
 
 fn focused_line(screen: &TerminalSnapshot) -> String {
@@ -192,7 +171,7 @@ fn set_destination(app: &App, marker: &str, value: &str) {
     // macOS fields use the Emacs map, where select-all is ctrl+l.
     app.key("ctrl+l");
     app.key("backspace");
-    app.type_text(value);
+    app.paste(value);
     let typed = app.wait_screen("destination text", |screen| {
         let line = focused_line(screen);
         line.contains(value) && line.matches(value).count() == 1
