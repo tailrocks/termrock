@@ -17,6 +17,7 @@ members = [
     "crates/termrock-core",
     "crates/termrock-metrics",
     "crates/termrock-text",
+    "crates/termrock-theme",
     "crates/functional-cross",
     "crates/termrock-functional",
 ]
@@ -30,6 +31,7 @@ default-members = [
     "crates/termrock-core",
     "crates/termrock-metrics",
     "crates/termrock-text",
+    "crates/termrock-theme",
     "crates/functional-cross",
     "crates/termrock-functional",
 ]
@@ -42,6 +44,7 @@ sha2 = "0.11.0"
 termrock-core = { path = "crates/termrock-core", version = "0.1.0" }
 termrock-metrics = { path = "crates/termrock-metrics", version = "0.1.0" }
 termrock-text = { path = "crates/termrock-text", version = "0.1.0" }
+termrock-theme = { path = "crates/termrock-theme", version = "0.1.0" }
 tui-test = { package = "tuiscotti-tui-test", version = "=0.2.1" }
 tuiscotti-latest = { package = "tuiscotti", git = "https://github.com/tailrocks/tuiscotti", rev = "f1fb3f276b8d49948881c07b3bbc619840b6cc93" }
 
@@ -68,6 +71,7 @@ serde_json = { workspace = true }
 termrock-core = { workspace = true }
 termrock-metrics = { workspace = true }
 termrock-text = { workspace = true }
+termrock-theme = { workspace = true }
 
 [target.'cfg(unix)'.dependencies]
 
