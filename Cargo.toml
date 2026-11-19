@@ -17,6 +17,7 @@ members = [
     "crates/termrock-controls",
     "crates/termrock-core",
     "crates/termrock-feedback",
+    "crates/termrock-fields",
     "crates/termrock-metrics",
     "crates/termrock-overlays",
     "crates/termrock-runtime",
@@ -37,6 +38,7 @@ default-members = [
     "crates/termrock-controls",
     "crates/termrock-core",
     "crates/termrock-feedback",
+    "crates/termrock-fields",
     "crates/termrock-metrics",
     "crates/termrock-overlays",
     "crates/termrock-runtime",
@@ -56,6 +58,7 @@ sha2 = "0.11.0"
 termrock-controls = { path = "crates/termrock-controls", version = "0.1.0" }
 termrock-core = { path = "crates/termrock-core", version = "0.1.0" }
 termrock-feedback = { path = "crates/termrock-feedback", version = "0.1.0" }
+termrock-fields = { path = "crates/termrock-fields", version = "0.1.0" }
 termrock-metrics = { path = "crates/termrock-metrics", version = "0.1.0" }
 termrock-overlays = { path = "crates/termrock-overlays", version = "0.1.0" }
 termrock-runtime = { path = "crates/termrock-runtime", version = "0.1.0" }
@@ -71,7 +74,7 @@ default = ["cli", "terminal"]
 cli = ["dep:clap", "termrock-core/cli"]
 terminal = ["dep:termpane"]
 product = ["terminal"]
-work-metrics = ["termrock-controls/work-metrics", "termrock-core/work-metrics", "termrock-feedback/work-metrics", "termrock-metrics/work-metrics", "termrock-overlays/work-metrics", "termrock-runtime/work-metrics", "termrock-session/work-metrics", "termrock-viewport/work-metrics"]
+work-metrics = ["termrock-controls/work-metrics", "termrock-core/work-metrics", "termrock-feedback/work-metrics", "termrock-fields/work-metrics", "termrock-metrics/work-metrics", "termrock-overlays/work-metrics", "termrock-runtime/work-metrics", "termrock-session/work-metrics", "termrock-viewport/work-metrics"]
 
 [lib]
 name = "junie_tui"
@@ -89,6 +92,7 @@ serde_json = { workspace = true }
 termrock-controls = { workspace = true }
 termrock-core = { workspace = true }
 termrock-feedback = { workspace = true }
+termrock-fields = { workspace = true }
 termrock-metrics = { workspace = true }
 termrock-overlays = { workspace = true }
 termrock-runtime = { workspace = true }

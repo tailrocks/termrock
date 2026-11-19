@@ -3,20 +3,20 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 use ratatui::style::Color;
 
-use crate::core::event::{Key, Outcome};
-use crate::core::hit::Axis;
-use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::core::keymap::unassigned_chord;
-use crate::core::keymap::{Actions, KeyBinding, KeyMap, NavKeys, hint_key, lookup};
-use crate::core::list::{Cursor, Navigable, RowFn, RowSource};
-use crate::theme::{ButtonKind, Kind};
-use crate::ui::context::ContextConfig;
-use crate::ui::ctx::{RenderCtx, fill};
-use crate::ui::measure::terminal_extent;
-use crate::ui::text::{truncate, width};
-use crate::ui::tooltip::Tip;
-use crate::widgets::icon_button::IconButton;
-use crate::widgets::menu::{ContextMenu, MenuAction, MenuItem};
+use termrock_controls::icon_button::IconButton;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::hit::Axis;
+use termrock_core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock_core::keymap::unassigned_chord;
+use termrock_core::keymap::{Actions, KeyBinding, KeyMap, NavKeys, hint_key, lookup};
+use termrock_core::list::{Cursor, Navigable, RowFn, RowSource};
+use termrock_overlays::context::ContextConfig;
+use termrock_overlays::menu::{ContextMenu, MenuAction, MenuItem};
+use termrock_runtime::ctx::{RenderCtx, fill};
+use termrock_runtime::measure::terminal_extent;
+use termrock_runtime::tooltip::Tip;
+use termrock_text::cells::{truncate, width};
+use termrock_theme::{ButtonKind, Kind};
 
 pub fn overflow_run(widths: &[u16], avail: u16, gap: u16) -> (usize, Option<String>) {
     let wide: Vec<usize> = widths.iter().map(|&w| usize::from(w)).collect();
@@ -30,23 +30,20 @@ pub fn overflow_run(widths: &[u16], avail: u16, gap: u16) -> (usize, Option<Stri
 /// One pass sums the widths and a second walks the prefix down from the full
 /// run, so the fit is O(N). The sums are exact in `u128`: a saturated total
 /// could turn falsely small once a trailing gap is subtracted.
-pub(crate) fn overflow_run_cells(
-    widths: &[usize],
-    avail: usize,
-    gap: usize,
-) -> (usize, Option<String>) {
+#[doc(hidden)]
+pub fn overflow_run_cells(widths: &[usize], avail: usize, gap: usize) -> (usize, Option<String>) {
     let n = widths.len();
     let (gap, avail) = (gap as u128, avail as u128);
     let mut prefix = 0u128;
     for &w in widths {
-        crate::record_work!(FitVisits, 1usize);
+        termrock_metrics::record_work!(FitVisits, 1usize);
         prefix += w as u128 + gap;
     }
     if prefix - if n > 0 { gap } else { 0 } <= avail {
         return (n, None);
     }
     for k in (0..n).rev() {
-        crate::record_work!(FitVisits, 1usize);
+        termrock_metrics::record_work!(FitVisits, 1usize);
         prefix -= widths[k] as u128 + gap;
         let hidden = n - k;
         let marker_w = 1 + u128::from(hidden.ilog10() + 1);
@@ -404,7 +401,7 @@ impl ChipBar {
     }
 
     pub fn context_items(&self, i: usize) -> Vec<(ChipAction, MenuItem)> {
-        use crate::ui::context::{ContextCmd, command_items};
+        use termrock_overlays::context::{ContextCmd, command_items};
         let Some(chip) = self.chips.get(i) else {
             return Vec::new();
         };
@@ -431,7 +428,7 @@ impl ChipBar {
         items
     }
 
-    fn open_chip_menu(&mut self, i: usize, anchor: crate::ui::context::ContextAnchor) {
+    fn open_chip_menu(&mut self, i: usize, anchor: termrock_overlays::context::ContextAnchor) {
         if !self.layout_current() {
             return;
         }
@@ -545,7 +542,7 @@ impl ChipBar {
             }
         }
         if self.context_menu && self.cursor < self.chips.len() && self.context.keys.matches(key) {
-            let anchor = crate::ui::context::ContextAnchor::Control {
+            let anchor = termrock_overlays::context::ContextAnchor::Control {
                 id: self.chip_id(self.cursor),
                 fallback: self.area,
             };
@@ -736,7 +733,7 @@ impl ChipBar {
                                 ctx,
                                 ratatui::style::Style::new().bg(bg),
                                 Some(
-                                    match crate::core::keymap::label_for(
+                                    match termrock_core::keymap::label_for(
                                         &self.keymap,
                                         ChipCmd::ShowHidden,
                                     ) {
@@ -789,7 +786,7 @@ impl ChipBar {
                     .max(x)
                     .min(x + w - cw);
                 let tip = Tip::new(t.strings.tip_remove);
-                let tip = match crate::core::keymap::label_for(&self.keymap, ChipCmd::Remove) {
+                let tip = match termrock_core::keymap::label_for(&self.keymap, ChipCmd::Remove) {
                     Some(k) => tip.shortcut(&k),
                     None => tip,
                 };
@@ -831,14 +828,15 @@ impl ChipBar {
     }
 }
 
-impl crate::ui::measure::Measure for ChipBar {
+impl termrock_runtime::measure::Measure for ChipBar {
     fn measure(&self, _avail: ratatui::layout::Size, _ctx: &RenderCtx) -> ratatui::layout::Size {
         ratatui::layout::Size::new(terminal_extent(self.intrinsic_width()), 1)
     }
 }
 
 impl ChipBar {
-    pub(crate) fn intrinsic_width(&self) -> usize {
+    #[doc(hidden)]
+    pub fn intrinsic_width(&self) -> usize {
         let lead = self.lead.as_ref().map_or(0, |l| width(l).saturating_add(3));
         let chips = self
             .chips
@@ -873,13 +871,13 @@ impl Navigable for ChipBar {
     }
 }
 
-impl crate::ui::specimen::Specimen for ChipBar {
+impl termrock_runtime::specimen::Specimen for ChipBar {
     fn specimen_id(&self) -> WidgetId {
         self.id
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         matches!(
             state,
             Rest | Hover | Focused | FocusedHover | Error | Overflow | Narrow
@@ -888,13 +886,13 @@ impl crate::ui::specimen::Specimen for ChipBar {
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
         bg: Color,
     ) {
-        use crate::ui::specimen::SpecimenState;
+        use termrock_runtime::specimen::SpecimenState;
         let mut b = self.clone();
         b.menu = None;
         let v = state.visual();
@@ -918,7 +916,7 @@ impl crate::ui::specimen::Specimen for ChipBar {
     }
 }
 
-impl crate::core::pointer::MouseTarget for ChipBar {
+impl termrock_core::pointer::MouseTarget for ChipBar {
     type Action = ChipAction;
 
     fn mouse_id(&self) -> WidgetId {
@@ -927,22 +925,22 @@ impl crate::core::pointer::MouseTarget for ChipBar {
 
     fn route(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> Option<crate::core::response::Response<ChipAction>> {
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> Option<termrock_core::response::Response<ChipAction>> {
         let menu = self.menu.as_ref().map(|(m, _)| m.id);
         (ev.on(self.id) || menu.is_some_and(|m| ev.on(m))).then(|| self.pointer(ev))
     }
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<ChipAction> {
-        use crate::core::intent::Phase;
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<ChipAction> {
+        use termrock_core::intent::Phase;
 
         if let Some((axis, delta)) = ev.wheel()
             && let Some((menu, _)) = self.menu.as_mut()
         {
-            return crate::core::scroll::Scrollable::wheel(&mut menu.list, axis, delta).lift();
+            return termrock_core::scroll::Scrollable::wheel(&mut menu.list, axis, delta).lift();
         }
         match ev.phase() {
             Some(Phase::Click) => self.on_click(ev.id).into(),
@@ -951,18 +949,21 @@ impl crate::core::pointer::MouseTarget for ChipBar {
                 let Some(i) = (0..self.chips.len())
                     .find(|&i| ev.id == self.chip_id(i) || ev.id == self.close_id(i))
                 else {
-                    return crate::core::response::Response::ignored();
+                    return termrock_core::response::Response::ignored();
                 };
                 if !self.layout_current() {
-                    return crate::core::response::Response::consumed();
+                    return termrock_core::response::Response::consumed();
                 }
                 if self.context.moves_cursor {
                     self.cursor = i;
                 }
-                self.open_chip_menu(i, crate::ui::context::ContextAnchor::Pointer(ev.pos()));
-                crate::core::response::Response::changed()
+                self.open_chip_menu(
+                    i,
+                    termrock_overlays::context::ContextAnchor::Pointer(ev.pos()),
+                );
+                termrock_core::response::Response::changed()
             }
-            _ => crate::core::response::Response::ignored(),
+            _ => termrock_core::response::Response::ignored(),
         }
     }
 }

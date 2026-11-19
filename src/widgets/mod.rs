@@ -1,5 +1,4 @@
 pub mod breadcrumb;
-pub mod chips;
 pub mod choice_dialog;
 pub mod code;
 mod code_specimen;
@@ -17,7 +16,6 @@ mod grid_specimen;
 mod grid_undo_tests;
 pub mod help;
 pub mod info_dialog;
-pub mod input;
 pub mod inspect_changes;
 pub mod list;
 pub mod list_detail;
@@ -25,7 +23,6 @@ pub mod nav_list;
 pub mod props;
 pub mod rail;
 pub mod search_detail;
-pub mod select;
 pub mod splitter;
 pub mod steps;
 pub mod table;
@@ -55,4 +52,5 @@ pub use termrock_feedback::{
 pub use termrock_overlays::{completion, menu, option_editor, option_list, picker, row_menu};
 pub use termrock_viewport::{panel, viewport, viewport_ops};
 // Transitional: `widgets::diff` reads `SAMPLE_ROWS` through this path until #447 moves it.
+pub use termrock_fields::{chips, input, select};
 pub(crate) use termrock_viewport::viewport_specimen;
