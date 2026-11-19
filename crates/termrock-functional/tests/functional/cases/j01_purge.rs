@@ -34,8 +34,6 @@ const TWO: &str = "2 running";
 const ONE: &str = "1 running";
 /// Seconds of simulated clock a step may take before the test gives up.
 const STEP_LIMIT: usize = 10;
-/// Seconds after a predecessor second that a shot tries against its baseline.
-const SECONDS_TO_SEARCH: usize = 10;
 
 fn visual_id(checkpoint: &str) -> String {
     format!(
@@ -202,12 +200,6 @@ fn narrow_open(screen: &TerminalSnapshot) -> bool {
     screen.cols() == 80 && screen.rows() == 24 && mismatch_open(screen)
 }
 
-fn baseline_hit(app: &App, checkpoint: &str) -> bool {
-    let root = crate::support::oracle_baselines();
-    let outcome = app.check_visual(&root, &visual_id(checkpoint));
-    app.accepts(&outcome)
-}
-
 /// Steps the stepped test clock one second at a time until `accept` holds on a
 /// frame the step produced. Nothing reads wall time: the age labels and the
 /// purge job move only when the clock steps.
@@ -234,48 +226,48 @@ fn step_until(
     screen
 }
 
-/// Detail ages and the narrow uptime tail change every sim second. The stepped
-/// clock reaches the second `predecessor` shows, then steps through the seconds
-/// after it, one at a time, until the frame is the baseline. The baseline pins
-/// one of them: wide pins the second after, and narrow's tail does not show the
-/// second the predecessor names. Every second is a step on the stepped clock,
-/// so the search never depends on wall time.
-fn shoot_after(
-    app: &App,
-    checkpoint: &str,
-    ready: impl Fn(&TerminalSnapshot) -> bool + Copy,
-    predecessor: &[&str],
-) {
-    step_until(app, checkpoint, |screen| {
+/// The wide baseline pins sim second 2. `last seen 2 s ago` paints only on that
+/// second, since the `last seen ` prefix rules out `12 s`. The step stops on
+/// that frame and the strict visual compares it, with no search and no retry.
+fn shoot_wide(app: &App) {
+    step_until(app, WIDE, |screen| {
         let visible = text(screen);
-        ready(screen) && predecessor.iter().all(|item| visible.contains(item))
+        wide_open(screen)
+            && visible.contains("last seen 2 s ago")
+            && visible.contains("daemon · 2 s ago")
     });
-    for _ in 0..SECONDS_TO_SEARCH {
-        if baseline_hit(app, checkpoint) {
-            return;
-        }
+    app.visual(&visual_id(WIDE));
+}
+
+/// The narrow baseline is nine one-second steps past the frame the narrow shot
+/// starts on. Stepping one second at a time, the frame matches the baseline at
+/// nine steps and at no other step from one to fourteen. At 80 columns the
+/// tail's tens digit sits under the dialog border, so the tail reads `3 s` at
+/// several seconds: the step count names the second, and the strict visual
+/// compares that one frame.
+fn shoot_narrow(app: &App) {
+    for _ in 0..9 {
         app.advance_clock(1_000);
         app.fence();
     }
-    app.visual(&visual_id(checkpoint));
+    let screen = app.screen();
+    assert!(
+        narrow_open(&screen) && text(&screen).contains("│3 s  │"),
+        "narrow frame after nine steps\n{}",
+        text(&screen)
+    );
+    app.visual(&visual_id(NARROW));
 }
 
 fn shots(app: &App) {
     app.wait_screen("mismatch open", mismatch_open);
     nudge(app, mismatch_open);
     app.wait_screen("wide", wide_open);
-    shoot_after(
-        app,
-        WIDE,
-        wide_open,
-        &["last seen 1 s ago", "daemon · 1 s ago"],
-    );
+    shoot_wide(app);
     app.resize(80, 24);
     app.wait_screen("narrow", narrow_open);
     nudge(app, mismatch_open);
-    // At 80 the tens digit sits under the dialog border, so second 1 and
-    // second 11 paint the same tail.
-    shoot_after(app, NARROW, narrow_open, &["│1 s  │"]);
+    shoot_narrow(app);
     app.resize(120, 40);
     app.wait_screen("wide restored", wide_open);
 }
