@@ -145,12 +145,13 @@ fn jackin_terminal_pending_attaching_and_viewing_panes() {
 
     chord(&app, "n");
     app.advance_clock(1_500);
-    let pending = app.wait_text("Pane too small · zoom with Ctrl+B z");
-    assert!(
-        text(&pending).contains("dev@sandbox"),
-        "the pane that has room shows its program:\n{}",
-        text(&pending)
-    );
+    // "Pane too small" is on screen as soon as the tab opens, before the clock
+    // step has been handled, so it cannot tell that the step has run. The pane
+    // that has room leaves "Attaching" only on that step: wait for both.
+    app.wait_screen("the pending pane and the shell it sits beside", |screen| {
+        let screen = text(screen);
+        screen.contains("Pane too small · zoom with Ctrl+B z") && screen.contains("dev@sandbox")
+    });
     app.visual("functional/jackin_pane_pending");
     chord(&app, "z");
     app.advance_clock(300);
