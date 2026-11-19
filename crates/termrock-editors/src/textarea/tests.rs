@@ -3,14 +3,14 @@ use ratatui::layout::{Rect, Size};
 use ratatui::style::Color;
 
 use super::TextArea;
-use crate::core::focus::FocusRing;
-use crate::core::hit::HitRegistry;
-use crate::core::id::WidgetId;
 use crate::test_alloc;
-use crate::theme::{ColorLevel, Theme};
-use crate::ui::ctx::{Interaction, RenderCtx};
-use crate::ui::measure::Measure;
+use termrock_core::focus::FocusRing;
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::WidgetId;
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_runtime::measure::Measure;
 use termrock_text::text_index::work;
+use termrock_theme::{ColorLevel, Theme};
 
 fn document(lines: usize) -> String {
     (0..lines)

@@ -9,16 +9,16 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 
 use super::index::{BracketMap, DiagnosticIndex, ProviderKey, RunIndex, SegmentSnapshot, work};
 use super::{CodeEditor, Diagnostic, Highlighter, Segmenter, Severity};
-use crate::core::edit::EditEntry;
-use crate::core::event::Key;
-use crate::core::focus::FocusRing;
-use crate::core::hit::HitRegistry;
-use crate::core::id::WidgetId;
-use crate::core::text::TextBuffer;
 use crate::test_alloc;
-use crate::theme::{ColorLevel, SyntaxTone, Theme};
-use crate::ui::ctx::{Interaction, RenderCtx};
+use termrock_core::edit::EditEntry;
+use termrock_core::event::Key;
+use termrock_core::focus::FocusRing;
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::WidgetId;
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_text::buffer::TextBuffer;
 use termrock_text::text_index::work as text_work;
+use termrock_theme::{ColorLevel, SyntaxTone, Theme};
 
 thread_local! {
     static HIGHLIGHTS: Cell<usize> = const { Cell::new(0) };
@@ -856,7 +856,7 @@ fn editor_edit_rebuilds_each_projection_once() {
 
 #[test]
 fn editor_measure_uses_the_line_index() {
-    use crate::ui::measure::Measure;
+    use termrock_runtime::measure::Measure;
     let theme = Theme::for_level(ColorLevel::TrueColor);
     let mut hits = HitRegistry::default();
     let mut ring = FocusRing::default();

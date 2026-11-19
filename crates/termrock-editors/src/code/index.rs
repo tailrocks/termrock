@@ -2,8 +2,8 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::ops::Range;
 
 use super::Diagnostic;
-use crate::core::text::TextBuffer;
-use crate::theme::SyntaxTone;
+use termrock_text::buffer::TextBuffer;
+use termrock_theme::SyntaxTone;
 
 #[cfg(test)]
 pub(super) mod work {

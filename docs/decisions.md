@@ -969,3 +969,38 @@ was listed before the move.
   and `--all-targets` on every branch. `termrock-editors` reads the line-index
   counters of `termrock-text` in its tests, so it enables `termrock-text/test-support`
   in its own `[dev-dependencies]` (see #444); nothing else in the stack does.
+- **`termrock-editors` and the allocation counter.** `code/tests.rs` and
+  `textarea/tests.rs` call `crate::test_alloc::measure` (seven call sites), and
+  `test_alloc.rs` installs a `#[global_allocator]` that the move map assigned to
+  `termrock-conformance` (#449). Editors sits below conformance, so it cannot
+  depend on it, and a library cannot carry a global allocator for other crates'
+  tests. Three ways were weighed against the code:
+  1. *A feature-gated allocator in a lower crate* (the `termrock-text`
+     `test-support` pattern of #444). Rejected: that feature only exposes
+     counters, while this one installs the process allocator, and a workspace
+     test build unifies the feature, so every test binary that links the crate
+     would count every allocation, and a `--all-targets` build would put it into
+     binaries that are not tests.
+  2. *Cut the allocation-budget tests into `termrock-conformance`*, as the issue
+     says. Rejected: both files are `mod tests;` of their module and import
+     private items (`super::index::{BracketMap, DiagnosticIndex, ProviderKey,
+     RunIndex, SegmentSnapshot, work}`, `Highlighter`, `Segmenter` and the shared
+     fixtures of the file), so the cut needs several hidden `pub` items and a
+     copy of the helpers; it would also leave a half-split file for #449.
+  3. *Move the counter with its only users.* Chosen. `test_alloc.rs` is used by
+     nothing else (`git grep test_alloc`), so it moves to
+     `crates/termrock-editors/src/test_alloc.rs` as a `#[cfg(test)] mod` of the
+     crate. The allocator is then installed only in the `termrock-editors` unit
+     test binary; no feature, no unification, no non-test build is affected. The
+     `junie-tui` test binary no longer installs it, and no test there asserts an
+     allocation count. Both test files move whole, as the table in #447 lists.
+  Consequences: #449 has nothing left to do for `test_alloc.rs` (its row, and the
+  planned `alloc_budgets.rs`, are void); the `src/test_alloc.rs` row of
+  `docs/layering.toml [files]` and the two `test_alloc` rows of
+  `layering-allowlist.tsv` are gone, so the allowlist is empty and may only
+  stay so. The nextest `performance` profile selects the same 168 tests as
+  before (`cargo nextest list --profile performance --workspace --all-features`,
+  compared before and after): none of them is an editors test.
+  `viewport_specimen` stays a hidden `pub` module of `termrock-viewport`,
+  because `diff` reads `SAMPLE_ROWS` from it across the crate boundary; the
+  `pub(crate)` re-export in `widgets/mod.rs` is gone.

@@ -564,6 +564,7 @@ dependencies = [
  "termpane",
  "termrock-controls",
  "termrock-core",
+ "termrock-editors",
  "termrock-feedback",
  "termrock-fields",
  "termrock-metrics",
@@ -1481,6 +1482,23 @@ dependencies = [
  "serde_json",
  "termrock-metrics",
  "termrock-text",
+ "unicode-segmentation",
+]
+
+[[package]]
+name = "termrock-editors"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "termrock-controls",
+ "termrock-core",
+ "termrock-fields",
+ "termrock-metrics",
+ "termrock-overlays",
+ "termrock-runtime",
+ "termrock-text",
+ "termrock-theme",
+ "termrock-viewport",
  "unicode-segmentation",
 ]
 

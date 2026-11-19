@@ -3,17 +3,17 @@ use ratatui::layout::{Position, Rect};
 use ratatui::style::Color;
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::core::event::{Key, Outcome};
-use crate::core::hit::Axis;
-use crate::core::id::WidgetId;
-use crate::core::response::Response;
-use crate::core::scroll::{ScrollPane, Scrollable};
-use crate::theme::{Glyphs, Strings, Tone};
-use crate::ui::ctx::RenderCtx;
-use crate::ui::specimen::{Specimen, SpecimenState};
-use crate::ui::text::{expand_tabs, fit, truncate, width};
-use crate::widgets::viewport::{Line, Span, TextViewport, ViewportAction};
-use crate::widgets::viewport_specimen::SAMPLE_ROWS;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::hit::Axis;
+use termrock_core::id::WidgetId;
+use termrock_core::response::Response;
+use termrock_core::scroll::{ScrollPane, Scrollable};
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::specimen::{Specimen, SpecimenState};
+use termrock_text::cells::{expand_tabs, fit, truncate, width};
+use termrock_theme::{Glyphs, Strings, Tone};
+use termrock_viewport::viewport::{Line, Span, TextViewport, ViewportAction};
+use termrock_viewport::viewport_specimen::SAMPLE_ROWS;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DiffLineKind {
@@ -321,7 +321,7 @@ impl DiffView {
             if self.term.scroll.overflows() {
                 self.layout(
                     area.width
-                        .saturating_sub(crate::widgets::scrollbar::reserve(
+                        .saturating_sub(termrock_controls::scrollbar::reserve(
                             self.term.scrollbar_gap,
                         )),
                 );
@@ -574,7 +574,7 @@ impl Scrollable for DiffView {
     }
 }
 
-impl crate::core::pointer::MouseTarget for DiffView {
+impl termrock_core::pointer::MouseTarget for DiffView {
     type Action = ();
 
     fn mouse_id(&self) -> WidgetId {
@@ -583,15 +583,15 @@ impl crate::core::pointer::MouseTarget for DiffView {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<()> {
-        use crate::core::intent::Phase;
-        use crate::core::response::Response;
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<()> {
+        use termrock_core::intent::Phase;
+        use termrock_core::response::Response;
 
         if ev.is(Phase::Secondary) || self.term.edit_menu.owns(ev) {
             return self.term.pointer(ev);
         }
-        if let Some(r) = crate::core::pointer::scroll_input(self, ev) {
+        if let Some(r) = termrock_core::pointer::scroll_input(self, ev) {
             return r;
         }
         match ev.phase() {
@@ -602,7 +602,7 @@ impl crate::core::pointer::MouseTarget for DiffView {
         }
     }
 
-    fn route(&mut self, ev: &crate::core::pointer::PointerEvent) -> Option<Response<()>> {
+    fn route(&mut self, ev: &termrock_core::pointer::PointerEvent) -> Option<Response<()>> {
         (ev.on(self.id()) || self.term.edit_menu.owns(ev)).then(|| self.pointer(ev))
     }
 }
