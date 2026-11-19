@@ -45,6 +45,8 @@ pub use termrock_controls::{
     action_row, brand, button, choice, hintbar, icon_button, keyhint, keyref, scrollbar, segments,
     widget_hints,
 };
+// Only `terminal::viewport` reads this path now that the viewport lives in `termrock-viewport`.
+#[cfg(feature = "terminal")]
 pub(crate) use termrock_core::field::text_select;
 pub use termrock_core::field::{edit, field_common};
 pub use termrock_feedback::{
