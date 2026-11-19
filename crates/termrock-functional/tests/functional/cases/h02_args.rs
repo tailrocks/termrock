@@ -111,9 +111,17 @@ fn clear_query(app: &App) {
     app.wait_text("Search actions and resources");
 }
 
-fn search_for(app: &App, query: &str, needle: &str) {
+/// Pastes `query`, then waits for the filtered state itself: every `present`
+/// text is visible and no `absent` text is. A needle that the unfiltered list
+/// already shows proves nothing, because the frame that applies the filter can
+/// still be on its way.
+fn search_for(app: &App, query: &str, present: &[&str], absent: &[&str]) -> TerminalSnapshot {
     app.paste(query);
-    app.wait_text(needle);
+    app.wait_screen(&format!("list filtered by {query:?}"), |screen| {
+        let visible = flat(screen);
+        present.iter().all(|item| visible.contains(item))
+            && absent.iter().all(|item| !visible.contains(item))
+    })
 }
 
 #[test]
@@ -225,8 +233,12 @@ fn h02_args_scenario_parity_task_sources() {
         ],
     );
 
-    search_for(&app, "yarn dev", "yarn dev");
-    let yarn = app.screen();
+    let yarn = search_for(
+        &app,
+        "yarn dev",
+        &["yarn dev", "package.json", "vite", DIR],
+        &["Inspect 12 GB", "~/work/acme", "just build"],
+    );
     see(
         &yarn,
         &["yarn dev", "package.json", "vite", DIR],
@@ -234,8 +246,12 @@ fn h02_args_scenario_parity_task_sources() {
     );
     clear_query(&app);
 
-    search_for(&app, "just build", ".justfile");
-    let just = app.screen();
+    let just = search_for(
+        &app,
+        "just build",
+        &["just build", ".justfile", DIR],
+        &["package.json", "Makefile", "Inspect 12 GB"],
+    );
     see(
         &just,
         &["just build", ".justfile", DIR],
@@ -243,8 +259,12 @@ fn h02_args_scenario_parity_task_sources() {
     );
     clear_query(&app);
 
-    search_for(&app, "deploy-prod", "make deploy-prod");
-    let make = app.screen();
+    let make = search_for(
+        &app,
+        "deploy-prod",
+        &["make deploy-prod", "Makefile", DIR],
+        &[".justfile", "package.json", "Inspect 12 GB"],
+    );
     see(
         &make,
         &["make deploy-prod", "Makefile", DIR],
@@ -252,8 +272,12 @@ fn h02_args_scenario_parity_task_sources() {
     );
     clear_query(&app);
 
-    search_for(&app, "Taskfile", "Taskfile.yaml");
-    let task = app.screen();
+    let task = search_for(
+        &app,
+        "Taskfile",
+        &["Taskfile.yaml", DIR],
+        &["yarn dev", "make deploy-prod", "Inspect 12 GB"],
+    );
     see(
         &task,
         &["Taskfile.yaml", DIR],
