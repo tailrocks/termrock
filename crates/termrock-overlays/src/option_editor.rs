@@ -3,21 +3,21 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
 
-use crate::core::event::{Key, Outcome};
-use crate::core::focus::BlurAction;
-use crate::core::hit::Axis;
-use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::core::keymap::{Nav, NavKeys, unassigned_chord};
-use crate::core::list::{Cursor, KeyStep, Moved, RowSource};
-use crate::core::response::Response;
-use crate::core::selection::{RowSelection, SelectGesture};
-use crate::theme::{CursorStyle, Tone};
-use crate::ui::ctx::{RenderCtx, fill};
-use crate::ui::layer::{DismissReason, LayerSpec, Overlay};
-use crate::ui::popup::{Dismiss, Place, Placement, backdrop_id, place_with, surface_for};
-use crate::ui::text::{truncate, width};
-use crate::widgets::edit::EditField;
-use crate::widgets::option_list::{OptionList, WheelMode};
+use crate::layer::{DismissReason, LayerSpec, Overlay};
+use crate::option_list::{OptionList, WheelMode};
+use termrock_core::event::{Key, Outcome};
+use termrock_core::field::edit::EditField;
+use termrock_core::focus::BlurAction;
+use termrock_core::hit::Axis;
+use termrock_core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock_core::keymap::{Nav, NavKeys, unassigned_chord};
+use termrock_core::list::{Cursor, KeyStep, Moved, RowSource};
+use termrock_core::response::Response;
+use termrock_core::selection::{RowSelection, SelectGesture};
+use termrock_runtime::ctx::{RenderCtx, fill};
+use termrock_runtime::popup::{Dismiss, Place, Placement, backdrop_id, place_with, surface_for};
+use termrock_text::cells::{truncate, width};
+use termrock_theme::{CursorStyle, Tone};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OptionItem {
@@ -242,7 +242,7 @@ impl Default for EditorConfig {
             popup_width: (14, 48),
             cursor_style: CursorStyle::Fill,
             type_ahead: true,
-            type_ahead_timeout: crate::core::typeahead::TypeAhead::DEFAULT_TIMEOUT,
+            type_ahead_timeout: termrock_core::typeahead::TypeAhead::DEFAULT_TIMEOUT,
             nav: NavKeys::default(),
             affordance: Affordance::Focused,
             flag_out_of_set: true,
@@ -298,7 +298,7 @@ pub struct ChoiceEditor {
     pub error: Option<String>,
 
     pub list: OptionList,
-    typeahead: crate::core::typeahead::TypeAhead,
+    typeahead: termrock_core::typeahead::TypeAhead,
     shown_cache: Option<ShownCache>,
     content_w: Option<u16>,
     strip_w: Option<u16>,
@@ -349,7 +349,7 @@ impl ChoiceEditor {
             query: EditField::single(""),
             error: None,
             list: Self::list(id, cfg),
-            typeahead: crate::core::typeahead::TypeAhead::with_timeout(cfg.type_ahead_timeout),
+            typeahead: termrock_core::typeahead::TypeAhead::with_timeout(cfg.type_ahead_timeout),
             shown_cache: None,
             content_w: None,
             strip_w: None,
@@ -390,7 +390,8 @@ impl ChoiceEditor {
         self.id.item_of(id, Part::ROW, 0..self.options.len())
     }
 
-    pub(crate) fn contains_id(&self, id: WidgetId) -> bool {
+    #[doc(hidden)]
+    pub fn contains_id(&self, id: WidgetId) -> bool {
         id == self.id || id == backdrop_id(self.id) || self.option_of(id).is_some()
     }
 
@@ -439,7 +440,7 @@ impl ChoiceEditor {
 
     pub fn on_key(&mut self, key: &Key, cfg: &EditorConfig) -> (Outcome, Option<ChoiceResult>) {
         if self.kind == Kind::Combo {
-            use crate::widgets::field_common::EditAction;
+            use termrock_core::field::field_common::EditAction;
             let action = self.query.action(key);
             if !matches!(
                 action,
@@ -587,9 +588,9 @@ impl ChoiceEditor {
         }
     }
 
-    pub fn wheel(&mut self, axis: Axis, delta: i32) -> crate::core::response::Response<()> {
-        use crate::core::response::Response;
-        use crate::core::scroll::Scrollable;
+    pub fn wheel(&mut self, axis: Axis, delta: i32) -> termrock_core::response::Response<()> {
+        use termrock_core::response::Response;
+        use termrock_core::scroll::Scrollable;
         if self.kind == Kind::Segmented || axis == Axis::Horizontal {
             return Response::consumed();
         }
@@ -648,7 +649,7 @@ impl ChoiceEditor {
             .inner(ratatui::layout::Margin::new(1, 1));
         if search > 0 {
             let line = Rect::new(inner.x + 3, inner.y, inner.width.saturating_sub(3), 1);
-            let mut scratch = crate::ui::ctx::scratch_buffer(line);
+            let mut scratch = termrock_runtime::ctx::scratch_buffer(line);
             self.query
                 .draw_line(&mut scratch, line, &Self::query_look(ctx.theme));
         }
@@ -667,7 +668,7 @@ impl ChoiceEditor {
             .take(list_height)
             .map(|&i| self.choice_row(i))
             .collect();
-        crate::record_work!(OverlayRowsSnapshotted, rows.len());
+        termrock_metrics::record_work!(OverlayRowsSnapshotted, rows.len());
         ChoiceListSnapshot {
             id: self.id,
             kind: self.kind,
@@ -701,7 +702,7 @@ impl ChoiceEditor {
     fn shown_cached(&mut self) -> &[usize] {
         let query = self.query.text().trim().to_lowercase();
         if self.shown_cache.as_ref().is_none_or(|c| c.query != query) {
-            crate::record_work!(SourceRowsEnumerated, self.options.len());
+            termrock_metrics::record_work!(SourceRowsEnumerated, self.options.len());
             let rows = self.filter(&query);
             self.shown_cache = Some(ShownCache { query, rows });
         }
@@ -710,7 +711,7 @@ impl ChoiceEditor {
 
     fn content_width(&mut self) -> u16 {
         *self.content_w.get_or_insert_with(|| {
-            crate::record_work!(WidthRowsMeasured, self.options.len());
+            termrock_metrics::record_work!(WidthRowsMeasured, self.options.len());
             let widest = self
                 .options
                 .0
@@ -731,19 +732,19 @@ impl ChoiceEditor {
 
     fn strip_width(&mut self) -> u16 {
         *self.strip_w.get_or_insert_with(|| {
-            crate::record_work!(WidthRowsMeasured, self.options.len());
+            termrock_metrics::record_work!(WidthRowsMeasured, self.options.len());
             let labels: usize = self.options.0.iter().map(|o| width(&o.label) + 2).sum();
             let separators = self.options.len().saturating_sub(1);
             u16::try_from(labels + separators + 2).unwrap_or(u16::MAX)
         })
     }
 
-    fn query_look(t: &crate::theme::Theme) -> crate::widgets::edit::LineLook {
-        let fs = t.field_style(crate::ui::ctx::VisualState {
+    fn query_look(t: &termrock_theme::Theme) -> termrock_core::field::edit::LineLook {
+        let fs = t.field_style(termrock_runtime::ctx::VisualState {
             editing: true,
             ..Default::default()
         });
-        crate::widgets::edit::LineLook {
+        termrock_core::field::edit::LineLook {
             text: fs,
             selection: t.selection(),
             ellipsis: fs.fg(t.text_muted),
@@ -777,7 +778,7 @@ impl ChoiceEditor {
             segments.push(self.choice_row(i));
             x += sw + 1;
         }
-        crate::record_work!(OverlayRowsSnapshotted, segments.len());
+        termrock_metrics::record_work!(OverlayRowsSnapshotted, segments.len());
         let snapshot = ChoiceStripSnapshot {
             id: self.id,
             total: self.options.len(),
@@ -851,7 +852,7 @@ impl ChoiceListSnapshot {
         ctx.scrollable(self.id, inner);
         if self.search > 0 && inner.height > 0 {
             let q = Rect::new(inner.x, inner.y, inner.width, 1);
-            let fs = t.field_style(crate::ui::ctx::VisualState {
+            let fs = t.field_style(termrock_runtime::ctx::VisualState {
                 editing: true,
                 ..Default::default()
             });
@@ -1034,7 +1035,7 @@ impl ChoiceStripSnapshot {
     }
 }
 
-impl crate::core::pointer::MouseTarget for ChoiceEditor {
+impl termrock_core::pointer::MouseTarget for ChoiceEditor {
     type Action = ChoiceResult;
 
     fn mouse_id(&self) -> WidgetId {
@@ -1043,10 +1044,10 @@ impl crate::core::pointer::MouseTarget for ChoiceEditor {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<ChoiceResult> {
-        use crate::core::intent::Phase;
-        use crate::core::response::Response;
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<ChoiceResult> {
+        use termrock_core::intent::Phase;
+        use termrock_core::response::Response;
         if let Some((axis, delta)) = ev.wheel() {
             if ev.part().part == Part::BACKDROP {
                 return Response::ignored();
@@ -1054,7 +1055,7 @@ impl crate::core::pointer::MouseTarget for ChoiceEditor {
             return self.wheel(axis, delta).lift();
         }
         if self.kind == Kind::Combo
-            && let Some(r) = crate::widgets::option_list::query_pointer(&mut self.query, ev)
+            && let Some(r) = crate::option_list::query_pointer(&mut self.query, ev)
         {
             return r.lift();
         }
