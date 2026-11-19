@@ -327,7 +327,7 @@ fn type_masked(app: &App, key_name: &str, value: &str) {
         let line = focused_line(screen);
         !line.contains(key_name) && !line.contains("Plain text")
     });
-    app.type_text(value);
+    app.paste(value);
     let typed = app.screen();
     if text(&typed).contains(value) || focused_line(&typed).contains(value) {
         panic!(

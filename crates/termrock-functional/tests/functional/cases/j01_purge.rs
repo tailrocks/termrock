@@ -32,6 +32,10 @@ const SCOPE: &str = "1 container · 2 preserved sessions · worktree w";
 const RISK: &str = "uncommitted changes in the worktree are lost";
 const TWO: &str = "2 running";
 const ONE: &str = "1 running";
+/// Seconds of simulated clock a step may take before the test gives up.
+const STEP_LIMIT: usize = 10;
+/// Seconds after a predecessor second that a shot tries against its baseline.
+const SECONDS_TO_SEARCH: usize = 10;
 
 fn visual_id(checkpoint: &str) -> String {
     format!(
@@ -40,13 +44,16 @@ fn visual_id(checkpoint: &str) -> String {
     )
 }
 
-fn open(name: &str) -> App {
+/// `clock` moves the simulated clock only through `advance_clock`, so the age
+/// labels and the purge job wait on the case instead of on wall time.
+fn open(name: &str, clock: bool) -> App {
     let mut launch = Launch::new(name, JACKIN);
     launch.args = vec!["--scenario".to_string(), "returning".to_string()];
     launch.cols = 120;
     launch.rows = 40;
     launch.color = Some("truecolor".to_string());
     launch.motion = Some("reduced".to_string());
+    launch.clock = clock;
     try_launch(launch).unwrap_or_else(|error| panic!("{error}"))
 }
 
@@ -201,29 +208,54 @@ fn baseline_hit(app: &App, checkpoint: &str) -> bool {
     app.accepts(&outcome)
 }
 
-/// Detail ages and the narrow uptime tail change every sim second. The 700 ms
-/// stable window overruns a compare that starts when the baseline second
-/// appears. Waiting out the previous second lets that boundary restart the
-/// window, so the frame that stays still is the next one.
+/// Steps the stepped test clock one second at a time until `accept` holds on a
+/// frame the step produced. Nothing reads wall time: the age labels and the
+/// purge job move only when the clock steps.
+fn step_until(
+    app: &App,
+    reason: &str,
+    accept: impl Fn(&TerminalSnapshot) -> bool,
+) -> TerminalSnapshot {
+    for _ in 0..STEP_LIMIT {
+        app.fence();
+        let screen = app.screen();
+        if accept(&screen) {
+            return screen;
+        }
+        app.advance_clock(1_000);
+    }
+    app.fence();
+    let screen = app.screen();
+    assert!(
+        accept(&screen),
+        "{reason} not seen in {STEP_LIMIT} seconds\n{}",
+        text(&screen)
+    );
+    screen
+}
+
+/// Detail ages and the narrow uptime tail change every sim second. The stepped
+/// clock reaches the second `predecessor` shows, then steps through the seconds
+/// after it, one at a time, until the frame is the baseline. The baseline pins
+/// one of them: wide pins the second after, and narrow's tail does not show the
+/// second the predecessor names. Every second is a step on the stepped clock,
+/// so the search never depends on wall time.
 fn shoot_after(
     app: &App,
     checkpoint: &str,
     ready: impl Fn(&TerminalSnapshot) -> bool + Copy,
     predecessor: &[&str],
 ) {
-    for _ in 0..4 {
-        app.wait_screen("before the clock second", |screen| {
-            let visible = text(screen);
-            ready(screen) && predecessor.iter().all(|item| !visible.contains(item))
-        });
-        app.wait_screen("clock second", |screen| {
-            let visible = text(screen);
-            ready(screen) && predecessor.iter().all(|item| visible.contains(item))
-        });
-        std::thread::sleep(Duration::from_millis(250));
-        if ready(&app.screen()) && baseline_hit(app, checkpoint) {
+    step_until(app, checkpoint, |screen| {
+        let visible = text(screen);
+        ready(screen) && predecessor.iter().all(|item| visible.contains(item))
+    });
+    for _ in 0..SECONDS_TO_SEARCH {
+        if baseline_hit(app, checkpoint) {
             return;
         }
+        app.advance_clock(1_000);
+        app.fence();
     }
     app.visual(&visual_id(checkpoint));
 }
@@ -250,7 +282,7 @@ fn shots(app: &App) {
 
 #[test]
 fn j01_purge_route() {
-    let app = open("j01-purge-route");
+    let app = open("j01-purge-route", false);
     dismiss_intro(&app);
     reach_7f3a(&app);
     open_purge(&app);
@@ -281,8 +313,10 @@ fn j01_purge_route() {
 
 #[test]
 fn j01_purge_purge() {
-    let app = open("j01-purge-purge");
-    dismiss_intro(&app);
+    let app = open("j01-purge-purge", true);
+    app.leave_intro("manager after intro", |screen| {
+        text(screen).contains("Current directory")
+    });
     reach_7f3a(&app);
     open_purge(&app);
     submit_token(&app, PARTIAL);
@@ -297,7 +331,8 @@ fn j01_purge_purge() {
     shots(&app);
     submit_token(&app, EXACT);
     app.wait_text(PURGING);
-    let purged = app.wait_text(PURGED);
+    // The purge job takes 2200 ms of the simulated clock, so it lands on a step.
+    let purged = step_until(&app, "purged", |screen| text(screen).contains(PURGED));
     see(
         &purged,
         &[PURGED, ROW_9B02, ONE],

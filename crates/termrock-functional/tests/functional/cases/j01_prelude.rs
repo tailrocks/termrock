@@ -140,7 +140,7 @@ fn replace_focused(app: &App, old: &str, new: &str) -> TerminalSnapshot {
     app.wait_screen("field cleared", |screen| {
         !focused_line(screen).contains(old)
     });
-    app.type_text(new);
+    app.paste(new);
     app.wait_screen("field replaced", |screen| {
         let line = focused_line(screen);
         line.contains(new) && !line.contains(old)
@@ -190,7 +190,7 @@ fn rearm_cancelled_duplicate(app: &App) {
     app.wait_screen("git url again", |screen| {
         text(screen).contains(GIT_LABEL) && text(screen).contains(SOURCE_TITLE)
     });
-    app.type_text(GIT_URL);
+    app.paste(GIT_URL);
     app.wait_screen("url typed again", |screen| {
         text(screen).contains("chainargos/payments-platform")
     });
@@ -368,7 +368,7 @@ fn j01_prelude_steps() {
         text(screen).contains(GIT_LABEL) && text(screen).contains(SOURCE_TITLE)
     });
     assert!(text(&url_field).contains(GIT_LABEL), "{}", text(&url_field));
-    app.type_text(BAD_URL);
+    app.paste(BAD_URL);
     app.key("enter");
     let unresolved = app.wait_screen("unresolved", |screen| {
         let visible = text(screen);

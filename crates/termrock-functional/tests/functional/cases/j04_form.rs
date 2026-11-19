@@ -148,8 +148,11 @@ fn open_new(app: &App) -> TerminalSnapshot {
 fn set_name(app: &App, value: &str) {
     click_dialog(app, "Display name");
     app.key("ctrl+a");
-    app.type_text(value);
-    let marker: String = value.trim().chars().take(12).collect();
+    app.paste(value);
+    // A pasted value lands at once and the field scrolls to its end, so the
+    // last characters are what the frame shows.
+    let trimmed: Vec<char> = value.trim().chars().collect();
+    let marker: String = trimmed[trimmed.len().saturating_sub(12)..].iter().collect();
     if marker.is_empty() {
         app.wait_screen("whitespace name", |screen| {
             !text(screen).contains(PLACEHOLDER) && text(screen).contains(NEW)
@@ -172,7 +175,7 @@ fn choose_plain(app: &App) {
 fn set_folder(app: &App, label: &str, path: &str) {
     click_dialog(app, label);
     app.key("ctrl+a");
-    app.type_text(path);
+    app.paste(path);
     let head: String = path.chars().take(8).collect();
     if head != "~/.claude" {
         app.wait_text(&head);
