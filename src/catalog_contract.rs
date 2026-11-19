@@ -1045,11 +1045,11 @@ fn catalog_regression_paths_follow_a_moved_test_file() {
     let mut s = Sources::load();
     assert!(
         s.coverage
-            .contains("regression_test: \"src/widgets/picker.rs::")
+            .contains("regression_test: \"crates/termrock-overlays/src/picker.rs::")
     );
     move_test_file(
         &mut s,
-        "src/widgets/picker.rs",
+        "crates/termrock-overlays/src/picker.rs",
         "crates/zz-picker/src/lib.rs",
         true,
     );
@@ -1062,7 +1062,7 @@ fn catalog_a_regression_path_the_move_left_stale_fails() {
     let mut s = Sources::load();
     move_test_file(
         &mut s,
-        "src/widgets/picker.rs",
+        "crates/termrock-overlays/src/picker.rs",
         "crates/zz-picker/src/lib.rs",
         false,
     );
@@ -1387,7 +1387,9 @@ fn catalog_without_a_preferred_spelling_the_definition_path_wins() {
 /// Definitions that moved to a lower module while their old public path stayed
 /// the catalog's spelling (#441, #442): `(defined at, spelled in the catalog as)`.
 /// Without the catalog the walk would pick the definition's own path, so this
-/// table is what the preferred-spelling pin has to undo.
+/// table is what the preferred-spelling pin has to undo. A definition that sits in
+/// another crate (#446) is spelled by a `pub use` of the facade, and the bare walk then
+/// prefers an item re-export (`shell::LayerTag`) to a module re-export (`ui::layer`).
 const MOVED_KEEPING_SPELLING: &[(&str, &str)] = &[
     ("core::hints::ARROWS", "widgets::keyhint::ARROWS"),
     (
@@ -1421,6 +1423,7 @@ const MOVED_KEEPING_SPELLING: &[(&str, &str)] = &[
     ),
     ("core::hints::range", "widgets::keyhint::range"),
     ("core::hints::toggle_hint", "widgets::keyhint::toggle_hint"),
+    ("shell::LayerTag", "ui::layer::LayerTag"),
     ("theme::CardHeading", "widgets::panel::CardHeading"),
     ("theme::RowState", "widgets::grid::RowState"),
     ("theme::VisualState", "ui::ctx::VisualState"),
@@ -2114,7 +2117,8 @@ fn with_probe_exception(kind: &str, reason: &str, test: &str, issue: &str) -> So
     s
 }
 
-const UNRELATED_TEST: &str = "src/ui/layer.rs::settle_drains_every_queued_result_in_order";
+const UNRELATED_TEST: &str =
+    "crates/termrock-overlays/src/layer.rs::settle_drains_every_queued_result_in_order";
 const PROBE_REASON: &str =
     "No page can reach this helper because the host calls it between frames.";
 

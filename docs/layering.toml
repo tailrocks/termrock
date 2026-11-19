@@ -125,16 +125,7 @@ functional = ["termrock"]
 "src/core/text.rs" = "text"
 
 # overlays
-"src/ui/context.rs" = "overlays"
-"src/ui/edit_menu.rs" = "overlays"
-"src/ui/layer.rs" = "overlays"
-"src/ui/modal.rs" = "overlays"
-"src/widgets/completion.rs" = "overlays"
-"src/widgets/menu.rs" = "overlays"
 "src/widgets/option_editor.rs" = "overlays"
-"src/widgets/option_list.rs" = "overlays"
-"src/widgets/picker.rs" = "overlays"
-"src/widgets/row_menu.rs" = "overlays"
 
 # viewport
 "src/core/pointer/nested_scrollbar_tests.rs" = "viewport"

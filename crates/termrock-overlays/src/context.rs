@@ -1,11 +1,11 @@
-use crate::core::keymap::Actions;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Position, Rect};
+use termrock_core::keymap::Actions;
 
-use crate::core::event::Key;
-use crate::core::id::WidgetId;
-use crate::core::pointer::PointerEvent;
-use crate::widgets::menu::{ContextMenu, MenuItem};
+use crate::menu::{ContextMenu, MenuItem};
+use termrock_core::event::Key;
+use termrock_core::id::WidgetId;
+use termrock_core::pointer::PointerEvent;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ContextKeys {
@@ -192,7 +192,7 @@ impl<A> ContextCmd<A> {
 }
 
 pub fn command_items<A: Actions + Copy + PartialEq>(
-    map: &[(crate::core::keymap::KeyBinding, A)],
+    map: &[(termrock_core::keymap::KeyBinding, A)],
     cmds: &[ContextCmd<A>],
 ) -> Vec<(A, MenuItem)> {
     cmds.iter()
@@ -200,7 +200,7 @@ pub fn command_items<A: Actions + Copy + PartialEq>(
             let mut item = MenuItem::new(c.cmd.label())
                 .separator_if(c.group_end)
                 .danger_if(c.danger);
-            if let Some(k) = crate::core::keymap::label_for(map, c.cmd) {
+            if let Some(k) = termrock_core::keymap::label_for(map, c.cmd) {
                 item = item.shortcut(k);
             }
             if let Some(r) = c.reason {
@@ -211,7 +211,8 @@ pub fn command_items<A: Actions + Copy + PartialEq>(
         .collect()
 }
 
-pub(crate) fn row_rect(area: Rect, row: usize, offset: usize) -> Rect {
+#[doc(hidden)]
+pub fn row_rect(area: Rect, row: usize, offset: usize) -> Rect {
     let dy = row
         .saturating_sub(offset)
         .min(area.height.saturating_sub(1) as usize) as u16;

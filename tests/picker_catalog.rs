@@ -510,11 +510,12 @@ fn validate_picker_sources(
 fn repository_sources() -> (String, String, String, String, String) {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
     (
-        std::fs::read_to_string(root.join("src/widgets/picker.rs")).expect("picker source reads"),
+        std::fs::read_to_string(root.join("crates/termrock-overlays/src/picker.rs"))
+            .expect("picker source reads"),
         std::fs::read_to_string(root.join("src/catalog.rs")).expect("catalog source reads"),
         std::fs::read_to_string(root.join("apps/showcase/src/pages/pickers.rs"))
             .expect("picker showcase page reads"),
-        std::fs::read_to_string(root.join("src/widgets/option_list.rs"))
+        std::fs::read_to_string(root.join("crates/termrock-overlays/src/option_list.rs"))
             .expect("option list source reads"),
         std::fs::read_to_string(root.join("apps/showcase/src/coverage.rs"))
             .expect("showcase coverage source reads"),

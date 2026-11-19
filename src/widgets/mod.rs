@@ -3,7 +3,6 @@ pub mod chips;
 pub mod choice_dialog;
 pub mod code;
 mod code_specimen;
-pub mod completion;
 pub mod detail_card;
 pub mod dialog;
 pub mod diff;
@@ -22,15 +21,11 @@ pub mod input;
 pub mod inspect_changes;
 pub mod list;
 pub mod list_detail;
-pub mod menu;
 pub mod nav_list;
 pub mod option_editor;
-pub mod option_list;
 pub mod panel;
-pub mod picker;
 pub mod props;
 pub mod rail;
-pub mod row_menu;
 pub mod search_detail;
 pub mod select;
 pub mod splitter;
@@ -60,3 +55,4 @@ pub use termrock_core::field::{edit, field_common};
 pub use termrock_feedback::{
     empty, meter_list, notice, page_header, progress, statusbar, too_small,
 };
+pub use termrock_overlays::{completion, menu, option_list, picker, row_menu};

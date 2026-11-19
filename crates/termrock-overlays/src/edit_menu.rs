@@ -1,16 +1,16 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
 
-use crate::core::edit::{TextCmd, clipboard};
-use crate::core::event::{Key, Outcome};
-use crate::core::id::WidgetId;
-use crate::core::intent::Phase;
-use crate::core::keymap::Actions;
-use crate::core::pointer::{MouseTarget, PointerEvent};
-use crate::ui::context::{ContextAnchor, ContextKeys};
-use crate::ui::ctx::RenderCtx;
-use crate::widgets::edit::{EditField, Editable};
-use crate::widgets::menu::{ContextMenu, MenuAction, MenuItem};
+use crate::context::{ContextAnchor, ContextKeys};
+use crate::menu::{ContextMenu, MenuAction, MenuItem};
+use termrock_core::edit::{TextCmd, clipboard};
+use termrock_core::event::{Key, Outcome};
+use termrock_core::field::edit::{EditField, Editable};
+use termrock_core::id::WidgetId;
+use termrock_core::intent::Phase;
+use termrock_core::keymap::Actions;
+use termrock_core::pointer::{MouseTarget, PointerEvent};
+use termrock_runtime::ctx::RenderCtx;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct EditCaps {
@@ -288,7 +288,7 @@ pub fn edit_menu_pointer<H: EditMenuHost + ?Sized>(
 pub fn edit_menu_route<H>(
     h: &mut H,
     ev: &PointerEvent,
-) -> Option<crate::core::response::Response<H::Action>>
+) -> Option<termrock_core::response::Response<H::Action>>
 where
     H: EditMenuHost + MouseTarget + ?Sized,
 {
