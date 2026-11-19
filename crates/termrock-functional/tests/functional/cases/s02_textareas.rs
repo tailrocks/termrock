@@ -603,13 +603,13 @@ fn compare_levels_then_restore() {
         &["no color", CRUMB],
         &["Page options", "120×40", "○ Compare levels"],
     );
-    // The hidden cursor sits on the resize clamp until the text area places
-    // it. The accepted narrow frame has that caret at column 60.
-    session.app.wait_screen("narrow caret", |screen| {
-        screen.cols() == 80
-            && screen.rows() == 24
-            && text(screen).contains("no color")
-            && screen.cursor_local() == Some((60, 20))
+    // The cursor is hidden here. Its position is where the terminal left it
+    // after the last diff, so it moves with how the wheel notches batched into
+    // frames (60,20 for one frame, 78,20 for one frame per notch) and is not a
+    // contract. `narrow` is already read behind the fence, so wait for the
+    // state the case needs: the 80 by 24 frame with the band in view.
+    session.app.wait_screen("narrow frame", |screen| {
+        screen.cols() == 80 && screen.rows() == 24 && text(screen).contains("no color")
     });
     see(
         &session,
