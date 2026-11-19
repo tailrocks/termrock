@@ -780,6 +780,73 @@ jactionlint 2.6.0 (Renovate, #464 era) but the reviewed tuple table in the
 checker only admits jactionlint 2.4.0 for Velnor 0.1.78. That table is a
 reviewed allowlist, so it needs its own qualification and issue.
 
+## 2026-11-20: Re-freezing the generated-workflow trusted seed is one command (#509)
+
+Context: the local guard validates every commit against a trusted seed that was
+frozen before the crate split: seed commit `f4d9999`, a two-manifest Cargo
+policy, a 299-package lock, and the tool tuple Velnor 0.1.78 with jactionlint
+2.4.0. Main now has 22 `Cargo.toml` files, a 316-package lock with 18 local
+packages, four nested consumer locks that differ from the root lock, and
+jactionlint 2.6.0. The seed must be re-frozen once, after #452 finishes. Nothing
+in the repo produced the seed or its pins, so this change adds the tooling and
+leaves the re-freeze itself for that later run. It is a trust-root change and
+needs human review.
+
+Decision 1: the checker reads the pinned set from data, not literals.
+`manifest_paths`, the lock package count, the local package count and the list
+of local packages come from `scripts/trusted-seed-cargo-policy.json` (schema 2),
+which the checker pins by digest. The generator derives them from the seed tree.
+A manifest that the root lock does not own (a virtual root, a nested consumer)
+must stay unchanged; only manifests of locked local packages keep the old
+one-declaration dependency allowance. The `sha2` bridge for the old seed only
+applies when the policy still lists both manifests it names. No check was
+relaxed: a count or path that the policy does not list is rejected as before.
+
+Decision 2, pack size: exclude generated and binary artifacts from the seed pack
+instead of raising a bound. The new pack was about 49 MB against the installer's
+32 MiB bound, three reference binaries are above the 16 MiB per-blob bound, and
+the pack is itself a tracked blob, so it must stay under that same per-blob bound
+in every later snapshot. Three rules, declared once in the checker
+(`trusted_seed_excluded_*`) and read from there by the other tools:
+`*.tui.pb` baselines as before; every blob under
+`crates/termrock-functional/tests/functional/reference-bins/` and
+`docs/testing/acceptance-receipts/`; and the exact path
+`scripts/trusted-seed-metadata.pack`, so each pack does not embed the previous
+one. Measured on `8a3711c67`: 11.6 MB, 3998 objects, with all 32 MiB, 16 MiB,
+512 MiB and 16384-entry bounds unchanged. The receipts are 71 MiB of the 105 MiB
+that would remain and the guard never reads them. The seed tree is still listed
+and validated in full (paths, modes, gitlinks) before the projection drops these
+entries, so an unsafe entry cannot hide under an excluded prefix. Raising the
+bounds was rejected because it loosens a resource limit to carry data the guard
+does not use, and the per-blob bound would still reject the pack.
+
+Decision 3, nested consumer locks: admit them per path with their own digest.
+`crates/termrock/tests/consumers/*/Cargo.lock` are separate workspaces and differ
+from the root lock, so the old rule (a nested lock must equal the root lock)
+rejects main. Requiring identity is not possible, and ignoring them would be a
+new gap. The policy lists each nested lock path with its sha256; the checker
+accepts a nested lock only at a listed path with exactly those bytes, and
+requires every listed lock to be present. A consumer lock change now needs a
+re-freeze, which is the same cost as any manifest change. If that is too
+costly, move the consumers out of the guard's tree rather than loosening this.
+
+Decision 4, tool tuples: the table in the checker is keyed by Velnor version.
+Velnor 0.1.78 now pairs with jactionlint 2.6.0, and Velnor 0.1.81 (the prepared
+bump) is added with the same Rust, jactionlint and ShellCheck. The seed and the
+snapshot must carry the same tuple, so the 0.1.81 bump has to land on main before
+the re-freeze, not after. The installed-guard harness reads the Velnor version
+from `mise.toml` instead of carrying its own literal.
+
+Tooling: `scripts/refreeze-trusted-seed.py --write` builds the parentless seed
+commit (source tree plus the untracked lock sentinel, fixed identity, the source
+commit's own committer date), the object list, the metadata pack, the baseline
+fixture pack and the policy, then rewrites every pin in dependency order (seed
+identities, configuration digest, checker digest, then the installer, auth and
+mutant scripts). `--check` verifies every pin and the artifacts against each
+other without writing anything or touching the network. Pins that need a real
+installer qualification run (`qualified_*` receipts and the warm cache in
+`check-generated-workflow-auth.py`) are listed, not rewritten.
+
 ## 2026-11-18: `termrock-session` holds the session, not the run loop (#445)
 
 The issue puts `src/runtime.rs` whole into `termrock-session`. That cannot build.

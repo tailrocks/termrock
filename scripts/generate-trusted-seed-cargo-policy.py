@@ -12,10 +12,14 @@ import tempfile
 import tomllib
 from pathlib import Path
 
+# Reviewed pins. scripts/refreeze-trusted-seed.py rewrites these three lines on a re-freeze; a
+# reviewer compares them with the pins in scripts/check-generated-workflows.sh. The manifest path
+# set, the lock inventory counts and the nested lock set are not literals: they are read from the
+# pinned seed tree below and written into the policy artifact, which the checker pins by digest.
 SEED_COMMIT = "f4d9999ace7d6deb4294cd89c00afcc80e748d49"
 SEED_TREE = "95406daef6ba234fde62fc47b933fbb8bdfce320"
-MANIFEST_PATHS = ("Cargo.toml", "apps/jackin/Cargo.toml")
 EXPECTED_AGGREGATE = "4e7f83b2eaf98c6b3413d10cc4c0dacc4c123d84ecdfd401e5da90daf7ad7f19"
+SEED_LOCK_PATH = "scripts/trusted-seed-cargo.lock"
 # The reviewed artifact is only ever written under this exact name in the
 # current working directory. The command-line output argument must match it
 # verbatim, so no caller-controlled path component can ever reach the file
@@ -73,21 +77,52 @@ def main():
         raise SystemExit("trusted seed Cargo policy source commit lacks its reviewed sign-off")
     listing = git(repository, "ls-tree", "-r", "-z", SEED_COMMIT)
     manifests = {}
+    nested_locks = {}
+    sentinel_blob = None
     for entry in listing.split(b"\0"):
         if not entry:
             continue
         header, encoded_path = entry.split(b"\t", 1)
         mode, kind, object_id = header.split()
         path = encoded_path.decode("utf-8")
-        if path.rsplit("/", 1)[-1] == "Cargo.toml":
-            if mode != b"100644" or kind != b"blob" or path in manifests:
-                raise SystemExit("trusted seed Cargo policy source contains an unsafe manifest entry")
-            manifests[path] = object_id.decode("ascii")
-    if tuple(sorted(manifests)) != MANIFEST_PATHS:
-        raise SystemExit("trusted seed Cargo policy source manifest path set differs from the reviewed set")
+        name = path.rsplit("/", 1)[-1]
+        if name in {"Cargo.toml", "Cargo.lock"}:
+            if mode != b"100644" or kind != b"blob" or path in manifests or path in nested_locks:
+                raise SystemExit("trusted seed Cargo policy source contains an unsafe Cargo entry")
+            (manifests if name == "Cargo.toml" else nested_locks)[path] = object_id.decode("ascii")
+        elif path == SEED_LOCK_PATH:
+            if mode != b"100644" or kind != b"blob":
+                raise SystemExit("trusted seed Cargo policy source contains an unsafe lock sentinel entry")
+            sentinel_blob = object_id.decode("ascii")
+    if "Cargo.toml" not in manifests or "Cargo.lock" not in nested_locks or sentinel_blob is None:
+        raise SystemExit("trusted seed Cargo policy source lacks its root manifest, root lock or lock sentinel")
+    root_lock_blob = nested_locks.pop("Cargo.lock")
+    if root_lock_blob != sentinel_blob:
+        raise SystemExit("trusted seed Cargo policy source lock sentinel differs from the root Cargo.lock")
+    lock_bytes = git(repository, "show", f"{SEED_COMMIT}:{SEED_LOCK_PATH}")
+    try:
+        lock = tomllib.loads(lock_bytes.decode("utf-8"))
+    except (UnicodeError, tomllib.TOMLDecodeError) as error:
+        raise SystemExit("trusted seed Cargo policy source lock is invalid TOML") from error
+    packages = lock.get("package")
+    if lock.get("version") != 4 or not isinstance(packages, list) or not packages:
+        raise SystemExit("trusted seed Cargo policy source lock has an unsupported format")
+    local_packages = sorted(
+        (package["name"], package["version"]) for package in packages if "source" not in package
+    )
+    if not local_packages or len(set(local_packages)) != len(local_packages):
+        raise SystemExit("trusted seed Cargo policy source lock has no unambiguous local package set")
+    nested_entries = []
+    for path in sorted(nested_locks):
+        data = git(repository, "show", f"{SEED_COMMIT}:{path}")
+        try:
+            tomllib.loads(data.decode("utf-8"))
+        except (UnicodeError, tomllib.TOMLDecodeError) as error:
+            raise SystemExit(f"trusted seed Cargo policy source nested lock is invalid TOML: {path}") from error
+        nested_entries.append({"path": path, "sha256": hashlib.sha256(data).hexdigest()})
     entries = []
     aggregate = hashlib.sha256()
-    for path in MANIFEST_PATHS:
+    for path in sorted(manifests):
         data = git(repository, "show", f"{SEED_COMMIT}:{path}")
         try:
             tomllib.loads(data.decode("utf-8"))
@@ -101,12 +136,18 @@ def main():
         entries.append({"path": path, "sha256": digest, "bytes_base64": base64.b64encode(data).decode("ascii")})
     if aggregate.hexdigest() != EXPECTED_AGGREGATE:
         raise SystemExit("trusted seed Cargo policy source manifest aggregate differs from the reviewed identity")
+    if len(entries) != len(manifests):
+        raise SystemExit("trusted seed Cargo policy source manifest set is inconsistent")
     policy = {
-        "schema": 1,
+        "schema": 2,
         "seed_commit": SEED_COMMIT,
         "seed_tree": SEED_TREE,
         "manifest_aggregate_sha256": aggregate.hexdigest(),
         "manifests": entries,
+        "lock_package_count": len(packages),
+        "local_package_count": len(local_packages),
+        "local_packages": [{"name": name, "version": version} for name, version in local_packages],
+        "nested_locks": nested_entries,
     }
     encoded = (json.dumps(policy, ensure_ascii=True, separators=(",", ":"), sort_keys=True) + "\n").encode("ascii")
     if len(encoded) > 262144:

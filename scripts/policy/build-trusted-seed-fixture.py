@@ -17,8 +17,14 @@ MAX_PACK_BYTES = 64 * 1024 * 1024
 MAX_BASELINE_BLOB_BYTES = 16 * 1024 * 1024
 MAX_TOTAL_BLOB_BYTES = 512 * 1024 * 1024
 MAX_TREE_LISTING_BYTES = 8 * 1024 * 1024
-MAX_TREE_ENTRIES = 8192
+MAX_TREE_ENTRIES = 16384
 MAX_OBJECTS = 16386
+# Reviewed exclusion inventory of the pinned seed tree. scripts/refreeze-trusted-seed.py rewrites
+# these two counts, the baseline pack digest below and the matching digest in
+# test_trusted_seed_fixture.py on a re-freeze.
+EXPECTED_BASELINE_EXCLUSIONS = 160
+EXPECTED_ABSENT_EXCLUSIONS = 0
+BASELINE_PACK_SHA256 = "44f010a183cf42d933e61622c00b49c944842c096641063d7057345b951140f7"
 
 
 def fail(message):
@@ -263,10 +269,21 @@ def parse_constants(checker):
         fail("checker seed commit identity is malformed")
     if not re.fullmatch(r"[0-9a-f]{40}", values["trusted_seed_tree"]):
         fail("checker seed tree identity is malformed")
+    for name in (
+        "trusted_seed_excluded_baseline_prefixes",
+        "trusted_seed_excluded_artifact_prefixes",
+        "trusted_seed_excluded_artifact_paths",
+    ):
+        found = re.findall(rb"(?m)^" + name.encode() + rb"='([^'\n]*)'$", source)
+        if len(found) != 1:
+            fail(f"checker does not contain one reviewed {name}")
+        values[name] = tuple(found[0].decode("ascii").split())
+    if not values["trusted_seed_excluded_baseline_prefixes"] or not values["trusted_seed_excluded_artifact_prefixes"]:
+        fail("checker exclusion rule is empty")
     return values
 
 
-def tree_inventory(git, seed_repository, commit, root_tree, home):
+def tree_inventory(git, seed_repository, commit, root_tree, home, constants):
     listing = run_git(
         git,
         seed_repository,
@@ -304,13 +321,17 @@ def tree_inventory(git, seed_repository, commit, root_tree, home):
             object_type = "blob"
         else:
             fail("pinned tree contains an unsupported entry")
-        excluded = object_type == "blob" and any(
-            path.startswith(prefix) and "/" not in path[len(prefix):] and path[len(prefix):].endswith(".tui.pb")
-            for prefix in (
-                "tests/functional/baselines/functional/", "crates/termrock-functional/tests/functional/baselines/functional/",
-                "apps/jackin/tests/functional/baselines/functional/",
-            )
-        )
+        excluded = None
+        if object_type == "blob":
+            if any(
+                path.startswith(prefix) and "/" not in path[len(prefix):] and path[len(prefix):].endswith(".tui.pb")
+                for prefix in constants["trusted_seed_excluded_baseline_prefixes"]
+            ):
+                excluded = "baseline"
+            elif path in constants["trusted_seed_excluded_artifact_paths"] or any(
+                path.startswith(prefix) for prefix in constants["trusted_seed_excluded_artifact_prefixes"]
+            ):
+                excluded = "absent"
         previous = expected_types.get(oid)
         if previous is not None and previous != object_type:
             fail("pinned tree assigns one object identity incompatible types")
@@ -512,9 +533,10 @@ def validate_and_import(repo_root, checker, seed_repository):
         header = commit_body.split(b"\n\n", 1)[0]
         if re.search(rb"(?m)^parent [0-9a-f]{40}$", header):
             fail("pinned seed root commit unexpectedly has a parent")
-        entries, expected_types = tree_inventory(git, seed_repository, commit, root_tree, home)
-        excluded_count = sum(1 for entry in entries if entry[4])
-        if excluded_count != 160:
+        entries, expected_types = tree_inventory(git, seed_repository, commit, root_tree, home, constants)
+        baseline_count = sum(1 for entry in entries if entry[4] == "baseline")
+        absent_count = sum(1 for entry in entries if entry[4] == "absent")
+        if baseline_count != EXPECTED_BASELINE_EXCLUSIONS or absent_count != EXPECTED_ABSENT_EXCLUSIONS:
             fail("pinned functional baseline exclusion inventory differs from the reviewed count")
         expected_metadata = {oid for mode, kind, oid, path, excluded in entries if not excluded}
         expected_metadata.update((commit, root_tree))
@@ -534,7 +556,7 @@ def validate_and_import(repo_root, checker, seed_repository):
             "trusted seed baseline pack",
             1024 * 1024,
         )
-        if hashlib.sha256(baseline_pack).hexdigest() != "44f010a183cf42d933e61622c00b49c944842c096641063d7057345b951140f7":
+        if hashlib.sha256(baseline_pack).hexdigest() != BASELINE_PACK_SHA256:
             fail("trusted seed baseline pack digest differs from its reviewed identity")
         run_git(git, seed_repository, "index-pack", "--stdin", home=home, output_limit=4096, input_bytes=baseline_pack)
         complete_raw = run_git(
@@ -547,7 +569,13 @@ def validate_and_import(repo_root, checker, seed_repository):
             output_limit=4 * 1024 * 1024,
         )
         complete = parse_actual_object_inventory(complete_raw)
-        if set(complete) != set(expected_types) or any(complete[oid][0] != kind for oid, kind in expected_types.items()):
+        # Reference binaries and generated artifacts are deliberately not provided: the checker
+        # projects them out of the trusted seed, so only an object that no other path reaches
+        # may be absent.
+        provided = {oid for mode, kind, oid, path, excluded in entries if excluded != "absent"}
+        absent = {oid for mode, kind, oid, path, excluded in entries if excluded == "absent"} - provided
+        expected_complete = {oid: kind for oid, kind in expected_types.items() if oid not in absent}
+        if set(complete) != set(expected_complete) or any(complete[oid][0] != kind for oid, kind in expected_complete.items()):
             fail("complete seed object inventory differs from the pinned tree")
         total_blob_bytes = 0
         for kind, size in complete.values():

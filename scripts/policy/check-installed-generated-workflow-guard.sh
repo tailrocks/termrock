@@ -105,6 +105,13 @@ git_command=$(command -v git)
 if [[ "$git_command" != /* ]]; then
   git_command="$(pwd -P)/$git_command"
 fi
+# The reviewed Velnor version is the one mise.toml pins; the checker's tuple table decides whether
+# that version is supported, so this harness carries no version literal of its own.
+reviewed_velnor_version=$(sed -n 's/^"github:tailrocks\/velnor-new" = { version = "\([0-9]*\.[0-9]*\.[0-9]*\)", bin = "velnor-actions" }$/\1/p' "$repo_root/mise.toml")
+if [[ ! "$reviewed_velnor_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  printf 'generated-workflows: mise.toml has no single reviewed Velnor version\n' >&2
+  exit 2
+fi
 source "$repo_root/scripts/policy/policy-git-object-lifecycle.sh"
 case "$(uname -s):$(uname -m)" in
   Darwin:arm64|Darwin:aarch64) hash_tool=/usr/bin/shasum; platform=macos-arm64 ;;
@@ -126,7 +133,7 @@ sha256_stdin() {
   fi
 }
 policy_verified_velnor_executable() {
-  python3 -I -S - "$installation/cache/tools" "$checker_digest" "$platform" "$installed_manifest" <<'PY'
+  python3 -I -S - "$installation/cache/tools" "$checker_digest" "$platform" "$installed_manifest" "$reviewed_velnor_version" <<'PY'
 import hashlib
 import os
 import re
@@ -135,7 +142,7 @@ import sys
 from pathlib import Path
 
 cache_root = Path(sys.argv[1])
-checker_sha, platform, installed_manifest = sys.argv[2:]
+checker_sha, platform, installed_manifest, reviewed_velnor = sys.argv[2:]
 def fail(error):
     raise error
 def read_fields(path):
@@ -157,10 +164,10 @@ if cache_root.is_dir() and not cache_root.is_symlink():
         manifest = candidate / "manifest"
         if candidate.is_dir() and not candidate.is_symlink() and manifest.is_file() and not manifest.is_symlink():
             candidate_fields = read_fields(manifest)
-            if candidate_fields.get("checker_sha256") == checker_sha and candidate_fields.get("platform") == platform and candidate_fields.get("velnor") == "0.1.78" and candidate_fields.get("seed_commit") == installed.get("seed_commit") and candidate_fields.get("trusted_lock_sha256") == installed.get("trusted_seed_cargo_lock_sha256") and candidate_fields.get("trusted_seed_cargo_policy_sha256") == policy_sha and candidate_fields.get("config_sha256") == installed.get("config_sha256") and candidate_fields.get("inventory_helper_sha256") == installed.get("inventory_helper_sha256"):
+            if candidate_fields.get("checker_sha256") == checker_sha and candidate_fields.get("platform") == platform and candidate_fields.get("velnor") == reviewed_velnor and candidate_fields.get("seed_commit") == installed.get("seed_commit") and candidate_fields.get("trusted_lock_sha256") == installed.get("trusted_seed_cargo_lock_sha256") and candidate_fields.get("trusted_seed_cargo_policy_sha256") == policy_sha and candidate_fields.get("config_sha256") == installed.get("config_sha256") and candidate_fields.get("inventory_helper_sha256") == installed.get("inventory_helper_sha256"):
                 generations.append((candidate, candidate_fields))
 if len(generations) != 1:
-    raise SystemExit("generated-workflows: installed checker has no unique authenticated Velnor 0.1.78 tool cache generation")
+    raise SystemExit("generated-workflows: installed checker has no unique authenticated Velnor " + reviewed_velnor + " tool cache generation")
 generation, fields = generations[0]
 names = (
     "platform", "velnor", "rust", "jactionlint", "shellcheck", "seed_commit",
@@ -168,8 +175,8 @@ names = (
     "python_artifact_sha256", "python_lock_sha256", "python_mise_sha256",
     "config_sha256", "inventory_helper_sha256", "trusted_seed_cargo_policy_sha256",
 )
-if fields.get("checker_version") != "2" or fields.get("platform") != platform or fields.get("velnor") != "0.1.78":
-    raise SystemExit("generated-workflows: authenticated tool cache does not bind the reviewed Velnor 0.1.78 pin")
+if fields.get("checker_version") != "2" or fields.get("platform") != platform or fields.get("velnor") != reviewed_velnor:
+    raise SystemExit("generated-workflows: authenticated tool cache does not bind the reviewed Velnor " + reviewed_velnor + " pin")
 try:
     identity = [checker_sha, "2"] + [fields[name] for name in names]
 except KeyError as error:
@@ -1988,19 +1995,19 @@ PY
     printf 'generated-workflows: verified Velnor executable could not report its version\n' >&2
     return 1
   fi
-  if [[ "$policy_velnor_version" != *0.1.78* ]]; then
-    printf 'generated-workflows: verified Velnor executable did not report reviewed version 0.1.78\n' >&2
+  if [[ "$policy_velnor_version" != *"$reviewed_velnor_version"* ]]; then
+    printf 'generated-workflows: verified Velnor executable did not report reviewed version %s\n' "$reviewed_velnor_version" >&2
     return 1
   fi
   if ! (cd "$policy_source_repository" && env -i HOME="$home_dir" PATH=/usr/bin:/bin LC_ALL=C LANG=C GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_TERMINAL_PROMPT=0 "$policy_velnor_executable" generate --output-dir "$policy_source_repository") > "$test_root/policy-external-generator-first.log" 2>&1; then
     cat "$test_root/policy-external-generator-first.log" >&2
-    printf 'generated-workflows: authenticated Velnor 0.1.78 failed to generate the external-edge fixture outputs\n' >&2
+    printf 'generated-workflows: authenticated Velnor %s failed to generate the external-edge fixture outputs\n' "$reviewed_velnor_version" >&2
     return 1
   fi
   first_output_sha=$(directory_digest "$policy_source_repository/.github") || return 1
   if ! (cd "$policy_source_repository" && env -i HOME="$home_dir" PATH=/usr/bin:/bin LC_ALL=C LANG=C GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_TERMINAL_PROMPT=0 "$policy_velnor_executable" generate --output-dir "$policy_source_repository") > "$test_root/policy-external-generator-second.log" 2>&1; then
     cat "$test_root/policy-external-generator-second.log" >&2
-    printf 'generated-workflows: authenticated Velnor 0.1.78 failed its repeat generation\n' >&2
+    printf 'generated-workflows: authenticated Velnor %s failed its repeat generation\n' "$reviewed_velnor_version" >&2
     return 1
   fi
   second_output_sha=$(directory_digest "$policy_source_repository/.github") || return 1
@@ -3007,19 +3014,19 @@ PY
       printf 'generated-workflows: authenticated Velnor executable could not report its version for the local-edge fixture\n' >&2
       return 1
     fi
-    if [[ "$policy_velnor_version" != *0.1.78* ]]; then
-      printf 'generated-workflows: local-edge fixture generator did not report reviewed Velnor version 0.1.78\n' >&2
+    if [[ "$policy_velnor_version" != *"$reviewed_velnor_version"* ]]; then
+      printf 'generated-workflows: local-edge fixture generator did not report reviewed Velnor version %s\n' "$reviewed_velnor_version" >&2
       return 1
     fi
     if ! (cd "$repository" && env -i HOME="$home_dir" PATH=/usr/bin:/bin LC_ALL=C LANG=C GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_TERMINAL_PROMPT=0 "$policy_velnor_executable" generate --output-dir "$repository") > "$test_root/policy-local-generator-first.log" 2>&1; then
       cat "$test_root/policy-local-generator-first.log" >&2
-      printf 'generated-workflows: authenticated Velnor 0.1.78 failed to generate the local-edge fixture outputs\n' >&2
+      printf 'generated-workflows: authenticated Velnor %s failed to generate the local-edge fixture outputs\n' "$reviewed_velnor_version" >&2
       return 1
     fi
     first_output_sha=$(directory_digest "$repository/.github") || return 1
     if ! (cd "$repository" && env -i HOME="$home_dir" PATH=/usr/bin:/bin LC_ALL=C LANG=C GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_TERMINAL_PROMPT=0 "$policy_velnor_executable" generate --output-dir "$repository") > "$test_root/policy-local-generator-second.log" 2>&1; then
       cat "$test_root/policy-local-generator-second.log" >&2
-      printf 'generated-workflows: authenticated Velnor 0.1.78 failed its local-edge repeat generation\n' >&2
+      printf 'generated-workflows: authenticated Velnor %s failed its local-edge repeat generation\n' "$reviewed_velnor_version" >&2
       return 1
     fi
     second_output_sha=$(directory_digest "$repository/.github") || return 1
@@ -3216,19 +3223,19 @@ PY
       printf 'generated-workflows: authenticated Velnor could not report its version for the lock-formatting fixture\n' >&2
       return 1
     fi
-    if [[ "$policy_velnor_version" != *0.1.78* ]]; then
-      printf 'generated-workflows: lock-formatting fixture generator did not report reviewed Velnor version 0.1.78\n' >&2
+    if [[ "$policy_velnor_version" != *"$reviewed_velnor_version"* ]]; then
+      printf 'generated-workflows: lock-formatting fixture generator did not report reviewed Velnor version %s\n' "$reviewed_velnor_version" >&2
       return 1
     fi
     if ! (cd "$repository" && env -i HOME="$home_dir" PATH=/usr/bin:/bin LC_ALL=C LANG=C GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_TERMINAL_PROMPT=0 "$policy_velnor_executable" generate --output-dir "$repository") > "$test_root/policy-formatting-generator-first.log" 2>&1; then
       cat "$test_root/policy-formatting-generator-first.log" >&2
-      printf 'generated-workflows: authenticated Velnor 0.1.78 failed to generate lock-formatting outputs\n' >&2
+      printf 'generated-workflows: authenticated Velnor %s failed to generate lock-formatting outputs\n' "$reviewed_velnor_version" >&2
       return 1
     fi
     first_output_sha=$(directory_digest "$repository/.github") || return 1
     if ! (cd "$repository" && env -i HOME="$home_dir" PATH=/usr/bin:/bin LC_ALL=C LANG=C GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_TERMINAL_PROMPT=0 "$policy_velnor_executable" generate --output-dir "$repository") > "$test_root/policy-formatting-generator-second.log" 2>&1; then
       cat "$test_root/policy-formatting-generator-second.log" >&2
-      printf 'generated-workflows: authenticated Velnor 0.1.78 failed its lock-formatting repeat generation\n' >&2
+      printf 'generated-workflows: authenticated Velnor %s failed its lock-formatting repeat generation\n' "$reviewed_velnor_version" >&2
       return 1
     fi
     second_output_sha=$(directory_digest "$repository/.github") || return 1

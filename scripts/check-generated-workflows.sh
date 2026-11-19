@@ -102,6 +102,20 @@ trusted_seed_policy_sha256=6d6c35161e163ff07f39d413e3d25c6d60016ebfcb6627e278e06
 trusted_manifests_sha256=4e7f83b2eaf98c6b3413d10cc4c0dacc4c123d84ecdfd401e5da90daf7ad7f19
 trusted_metadata_pack_sha256=845b98b650d85074bdad58d771e785f01d0824e4647efe0113fcdb7821704874
 trusted_metadata_object_list_sha256=58233f6e2765561ef177650f49b76fb45e0f0980a97d98df5f39759a36525268
+# Trusted-seed blobs that are deliberately absent from the reviewed metadata pack and from the
+# materialized seed. These three literals are the single reviewed source of the exclusion rule:
+# both Python validators below receive them as arguments, and scripts/refreeze-trusted-seed.py
+# and scripts/policy/build-trusted-seed-fixture.py read them from here.
+#   baseline prefixes: direct *.tui.pb children of a frozen functional baseline directory
+#   artifact prefixes: every blob beneath a directory of frozen binaries or generated evidence
+#                      (reference binaries, acceptance receipts); they are test inputs and
+#                      records, never inputs of this guard, and they dominate the pack size
+#   artifact paths:    exact generated artifacts that embed an earlier copy of this pack
+# The full seed tree listing is still validated entry by entry (paths, modes, gitlinks) before
+# the projection removes these entries, so an unsafe entry cannot hide under an excluded prefix.
+trusted_seed_excluded_baseline_prefixes='tests/functional/baselines/functional/ crates/termrock-functional/tests/functional/baselines/functional/ apps/jackin/tests/functional/baselines/functional/'
+trusted_seed_excluded_artifact_prefixes='crates/termrock-functional/tests/functional/reference-bins/ docs/testing/acceptance-receipts/'
+trusted_seed_excluded_artifact_paths='scripts/trusted-seed-metadata.pack'
 
 sha256_file() {
   if [[ "$hash_tool" == /usr/bin/shasum ]]; then
@@ -497,7 +511,12 @@ import re
 import sys
 from pathlib import Path
 
-expected_path, actual_path, listing_path, commit, root_tree, maximum_entries, maximum_listing, maximum_blob, maximum_total = sys.argv[1:]
+expected_path, actual_path, listing_path, commit, root_tree, maximum_entries, maximum_listing, maximum_blob, maximum_total, baseline_prefixes, artifact_prefixes, artifact_paths = sys.argv[1:]
+baseline_prefixes = tuple(baseline_prefixes.split())
+artifact_prefixes = tuple(artifact_prefixes.split())
+artifact_paths = frozenset(artifact_paths.split())
+if not baseline_prefixes or not artifact_prefixes or not all(item.endswith("/") for item in baseline_prefixes + artifact_prefixes):
+    raise SystemExit("generated-workflows: approved seed metadata exclusion rule is malformed")
 maximum_entries = int(maximum_entries)
 maximum_listing = int(maximum_listing)
 maximum_blob = int(maximum_blob)
@@ -544,7 +563,7 @@ for entry in entries:
     if mode == "040000" and kind == "tree":
         object_type = "tree"
     elif (mode, kind) in {("100644", "blob"), ("100755", "blob"), ("120000", "blob")}:
-        excluded = any(path.startswith(prefix) and "/" not in path[len(prefix):] and path[len(prefix):].endswith(".tui.pb") for prefix in ("tests/functional/baselines/functional/", "crates/termrock-functional/tests/functional/baselines/functional/", "apps/jackin/tests/functional/baselines/functional/"))
+        excluded = any(path.startswith(prefix) and "/" not in path[len(prefix):] and path[len(prefix):].endswith(".tui.pb") for prefix in baseline_prefixes) or any(path.startswith(prefix) for prefix in artifact_prefixes) or path in artifact_paths
         if excluded:
             continue
         object_type = "blob"
@@ -673,7 +692,7 @@ for directory, names, filenames in os.walk(cache, followlinks=False):
         if stat.S_ISLNK(info.st_mode) or not (stat.S_ISREG(info.st_mode) or stat.S_ISDIR(info.st_mode)):
             raise SystemExit("generated-workflows: approved seed metadata cache contains an unsafe filesystem entry")
 PY
-  validate_trusted_metadata_inventory "$trusted_metadata_cache/objects.txt" "$actual" "$listing" "$trusted_seed_commit" "$tree" "$maximum_trusted_seed_metadata_entries" "$maximum_snapshot_listing_bytes" "$maximum_snapshot_blob_bytes" "$maximum_snapshot_total_bytes" || return $?
+  validate_trusted_metadata_inventory "$trusted_metadata_cache/objects.txt" "$actual" "$listing" "$trusted_seed_commit" "$tree" "$maximum_trusted_seed_metadata_entries" "$maximum_snapshot_listing_bytes" "$maximum_snapshot_blob_bytes" "$maximum_snapshot_total_bytes" "$trusted_seed_excluded_baseline_prefixes" "$trusted_seed_excluded_artifact_prefixes" "$trusted_seed_excluded_artifact_paths" || return $?
 }
 
 provision_trusted_metadata_cache() {
@@ -755,7 +774,7 @@ PY
     printf 'generated-workflows: approved seed tree metadata is incomplete; setup fails closed\n' >&2
     return 1
   }
-  validate_trusted_metadata_inventory "$metadata_oids" "$metadata_actual" "$listing" "$trusted_seed_commit" "$tree" "$maximum_trusted_seed_metadata_entries" "$maximum_snapshot_listing_bytes" "$maximum_snapshot_blob_bytes" "$maximum_snapshot_total_bytes" || return $?
+  validate_trusted_metadata_inventory "$metadata_oids" "$metadata_actual" "$listing" "$trusted_seed_commit" "$tree" "$maximum_trusted_seed_metadata_entries" "$maximum_snapshot_listing_bytes" "$maximum_snapshot_blob_bytes" "$maximum_snapshot_total_bytes" "$trusted_seed_excluded_baseline_prefixes" "$trusted_seed_excluded_artifact_prefixes" "$trusted_seed_excluded_artifact_paths" || return $?
   cp "$metadata_oids" "$object_list" || return $?
   mkdir -p "$cargo_home" || return $?
   prepare_trusted_seed "$seed_directory" "$reader" "$temporary_root/trusted-seed-provision-files" '' "$cargo_home" || return $?
@@ -1011,15 +1030,16 @@ print(total)'
 }
 
 project_trusted_tree_entries() {
-  "$python_command" -I -S - "$1" "$2" <<'PY'
+  "$python_command" -I -S - "$1" "$2" "$trusted_seed_excluded_baseline_prefixes" "$trusted_seed_excluded_artifact_prefixes" "$trusted_seed_excluded_artifact_paths" <<'PY'
 import sys
 from pathlib import Path
 
-source_path, destination_path = sys.argv[1:]
-prefixes = (
-    "tests/functional/baselines/functional/", "crates/termrock-functional/tests/functional/baselines/functional/",
-    "apps/jackin/tests/functional/baselines/functional/",
-)
+source_path, destination_path, baseline_prefixes, artifact_prefixes, artifact_paths = sys.argv[1:]
+prefixes = tuple(baseline_prefixes.split())
+artifact_prefixes = tuple(artifact_prefixes.split())
+artifact_paths = frozenset(artifact_paths.split())
+if not prefixes or not artifact_prefixes or not all(item.endswith("/") for item in prefixes + artifact_prefixes):
+    raise SystemExit("generated-workflows: trusted seed exclusion rule is malformed")
 raw = Path(source_path).read_bytes()
 if not raw.endswith(b"\0"):
     raise SystemExit("generated-workflows: snapshot tree listing is incomplete")
@@ -1037,6 +1057,10 @@ for entry in raw[:-1].split(b"\0"):
                     raise SystemExit("generated-workflows: trusted seed baseline projection contains an unsupported entry type")
                 excluded = True
                 break
+    if not excluded and (path in artifact_paths or any(path.startswith(prefix) for prefix in artifact_prefixes)):
+        if (mode, kind) not in {("100644", "blob"), ("100755", "blob")}:
+            raise SystemExit("generated-workflows: trusted seed artifact projection contains an unsupported entry type")
+        excluded = True
     if not excluded:
         projected.append(entry)
 Path(destination_path).write_bytes(b"\0".join(projected) + (b"\0" if projected else b""))
@@ -1710,10 +1734,17 @@ from pathlib import Path
 import os
 
 snapshot = Path(sys.argv[1])
+# Reviewed tool tuples, keyed by Velnor version. A snapshot (and the trusted seed) must pin exactly
+# one of these tuples; adding a Velnor version is a reviewed edit of this table and nothing else.
 supported = {
     "0.1.78": {
         "rust": "1.99.1",
-        "jactionlint": "2.4.0",
+        "jactionlint": "2.6.0",
+        "shellcheck": "0.11.0",
+    },
+    "0.1.81": {
+        "rust": "1.99.1",
+        "jactionlint": "2.6.0",
         "shellcheck": "0.11.0",
     },
 }
@@ -1837,7 +1868,7 @@ validate_cargo_inputs() {
   local cargo_home=$3
   local expected_lock_sha256=${4:-}
   local expected_manifest_fingerprint=${5:-}
-  if approved_inputs=$("$python_command" -I -S - "$validation_mode" "$snapshot" "$cargo_home" "$trusted_seed_lock_artifact" "$trusted_seed_policy_artifact" "$trusted_lock_sha256" "$trusted_manifests_sha256" "$trusted_seed_policy_sha256" "$expected_lock_sha256" "$expected_manifest_fingerprint" <<'PY'
+  if approved_inputs=$("$python_command" -I -S - "$validation_mode" "$snapshot" "$cargo_home" "$trusted_seed_lock_artifact" "$trusted_seed_policy_artifact" "$trusted_lock_sha256" "$trusted_manifests_sha256" "$trusted_seed_policy_sha256" "$expected_lock_sha256" "$expected_manifest_fingerprint" "$trusted_seed_commit" "$trusted_seed_tree" <<'PY'
 import base64
 import copy
 import hashlib
@@ -1849,12 +1880,18 @@ import sys
 import tomllib
 from pathlib import Path, PurePosixPath
 
-mode, snapshot_arg, cargo_home_arg, trusted_lock_arg, policy_arg, trusted_lock_sha256, trusted_manifests_sha256, trusted_policy_sha256, expected_lock_sha256, expected_manifest_fingerprint = sys.argv[1:]
+mode, snapshot_arg, cargo_home_arg, trusted_lock_arg, policy_arg, trusted_lock_sha256, trusted_manifests_sha256, trusted_policy_sha256, expected_lock_sha256, expected_manifest_fingerprint, trusted_seed_commit, trusted_seed_tree = sys.argv[1:]
 snapshot = Path(snapshot_arg).resolve(strict=True)
 cargo_home = Path(cargo_home_arg).resolve(strict=True)
 trusted_lock_path = Path(trusted_lock_arg)
 policy_path = Path(policy_arg)
-manifest_paths = ("Cargo.toml", "apps/jackin/Cargo.toml")
+# The reviewed manifest set, the lock inventory counts and the nested lock set all come from the
+# digest-pinned policy artifact (load_policy); none of them is a literal in this checker.
+manifest_paths = ()
+lock_package_count = -1
+local_package_count = -1
+local_packages = ()
+nested_lock_digests = {}
 registry_source = "registry+https://github.com/rust-lang/crates.io-index"
 max_manifest_bytes = 1048576
 max_policy_bytes = 262144
@@ -1890,6 +1927,13 @@ def unique_object(pairs):
         result[key] = value
     return result
 
+def checked_policy_path(path, basename):
+    if type(path) is not str or not path or path.startswith("/") or "\\" in path or any(ord(character) < 32 or ord(character) == 127 for character in path):
+        reject("trusted seed Cargo policy artifact contains an unsafe path")
+    parts = path.split("/")
+    if any(part in {"", ".", "..", ".git"} for part in parts) or parts[-1] != basename:
+        reject("trusted seed Cargo policy artifact contains an unsafe path")
+
 def load_policy():
     descriptor = None
     try:
@@ -1913,13 +1957,48 @@ def load_policy():
         policy = json.loads(raw.decode("ascii"), object_pairs_hook=unique_object)
     except (UnicodeError, json.JSONDecodeError, ValueError) as error:
         raise SystemExit("generated-workflows: trusted seed Cargo policy artifact is malformed") from error
-    if type(policy) is not dict or set(policy) != {"schema", "seed_commit", "seed_tree", "manifest_aggregate_sha256", "manifests"}:
+    if type(policy) is not dict or set(policy) != {"schema", "seed_commit", "seed_tree", "manifest_aggregate_sha256", "manifests", "lock_package_count", "local_package_count", "local_packages", "nested_locks"}:
         reject("trusted seed Cargo policy artifact has unsupported fields")
-    if policy.get("schema") != 1 or policy.get("seed_commit") != "f4d9999ace7d6deb4294cd89c00afcc80e748d49" or policy.get("seed_tree") != "95406daef6ba234fde62fc47b933fbb8bdfce320" or policy.get("manifest_aggregate_sha256") != trusted_manifests_sha256:
+    if type(policy.get("schema")) is not int or policy["schema"] != 2 or policy.get("seed_commit") != trusted_seed_commit or policy.get("seed_tree") != trusted_seed_tree or policy.get("manifest_aggregate_sha256") != trusted_manifests_sha256:
         reject("trusted seed Cargo policy artifact does not match the reviewed source identity")
     records = policy.get("manifests")
-    if type(records) is not list or [record.get("path") if type(record) is dict else None for record in records] != list(manifest_paths):
+    if type(records) is not list or not records:
         reject("trusted seed Cargo policy artifact has an unexpected manifest path set")
+    paths = [record.get("path") if type(record) is dict else None for record in records]
+    for path in paths:
+        checked_policy_path(path, "Cargo.toml")
+    if paths != sorted(set(paths)) or "Cargo.toml" not in paths:
+        reject("trusted seed Cargo policy artifact has an unexpected manifest path set")
+    global lock_package_count, local_package_count, local_packages, nested_lock_digests
+    lock_package_count = policy.get("lock_package_count")
+    local_package_count = policy.get("local_package_count")
+    if type(lock_package_count) is not int or type(local_package_count) is not int or lock_package_count < 1 or local_package_count < 1 or local_package_count > lock_package_count:
+        reject("trusted seed Cargo policy artifact has an invalid lock inventory count")
+    listed_locals = policy.get("local_packages")
+    if type(listed_locals) is not list or len(listed_locals) != local_package_count:
+        reject("trusted seed Cargo policy artifact has an invalid local package inventory")
+    local_identities = []
+    for item in listed_locals:
+        if type(item) is not dict or set(item) != {"name", "version"} or type(item["name"]) is not str or re.fullmatch(r"[A-Za-z0-9_-]+", item["name"]) is None or type(item["version"]) is not str or not item["version"]:
+            reject("trusted seed Cargo policy artifact has an invalid local package inventory")
+        local_identities.append((item["name"], item["version"], None))
+    if local_identities != sorted(set(local_identities), key=lambda identity: (identity[0], identity[1])):
+        reject("trusted seed Cargo policy artifact has an invalid local package inventory")
+    local_packages = tuple(local_identities)
+    nested_records = policy.get("nested_locks")
+    if type(nested_records) is not list:
+        reject("trusted seed Cargo policy artifact has an invalid nested lock inventory")
+    nested = {}
+    for item in nested_records:
+        if type(item) is not dict or set(item) != {"path", "sha256"} or type(item["sha256"]) is not str or re.fullmatch(r"[0-9a-f]{64}", item["sha256"]) is None:
+            reject("trusted seed Cargo policy artifact has an invalid nested lock inventory")
+        checked_policy_path(item["path"], "Cargo.lock")
+        if item["path"] == "Cargo.lock" or item["path"] in nested:
+            reject("trusted seed Cargo policy artifact has an invalid nested lock inventory")
+        nested[item["path"]] = item["sha256"]
+    if list(nested) != sorted(nested):
+        reject("trusted seed Cargo policy artifact has an invalid nested lock inventory")
+    nested_lock_digests = nested
     result = {}
     total = 0
     aggregate = hashlib.sha256()
@@ -1943,7 +2022,7 @@ def load_policy():
         aggregate.update(digest.encode("ascii"))
         aggregate.update(b"\n")
         result[path] = data
-    if aggregate.hexdigest() != trusted_manifests_sha256 or len(result) != len(manifest_paths):
+    if aggregate.hexdigest() != trusted_manifests_sha256 or len(result) != len(records):
         reject("trusted seed Cargo policy artifact aggregate differs from the reviewed manifest identity")
     return result
 
@@ -2023,7 +2102,7 @@ def validate_snapshot_lock(path, trusted_path, permitted_deltas):
     candidate, candidate_identities, candidate_locals, candidate_digest, candidate_bytes = load_lock(path, "snapshot Cargo.lock")
     if candidate.keys() != trusted.keys() or not toml_equal(candidate["version"], trusted["version"]):
         reject("Cargo.lock changes reviewed lock-level metadata")
-    if len(candidate_identities) != 299 or len(candidate_locals) != 2:
+    if len(candidate_identities) != lock_package_count or len(candidate_locals) != local_package_count:
         reject("Cargo.lock changes the reviewed package inventory")
     if set(candidate_identities) != set(trusted_identities):
         reject("Cargo.lock changes the reviewed package inventory")
@@ -2154,12 +2233,14 @@ def checked_dependency_name(value, label):
 def dependency_deltas(baseline_data, selected_data, trusted_identities, trusted_locals):
     candidate = copy.deepcopy(selected_data)
     root = candidate["Cargo.toml"]
-    app = candidate["apps/jackin/Cargo.toml"]
+    # The reviewed sha2 bundle is a bridge from a seed that lacks it. It names two manifests of
+    # the earlier two-manifest layout, so it only applies when the policy lists both.
+    app = candidate.get("apps/jackin/Cargo.toml")
     workspace = root.get("workspace", {}).get("dependencies", {})
     root_dev = root.get("dev-dependencies", {})
-    app_dev = app.get("dev-dependencies", {})
+    app_dev = app.get("dev-dependencies", {}) if app is not None else {}
     baseline_workspace = baseline_data["Cargo.toml"].get("workspace", {}).get("dependencies", {})
-    baseline_bundle_absent = "sha2" not in baseline_workspace and "sha2" not in baseline_data["Cargo.toml"].get("dev-dependencies", {}) and "jackin-console" not in baseline_data["apps/jackin/Cargo.toml"].get("dev-dependencies", {})
+    baseline_bundle_absent = app is not None and "sha2" not in baseline_workspace and "sha2" not in baseline_data["Cargo.toml"].get("dev-dependencies", {}) and "jackin-console" not in baseline_data["apps/jackin/Cargo.toml"].get("dev-dependencies", {})
     if (baseline_bundle_absent
         and workspace.get("sha2") == "0.10.9"
         and root_dev.get("sha2") == {"workspace": True}
@@ -2186,6 +2267,13 @@ def dependency_deltas(baseline_data, selected_data, trusted_identities, trusted_
         label = path
         baseline_package = baseline_data[path]
         selected_package = selected_data[path]
+        if "package" not in baseline_package or package_identity(baseline_package, label) not in trusted_locals:
+            # A virtual workspace manifest, or a package that the reviewed root lock does not
+            # own (a nested consumer with its own byte-pinned lock), has no lock edges to
+            # reconcile here. It must not change at all.
+            if not toml_equal(baseline_package, selected_package):
+                reject("Cargo manifests change a manifest outside the reviewed root lock packages")
+            continue
         baseline_workspace = baseline_package.get("workspace", {})
         selected_workspace = selected_package.get("workspace", {})
         if type(baseline_workspace) is not dict or type(selected_workspace) is not dict:
@@ -2352,6 +2440,7 @@ for name in ("config", "config.toml"):
 if not manifests or any(path.is_symlink() or not path.is_file() for path in manifests):
     reject("Cargo manifest is symlinked or is not a regular file")
 baseline_manifest_bytes = load_policy()
+manifest_paths = tuple(baseline_manifest_bytes)
 candidate_manifest_bytes = {}
 candidate_data = {}
 baseline_data = {}
@@ -2380,7 +2469,7 @@ candidate_manifest_fingerprint = manifest_digest.hexdigest()
 if set(candidate_manifest_bytes) != set(manifest_paths):
     reject("Cargo manifest path set is outside the reviewed workspace")
 trusted_lock_data, trusted_identities, trusted_locals, trusted_lock_digest, trusted_lock_bytes = load_lock(trusted_lock_path, "trusted seed Cargo.lock")
-if trusted_lock_digest != trusted_lock_sha256 or len(trusted_identities) != 299 or len(trusted_locals) != 2:
+if trusted_lock_digest != trusted_lock_sha256 or len(trusted_identities) != lock_package_count or len(trusted_locals) != local_package_count or sorted(trusted_locals, key=lambda identity: (identity[0], identity[1])) != list(local_packages):
     reject("trusted seed Cargo.lock does not match its reviewed identity")
 validate_lock_edges(trusted_identities, "trusted seed Cargo.lock")
 if mode == "trusted-seed":
@@ -2395,6 +2484,7 @@ if lock_path.is_symlink() or not lock_path.is_file():
 if lock_path not in cargo_locks:
     reject("snapshot Cargo.lock was not discovered as a regular input")
 root_lock_sha256 = ""
+seen_nested_locks = set()
 for path in cargo_locks:
     if path.is_symlink() or not path.is_file():
         reject("nested Cargo.lock is not a regular file")
@@ -2412,20 +2502,23 @@ for path in cargo_locks:
         if mode == "selected-snapshot":
             validate_feature_changes(baseline_data, candidate_data, permitted_deltas["removed_keys"])
     else:
+        # A nested lock belongs to a separate reviewed workspace. It is admitted only at the
+        # exact path the policy lists and only with the exact reviewed bytes.
         try:
             lock_bytes = path.read_bytes()
         except OSError as error:
             raise SystemExit("generated-workflows: Cargo.lock is unreadable") from error
         lock_digest = hashlib.sha256(lock_bytes).hexdigest()
         try:
-            candidate_lock = tomllib.loads(lock_bytes.decode("utf-8"))
-            trusted_lock_bytes = trusted_lock_path.read_bytes()
-        except (OSError, UnicodeError, tomllib.TOMLDecodeError) as error:
+            tomllib.loads(lock_bytes.decode("utf-8"))
+        except (UnicodeError, tomllib.TOMLDecodeError) as error:
             raise SystemExit("generated-workflows: nested Cargo.lock is invalid TOML") from error
-        if not toml_equal(candidate_lock, tomllib.loads(trusted_lock_bytes.decode("utf-8"))) or lock_digest != trusted_lock_sha256:
+        nested_relative = path.relative_to(snapshot).as_posix()
+        if nested_lock_digests.get(nested_relative) != lock_digest:
             reject("Cargo.lock is outside the reviewed dependency support policy")
-        if path == lock_path:
-            root_lock_sha256 = lock_digest
+        seen_nested_locks.add(nested_relative)
+if seen_nested_locks != set(nested_lock_digests):
+    reject("Cargo.lock is outside the reviewed dependency support policy")
 for manifest in manifests:
     if manifest.is_symlink():
         reject("Cargo manifest is symlinked")
@@ -2478,7 +2571,8 @@ from pathlib import Path
 
 path = Path(sys.argv[1])
 expected_hash = sys.argv[2]
-expected_local = {"junie-tui", "jackin-console"}
+# The set of workspace packages is pinned by the digest-checked Cargo policy artifact and enforced
+# against this same lock in validate_cargo_inputs, which always runs first.
 expected_git_repositories = {"termpane", "tuiscotti"}
 registry_source = "registry+https://github.com/rust-lang/crates.io-index"
 
@@ -2527,12 +2621,12 @@ for package in packages:
             reject("contains multiple revisions for one Git source")
         git_repositories[repository] = source
     elif source is None:
-        if "checksum" in package or name not in expected_local:
+        if "checksum" in package:
             reject("contains an unsupported local package")
         local_names.add(name)
     else:
         reject("contains an unsupported registry or Git source")
-if registry_count == 0 or set(git_repositories) != expected_git_repositories or local_names != expected_local:
+if registry_count == 0 or set(git_repositories) != expected_git_repositories or not local_names:
     reject("does not match the reviewed crates.io, Git, and workspace source inventory")
 PY
 }

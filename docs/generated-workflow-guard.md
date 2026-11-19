@@ -27,3 +27,14 @@ On macOS, the real installed-checker harness runs two warm public hooks under `s
 The real installed-checker harness creates a shallow source without the approved seed commit, checks matching commits and pushes, selected-index behavior, linked and split indexes, installed-cache integrity, and foreign-hook refusal, then confirms that staged workflow drift is rejected by the real Velnor comparison. Set `BASELINE_GUARD_EVIDENCE_DIR` to preserve its logs and cache manifests.
 
 The checker pin is updated only in reviewed source together with its configuration and authenticated artifact identities. The installer does not modify global Git configuration or run a checker from the checkout after hook registration.
+
+## Re-freezing the trusted seed
+
+The seed is a parentless commit whose tree is a reviewed source commit plus the untracked lock sentinel `scripts/trusted-seed-cargo.lock`. Do not edit any of its pins by hand. From a clean checkout of the commit to freeze, with Python 3.11 or newer:
+
+```sh
+python3 scripts/refreeze-trusted-seed.py --check   # verify the pins against the committed artifacts, write nothing
+python3 scripts/refreeze-trusted-seed.py --write   # rebuild the seed, its packs, the policy and every pin, then run --check
+```
+
+`--write` refuses a dirty tree and a source commit that `origin/main` does not contain. Review the diff, run the installer from the reviewed checkout, then run `scripts/check-generated-workflows.sh pre-commit` and `pre-push`. The `qualified_*` receipts in `scripts/policy/check-generated-workflow-auth.py` need a real installer qualification run and are not rewritten.
