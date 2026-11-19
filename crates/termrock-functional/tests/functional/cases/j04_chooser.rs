@@ -15,7 +15,6 @@ use tui_test::TerminalSnapshot;
 use crate::support::{App, JACKIN, Launch, row_text, text, try_launch};
 
 const DIRECTORY: &str = "Current directory";
-const INTRO: &str = "Stand up, operator";
 const ACCOUNTS: &str = "Accounts › Overview";
 const NEW_ACCOUNT: &str = "New account";
 const CHOOSE_BUTTON: &str = "Choose…";
@@ -104,18 +103,10 @@ fn secrets_absent(screen: &TerminalSnapshot) {
 }
 
 fn reach(app: &App) -> TerminalSnapshot {
-    let screen = app.wait_screen("accounts, manager, or intro", |screen| {
+    app.leave_intro("accounts or manager after intro", |screen| {
         let visible = text(screen);
-        visible.contains(ACCOUNTS) || visible.contains(DIRECTORY) || visible.contains(INTRO)
-    });
-    if text(&screen).contains(INTRO) {
-        app.key("space");
-        return app.wait_screen("after intro", |screen| {
-            let visible = text(screen);
-            visible.contains(ACCOUNTS) || visible.contains(DIRECTORY)
-        });
-    }
-    screen
+        visible.contains(ACCOUNTS) || visible.contains(DIRECTORY)
+    })
 }
 
 fn open_form(app: &App) -> TerminalSnapshot {

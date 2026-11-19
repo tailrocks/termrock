@@ -17,7 +17,6 @@ use tui_test::TerminalSnapshot;
 use crate::support::{App, JACKIN, Launch, Point, find_all, row_text, text, try_launch};
 
 const DIRECTORY: &str = "Current directory";
-const INTRO: &str = "Stand up, operator";
 const OVERVIEW: &str = "Accounts › Overview";
 const EMPTY: &str = "No accounts registered";
 const PERSONAL: &str = "Personal";
@@ -106,15 +105,9 @@ fn open(name: &str, scenario: &str) -> App {
 }
 
 fn reach_manager(app: &App) -> TerminalSnapshot {
-    let screen = app.wait_screen("manager or intro", |screen| {
-        let visible = text(screen);
-        visible.contains(DIRECTORY) || visible.contains(INTRO)
-    });
-    if text(&screen).contains(INTRO) {
-        app.key("space");
-        return app.wait_text(DIRECTORY);
-    }
-    screen
+    app.leave_intro("manager after intro", |screen| {
+        text(screen).contains(DIRECTORY)
+    })
 }
 
 fn dialog_columns(screen: &TerminalSnapshot) -> Option<(u16, u16)> {

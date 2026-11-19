@@ -15,6 +15,10 @@ use tui_test::{
 #[allow(unused_imports)]
 pub use crate::bins::{HOLLA, SHOWCASE, TABLEPRO};
 const TIMEOUT: Duration = Duration::from_secs(10);
+/// Jackin's reduced-motion intro holds for `rain::REDUCED_HOLD` ticks of
+/// `rain::TICK_MS` (`apps/jackin/src/rain.rs`).
+const INTRO_HOLD_TICKS: u64 = 45;
+const INTRO_TICK_MS: u64 = 33;
 // A quitting app flushes state and restores the terminal, so under load it
 // needs more than a screen wait.
 const EXIT_TIMEOUT: Duration = Duration::from_secs(20);
@@ -530,6 +534,50 @@ impl App {
             return;
         }
         self.paste(&TestRequest::advance(milliseconds));
+    }
+
+    /// Waits until `landing` accepts the screen, passing the jackin reduced-motion
+    /// intro on the way.
+    ///
+    /// The intro shows its caption for [`INTRO_HOLD_TICKS`] app ticks and then
+    /// ends by itself, and Enter cannot skip the first ticks. Each tick is a
+    /// frame, so under `JUNIE_TUI_DRAW_LAG_MS` the hold takes
+    /// `ticks * (tick + lag)` of wall time, which is longer than the ten-second
+    /// screen deadline at 300 ms. On the stepped clock the intro is stepped out
+    /// from the app's own clock: the steps are fenced, so each screen read is
+    /// the one its step produced, and no wall time is involved. Without the
+    /// clock the wall ticks are all there is, so the deadline is the screen
+    /// deadline plus the hold at the lagged tick rate.
+    pub fn leave_intro(
+        &self,
+        reason: &str,
+        landing: impl Fn(&TerminalSnapshot) -> bool,
+    ) -> TerminalSnapshot {
+        if !self.clock {
+            let lagged_tick = INTRO_TICK_MS + draw_lag_ms().unwrap_or(0);
+            let deadline = TIMEOUT + Duration::from_millis(INTRO_HOLD_TICKS * lagged_tick);
+            return self.wait_screen_for(reason, deadline, landing);
+        }
+        // Test requests are pasted, so the app must have painted first.
+        let first = self.wait_screen(reason, |screen| {
+            landing(screen) || !text(screen).trim().is_empty()
+        });
+        if landing(&first) {
+            return first;
+        }
+        for _ in 0..3 {
+            self.advance_clock(INTRO_TICK_MS * INTRO_HOLD_TICKS);
+            self.fence();
+            let screen = self.screen();
+            if landing(&screen) {
+                self.record(reason, &screen);
+                return screen;
+            }
+        }
+        panic!(
+            "{reason}: intro did not end on the stepped clock\n{}",
+            text(&self.screen())
+        );
     }
 
     /// Lets every status toast reach the end of its lifetime on the stepped clock.

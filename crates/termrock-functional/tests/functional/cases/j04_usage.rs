@@ -13,7 +13,6 @@ use tui_test::TerminalSnapshot;
 use crate::support::{App, JACKIN, Launch, row_text, text, try_launch};
 
 const DIRECTORY: &str = "Current directory";
-const INTRO: &str = "Stand up, operator";
 const USAGE: &str = "Usage";
 const ACCOUNTS: &str = "Accounts";
 const PERSONAL: &str = "Claude · Personal";
@@ -82,15 +81,9 @@ fn launch_on(name: &str, scenario: &str, clock: bool) -> App {
 }
 
 fn reach_manager(app: &App) -> TerminalSnapshot {
-    let screen = app.wait_screen("manager or intro", |screen| {
-        let visible = text(screen);
-        visible.contains(DIRECTORY) || visible.contains(INTRO)
-    });
-    if text(&screen).contains(INTRO) {
-        app.key("space");
-        return app.wait_text(DIRECTORY);
-    }
-    screen
+    app.leave_intro("manager after intro", |screen| {
+        text(screen).contains(DIRECTORY)
+    })
 }
 
 fn focused_line(screen: &TerminalSnapshot) -> String {
@@ -340,7 +333,7 @@ fn hold_row(
 
 #[test]
 fn j04_usage_route() {
-    let app = open("j04-usage-route", "hard-cases");
+    let app = open_stepped("j04-usage-route", "hard-cases");
     reach_manager(&app);
     app.key("c");
     let accounts = app.wait_text(ACCOUNTS);
@@ -397,7 +390,9 @@ fn j04_usage_route() {
         "duplicate r ran with nobody refreshing\n{}",
         text(&duplicate)
     );
-    let failed = app.wait_screen("hard-cases refresh settled", |screen| {
+    // The refresh delays run on the stepped clock, so the refresh settles when
+    // the journey steps it, not when wall time passes.
+    let failed = advance_until(&app, "hard-cases refresh settled", 1_000, |screen| {
         let visible = text(screen);
         visible.contains(RATE)
             && visible.contains("57%")
@@ -405,6 +400,10 @@ fn j04_usage_route() {
             && visible.contains("22%")
             && visible.contains(LAST_GOOD)
             && !visible.contains(RELOAD_HARD)
+            // Only Experiments stays on its refreshing row. The header counts
+            // the rows still waiting for a reply, so every other reply has landed
+            // when it reads 1, whatever order the stepped clock delivered them in.
+            && visible.contains("refreshing 1")
     });
     no_secrets(&failed);
     assert!(
