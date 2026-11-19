@@ -173,6 +173,11 @@ fn check_frame(app: &crate::support::App, screen: &TerminalSnapshot, test_id: &s
     let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
         .expect("open Tuiscotti frozen store");
     let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
+    // A hidden cursor parks wherever the last diff write ended, which is not
+    // part of the frame. `App::visual` ignores it the same way.
+    if crate::support::App::cursor_only(&outcome) {
+        return;
+    }
     if let CheckOutcome::Failure(failure) = outcome {
         panic!(
             "{test_id} {} sha {} path {} cells {}",
@@ -206,11 +211,6 @@ fn tab_press_held(screen: &TerminalSnapshot) -> bool {
             .is_some_and(|cell| cell.text() != "▎")
 }
 
-fn cursor_parked(screen: &TerminalSnapshot, col: u32, row: u32) -> bool {
-    let cursor = screen.cursor();
-    cursor.col() == col && cursor.row() == row && !cursor.visible()
-}
-
 fn header_present(screen: &TerminalSnapshot) -> bool {
     (0..screen.rows()).any(|row| {
         let line = row_text(screen, row);
@@ -242,9 +242,10 @@ fn sample_held(
     None
 }
 
-/// The accepted no-color frame parks the hidden cursor at column 118.
-/// The settled frame keeps the same cells and moves that cursor to 107.
-fn no_color_cursor(screen: &TerminalSnapshot) -> bool {
+/// The no-color band is in view at 120 by 40 with Compare levels on. The
+/// hidden cursor is not part of the frame: it sits where the last diff write
+/// ended, which depends on how the wheel notches batched into frames.
+fn no_color_band(screen: &TerminalSnapshot) -> bool {
     let raw = text(screen);
     if !raw.contains(CRUMB)
         || !raw.contains("no color")
@@ -255,8 +256,7 @@ fn no_color_cursor(screen: &TerminalSnapshot) -> bool {
     {
         return false;
     }
-    let cursor = screen.cursor();
-    cursor.col() == 118 && cursor.row() == 36 && !cursor.visible()
+    true
 }
 
 fn grid_label(screen: &TerminalSnapshot, label: &str) -> bool {
@@ -872,7 +872,7 @@ fn compare_levels_narrows_before_restore() {
     let mut bands = None;
     for _ in 0..24 {
         let screen = app.settle();
-        if no_color_cursor(&screen) {
+        if no_color_band(&screen) {
             bands = Some(screen);
             break;
         }
@@ -883,13 +883,7 @@ fn compare_levels_narrows_before_restore() {
     }
     let bands = bands.unwrap_or_else(|| {
         let screen = app.settle();
-        let cursor = screen.cursor();
-        panic!(
-            "no-color cursor at {},{} not 118,36\n{}",
-            cursor.col(),
-            cursor.row(),
-            text(&screen)
-        )
+        panic!("no-color band never reached\n{}", text(&screen))
     });
     see(
         &bands,
@@ -1238,11 +1232,8 @@ fn option_resizable_off() {
     }
     let ignored = ignored.unwrap_or_else(|| {
         let screen = app.screen();
-        let cursor = screen.cursor();
         panic!(
-            "resizable drag lost the Playground press at cursor {},{}\n{}",
-            cursor.col(),
-            cursor.row(),
+            "resizable drag lost the Playground press\n{}",
             text(&screen)
         )
     });
@@ -1284,7 +1275,6 @@ fn resizable_frame(screen: &TerminalSnapshot, id_x: u16, seam_x: u16) -> bool {
         || raw.contains("Page options")
         || raw.contains(ROW_28)
         || !tab_press_held(screen)
-        || !cursor_parked(screen, 37, 39)
         || !header_present(screen)
     {
         return false;
@@ -1447,7 +1437,6 @@ fn min_width_frame(screen: &TerminalSnapshot, id_x: u16) -> bool {
         || raw.contains("Page options")
         || raw.contains(ROW_28)
         || !tab_press_held(screen)
-        || !cursor_parked(screen, 99, 37)
         || !header_present(screen)
     {
         return false;

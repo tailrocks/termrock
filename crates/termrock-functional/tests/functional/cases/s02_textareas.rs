@@ -86,6 +86,11 @@ fn check_frame(app: &crate::support::App, screen: &TerminalSnapshot, test_id: &s
     let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
         .expect("open Tuiscotti frozen store");
     let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
+    // A hidden cursor parks wherever the last diff write ended, which is not
+    // part of the frame. `App::visual` ignores it the same way.
+    if crate::support::App::cursor_only(&outcome) {
+        return;
+    }
     if let CheckOutcome::Failure(failure) = outcome {
         panic!(
             "{test_id} {} sha {} path {} cells {}",
@@ -106,8 +111,9 @@ fn wait_commit(app: &crate::support::App) -> TerminalSnapshot {
     })
 }
 
-/// The accepted label-hit frame still paints Playground with the press flash
-/// and parks the cursor on the hint row. A later paint locks the released tab.
+/// The accepted label-hit frame still paints Playground with the press flash.
+/// A later paint locks the released tab. No text area is focused, so the
+/// cursor is hidden and where it sits is not part of the frame.
 fn label_shot(screen: &TerminalSnapshot) -> bool {
     let raw = text(screen);
     if !raw.contains(PLACEHOLDER)
@@ -117,10 +123,6 @@ fn label_shot(screen: &TerminalSnapshot) -> bool {
         || raw.contains(EDITING)
         || raw.contains("ZZ")
     {
-        return false;
-    }
-    let cursor = screen.cursor();
-    if cursor.col() != 53 || cursor.row() != 39 || cursor.visible() {
         return false;
     }
     let Some(hit) = find_all(screen, "Playground")
