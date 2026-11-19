@@ -298,9 +298,15 @@ impl MasterDetail {
         l
     }
 
-    /// Drops the last frame's geometry. A host calls this when it renders
-    /// into no space at all, so keys and drags cannot resize a split that is
-    /// not on screen.
+    /// Drops the last frame's geometry, so keys and drags cannot resize a split
+    /// that is not on screen.
+    ///
+    /// Library plumbing for a widget that owns a `MasterDetail` and skips
+    /// `layout` when it renders into no space. It is not for apps: an app calls
+    /// `layout` every frame, and `layout` into an empty area already leaves
+    /// nothing to resize (pinned by `tests/regressions/master_detail_bounds.rs`).
+    /// It stays `pub(crate)`, and `#[doc(hidden)]` where it must cross a crate
+    /// (docs/decisions.md, #494).
     pub(crate) fn forget_geometry(&mut self) {
         self.last = MdLayout::default();
         self.container = Rect::ZERO;

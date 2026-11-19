@@ -917,3 +917,57 @@ the #445 entries were applied up front: every `impl` in the moved files and ever
 - **Hidden plumbing.** `context::row_rect`, `layer::layer_out`,
   `ContextMenu::contains_id` and `modal::Frame::inner_width` are used by the
   dialogs, lists, tables and chips that stay in `junie-tui` until #447 and #448.
+
+## 2026-11-19: `PropsList::wrapping`, `PropsList::height_at` and `MasterDetail::forget_geometry` stay out of the public API (#494)
+
+The #447 split makes three `pub(crate)` methods cross a crate, so they become
+`#[doc(hidden)] pub` and join `tests/regressions/doc-hidden-items.txt`. That
+needed no public-API decision and made none. #494 asked for one. Each stays
+hidden. The reasons are below; promoting later needs a consumer, a catalog
+line, a Showcase proof that calls it, and an id-digest update with its
+justification here.
+
+- **`PropsList::wrapping` and `PropsList::height_at`: no app builds a
+  `PropsList`.** Holla, jackin and tablepro never name it. They draw property
+  sheets with `props::render` and `props::measure`, which already wrap
+  `Prop::wrap` values, and they show a property dialog with `InfoDialog`. The
+  only callers are `InfoDialog` (`wrapping()` when it builds its list,
+  `height_at` when it sizes the dialog) and one saturation test. The Showcase
+  has seven `PropsList` pages and none calls either. Public items already cover
+  the need that is left. A list that keeps one prop per row shows a long value
+  through the public `reveal` (`RevealMode::InlineWrap` shows it on wrapped
+  rows). A sheet's wrapped height is `props::measure_with(&props, width,
+  sheet)`. A list that does not wrap is `props.len()` rows tall, so `height_at`
+  adds nothing there.
+- **`height_at` is not a contract worth freezing.** It measures a list with no
+  scrollbar, and `InfoDialog` passes it `inner_w + 1`, an offset a public
+  version would have to explain. `wrapping`
+  changes how the cursor, the viewport and the reveal treat a prop that takes
+  several rows, and only `InfoDialog` exercises that path. Making either public
+  without a consumer is the shape #353 removes.
+- **`Prop::wrap` now says where it applies.** The Showcase's own details list
+  (`disk_cleanup`) carries a `Prop::wrap` value that a plain `PropsList` keeps on
+  one row. That is the intended list behavior, and the doc comment of
+  `Prop::wrap` now says so (`render`, `measure` and `InfoDialog` wrap; a
+  `PropsList` reveals).
+- **`MasterDetail::forget_geometry`: `layout` already does the job for an
+  app.** Its comment said "a host calls this". The host is `ListDetail`, which
+  skips `layout` when its area is empty. All seven app call sites (holla
+  `disk`, `cleanup`, `files`; jackin `config`, `accounts`, `manager`; tablepro
+  `connections`) call `layout` every frame with whatever area they have. A
+  probe laid out a 120-column split, laid it out again into `Rect::ZERO`, a
+  zero-width area and a zero-height area, with the default `collapse_below` and
+  with `0`, then sent the resize chord. The split never moved. Before the empty
+  `layout`, the same chord moved it. `forget_geometry` gave the same result.
+  `master_detail_layout_into_no_space_leaves_nothing_to_resize` pins that, so
+  this reason stays true. The two calls are not identical (`last()` reads
+  `Master` after the first and the default `Split` after the second, and the
+  chord is ignored or consumed), and a second public way to reach almost the
+  same state is a trap, not a need.
+- **The doc comments no longer address apps.** `forget_geometry`, `wrapping`
+  and `height_at` say they are library plumbing and name the public route. The
+  hidden-item rule from #444 stands: apps and examples may not use a listed
+  item.
+- **No id digest change.** Nothing here becomes public, so `api-ids.sha256`,
+  the catalog and `doc-hidden-items.txt` are untouched. The #447 stack adds the
+  three items to `doc-hidden-items.txt` when it makes them `pub`.
