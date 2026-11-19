@@ -4,7 +4,6 @@
 //! `pre_refactor/s03_datagrid/` and each case id's dots become underscores.
 
 use tui_test::{SnapshotColor, TerminalSnapshot};
-use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{Launch, Point, SHOWCASE, cell_bg, find_all, row_text, text, try_launch};
 
@@ -162,41 +161,6 @@ fn shot(app: &crate::support::App, case_id: &str, _precondition: &str, _args: &[
     app.visual(&visual_id(case_id));
 }
 
-fn check_frame(app: &crate::support::App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = crate::support::oracle_baselines();
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        let fields = failure.changed_fields();
-        let parked = failure.changed_cell_total() == 0
-            && !screen.cursor().visible()
-            && !fields.is_empty()
-            && fields
-                .iter()
-                .all(|field| field == "cursor.col" || field == "cursor.row");
-        if parked {
-            return;
-        }
-        panic!(
-            "{test_id} {} sha {} path {} cells {} fields {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total(),
-            fields.join(",")
-        );
-    }
-}
-
 /// The accepted Options page still has the tab pressed, gutter included.
 /// `visual` returns after that fill drops back to the overlay rest colour.
 fn shot_options_held(app: &crate::support::App, case_id: &str) {
@@ -217,7 +181,7 @@ fn shot_options_held(app: &crate::support::App, case_id: &str) {
             && row_text(screen, 4).contains("▎Options")
             && text(screen).contains("cancel")
     });
-    check_frame(app, &held, &visual_id(case_id));
+    crate::support::assert_frame(app, &held, &visual_id(case_id));
     app.up(tab);
 }
 

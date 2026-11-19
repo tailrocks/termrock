@@ -9,7 +9,6 @@
 use std::time::{Duration, Instant};
 
 use tui_test::TerminalSnapshot;
-use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{App, JACKIN, Launch, text, try_launch};
 
@@ -104,30 +103,6 @@ fn held(
             text(&app.screen())
         );
         std::thread::sleep(Duration::from_millis(40));
-    }
-}
-
-fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = crate::support::oracle_baselines();
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        panic!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        );
     }
 }
 
@@ -249,7 +224,7 @@ fn j05_handoff_handoff() {
     assert!(visible.contains(BRANCH), "{visible}");
     assert!(absent(&visible), "{visible}");
     assert_eq!((wide.cols(), wide.rows()), (120, 40));
-    check_frame(&app, &wide, &visual_id(WIDE));
+    crate::support::assert_frame(&app, &wide, &visual_id(WIDE));
     app.resize(80, 24);
     let narrow = held(
         &app,
@@ -262,7 +237,7 @@ fn j05_handoff_handoff() {
     assert!(visible.contains(BRANCH), "{visible}");
     assert!(absent(&visible), "{visible}");
     assert_eq!((narrow.cols(), narrow.rows()), (80, 24));
-    check_frame(&app, &narrow, &visual_id(NARROW));
+    crate::support::assert_frame(&app, &narrow, &visual_id(NARROW));
     app.resize(120, 40);
     let restored = held(
         &app,

@@ -4,7 +4,6 @@
 //! `pre_refactor/s07_splitsstacks/` and each case id's dots become underscores.
 
 use tui_test::TerminalSnapshot;
-use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{
     App, Launch, Point, SHOWCASE, find_all, flash_settle, row_text, text, try_launch,
@@ -233,21 +232,8 @@ fn shot(app: &App, case_id: &str) {
     let root = crate::support::oracle_baselines();
     let id = visual_id(case_id);
     let outcome = app.check_visual(&root, &id);
-    if let CheckOutcome::Failure(failure) = &outcome {
-        let fields = failure.changed_fields();
-        // The cells are the accepted paint. A hidden cursor parks on another
-        // column of an otherwise equal frame.
-        let parked = failure.changed_cell_total() == 0
-            && !fields.is_empty()
-            && fields
-                .iter()
-                .all(|field| field == "cursor.col" || field == "cursor.row");
-        if parked {
-            return;
-        }
-    }
     assert!(
-        outcome.is_pass(),
+        app.accepts(&outcome),
         "visual mismatch for {case_id}: {outcome:?}"
     );
 }

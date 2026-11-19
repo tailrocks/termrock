@@ -6,7 +6,6 @@
 use std::time::{Duration, Instant};
 
 use tui_test::{SnapshotColor, TerminalSnapshot};
-use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{Launch, Point, SHOWCASE, find_all, row_text, text, try_launch};
 
@@ -120,30 +119,6 @@ fn click_body(app: &crate::support::App, label: &str, y_min: u16, y_max: u16) {
 
 fn shot(app: &crate::support::App, case_id: &str, _precondition: &str, _args: &[&str]) {
     app.visual(&visual_id(case_id));
-}
-
-fn check_frame(app: &crate::support::App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = crate::support::oracle_baselines();
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        panic!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        );
-    }
 }
 
 /// The accepted wrap frame still paints Refresh with the press flash.
@@ -892,7 +867,7 @@ fn option_focus_visible_hides_the_pointer_bar() {
         &["Run task ✓", "▎"],
         &["Preview ✓", "Working…", "Disabled primary ✓"],
     );
-    check_frame(&app, &held, &visual_id("opt.buttons.focus_visible"));
+    crate::support::assert_frame(&app, &held, &visual_id("opt.buttons.focus_visible"));
     app.finish();
 }
 
@@ -1079,7 +1054,7 @@ fn option_row_wrap_reaches_the_last_button() {
         &["Refresh ✓", FITS, NEXT],
         &["Validate ✓", "behind", "Arrows wrap in the row off"],
     );
-    check_frame(&app, &wrapped, &visual_id("opt.buttons.row_wrap"));
+    crate::support::assert_frame(&app, &wrapped, &visual_id("opt.buttons.row_wrap"));
     app.finish();
 }
 

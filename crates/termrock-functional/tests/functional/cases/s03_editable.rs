@@ -4,7 +4,6 @@
 //! `pre_refactor/s03_editable/` and each case id's dots become underscores.
 
 use tui_test::{SnapshotColor, TerminalSnapshot};
-use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{Launch, Point, SHOWCASE, cell_bg, find_all, row_text, text, try_launch};
 
@@ -155,43 +154,6 @@ fn row_fill_pressed(screen: &TerminalSnapshot, needle: &str) -> bool {
         && row_text(screen, u32::from(hit.y)).contains(needle)
 }
 
-fn check_frame(app: &crate::support::App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = crate::support::oracle_baselines();
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        let fields = failure.changed_fields();
-        // The press fill is the accepted paint. A hidden cursor is not drawn;
-        // the terminal parks it on different cells of otherwise equal frames.
-        let parked = failure.changed_cell_total() == 0
-            && !screen.cursor().visible()
-            && !fields.is_empty()
-            && fields
-                .iter()
-                .all(|field| field == "cursor.col" || field == "cursor.row");
-        if parked {
-            return;
-        }
-        panic!(
-            "{test_id} {} sha {} path {} cells {} fields {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total(),
-            fields.join(",")
-        );
-    }
-}
-
 /// `visual` waits out the press. Hold the data row and compare that frame.
 fn shot_pressed(app: &crate::support::App, needle: &str, case_id: &str) {
     let screen = app.wait_text(needle);
@@ -200,7 +162,7 @@ fn shot_pressed(app: &crate::support::App, needle: &str, case_id: &str) {
     let held = app.wait_screen("pressed row fill", |screen| {
         row_fill_pressed(screen, needle)
     });
-    check_frame(app, &held, &visual_id(case_id));
+    crate::support::assert_frame(app, &held, &visual_id(case_id));
     app.up(hit);
 }
 
@@ -1078,7 +1040,7 @@ fn option_numeric_off_sorts_changes_as_text() {
     // The accepted cells are this held row. A hidden cursor parks on a
     // different cell of an otherwise equal frame, which `visual` rejects.
     let pressed = app.screen();
-    check_frame(&app, &pressed, &visual_id("opt.editable.numeric"));
+    crate::support::assert_frame(&app, &pressed, &visual_id("opt.editable.numeric"));
     app.up(held);
     app.finish();
 }

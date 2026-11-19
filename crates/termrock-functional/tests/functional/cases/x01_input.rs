@@ -9,7 +9,6 @@
 //! chord: the selected name is cleared and `w` is not inserted.
 
 use tui_test::TerminalSnapshot;
-use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{App, Launch, SHOWCASE, find_all, row_text, text, try_launch};
 
@@ -143,30 +142,6 @@ fn close(app: &App) {
     app.finish();
 }
 
-fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = crate::support::oracle_baselines();
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        panic!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        );
-    }
-}
-
 fn assert_modified_key() {
     let app = open("x01-input-modified", &[]);
     open_rename(&app);
@@ -262,7 +237,7 @@ fn assert_checkpoints() {
     assert_dialog_holds(&wide, TOKEN);
     assert_eq!(wide.cols(), 120);
     assert_eq!(wide.rows(), 40);
-    check_frame(&app, &wide, WIDE_ID);
+    crate::support::assert_frame(&app, &wide, WIDE_ID);
 
     app.resize(80, 24);
     // The first 80×24 paint still has the wide page clipped around the
@@ -289,7 +264,7 @@ fn assert_checkpoints() {
     assert_eq!(text(&narrow).matches(TOKEN).count(), 1);
     assert_eq!(narrow.cols(), 80);
     assert_eq!(narrow.rows(), 24);
-    check_frame(&app, &narrow, NARROW_ID);
+    crate::support::assert_frame(&app, &narrow, NARROW_ID);
 
     app.resize(120, 40);
     let restored = app.wait_screen("restored", |screen| {

@@ -197,7 +197,8 @@ fn narrow_open(screen: &TerminalSnapshot) -> bool {
 
 fn baseline_hit(app: &App, checkpoint: &str) -> bool {
     let root = crate::support::oracle_baselines();
-    app.check_visual(&root, &visual_id(checkpoint)).is_pass()
+    let outcome = app.check_visual(&root, &visual_id(checkpoint));
+    app.accepts(&outcome)
 }
 
 /// Detail ages and the narrow uptime tail change every sim second. The 700 ms

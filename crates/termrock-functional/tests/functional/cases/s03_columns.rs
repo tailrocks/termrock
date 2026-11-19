@@ -6,7 +6,6 @@
 use std::time::{Duration, Instant};
 
 use tui_test::{SnapshotColor, TerminalSnapshot};
-use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{Launch, Point, SHOWCASE, find_all, row_text, text, try_launch};
 
@@ -158,35 +157,6 @@ fn click_side(app: &crate::support::App, label: &str) {
 
 fn shot(app: &crate::support::App, case_id: &str, _precondition: &str, _args: &[&str]) {
     app.visual(&visual_id(case_id));
-}
-
-fn check_frame(app: &crate::support::App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = crate::support::oracle_baselines();
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    // A hidden cursor parks wherever the last diff write ended, which is not
-    // part of the frame. `App::visual` ignores it the same way.
-    if crate::support::App::cursor_only(&outcome) {
-        return;
-    }
-    if let CheckOutcome::Failure(failure) = outcome {
-        panic!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        );
-    }
 }
 
 /// The accepted Playground shot still has the tab's press flash, after focus
@@ -890,7 +860,7 @@ fn compare_levels_narrows_before_restore() {
         &[CRUMB, "no color", WIDE],
         &["Page options", CAP_PLAY, "○ Compare levels"],
     );
-    check_frame(&app, &bands, &visual_id("sc.columns.compare-levels.120x40"));
+    crate::support::assert_frame(&app, &bands, &visual_id("sc.columns.compare-levels.120x40"));
     app.resize(80, 24);
     let narrow = app.wait_screen("compare redraw at 80 by 24", |screen| {
         screen.cols() == 80 && screen.rows() == 24 && text(screen).contains(CRUMB)
@@ -1255,7 +1225,7 @@ fn option_resizable_off() {
         &[CRUMB, ROW_82, SAMPLE, DATE, "#1040"],
         &[DRAG_META, USER_META, FIXED_META, "Page options", ROW_28],
     );
-    check_frame(&app, &ignored, &visual_id("opt.columns.resizable"));
+    crate::support::assert_frame(&app, &ignored, &visual_id("opt.columns.resizable"));
     app.up(dragged);
     app.finish();
 }
@@ -1421,7 +1391,7 @@ fn option_min_width() {
         &[CRUMB, ROW_82, "#1040", USER_META],
         &[DRAG_META, FIXED_META, "Page options", ROW_28],
     );
-    check_frame(&app, &clamped, &visual_id("opt.columns.min_width"));
+    crate::support::assert_frame(&app, &clamped, &visual_id("opt.columns.min_width"));
     app.up(dest);
     app.finish();
 }

@@ -11,7 +11,6 @@
 //! one tick at a time until the frame the baseline pins is on screen.
 
 use tui_test::TerminalSnapshot;
-use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{App, JACKIN, Launch, text, try_launch};
 
@@ -160,46 +159,6 @@ fn narrow_frame(screen: &TerminalSnapshot) -> bool {
         && workspace_focused(screen)
 }
 
-fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) -> Result<(), String> {
-    let root = crate::support::oracle_baselines();
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    match outcome {
-        CheckOutcome::Pass(_) => Ok(()),
-        CheckOutcome::Failure(failure) => {
-            let fields = failure.changed_fields();
-            // A hidden cursor is not drawn. Its column and row are where the
-            // terminal parked it, and that park moves between otherwise equal frames.
-            let parked = failure.changed_cell_total() == 0
-                && !screen.cursor().visible()
-                && !fields.is_empty()
-                && fields
-                    .iter()
-                    .all(|field| field == "cursor.col" || field == "cursor.row");
-            if parked {
-                return Ok(());
-            }
-            Err(format!(
-                "{test_id} {} sha {} path {} cells {} fields {}",
-                failure.reason(),
-                failure.candidate_sha256(),
-                failure.candidate_path().display(),
-                failure.changed_cell_total(),
-                fields.join(",")
-            ))
-        }
-    }
-}
-
 /// Steps the test clock one tick at a time until `accept` holds. The fence
 /// makes each read the frame after the step, so nothing is read early and no
 /// wall time passes.
@@ -235,7 +194,7 @@ fn shot(
 ) -> Result<(), String> {
     let test_id = visual_id(checkpoint);
     let screen = step_until(app, &test_id, accept);
-    check_frame(app, &screen, &test_id)
+    crate::support::frame_mismatch(app, &screen, &test_id).map_or(Ok(()), Err)
 }
 
 fn ids_unchanged(screen: &TerminalSnapshot, ids: &[String], jk: &[String]) {
