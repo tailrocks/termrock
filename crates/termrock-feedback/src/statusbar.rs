@@ -2,13 +2,13 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
 
-use crate::core::id::WidgetId;
-use crate::theme::{Kind, Plane, Tone};
-use crate::ui::ctx::{RenderCtx, VisualState, fill};
-use crate::ui::fitting::removal_order;
-use crate::ui::measure::terminal_extent;
-use crate::ui::text::{truncate, width};
-use crate::widgets::progress::{Meter, MeterTone, MeterVisual};
+use crate::progress::{Meter, MeterTone, MeterVisual};
+use termrock_core::id::WidgetId;
+use termrock_runtime::ctx::{RenderCtx, VisualState, fill};
+use termrock_runtime::fitting::removal_order;
+use termrock_runtime::measure::terminal_extent;
+use termrock_text::cells::{truncate, width};
+use termrock_theme::{Kind, Plane, Tone};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Emphasis {
@@ -35,7 +35,7 @@ pub struct StatusItem {
 
     pub busy: bool,
 
-    pub tip: Option<crate::ui::tooltip::Tip>,
+    pub tip: Option<termrock_runtime::tooltip::Tip>,
 }
 
 pub const STATUS_METER_TRACK: u16 = 10;
@@ -78,7 +78,7 @@ impl StatusItem {
         self
     }
 
-    pub fn tooltip(mut self, tip: crate::ui::tooltip::Tip) -> Self {
+    pub fn tooltip(mut self, tip: termrock_runtime::tooltip::Tip) -> Self {
         self.tip = Some(tip);
         self
     }
@@ -96,7 +96,8 @@ impl StatusItem {
         terminal_extent(self.intrinsic_width())
     }
 
-    pub(crate) fn intrinsic_width(&self) -> usize {
+    #[doc(hidden)]
+    pub fn intrinsic_width(&self) -> usize {
         let w = width(&self.text).saturating_add(if self.busy { 2 } else { 0 });
         let base = match self.emphasis {
             Emphasis::Chip => w.saturating_add(2),
@@ -133,19 +134,23 @@ pub struct StatusBar {
     pub center: Vec<StatusItem>,
     pub right: Vec<StatusItem>,
 
-    pub reveal: Option<crate::ui::reveal::Reveal>,
+    pub reveal: Option<termrock_runtime::reveal::Reveal>,
 }
 
-impl crate::ui::measure::Measure for StatusBar {
+impl termrock_runtime::measure::Measure for StatusBar {
     fn measure(
         &self,
         _avail: ratatui::layout::Size,
-        _ctx: &crate::ui::ctx::RenderCtx,
+        _ctx: &termrock_runtime::ctx::RenderCtx,
     ) -> ratatui::layout::Size {
         ratatui::layout::Size::new(terminal_extent(self.intrinsic_width()), 1)
     }
 
-    fn min_width(&self, _avail: ratatui::layout::Size, _ctx: &crate::ui::ctx::RenderCtx) -> u16 {
+    fn min_width(
+        &self,
+        _avail: ratatui::layout::Size,
+        _ctx: &termrock_runtime::ctx::RenderCtx,
+    ) -> u16 {
         FLEX_MIN
     }
 }
@@ -212,12 +217,14 @@ impl StatusBar {
     }
 
     /// Display width of every item, per group, measured once per layout.
-    pub(crate) fn item_widths(&self) -> [Vec<usize>; 3] {
+    #[doc(hidden)]
+    pub fn item_widths(&self) -> [Vec<usize>; 3] {
         [&self.left, &self.center, &self.right]
             .map(|items| items.iter().map(StatusItem::intrinsic_width).collect())
     }
 
-    pub(crate) fn intrinsic_width(&self) -> usize {
+    #[doc(hidden)]
+    pub fn intrinsic_width(&self) -> usize {
         let tally = self.item_widths().map(|ws| {
             let mut t = Tally::default();
             ws.iter().for_each(|&w| t.add(w));
@@ -235,12 +242,13 @@ impl StatusBar {
     /// inside a group. The last Left item is never removed. One sort fixes that
     /// order and per-group running totals replace a rebuild of the survivors per
     /// removal.
-    pub(crate) fn keep_masks(&self, widths: &[Vec<usize>; 3], avail: usize) -> [Vec<bool>; 3] {
+    #[doc(hidden)]
+    pub fn keep_masks(&self, widths: &[Vec<usize>; 3], avail: usize) -> [Vec<bool>; 3] {
         let mut keep = widths.clone().map(|ws| vec![true; ws.len()]);
         let mut tally = widths.clone().map(|ws| {
             let mut t = Tally::default();
             ws.iter().for_each(|&w| {
-                crate::record_work!(FitVisits, 1usize);
+                termrock_metrics::record_work!(FitVisits, 1usize);
                 t.add(w);
             });
             t
@@ -260,7 +268,7 @@ impl StatusBar {
             }
         }
         for v in removal_order(&keys) {
-            crate::record_work!(FitVisits, 1usize);
+            termrock_metrics::record_work!(FitVisits, 1usize);
             let (g, i) = victims[v];
             if g == 0 && tally[0].count == 1 {
                 continue;
@@ -398,7 +406,7 @@ impl StatusBar {
                 .iter()
                 .map(|(g, i)| self.group(*g)[*i].text.as_str())
                 .collect();
-            crate::ui::reveal::overflow(
+            termrock_runtime::reveal::overflow(
                 ctx,
                 buf,
                 Rect::new(x, area.y, 1, 1),
@@ -478,7 +486,7 @@ impl StatusBar {
                 if it.id.is_none() && !ctx.inert {
                     ctx.hits.register_hover(id, seg);
                 }
-                crate::ui::tooltip::show(ctx, id, seg, tip, None);
+                termrock_runtime::tooltip::show(ctx, id, seg, tip, None);
             }
             if p.text != it.text {
                 let lead = u16::from(it.emphasis == Emphasis::Chip) + if it.busy { 2 } else { 0 };
@@ -488,19 +496,19 @@ impl StatusBar {
                 if it.id.is_none() && cfg.hover {
                     ctx.clickable(id, cut);
                 }
-                crate::ui::reveal::truncated(ctx, Some(cfg), id, cut, &it.text);
+                termrock_runtime::reveal::truncated(ctx, Some(cfg), id, cut, &it.text);
             }
         }
     }
 }
 
-impl crate::ui::specimen::Specimen for StatusItem {
+impl termrock_runtime::specimen::Specimen for StatusItem {
     fn specimen_id(&self) -> WidgetId {
         self.id.unwrap_or(WidgetId::of("statusbar.specimen"))
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         match state {
             Rest | Busy | Narrow => true,
             Hover | Pressed => self.id.is_some(),
@@ -510,7 +518,7 @@ impl crate::ui::specimen::Specimen for StatusItem {
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
@@ -518,7 +526,7 @@ impl crate::ui::specimen::Specimen for StatusItem {
     ) {
         let mut item = self.clone();
         item.tip = None;
-        item.busy |= state == crate::ui::specimen::SpecimenState::Busy;
+        item.busy |= state == termrock_runtime::specimen::SpecimenState::Busy;
         let mut bar = StatusBar::new();
         bar.left.push(item);
         bar.render(area, buf, ctx);

@@ -2,12 +2,12 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 
-use crate::core::id::WidgetId;
-use crate::theme::Tone;
-use crate::ui::ctx::RenderCtx;
-use crate::ui::measure::terminal_extent;
-use crate::ui::text::{fit, truncate, width};
-use crate::widgets::progress::{Meter, MeterTone};
+use crate::progress::{Meter, MeterTone};
+use termrock_core::id::WidgetId;
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::measure::terminal_extent;
+use termrock_text::cells::{fit, truncate, width};
+use termrock_theme::Tone;
 
 #[derive(Debug, Clone)]
 pub struct MeterRow {
@@ -191,7 +191,7 @@ impl MeterList {
     }
 }
 
-impl crate::ui::measure::Measure for MeterList {
+impl termrock_runtime::measure::Measure for MeterList {
     fn measure(&self, avail: ratatui::layout::Size, ctx: &RenderCtx) -> ratatui::layout::Size {
         let label = self.intrinsic_label_width();
         let meter = self.meter_width.map_or_else(
@@ -225,29 +225,29 @@ impl crate::ui::measure::Measure for MeterList {
 
 const SAMPLE_ID: WidgetId = WidgetId::of("meter-list-sample");
 
-impl crate::ui::specimen::Specimen for MeterList {
+impl termrock_runtime::specimen::Specimen for MeterList {
     fn specimen_id(&self) -> WidgetId {
         SAMPLE_ID
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         matches!(state, Rest | Loading | Error | Overflow | Narrow)
     }
 
-    fn specimen_height(&self, _state: crate::ui::specimen::SpecimenState) -> u16 {
+    fn specimen_height(&self, _state: termrock_runtime::specimen::SpecimenState) -> u16 {
         self.height().max(1)
     }
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
         bg: Color,
     ) {
-        use crate::ui::specimen::SpecimenState::*;
+        use termrock_runtime::specimen::SpecimenState::*;
         let mut l = self.clone();
         for r in &mut l.rows {
             match state {

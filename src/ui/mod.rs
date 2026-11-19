@@ -19,6 +19,5 @@ mod overflow_parity_tests;
 mod overflow_work_tests;
 pub mod pane_tree;
 pub mod scroll_view;
-pub(crate) use termrock_runtime::fitting;
 pub use termrock_runtime::{ctx, fade, measure, popup, reveal, row, specimen, tooltip};
 pub use termrock_text::cells as text;
