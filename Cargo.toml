@@ -23,6 +23,7 @@ members = [
     "crates/termrock-session",
     "crates/termrock-text",
     "crates/termrock-theme",
+    "crates/termrock-viewport",
     "crates/functional-cross",
     "crates/termrock-functional",
 ]
@@ -42,6 +43,7 @@ default-members = [
     "crates/termrock-session",
     "crates/termrock-text",
     "crates/termrock-theme",
+    "crates/termrock-viewport",
     "crates/functional-cross",
     "crates/termrock-functional",
 ]
@@ -60,6 +62,7 @@ termrock-runtime = { path = "crates/termrock-runtime", version = "0.1.0" }
 termrock-session = { path = "crates/termrock-session", version = "0.1.0" }
 termrock-text = { path = "crates/termrock-text", version = "0.1.0" }
 termrock-theme = { path = "crates/termrock-theme", version = "0.1.0" }
+termrock-viewport = { path = "crates/termrock-viewport", version = "0.1.0" }
 tui-test = { package = "tuiscotti-tui-test", version = "=0.2.1" }
 tuiscotti-latest = { package = "tuiscotti", git = "https://github.com/tailrocks/tuiscotti", rev = "f1fb3f276b8d49948881c07b3bbc619840b6cc93" }
 
@@ -68,7 +71,7 @@ default = ["cli", "terminal"]
 cli = ["dep:clap", "termrock-core/cli"]
 terminal = ["dep:termpane"]
 product = ["terminal"]
-work-metrics = ["termrock-controls/work-metrics", "termrock-core/work-metrics", "termrock-feedback/work-metrics", "termrock-metrics/work-metrics", "termrock-overlays/work-metrics", "termrock-runtime/work-metrics", "termrock-session/work-metrics"]
+work-metrics = ["termrock-controls/work-metrics", "termrock-core/work-metrics", "termrock-feedback/work-metrics", "termrock-metrics/work-metrics", "termrock-overlays/work-metrics", "termrock-runtime/work-metrics", "termrock-session/work-metrics", "termrock-viewport/work-metrics"]
 
 [lib]
 name = "junie_tui"
@@ -92,6 +95,7 @@ termrock-runtime = { workspace = true }
 termrock-session = { workspace = true }
 termrock-text = { workspace = true }
 termrock-theme = { workspace = true }
+termrock-viewport = { workspace = true }
 
 [target.'cfg(unix)'.dependencies]
 

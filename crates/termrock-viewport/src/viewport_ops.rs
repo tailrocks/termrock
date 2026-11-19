@@ -3,12 +3,12 @@ use ratatui::crossterm::event::KeyModifiers;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::Color;
 
-use crate::core::event::Outcome;
-use crate::core::hit::{Axis, Bar};
-use crate::core::id::WidgetId;
-use crate::core::scroll::{ScrollPane, Scrollable};
-use crate::ui::ctx::RenderCtx;
-use crate::widgets::viewport::{CellPos, TextViewport};
+use crate::viewport::{CellPos, TextViewport};
+use termrock_core::event::Outcome;
+use termrock_core::hit::{Axis, Bar};
+use termrock_core::id::WidgetId;
+use termrock_core::scroll::{ScrollPane, Scrollable};
+use termrock_runtime::ctx::RenderCtx;
 
 /// What a host needs from a scrolling, selectable text view, without knowing
 /// whether the text is a list of styled lines or a terminal grid.

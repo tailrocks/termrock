@@ -2,12 +2,13 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::Color;
 
-use crate::core::id::WidgetId;
-use crate::ui::ctx::RenderCtx;
-use crate::ui::specimen::{Specimen, SpecimenState};
-use crate::widgets::viewport::{Span, TextViewport};
+use crate::viewport::{Span, TextViewport};
+use termrock_core::id::WidgetId;
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::specimen::{Specimen, SpecimenState};
 
-pub(crate) const SAMPLE_ROWS: u16 = 4;
+#[doc(hidden)]
+pub const SAMPLE_ROWS: u16 = 4;
 
 impl Specimen for TextViewport {
     fn specimen_id(&self) -> WidgetId {

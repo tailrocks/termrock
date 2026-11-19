@@ -6,24 +6,24 @@ use ratatui::layout::{Position, Rect};
 use ratatui::style::Color;
 use ratatui::widgets::{Block, Borders, Widget};
 
-use crate::core::event::{Key, Outcome};
-use crate::core::hit::Axis;
-use crate::core::id::WidgetId;
-use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
-use crate::core::response::Response;
-use crate::core::scroll::{HScroll, ScrollPane, Scrollable};
-pub use crate::theme::CardHeading;
-use crate::theme::Theme;
-use crate::ui::ctx::{RenderCtx, fill};
-use crate::ui::edit_menu::{
+use crate::viewport::CellPos;
+use termrock_controls::scrollbar;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::field::field_common::PointerSelect;
+use termrock_core::field::text_select::{self, TextSelect};
+use termrock_core::hit::Axis;
+use termrock_core::id::WidgetId;
+use termrock_core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
+use termrock_core::response::Response;
+use termrock_core::scroll::{HScroll, ScrollPane, Scrollable};
+use termrock_overlays::edit_menu::{
     EditCaps, EditMenu, EditMenuHost, edit_menu_key, edit_menu_pointer, edit_menu_route,
 };
-use crate::ui::measure::terminal_extent;
-use crate::ui::text::{MappedCell, WrapOpts, wrap_mapped};
-use crate::widgets::field_common::PointerSelect;
-use crate::widgets::scrollbar;
-use crate::widgets::text_select::{self, TextSelect};
-use crate::widgets::viewport::CellPos;
+use termrock_runtime::ctx::{RenderCtx, fill};
+use termrock_runtime::measure::terminal_extent;
+use termrock_text::cells::{MappedCell, WrapOpts, wrap_mapped};
+pub use termrock_theme::CardHeading;
+use termrock_theme::Theme;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PanelKind {
@@ -47,7 +47,7 @@ fn cut_meta(meta: &str, room: u16, ellipsis: &str) -> Option<String> {
     if room < META_MIN {
         return None;
     }
-    let cut = crate::ui::text::truncate(meta, room as usize);
+    let cut = termrock_text::cells::truncate(meta, room as usize);
     let body = cut.trim_end_matches('…');
     let next = meta[body.len()..].chars().next();
     let numeric = |c: char| c.is_ascii_digit() || matches!(c, '–' | '-' | '/' | ',' | '.' | '~');
@@ -58,7 +58,7 @@ fn cut_meta(meta: &str, room: u16, ellipsis: &str) -> Option<String> {
         body
     }
     .trim_end_matches([' ', '·']);
-    (crate::ui::text::width(body) as u16 + 1 >= META_MIN).then(|| format!("{body}{ellipsis}"))
+    (termrock_text::cells::width(body) as u16 + 1 >= META_MIN).then(|| format!("{body}{ellipsis}"))
 }
 
 pub struct Panel<'a> {
@@ -67,7 +67,7 @@ pub struct Panel<'a> {
     pub focused: bool,
 
     pub meta: Option<&'a str>,
-    pub badge: Option<(&'a str, crate::theme::BadgeKind)>,
+    pub badge: Option<(&'a str, termrock_theme::BadgeKind)>,
     pub bg_override: Option<Color>,
 
     pub focus_mark: PanelFocus,
@@ -221,7 +221,7 @@ impl<'a> Panel<'a> {
     }
 
     pub fn outer(&self, content: ratatui::layout::Size) -> ratatui::layout::Size {
-        let w = |s: &str| crate::ui::text::width(s);
+        let w = |s: &str| termrock_text::cells::width(s);
         let title = self.title.map(w).unwrap_or(0);
         let meta = self.meta.filter(|m| !m.is_empty()).map(w).unwrap_or(0);
         let (width, height) = (usize::from(content.width), usize::from(content.height));
@@ -280,7 +280,7 @@ impl<'a> Panel<'a> {
                     );
                 }
                 if self.focused && self.title.is_some() && self.focus_mark == PanelFocus::Bar {
-                    let s = crate::ui::ctx::VisualState {
+                    let s = termrock_runtime::ctx::VisualState {
                         focused: true,
                         ..Default::default()
                     };
@@ -330,8 +330,8 @@ impl<'a> Panel<'a> {
     }
 
     fn title_style(&self, t: &Theme, bg: Color) -> Style {
-        use crate::theme::ColorLevel;
         use ratatui::style::Modifier;
+        use termrock_theme::ColorLevel;
         let mono = t.level == ColorLevel::Mono;
         let base = if self.focused {
             t.title().bg(bg)
@@ -377,12 +377,12 @@ impl<'a> Panel<'a> {
 
         let title_min = self
             .title
-            .map(|t| (crate::ui::text::width(t) as u16).min(self.title_min))
+            .map(|t| (termrock_text::cells::width(t) as u16).min(self.title_min))
             .unwrap_or(0);
         let ell = t.glyphs.ellipsis;
         let meta = self.meta.filter(|m| !m.is_empty()).and_then(|m| {
             let room = w.saturating_sub(pad + if title_min > 0 { title_min + 1 } else { 0 });
-            let fits = |m: &str| crate::ui::text::width(m) as u16 <= room;
+            let fits = |m: &str| termrock_text::cells::width(m) as u16 <= room;
             if fits(m) {
                 return Some(m.to_owned());
             }
@@ -402,7 +402,7 @@ impl<'a> Panel<'a> {
         });
         let meta_w = meta
             .as_ref()
-            .map(|m| crate::ui::text::width(m) as u16 + pad)
+            .map(|m| termrock_text::cells::width(m) as u16 + pad)
             .unwrap_or(0);
         if let Some(title) = self.title {
             let style = self.title_style(t, bg);
@@ -412,24 +412,24 @@ impl<'a> Panel<'a> {
                 w.saturating_sub(pad)
             };
             let full = title;
-            let title = crate::ui::text::truncate(full, room as usize);
+            let title = termrock_text::cells::truncate(full, room as usize);
 
             let cut = Rect::new(
                 cx + u16::from(framed),
                 y,
-                crate::ui::text::width(&title) as u16,
+                termrock_text::cells::width(&title) as u16,
                 1,
             );
-            crate::ui::reveal::queue_cut(cut, full);
+            termrock_runtime::reveal::queue_cut(cut, full);
             let title = if framed { format!(" {title} ") } else { title };
             buf.set_string(cx, y, &title, style);
-            cx += crate::ui::text::width(&title) as u16;
+            cx += termrock_text::cells::width(&title) as u16;
         }
         let mut right = x + w;
 
         if let Some(meta) = meta.filter(|m| !m.is_empty()) {
             let text = if framed { format!(" {meta} ") } else { meta };
-            let tw = crate::ui::text::width(&text) as u16;
+            let tw = termrock_text::cells::width(&text) as u16;
             if right >= cx + tw + u16::from(cx > x) {
                 right = right.saturating_sub(tw);
                 buf.set_string(right, y, &text, self.meta_style(t, bg));
@@ -437,7 +437,7 @@ impl<'a> Panel<'a> {
         }
         if let Some((badge, kind)) = self.badge {
             let text = format!(" {badge} ");
-            let bw = crate::ui::text::width(&text) as u16;
+            let bw = termrock_text::cells::width(&text) as u16;
             if right > cx + bw + 1 {
                 right = right.saturating_sub(bw + 1);
                 buf.set_string(right, y, &text, t.badge(kind));
@@ -528,7 +528,7 @@ fn plain_row(line: &str) -> Vec<MappedCell> {
     text_select::plain_cells(line)
         .into_iter()
         .map(|c| MappedCell {
-            columns: c.col..c.col + crate::ui::text::width(c.g),
+            columns: c.col..c.col + termrock_text::cells::width(c.g),
             bytes: c.bytes,
         })
         .collect()
@@ -543,7 +543,7 @@ fn copy_source(lines: &[String], a: SourcePos, b: SourcePos) -> Option<String> {
     }
     let first = lines.get(a.line)?;
     let last = lines.get(b.line)?;
-    crate::record_work!(SourceRowsRead, b.line - a.line + 1);
+    termrock_metrics::record_work!(SourceRowsRead, b.line - a.line + 1);
     if !first.is_char_boundary(a.byte) || !last.is_char_boundary(b.byte) {
         return None;
     }
@@ -671,7 +671,7 @@ impl Actions for PanelCmd {
             (KeyBinding::cmd('c'), PanelCmd::Copy),
             (KeyBinding::char('y'), PanelCmd::Copy),
         ];
-        map.extend(crate::core::keymap::select_all_bindings(
+        map.extend(termrock_core::keymap::select_all_bindings(
             PanelCmd::SelectAll,
         ));
         map
@@ -833,14 +833,14 @@ impl ScrollPanel {
     }
 
     fn widest_of(&self, lines: &[String]) -> usize {
-        crate::record_work!(SourceRowsRead, lines.len());
+        termrock_metrics::record_work!(SourceRowsRead, lines.len());
         #[cfg(test)]
         self.work
             .width_measurements
             .set(self.work.width_measurements.get() + lines.len());
         lines
             .iter()
-            .map(|l| crate::ui::text::width(l))
+            .map(|l| termrock_text::cells::width(l))
             .max()
             .unwrap_or(0)
     }
@@ -882,7 +882,7 @@ impl ScrollPanel {
             }
         };
         for (source, l) in self.lines.iter().enumerate().skip(cache.wrapped) {
-            crate::record_work!(SourceRowsRead, 1usize);
+            termrock_metrics::record_work!(SourceRowsRead, 1usize);
             for row in wrap_mapped(l, width as usize, WrapOpts::default()) {
                 cache.rows.push(row.text);
                 cache.maps.push(RowMap {
@@ -915,7 +915,7 @@ impl ScrollPanel {
                 let Some(text) = self.selected_text() else {
                     return Outcome::Ignored;
                 };
-                crate::core::edit::clipboard::copy(&text);
+                termrock_core::edit::clipboard::copy(&text);
                 return Outcome::Consumed;
             }
             _ => {}
@@ -979,7 +979,7 @@ impl ScrollPanel {
         }
     }
 
-    pub fn track_click(mut self, click: crate::core::scroll::TrackClick) -> Self {
+    pub fn track_click(mut self, click: termrock_core::scroll::TrackClick) -> Self {
         self.scroll.track_click = Some(click);
         self
     }
@@ -1034,17 +1034,17 @@ impl ScrollPanel {
             0
         };
         for (i, li) in self.scroll.visible_range().enumerate() {
-            crate::record_work!(VisibleRowsPainted, 1usize);
+            termrock_metrics::record_work!(VisibleRowsPainted, 1usize);
             let y = area.y + i as u16;
             let line = &lines[li];
             let st = style_line(t, line).bg(bg);
             let text = if hoff > 0 {
-                crate::ui::text::fit(
-                    &crate::ui::text::slice_cells(line, hoff, text_w as usize),
+                termrock_text::cells::fit(
+                    &termrock_text::cells::slice_cells(line, hoff, text_w as usize),
                     text_w as usize,
                 )
             } else {
-                crate::ui::text::fit(line, text_w as usize)
+                termrock_text::cells::fit(line, text_w as usize)
             };
             buf.set_string(area.x, y, &text, st);
 
@@ -1311,29 +1311,29 @@ impl Scrollable for ScrollPanel {
     }
 }
 
-impl crate::ui::specimen::Specimen for Panel<'static> {
+impl termrock_runtime::specimen::Specimen for Panel<'static> {
     fn specimen_id(&self) -> WidgetId {
         WidgetId::of("panel-specimen")
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         matches!(state, Rest | Focused | Overflow | Narrow)
     }
 
-    fn specimen_height(&self, _state: crate::ui::specimen::SpecimenState) -> u16 {
+    fn specimen_height(&self, _state: termrock_runtime::specimen::SpecimenState) -> u16 {
         4
     }
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
         _bg: Color,
     ) {
-        use crate::ui::specimen::SpecimenState::*;
+        use termrock_runtime::specimen::SpecimenState::*;
         let t = ctx.theme;
         let panel = Panel {
             title: self.title,
@@ -1354,35 +1354,35 @@ impl crate::ui::specimen::Specimen for Panel<'static> {
         };
         let inner = panel.render(area, buf, t);
         if !inner.is_empty() {
-            let text = crate::ui::text::truncate("content", inner.width as usize);
+            let text = termrock_text::cells::truncate("content", inner.width as usize);
             buf.set_string(inner.x, inner.y, text, t.secondary().bg(panel.bg(t)));
         }
     }
 }
 
-impl crate::ui::specimen::Specimen for ScrollPanel {
+impl termrock_runtime::specimen::Specimen for ScrollPanel {
     fn specimen_id(&self) -> WidgetId {
         self.id
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         matches!(state, Rest | Hover | Pressed | Empty | Overflow | Narrow)
     }
 
-    fn specimen_height(&self, _state: crate::ui::specimen::SpecimenState) -> u16 {
+    fn specimen_height(&self, _state: termrock_runtime::specimen::SpecimenState) -> u16 {
         4
     }
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
         bg: Color,
     ) {
-        use crate::ui::specimen::SpecimenState::*;
+        use termrock_runtime::specimen::SpecimenState::*;
         let mut panel = self.clone();
         match state {
             Empty => {
@@ -1408,7 +1408,7 @@ impl crate::ui::specimen::Specimen for ScrollPanel {
     }
 }
 
-impl crate::core::pointer::MouseTarget for ScrollPanel {
+impl termrock_core::pointer::MouseTarget for ScrollPanel {
     type Action = ();
 
     fn mouse_id(&self) -> WidgetId {
@@ -1417,13 +1417,13 @@ impl crate::core::pointer::MouseTarget for ScrollPanel {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<()> {
-        use crate::core::intent::Phase;
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<()> {
+        use termrock_core::intent::Phase;
         if let Some(o) = edit_menu_pointer(self, ev) {
             return o.into();
         }
-        if let Some(r) = crate::core::pointer::scroll_input(self, ev) {
+        if let Some(r) = termrock_core::pointer::scroll_input(self, ev) {
             return r;
         }
         match ev.phase() {
@@ -1434,7 +1434,7 @@ impl crate::core::pointer::MouseTarget for ScrollPanel {
         }
     }
 
-    fn route(&mut self, ev: &crate::core::pointer::PointerEvent) -> Option<Response<()>> {
+    fn route(&mut self, ev: &termrock_core::pointer::PointerEvent) -> Option<Response<()>> {
         edit_menu_route(self, ev)
     }
 }
@@ -1452,27 +1452,27 @@ impl EditMenuHost for ScrollPanel {
             self.lines.iter().any(|l| !l.is_empty()),
         )
     }
-    fn edit_shortcut(&self, cmd: crate::core::edit::TextCmd) -> Option<String> {
-        use crate::core::edit::TextCmd;
+    fn edit_shortcut(&self, cmd: termrock_core::edit::TextCmd) -> Option<String> {
+        use termrock_core::edit::TextCmd;
         let cmd = match cmd {
             TextCmd::Copy => PanelCmd::Copy,
             TextCmd::SelectAll => PanelCmd::SelectAll,
             _ => return None,
         };
-        crate::core::keymap::label_for(&self.keymap, cmd)
+        termrock_core::keymap::label_for(&self.keymap, cmd)
     }
-    fn edit_target(&self, ev: &crate::core::pointer::PointerEvent) -> bool {
+    fn edit_target(&self, ev: &termrock_core::pointer::PointerEvent) -> bool {
         ev.id == self.id
     }
-    fn edit_run(&mut self, cmd: crate::core::edit::TextCmd) -> bool {
-        use crate::core::edit::TextCmd;
+    fn edit_run(&mut self, cmd: termrock_core::edit::TextCmd) -> bool {
+        use termrock_core::edit::TextCmd;
         match cmd {
             TextCmd::SelectAll => {
                 self.select_all();
             }
             TextCmd::Copy => {
                 if let Some(t) = self.selected_text() {
-                    crate::core::edit::clipboard::copy(&t);
+                    termrock_core::edit::clipboard::copy(&t);
                 }
             }
             _ => {}

@@ -22,7 +22,6 @@ pub mod inspect_changes;
 pub mod list;
 pub mod list_detail;
 pub mod nav_list;
-pub mod panel;
 pub mod props;
 pub mod rail;
 pub mod search_detail;
@@ -35,9 +34,6 @@ pub mod tabs;
 pub mod textarea;
 pub mod toolbar;
 pub mod tree;
-pub mod viewport;
-pub mod viewport_ops;
-mod viewport_specimen;
 
 #[cfg(test)]
 mod collection_edit_tests;
@@ -49,9 +45,14 @@ pub use termrock_controls::{
     action_row, brand, button, choice, hintbar, icon_button, keyhint, keyref, scrollbar, segments,
     widget_hints,
 };
+// Only `terminal::viewport` reads this path now that the viewport lives in `termrock-viewport`.
+#[cfg(feature = "terminal")]
 pub(crate) use termrock_core::field::text_select;
 pub use termrock_core::field::{edit, field_common};
 pub use termrock_feedback::{
     empty, meter_list, notice, page_header, progress, statusbar, too_small,
 };
 pub use termrock_overlays::{completion, menu, option_editor, option_list, picker, row_menu};
+pub use termrock_viewport::{panel, viewport, viewport_ops};
+// Transitional: `widgets::diff` reads `SAMPLE_ROWS` through this path until #447 moves it.
+pub(crate) use termrock_viewport::viewport_specimen;

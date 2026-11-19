@@ -866,8 +866,10 @@ the #445 entries were applied up front: every `impl` in the moved files and ever
   type of `junie-tui` (`Dialog`, `Select`, `ListBox`, `TextInput`, ...) implements
   a trait of a lower crate (`Overlay`, `Layer`, `ContextSource`, `EditMenuHost`,
   `ViewportOps`). The one blanket impl, `impl<O: Overlay> Modal for O`, has both
-  traits in `termrock-overlays`. The compiler agreed; nothing needed a hidden
-  trait, a respelled id or a `MOVED_KEEPING_SPELLING` row.
+  traits in `termrock-overlays`. The compiler agreed; no coherence fix was
+  needed, so no trait had to be hidden or moved. (The one `MOVED_KEEPING_SPELLING`
+  row below comes from how the catalog spells a re-exported id, not from
+  coherence.)
 - **Hidden plumbing, not new API.** Items that stayed `pub(crate)` and that a
   higher crate or a `junie-tui` test still reaches are `#[doc(hidden)] pub` and
   listed in `tests/regressions/doc-hidden-items.txt`. Every one was found by the
@@ -920,3 +922,19 @@ the #445 entries were applied up front: every `impl` in the moved files and ever
 - **`option_editor`** is the last file of `termrock-overlays`. It reads
   `option_list`, `edit` and the layer stack, all in the crate or below.
   `ChoiceEditor::contains_id` is hidden `pub` for the grid.
+- **`termrock-viewport` and the tests that cross it.** `viewport` and `panel`
+  embed an `EditMenu`, so the crate sits above `termrock-overlays`, as the table
+  says.
+  - `core/pointer/nested_scrollbar_tests.rs` moved with the crate and is a
+    `#[cfg(test)]` module of its `lib.rs`; the `#[path]` declaration in
+    `src/core/mod.rs` is gone. Its nextest names lose the `core::` prefix. No
+    inventory, nextest profile or catalog line names it.
+  - `ui/scroll_view/window_tests.rs` drives a `Select`, which sits above
+    `termrock-viewport`, so it stays in `junie-tui` for #449. `src/ui/mod.rs`
+    declares it by `#[path]` as `scroll_view_window_tests` and it imports from
+    `crate::ui::scroll_view`. `VisibleWindow::content_rows` became a hidden
+    `pub` field, because its test builds the struct by literal; consumers cannot
+    use it without naming a listed hidden item.
+  - `viewport_specimen` is a hidden `pub` module, because `widgets::diff` reads
+    `SAMPLE_ROWS` from it until #447 moves `diff`. `widgets/mod.rs` re-exports it
+    `pub(crate)`; no new path appears under `termrock::widgets`.

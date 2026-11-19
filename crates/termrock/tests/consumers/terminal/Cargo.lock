@@ -571,6 +571,7 @@ dependencies = [
  "termrock-session",
  "termrock-text",
  "termrock-theme",
+ "termrock-viewport",
  "unicode-segmentation",
  "unicode-width",
 ]
@@ -1554,6 +1555,21 @@ version = "0.1.0"
 dependencies = [
  "ratatui",
  "termrock-core",
+]
+
+[[package]]
+name = "termrock-viewport"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "termrock-controls",
+ "termrock-core",
+ "termrock-metrics",
+ "termrock-overlays",
+ "termrock-runtime",
+ "termrock-text",
+ "termrock-theme",
+ "unicode-segmentation",
 ]
 
 [[package]]
