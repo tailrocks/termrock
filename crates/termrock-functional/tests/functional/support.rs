@@ -142,6 +142,8 @@ pub struct App {
     fence: bool,
     /// A button was pressed or released since the last [`App::flash_expired`].
     clicked: Cell<bool>,
+    /// Whether the cursor was visible on the frame [`App::check_visual`] last compared.
+    compared_cursor_visible: Cell<bool>,
 }
 
 impl App {
@@ -347,11 +349,13 @@ impl App {
                 .all(|field| field == "cursor.col" || field == "cursor.row")
     }
 
-    /// Whether `outcome` accepts the live screen: a pass, or cells that match
-    /// with only the position of a hidden cursor differing. A visible cursor,
-    /// a cursor visibility change and any cell difference are not accepted.
+    /// Whether `outcome` of the last [`App::check_visual`] accepts the compared
+    /// frame: a pass, or cells that match with only the position of a hidden
+    /// cursor differing. A visible cursor, a cursor visibility change and any
+    /// cell difference are not accepted. The visibility is read from the frame
+    /// that was compared, not from the live screen, which may have moved on.
     pub fn accepts(&self, outcome: &tuiscotti_latest::check::CheckOutcome) -> bool {
-        outcome.is_pass() || (Self::cursor_only(outcome) && !self.screen().cursor().visible())
+        outcome.is_pass() || (Self::cursor_only(outcome) && !self.compared_cursor_visible.get())
     }
 
     /// Compare the live screen with a frozen baseline.
@@ -368,6 +372,7 @@ impl App {
     ) -> tuiscotti_latest::check::CheckOutcome {
         let _ = self.settle();
         let screen = self.stable_screen();
+        self.compared_cursor_visible.set(screen.cursor().visible());
         let sample = tuiscotti_latest::sample::Sample::state(
             test_id,
             screen,
@@ -1173,6 +1178,7 @@ pub fn try_launch(launch: Launch) -> Result<App, LaunchError> {
                 clock: launch.clock,
                 fence: fenced(&launch),
                 clicked: Cell::new(false),
+                compared_cursor_visible: Cell::new(false),
             };
             app.persist_actions();
             Ok(app)
@@ -1393,9 +1399,9 @@ const BASELINES: &str = "crates/termrock-functional/tests/functional/baselines";
 /// or row of a hidden cursor matches: a hidden cursor parks wherever the last
 /// diff write ended, which depends on how input batched into frames, so it is
 /// not a contract. See [`App::cursor_only`]. Any cell difference or any cursor
-/// visibility difference still mismatches, and so does any visible cursor on
-/// the screen, because an editing or focused widget draws it and where it sits
-/// is part of the picture.
+/// visibility difference still mismatches, and so does a cursor-position-only
+/// difference on a visible cursor, because an editing or focused widget draws
+/// it and where it sits is part of the picture.
 pub fn frame_mismatch(app: &App, screen: &TerminalSnapshot, test_id: &str) -> Option<String> {
     let root = oracle_baselines();
     let sample = tuiscotti_latest::sample::Sample::state(
