@@ -338,35 +338,10 @@ fn restore_narrow_compare(app: &App) -> TerminalSnapshot {
         if screen.cols() == 80 && screen.rows() == 24 && visible.contains("no color") {
             match baseline_delta(app, &screen, &id) {
                 None => return screen,
-                // The specimen wheel parks the hidden cursor on a content cell.
-                // A one-row nudge leaves the scroll and parks that cursor in
-                // the corner, which is where the accepted capture has it.
-                Some((0, fields)) if cursor_only(&fields) => {
-                    app.resize(80, 25);
-                    app.wait_screen("compare row nudge", |screen| {
-                        screen.cols() == 80 && screen.rows() == 25
-                    });
-                    app.resize(80, 24);
-                    app.wait_screen("compare row restored", |screen| {
-                        screen.cols() == 80 && screen.rows() == 24
-                    });
-                    let parked = app.settle();
-                    if baseline_delta(app, &parked, &id).is_none() {
-                        return parked;
-                    }
-                    let cursor = parked.cursor();
-                    let detail = format!(
-                        "{fields} parked {},{} vis {} no-color {}",
-                        cursor.col(),
-                        cursor.row(),
-                        cursor.visible(),
-                        text(&parked).contains("no color")
-                    );
-                    let closer = best.as_ref().is_none_or(|(n, _, _)| 0 < *n);
-                    if closer {
-                        best = Some((0, detail, visible.clone()));
-                    }
-                }
+                // No pane is focused, so the cursor is hidden and where the
+                // last diff left it depends on how the wheel notches batched.
+                // `visual` ignores that, so cells alone make the frame.
+                Some((0, fields)) if cursor_only(&fields) => return screen,
                 Some((cells, fields)) => {
                     let closer = best.as_ref().is_none_or(|(n, _, _)| cells < *n);
                     if closer {
