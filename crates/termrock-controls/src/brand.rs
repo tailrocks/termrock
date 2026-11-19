@@ -2,10 +2,10 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::Style;
 
-use crate::core::id::WidgetId;
-use crate::theme::{ButtonKind, Kind, Plane, Theme};
-use crate::ui::ctx::{RenderCtx, VisualState};
-use crate::ui::measure::terminal_extent;
+use termrock_core::id::WidgetId;
+use termrock_runtime::ctx::{RenderCtx, VisualState};
+use termrock_runtime::measure::terminal_extent;
+use termrock_theme::{ButtonKind, Kind, Plane, Theme};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Lockup {
@@ -39,7 +39,7 @@ impl Lockup {
 
     /// Natural width of the lockup, saturating at `u16::MAX`.
     pub fn width(&self) -> u16 {
-        terminal_extent(crate::ui::text::width(&self.label()))
+        terminal_extent(termrock_text::cells::width(&self.label()))
     }
 
     pub fn style(t: &Theme) -> Style {
@@ -54,7 +54,7 @@ impl Lockup {
     pub fn render(&self, x: u16, y: u16, buf: &mut Buffer, t: &Theme) -> u16 {
         let label = self.label();
         buf.set_string(x, y, &label, Self::style(t));
-        terminal_extent(crate::ui::text::width(&label))
+        terminal_extent(termrock_text::cells::width(&label))
     }
 
     pub fn render_clickable(
@@ -71,7 +71,7 @@ impl Lockup {
         s.focused = false;
         let st = Self::state_style(t, s);
         buf.set_string(x, y, &label, st);
-        let w = terminal_extent(crate::ui::text::width(&label));
+        let w = terminal_extent(termrock_text::cells::width(&label));
         ctx.clickable(id, Rect::new(x, y, w, 1).intersection(*buf.area()));
         w
     }

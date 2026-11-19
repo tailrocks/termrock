@@ -1,4 +1,4 @@
-use crate::ui::text::{WrapOpts, width, wrap_with};
+use termrock_text::cells::{WrapOpts, width, wrap_with};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Entry {
@@ -111,35 +111,35 @@ fn percent_of(w: usize, percent: u16) -> usize {
 
 const SPECIMEN_W: usize = 32;
 
-impl crate::ui::specimen::Specimen for KeyReference {
-    fn specimen_id(&self) -> crate::core::id::WidgetId {
-        crate::core::id::WidgetId::of("keyref.specimen")
+impl termrock_runtime::specimen::Specimen for KeyReference {
+    fn specimen_id(&self) -> termrock_core::id::WidgetId {
+        termrock_core::id::WidgetId::of("keyref.specimen")
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         matches!(state, Rest | Overflow | Narrow)
     }
 
-    fn specimen_height(&self, state: crate::ui::specimen::SpecimenState) -> u16 {
-        let w = if state == crate::ui::specimen::SpecimenState::Narrow {
+    fn specimen_height(&self, state: termrock_runtime::specimen::SpecimenState) -> u16 {
+        let w = if state == termrock_runtime::specimen::SpecimenState::Narrow {
             24
         } else {
             SPECIMEN_W
         };
-        crate::ui::measure::terminal_extent(self.sample(state).lines(w).len().max(1))
+        termrock_runtime::measure::terminal_extent(self.sample(state).lines(w).len().max(1))
     }
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: ratatui::layout::Rect,
         buf: &mut ratatui::buffer::Buffer,
-        ctx: &mut crate::ui::ctx::RenderCtx,
+        ctx: &mut termrock_runtime::ctx::RenderCtx,
         bg: ratatui::style::Color,
     ) {
         let t = ctx.theme;
-        crate::ui::ctx::fill(buf, area, ratatui::style::Style::new().bg(bg));
+        termrock_runtime::ctx::fill(buf, area, ratatui::style::Style::new().bg(bg));
         let r = self.sample(state);
         let sections: Vec<&str> = r
             .entries
@@ -153,7 +153,7 @@ impl crate::ui::specimen::Specimen for KeyReference {
         for (i, line) in r.lines(area.width as usize).iter().enumerate() {
             let y = area
                 .y
-                .saturating_add(crate::ui::measure::terminal_extent(i));
+                .saturating_add(termrock_runtime::measure::terminal_extent(i));
             if y >= area.bottom() {
                 break;
             }
@@ -176,9 +176,9 @@ impl crate::ui::specimen::Specimen for KeyReference {
 }
 
 impl KeyReference {
-    fn sample(&self, state: crate::ui::specimen::SpecimenState) -> Self {
+    fn sample(&self, state: termrock_runtime::specimen::SpecimenState) -> Self {
         let mut r = self.clone();
-        if state == crate::ui::specimen::SpecimenState::Overflow {
+        if state == termrock_runtime::specimen::SpecimenState::Overflow {
             r = r.key(
                 "Ctrl+Shift+F",
                 "find in every open file, and list each match under its file",

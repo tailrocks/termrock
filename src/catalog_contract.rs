@@ -958,10 +958,12 @@ fn catalog_api_id_digest_names_the_row_that_changed() {
     assert!(changed_api_rows(&committed, &committed).is_empty());
 }
 
-/// Moves `src/widgets/brand.rs` into a crate of its own and leaves `pub use zz_brand::*;` at the
-/// old path, the way an extraction PR does.
+const BRAND: &str = "crates/termrock-controls/src/brand.rs";
+
+/// Moves `brand.rs` of `termrock-controls` into a crate of its own and leaves `pub use zz_brand::*;`
+/// at the old path, the way an extraction PR does. The facade reaches it as `widgets::brand`.
 fn with_brand_in_a_scratch_crate(s: &mut Sources) {
-    let brand = Path::new("src/widgets/brand.rs");
+    let brand = Path::new(BRAND);
     let moved = s
         .tree
         .files
@@ -1004,9 +1006,7 @@ fn catalog_a_scratch_move_into_a_crate_leaves_every_id_and_the_gate_unchanged() 
 fn catalog_a_move_that_drops_its_reexport_changes_the_ids() {
     let mut s = Sources::load();
     with_brand_in_a_scratch_crate(&mut s);
-    s.tree
-        .files
-        .insert(PathBuf::from("src/widgets/brand.rs"), String::new());
+    s.tree.files.insert(PathBuf::from(BRAND), String::new());
     let moved = rows(&s).expect("inventory builds");
     let committed = api_id_lines(&rows(&Sources::load()).expect("inventory builds"));
     assert_eq!(changed_api_rows(&api_id_lines(&moved), &committed).len(), 3);

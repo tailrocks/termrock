@@ -3,14 +3,14 @@ use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 
-use crate::core::event::{Key, Outcome};
-use crate::core::id::{ItemKey, Part, PartRef, WidgetId};
-use crate::core::keymap::{Nav, NavKeys};
-use crate::core::list::{Cursor, Navigable, RowSource};
-use crate::core::refusal::{Control, Reason};
-use crate::ui::ctx::RenderCtx;
-use crate::ui::measure::terminal_extent;
-use crate::ui::row::{RowLook, RowUi};
+use termrock_core::event::{Key, Outcome};
+use termrock_core::id::{ItemKey, Part, PartRef, WidgetId};
+use termrock_core::keymap::{Nav, NavKeys};
+use termrock_core::list::{Cursor, Navigable, RowSource};
+use termrock_core::refusal::{Control, Reason};
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::measure::terminal_extent;
+use termrock_runtime::row::{RowLook, RowUi};
 
 fn row_part(buf: &mut Buffer, row: Rect, offset: u16, text: &str, style: Style) {
     if offset < row.width {
@@ -109,7 +109,7 @@ impl Checkbox {
 
     /// Natural width of the checkbox row, saturating at `u16::MAX`.
     pub fn width(&self) -> u16 {
-        terminal_extent(crate::ui::text::width(&self.label).saturating_add(6))
+        terminal_extent(termrock_text::cells::width(&self.label).saturating_add(6))
     }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) {
@@ -145,13 +145,14 @@ impl Checkbox {
             st.fg(t.text_muted)
         };
         row_part(buf, area, 1, mark, mark_style);
-        let label = crate::ui::text::truncate(&self.label, area.width.saturating_sub(6) as usize);
+        let label =
+            termrock_text::cells::truncate(&self.label, area.width.saturating_sub(6) as usize);
         row_part(buf, area, 5, &label, st);
 
         let target = match self.hit {
             CheckHit::Row => area,
             CheckHit::Label => {
-                let w = 6 + crate::ui::text::width(&label) as u16;
+                let w = 6 + termrock_text::cells::width(&label) as u16;
                 Rect::new(area.x, area.y, w.min(area.width), area.height)
             }
         };
@@ -267,7 +268,7 @@ impl RadioGroup {
 
     /// Natural width of the group, saturating at `u16::MAX`.
     pub fn width(&self) -> u16 {
-        let w = crate::ui::text::width;
+        let w = termrock_text::cells::width;
         let options = self
             .options
             .iter()
@@ -294,7 +295,7 @@ impl RadioGroup {
             buf,
             area,
             2,
-            &crate::ui::text::truncate(&self.label, area.width.saturating_sub(2) as usize),
+            &termrock_text::cells::truncate(&self.label, area.width.saturating_sub(2) as usize),
             label_style,
         );
         for (i, opt) in self
@@ -331,7 +332,7 @@ impl RadioGroup {
                 buf,
                 row,
                 5,
-                &crate::ui::text::truncate(opt, row.width.saturating_sub(5) as usize),
+                &termrock_text::cells::truncate(opt, row.width.saturating_sub(5) as usize),
                 st,
             );
             ctx.register_part(self.id, Self::option_part(i), row);
@@ -389,7 +390,7 @@ impl Toggle {
 
     /// Natural width of the toggle row, saturating at `u16::MAX`.
     pub fn width(&self) -> u16 {
-        terminal_extent(crate::ui::text::width(&self.label).saturating_add(10))
+        terminal_extent(termrock_text::cells::width(&self.label).saturating_add(10))
     }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, bg: Color) {
@@ -424,11 +425,11 @@ impl Toggle {
             buf,
             area,
             5,
-            &crate::ui::text::truncate(&self.label, area.width.saturating_sub(5) as usize),
+            &termrock_text::cells::truncate(&self.label, area.width.saturating_sub(5) as usize),
             st,
         );
         let state = if self.on { "on" } else { "off" };
-        let state_offset = 6usize.saturating_add(crate::ui::text::width(&self.label));
+        let state_offset = 6usize.saturating_add(termrock_text::cells::width(&self.label));
         if state_offset.saturating_add(3) < usize::from(area.width) {
             row_part(
                 buf,
@@ -461,13 +462,13 @@ impl Navigable for RadioGroup {
     }
 }
 
-impl crate::ui::specimen::Specimen for Checkbox {
+impl termrock_runtime::specimen::Specimen for Checkbox {
     fn specimen_id(&self) -> WidgetId {
         self.id
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         matches!(
             state,
             Rest | Hover | Pressed | Focused | FocusedHover | Disabled | Overflow
@@ -476,7 +477,7 @@ impl crate::ui::specimen::Specimen for Checkbox {
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
@@ -484,20 +485,20 @@ impl crate::ui::specimen::Specimen for Checkbox {
     ) {
         let mut c = self.clone();
         c.disabled |= state.visual().disabled;
-        if state == crate::ui::specimen::SpecimenState::Overflow {
+        if state == termrock_runtime::specimen::SpecimenState::Overflow {
             c.label = format!("{} with a long label", c.label);
         }
         c.render(area, buf, ctx, bg);
     }
 }
 
-impl crate::ui::specimen::Specimen for Toggle {
+impl termrock_runtime::specimen::Specimen for Toggle {
     fn specimen_id(&self) -> WidgetId {
         self.id
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         matches!(
             state,
             Rest | Hover | Pressed | Focused | FocusedHover | Disabled | Overflow
@@ -506,7 +507,7 @@ impl crate::ui::specimen::Specimen for Toggle {
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
@@ -514,30 +515,30 @@ impl crate::ui::specimen::Specimen for Toggle {
     ) {
         let mut t = self.clone();
         t.disabled |= state.visual().disabled;
-        if state == crate::ui::specimen::SpecimenState::Overflow {
+        if state == termrock_runtime::specimen::SpecimenState::Overflow {
             t.label = format!("{} with a long label", t.label);
         }
         t.render(area, buf, ctx, bg);
     }
 }
 
-impl crate::ui::specimen::Specimen for RadioGroup {
+impl termrock_runtime::specimen::Specimen for RadioGroup {
     fn specimen_id(&self) -> WidgetId {
         self.id
     }
 
-    fn supports(&self, state: crate::ui::specimen::SpecimenState) -> bool {
-        use crate::ui::specimen::SpecimenState::*;
+    fn supports(&self, state: termrock_runtime::specimen::SpecimenState) -> bool {
+        use termrock_runtime::specimen::SpecimenState::*;
         matches!(state, Rest | Hover | Focused | FocusedHover | Disabled)
     }
 
-    fn specimen_height(&self, _state: crate::ui::specimen::SpecimenState) -> u16 {
+    fn specimen_height(&self, _state: termrock_runtime::specimen::SpecimenState) -> u16 {
         self.height()
     }
 
     fn specimen(
         &self,
-        state: crate::ui::specimen::SpecimenState,
+        state: termrock_runtime::specimen::SpecimenState,
         area: Rect,
         buf: &mut Buffer,
         ctx: &mut RenderCtx,
@@ -554,7 +555,7 @@ impl crate::ui::specimen::Specimen for RadioGroup {
     }
 }
 
-impl crate::core::pointer::MouseTarget for Checkbox {
+impl termrock_core::pointer::MouseTarget for Checkbox {
     type Action = ();
 
     fn mouse_id(&self) -> WidgetId {
@@ -563,16 +564,16 @@ impl crate::core::pointer::MouseTarget for Checkbox {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<()> {
-        if !ev.is(crate::core::intent::Phase::Click) {
-            return crate::core::response::Response::ignored();
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<()> {
+        if !ev.is(termrock_core::intent::Phase::Click) {
+            return termrock_core::response::Response::ignored();
         }
         self.on_click().into()
     }
 }
 
-impl crate::core::pointer::MouseTarget for RadioGroup {
+impl termrock_core::pointer::MouseTarget for RadioGroup {
     type Action = ();
 
     fn mouse_id(&self) -> WidgetId {
@@ -581,16 +582,16 @@ impl crate::core::pointer::MouseTarget for RadioGroup {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<()> {
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<()> {
         match ev.index_of(Part::ROW) {
-            Some(i) if ev.is(crate::core::intent::Phase::Click) => self.on_click(i).into(),
-            _ => crate::core::response::Response::ignored(),
+            Some(i) if ev.is(termrock_core::intent::Phase::Click) => self.on_click(i).into(),
+            _ => termrock_core::response::Response::ignored(),
         }
     }
 }
 
-impl crate::core::pointer::MouseTarget for Toggle {
+impl termrock_core::pointer::MouseTarget for Toggle {
     type Action = ();
 
     fn mouse_id(&self) -> WidgetId {
@@ -599,10 +600,10 @@ impl crate::core::pointer::MouseTarget for Toggle {
 
     fn pointer(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-    ) -> crate::core::response::Response<()> {
-        if !ev.is(crate::core::intent::Phase::Click) {
-            return crate::core::response::Response::ignored();
+        ev: &termrock_core::pointer::PointerEvent,
+    ) -> termrock_core::response::Response<()> {
+        if !ev.is(termrock_core::intent::Phase::Click) {
+            return termrock_core::response::Response::ignored();
         }
         self.on_click().into()
     }
