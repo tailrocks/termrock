@@ -57,14 +57,9 @@ fn see(screen: &TerminalSnapshot, present: &[&str], absent: &[&str]) {
 }
 
 fn dismiss_intro(app: &App) {
-    let landing = app.wait_screen("intro or manager", |screen| {
-        let visible = text(screen);
-        visible.contains("Stand up") || visible.contains("Current directory")
+    app.leave_intro("manager after intro", |screen| {
+        text(screen).contains("Current directory")
     });
-    if text(&landing).contains("Stand up") {
-        app.key("space");
-        app.wait_text("Current directory");
-    }
 }
 
 fn quiet_c41e(screen: &TerminalSnapshot) -> bool {

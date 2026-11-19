@@ -63,7 +63,9 @@ fn open(name: &str) -> App {
 }
 
 fn reach_manager(app: &App) -> TerminalSnapshot {
-    app.wait_text(DIRECTORY)
+    app.leave_intro("manager after intro", |screen| {
+        text(screen).contains(DIRECTORY)
+    })
 }
 
 fn open_accounts(app: &App) -> TerminalSnapshot {
