@@ -561,7 +561,7 @@ impl ScrollView {
 
         ctx.scrollable(self.id, l.viewport);
         let shift = Shift::default();
-        ctx.shifts.push(shift.clone());
+        ctx.push_shift(shift.clone());
 
         let whole = buf.area.union(l.content);
         let mut off = scratch_buffer(whole);
@@ -591,7 +591,7 @@ impl ScrollView {
     pub fn end(&mut self, frame: ScrollFrame, buf: &mut Buffer, ctx: &mut RenderCtx) {
         let l = frame.layout;
         if let (Some(off), Some(shift)) = (frame.off, frame.shift) {
-            ctx.shifts.pop();
+            ctx.pop_shift();
             if self.follow_focus {
                 self.follow(&off, l, frame.mark, frame.cursor, ctx);
             }

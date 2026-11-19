@@ -2,9 +2,9 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::Style;
 
-use crate::core::id::WidgetId;
-use crate::theme::Theme;
-use crate::ui::ctx::{RenderCtx, fill};
+use crate::ctx::{RenderCtx, fill};
+use termrock_core::id::WidgetId;
+use termrock_theme::Theme;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Dismiss {
@@ -79,7 +79,7 @@ impl Dismiss {
         self
     }
 
-    pub const fn allows(self, reason: crate::core::intent::DismissReason) -> bool {
+    pub const fn allows(self, reason: termrock_core::intent::DismissReason) -> bool {
         reason.permitted_by(self.escape, self.outside_click, self.focus_out)
     }
 
