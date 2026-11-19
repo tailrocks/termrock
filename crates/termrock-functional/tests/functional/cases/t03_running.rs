@@ -8,7 +8,7 @@ use std::time::{Duration, Instant};
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, TABLEPRO, find_all, row_text, text, try_launch};
+use crate::support::{App, Launch, TABLEPRO, find_all, flash_settle, row_text, text, try_launch};
 
 const HOST: &str = "dev-db.internal.acme.io";
 const DATABASE: &str = "acme_dev";
@@ -209,6 +209,7 @@ fn type_statement(app: &App) {
             line.contains('▎') && line.contains(PLACEHOLDER)
         })
     });
+    flash_settle(app);
     app.type_text(SQL);
     app.wait_text(SQL);
 }
