@@ -949,7 +949,7 @@ fn catalog_api_id_digest_names_the_row_that_changed() {
     let mut s = s;
     s.tree
         .files
-        .get_mut(Path::new("src/clock.rs"))
+        .get_mut(Path::new("crates/termrock-session/src/clock.rs"))
         .expect("clock.rs")
         .push_str("\npub fn undeclared_probe() {}\n");
     let actual = api_id_lines(&rows(&s).expect("inventory builds"));
@@ -1226,7 +1226,7 @@ fn catalog_non_test_module_still_requires_its_disposition() {
 #[test]
 fn catalog_rejects_unlisted_public_api() {
     let mut s = Sources::load();
-    let clock = std::path::PathBuf::from("src/clock.rs");
+    let clock = std::path::PathBuf::from("crates/termrock-session/src/clock.rs");
     s.tree
         .files
         .get_mut(&clock)
@@ -1241,7 +1241,7 @@ fn catalog_rejects_unlisted_public_api() {
 #[test]
 fn catalog_rejects_an_api_without_a_disposition() {
     let mut s = Sources::load();
-    let clock = std::path::PathBuf::from("src/clock.rs");
+    let clock = std::path::PathBuf::from("crates/termrock-session/src/clock.rs");
     s.tree
         .files
         .get_mut(&clock)
@@ -1261,7 +1261,7 @@ fn catalog_rejects_an_api_without_a_disposition() {
 #[test]
 fn catalog_rejects_private_api_claim() {
     let mut s = Sources::load();
-    let clock = std::path::PathBuf::from("src/clock.rs");
+    let clock = std::path::PathBuf::from("crates/termrock-session/src/clock.rs");
     let text = s.tree.files.get_mut(&clock).expect("clock.rs");
     *text = text.replacen("pub fn step_wall", "pub(crate) fn step_wall", 1);
     s.coverage.push_str(
@@ -1828,7 +1828,7 @@ fn with_probe_in_second_crate(s: &mut Sources, catalog_line: bool) {
     s.crates.push(("zz_probe".into(), SECOND_CRATE_DIR.into()));
     s.tree
         .files
-        .get_mut(Path::new("src/clock.rs"))
+        .get_mut(Path::new("crates/termrock-session/src/clock.rs"))
         .expect("clock.rs")
         .push_str("\npub use zz_probe::undeclared_probe;\n");
     if catalog_line {
@@ -1892,7 +1892,7 @@ fn catalog_a_second_crate_nobody_reexports_adds_no_obligation() {
     let clock = s
         .tree
         .files
-        .get_mut(Path::new("src/clock.rs"))
+        .get_mut(Path::new("crates/termrock-session/src/clock.rs"))
         .expect("clock.rs");
     *clock = clock.replace("\npub use zz_probe::undeclared_probe;\n", "");
     let errors = check(&s);
@@ -1992,7 +1992,7 @@ fn catalog_rejects_nonexistent_exception_test() {
 const PROBE: &str = "\npub fn undeclared_probe() {}\n";
 
 fn with_probe(s: &mut Sources) {
-    let clock = std::path::PathBuf::from("src/clock.rs");
+    let clock = std::path::PathBuf::from("crates/termrock-session/src/clock.rs");
     s.tree
         .files
         .get_mut(&clock)
@@ -2008,7 +2008,7 @@ fn with_probe(s: &mut Sources) {
 #[test]
 fn catalog_name_match_is_not_a_disposition() {
     let mut s = Sources::load();
-    let clock = std::path::PathBuf::from("src/clock.rs");
+    let clock = std::path::PathBuf::from("crates/termrock-session/src/clock.rs");
     s.tree
         .files
         .get_mut(&clock)
@@ -2455,7 +2455,9 @@ fn probe_errors(apis: &[&str], body: &str, items: &str) -> Vec<String> {
     with_probe(&mut s);
     s.tree
         .files
-        .get_mut(&std::path::PathBuf::from("src/clock.rs"))
+        .get_mut(&std::path::PathBuf::from(
+            "crates/termrock-session/src/clock.rs",
+        ))
         .expect("clock.rs")
         .push_str(TYPE_PROBE);
     s.catalog = replaced(

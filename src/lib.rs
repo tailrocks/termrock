@@ -1,11 +1,11 @@
 pub mod catalog;
 #[cfg(feature = "cli")]
 pub mod cli;
-pub mod clock;
 pub mod core;
 pub mod docs;
 pub mod metrics;
 pub use termrock_core::motion;
+pub use termrock_session::clock;
 pub mod runtime;
 pub mod shell;
 #[cfg(feature = "terminal")]

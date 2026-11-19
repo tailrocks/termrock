@@ -545,6 +545,7 @@ dependencies = [
  "termrock-core",
  "termrock-metrics",
  "termrock-runtime",
+ "termrock-session",
  "termrock-text",
  "termrock-theme",
  "unicode-segmentation",
@@ -1451,6 +1452,17 @@ dependencies = [
  "termrock-metrics",
  "termrock-text",
  "termrock-theme",
+]
+
+[[package]]
+name = "termrock-session"
+version = "0.1.0"
+dependencies = [
+ "libc",
+ "ratatui",
+ "termrock-core",
+ "termrock-metrics",
+ "termrock-text",
 ]
 
 [[package]]
