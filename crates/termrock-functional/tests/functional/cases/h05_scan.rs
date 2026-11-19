@@ -20,7 +20,6 @@
 //! (`apps/holla/src/domain/parity.rs`), so one 48-tick step completes a scan.
 
 use tui_test::TerminalSnapshot;
-use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{App, HOLLA, Launch, text, try_launch};
 
@@ -247,32 +246,8 @@ fn settle_spinner(
     panic!("spinner never reached the first frame at {cols}x{rows}");
 }
 
-fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = crate::support::oracle_baselines();
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        panic!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        );
-    }
-}
-
 fn shot(app: &App, checkpoint: &str, screen: &TerminalSnapshot) {
-    check_frame(app, screen, &visual_id(checkpoint));
+    crate::support::assert_frame(app, screen, &visual_id(checkpoint));
 }
 
 fn open_catalog(app: &App, label: &str) {

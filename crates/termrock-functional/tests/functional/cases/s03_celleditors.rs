@@ -4,7 +4,6 @@
 //! `pre_refactor/s03_celleditors/` and each case id's dots become underscores.
 
 use tui_test::{SnapshotColor, TerminalSnapshot};
-use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{App, Launch, Point, SHOWCASE, find_all, row_text, text, try_launch};
 
@@ -219,30 +218,6 @@ fn defaults_besides(screen: &TerminalSnapshot, changed: &str) {
 
 fn shot(app: &App, case_id: &str, _precondition: &str, _args: &[&str]) {
     app.visual(&visual_id(case_id));
-}
-
-fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = crate::support::oracle_baselines();
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        panic!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        );
-    }
 }
 
 /// Down moves the bar onto Sandbox while D-101 still has the press flash.
@@ -1073,7 +1048,7 @@ fn option_cursor_bar() {
         row_with(&moved, "D-101").contains("Production"),
         "moving the bar cursor committed Sandbox"
     );
-    check_frame(&app, &moved, &visual_id("opt.celleditors.cursor_style"));
+    crate::support::assert_frame(&app, &moved, &visual_id("opt.celleditors.cursor_style"));
     app.key("esc");
     let cancelled = app.wait_text(CANCELLED);
     assert!(

@@ -86,7 +86,10 @@ fn click_list(app: &App, name: &str) {
 fn shot(app: &App, id: &str, precondition: &str) {
     let root = crate::support::oracle_baselines();
     let outcome = app.check_visual_with_precondition(&root, id, precondition);
-    assert!(outcome.is_pass(), "visual mismatch for {id}: {outcome:?}");
+    assert!(
+        app.accepts(&outcome),
+        "visual mismatch for {id}: {outcome:?}"
+    );
 }
 
 fn uuid_row(line: &str) -> bool {

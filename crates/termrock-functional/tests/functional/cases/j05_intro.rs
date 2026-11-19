@@ -11,7 +11,6 @@
 use std::time::{Duration, Instant};
 
 use tui_test::TerminalSnapshot;
-use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{App, JACKIN, Launch, text, try_launch};
 
@@ -92,7 +91,7 @@ fn shot(app: &App, checkpoint: &str, accept: impl Fn(&TerminalSnapshot) -> bool)
     loop {
         let screen = app.screen();
         if accept(&screen) {
-            check_frame(app, &screen, &test_id);
+            crate::support::assert_frame(app, &screen, &test_id);
             return;
         }
         assert!(
@@ -101,30 +100,6 @@ fn shot(app: &App, checkpoint: &str, accept: impl Fn(&TerminalSnapshot) -> bool)
             text(&screen)
         );
         std::thread::sleep(Duration::from_millis(15));
-    }
-}
-
-fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = crate::support::oracle_baselines();
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        panic!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        );
     }
 }
 

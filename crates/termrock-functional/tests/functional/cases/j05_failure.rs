@@ -8,7 +8,6 @@
 use std::time::{Duration, Instant};
 
 use tui_test::TerminalSnapshot;
-use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{App, JACKIN, Launch, row_text, text, try_launch};
 
@@ -136,7 +135,7 @@ fn shot(app: &App, checkpoint: &str, cols: u32, rows: u32) {
         let screen = app.screen();
         if failure_at(&screen, cols, rows)
             && text(&screen).contains("Close")
-            && frame_matches(app, &screen, &test_id)
+            && crate::support::frame_mismatch(app, &screen, &test_id).is_none()
         {
             return;
         }
@@ -147,31 +146,6 @@ fn shot(app: &App, checkpoint: &str, cols: u32, rows: u32) {
         );
         std::thread::sleep(Duration::from_millis(15));
     }
-}
-
-fn frame_matches(app: &App, screen: &TerminalSnapshot, test_id: &str) -> bool {
-    let root = crate::support::oracle_baselines();
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    let CheckOutcome::Failure(failure) = outcome else {
-        return true;
-    };
-    let fields = failure.changed_fields();
-    failure.changed_cell_total() == 0
-        && !screen.cursor().visible()
-        && !fields.is_empty()
-        && fields
-            .iter()
-            .all(|field| field == "cursor.col" || field == "cursor.row")
 }
 
 fn esc_before_dialog_does_not_ack(app: &App) {

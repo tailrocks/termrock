@@ -10,7 +10,6 @@
 //! `create` does not write the file. The editor preview does.
 
 use tui_test::TerminalSnapshot;
-use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{App, JACKIN, Launch, Point, find_all, row_text, text, try_launch};
 
@@ -234,36 +233,12 @@ fn nudge(app: &App, quiet_frame: impl Fn(&TerminalSnapshot) -> bool) {
     });
 }
 
-fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    let root = crate::support::oracle_baselines();
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        panic!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        );
-    }
-}
-
 /// `visual` waits for a quiet screen, and that wait outlives the 5 s cancel
 /// status. Compare the frame that still shows it.
 fn shot_held(app: &App, checkpoint: &str) {
     nudge(app, status_duplicate);
     let screen = app.wait_screen("cancelled status", status_duplicate);
-    check_frame(app, &screen, &visual_id(checkpoint));
+    crate::support::assert_frame(app, &screen, &visual_id(checkpoint));
 }
 
 fn preview_button(app: &App, label: &str) -> Point {

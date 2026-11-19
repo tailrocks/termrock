@@ -142,6 +142,8 @@ pub struct App {
     fence: bool,
     /// A button was pressed or released since the last [`App::flash_expired`].
     clicked: Cell<bool>,
+    /// Whether the cursor was visible on the frame [`App::check_visual`] last compared.
+    compared_cursor_visible: Cell<bool>,
 }
 
 impl App {
@@ -347,6 +349,15 @@ impl App {
                 .all(|field| field == "cursor.col" || field == "cursor.row")
     }
 
+    /// Whether `outcome` of the last [`App::check_visual`] accepts the compared
+    /// frame: a pass, or cells that match with only the position of a hidden
+    /// cursor differing. A visible cursor, a cursor visibility change and any
+    /// cell difference are not accepted. The visibility is read from the frame
+    /// that was compared, not from the live screen, which may have moved on.
+    pub fn accepts(&self, outcome: &tuiscotti_latest::check::CheckOutcome) -> bool {
+        outcome.is_pass() || (Self::cursor_only(outcome) && !self.compared_cursor_visible.get())
+    }
+
     /// Compare the live screen with a frozen baseline.
     ///
     /// `precondition` is recorded as `precondition <text>` before the
@@ -361,6 +372,7 @@ impl App {
     ) -> tuiscotti_latest::check::CheckOutcome {
         let _ = self.settle();
         let screen = self.stable_screen();
+        self.compared_cursor_visible.set(screen.cursor().visible());
         let sample = tuiscotti_latest::sample::Sample::state(
             test_id,
             screen,
@@ -1166,6 +1178,7 @@ pub fn try_launch(launch: Launch) -> Result<App, LaunchError> {
                 clock: launch.clock,
                 fence: fenced(&launch),
                 clicked: Cell::new(false),
+                compared_cursor_visible: Cell::new(false),
             };
             app.persist_actions();
             Ok(app)
@@ -1379,6 +1392,51 @@ fn evidence_directory(name: &str) -> PathBuf {
 /// `pre_refactor/` oracle that Showcase, TablePro, Holla, Jackin and the
 /// cross-binary cases check against.
 const BASELINES: &str = "crates/termrock-functional/tests/functional/baselines";
+
+/// Why `screen` differs from its frozen oracle frame, or `None` when it matches.
+///
+/// A frame whose cells are identical and whose only difference is the column
+/// or row of a hidden cursor matches: a hidden cursor parks wherever the last
+/// diff write ended, which depends on how input batched into frames, so it is
+/// not a contract. See [`App::cursor_only`]. Any cell difference or any cursor
+/// visibility difference still mismatches, and so does a cursor-position-only
+/// difference on a visible cursor, because an editing or focused widget draws
+/// it and where it sits is part of the picture.
+pub fn frame_mismatch(app: &App, screen: &TerminalSnapshot, test_id: &str) -> Option<String> {
+    let root = oracle_baselines();
+    let sample = tuiscotti_latest::sample::Sample::state(
+        test_id,
+        screen.clone(),
+        tuiscotti_latest::sample::Observation::empty(),
+    )
+    .expect("build Tuiscotti state sample");
+    let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
+    let artifacts = app.evidence_dir().join("check-artifacts");
+    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
+        .expect("open Tuiscotti frozen store");
+    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
+    let tuiscotti_latest::check::CheckOutcome::Failure(failure) = &outcome else {
+        return None;
+    };
+    if App::cursor_only(&outcome) && !screen.cursor().visible() {
+        return None;
+    }
+    Some(format!(
+        "{test_id} {} sha {} path {} cells {} fields {}",
+        failure.reason(),
+        failure.candidate_sha256(),
+        failure.candidate_path().display(),
+        failure.changed_cell_total(),
+        failure.changed_fields().join(",")
+    ))
+}
+
+/// Panic when `screen` differs from its frozen oracle frame. See [`frame_mismatch`].
+pub fn assert_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) {
+    if let Some(why) = frame_mismatch(app, screen, test_id) {
+        panic!("{why}");
+    }
+}
 
 /// The directory that holds the `pre_refactor/` capture directories.
 pub fn oracle_baselines() -> PathBuf {

@@ -223,7 +223,8 @@ fn wide_dialog(screen: &TerminalSnapshot) -> bool {
 
 fn baseline_hit(app: &App, checkpoint: &str) -> bool {
     let root = crate::support::oracle_baselines();
-    app.check_visual(&root, &visual_id(checkpoint)).is_pass()
+    let outcome = app.check_visual(&root, &visual_id(checkpoint));
+    app.accepts(&outcome)
 }
 
 /// The reference capture shows `daemon · 4 s ago` beside the open dialog.
