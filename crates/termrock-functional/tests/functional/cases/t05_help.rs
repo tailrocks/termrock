@@ -6,7 +6,7 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, TABLEPRO, find_all, row_text, text, try_launch};
+use crate::support::{App, Launch, TABLEPRO, find_all, flash_settle, row_text, text, try_launch};
 
 const HOST: &str = "dev-db.internal.acme.io";
 const DATABASE: &str = "acme_dev";
@@ -171,6 +171,7 @@ fn click_editor(app: &App) {
             line.contains('▎') && line.contains(PLACEHOLDER)
         })
     });
+    flash_settle(app);
 }
 
 fn type_opener(app: &App) {

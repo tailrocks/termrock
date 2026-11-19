@@ -492,7 +492,7 @@ impl App {
     }
 
     fn now_ms(&self) -> u64 {
-        self.clock.now_ms()
+        self.clock.now().as_millis()
     }
 
     fn flash_clock(&self) -> u64 {

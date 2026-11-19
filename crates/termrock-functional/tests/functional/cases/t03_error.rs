@@ -6,7 +6,7 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, TABLEPRO, find_all, row_text, text, try_launch};
+use crate::support::{App, Launch, TABLEPRO, find_all, flash_settle, row_text, text, try_launch};
 
 const HOST: &str = "dev-db.internal.acme.io";
 const DATABASE: &str = "acme_dev";
@@ -168,6 +168,7 @@ fn focus_bad_statement(app: &App) {
 
 fn replace_statement(app: &App) {
     focus_bad_statement(app);
+    flash_settle(app);
     // Emacs on macOS: Ctrl+A is line start and Ctrl+K deletes to the line end.
     app.key("ctrl+a");
     app.key("ctrl+k");
@@ -194,6 +195,7 @@ fn type_bad_statement(app: &App) {
             line.contains('▎') && line.contains(PLACEHOLDER)
         })
     });
+    flash_settle(app);
     app.type_text(BAD);
     app.wait_text(BAD);
 }

@@ -6,7 +6,7 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, TABLEPRO, find_all, row_text, text, try_launch};
+use crate::support::{App, Launch, TABLEPRO, find_all, flash_settle, row_text, text, try_launch};
 
 const HOST: &str = "dev-db.internal.acme.io";
 const DATABASE: &str = "acme_dev";
@@ -262,6 +262,7 @@ fn tablepro_context_route_returns_to_the_row() {
 fn tablepro_context_actions_use_the_selected_object() {
     let app = open("t05-context-context");
     connect_development(&app);
+    flash_settle(&app);
 
     let previous = focus_tree(&app, PREVIOUS);
     assert!(
@@ -294,6 +295,7 @@ fn tablepro_context_actions_use_the_selected_object() {
     let opened = app.wait_screen("products tab from the row menu", |screen| {
         text(screen).contains(PANEL) && text(screen).contains(ROW_A)
     });
+    flash_settle(&app);
     let panel = panel_row(&opened);
     assert!(
         panel.contains(PANEL) && panel.contains("9 cols") && !panel.contains("preview"),

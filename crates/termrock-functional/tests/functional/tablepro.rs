@@ -1,4 +1,4 @@
-use super::support::{App, Point, TABLEPRO, crop, find, find_all, row_text, text};
+use super::support::{App, Point, TABLEPRO, crop, find, find_all, flash_settle, row_text, text};
 
 fn inside(point: Point) -> Point {
     Point {
@@ -69,10 +69,11 @@ fn tablepro_write_confirmation_cancels_retries_and_executes_only_when_armed() {
 
     app.key("ctrl+l");
     app.type_text("orders");
-    let enabled = app.wait_screen("confirmation token enables Execute", |screen| {
+    app.wait_screen("confirmation token enables Execute", |screen| {
         crop(screen, execute, 5, 1) != disabled && text(screen).contains("Type orders to confirm")
     });
-    let rest = crop(&enabled, execute, 5, 1);
+    flash_settle(&app);
+    let rest = crop(&app.screen(), execute, 5, 1);
     app.move_to(execute);
     let hover = app.wait_screen("enabled Execute responds to hover", |screen| {
         crop(screen, execute, 5, 1) != rest

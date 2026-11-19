@@ -6,7 +6,7 @@
 
 use tui_test::TerminalSnapshot;
 
-use crate::support::{App, Launch, TABLEPRO, find_all, row_text, text, try_launch};
+use crate::support::{App, Launch, TABLEPRO, find_all, flash_settle, row_text, text, try_launch};
 
 const HOST: &str = "dev-db.internal.acme.io";
 const DATABASE: &str = "acme_dev";
@@ -173,6 +173,7 @@ fn type_statement(app: &App, sql: &str) {
             line.contains('▎') && line.contains(PLACEHOLDER)
         })
     });
+    flash_settle(app);
     app.type_text(sql);
     app.wait_text(sql);
 }
@@ -188,6 +189,7 @@ fn replace_statement(app: &App) {
             line.contains('▎') && line.contains("LIMIT 1")
         })
     });
+    flash_settle(app);
     // macOS field keys are Emacs. Ctrl+L is Safe Mode, so line-start plus
     // kill-to-end replaces the statement without opening that picker.
     app.key("ctrl+a");
