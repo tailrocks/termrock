@@ -1890,7 +1890,7 @@ test_snapshot_entry_limit() {
 import sys
 
 blob = sys.argv[1]
-for number in range(8193):
+for number in range(16385):
     sys.stdout.write(f"100644 {blob}\tgenerated/entry-{number:05d}\n")
 PY
   config_file=$(git -C "$directory" rev-parse --path-format=absolute --git-common-dir)/config
@@ -1900,7 +1900,7 @@ PY
   checkout_before=$(git -C "$directory" status --porcelain=v1 --untracked-files=all | shasum -a 256 | awk '{print $1}')
   set_denied_response
   run_checker "$directory" pre-commit
-  assert_failed 'snapshot with 8,193 entries is rejected'
+  assert_failed 'snapshot with 16,385 entries is rejected'
   assert_contains 'snapshot entry cap reports its stable diagnostic' 'snapshot tree exceeds the entry count limit'
   assert_request_count 0
   assert_equal 'entry-limit fixture preserves the source index' "$index_before" "$(file_sha256 "$index_file")"

@@ -729,3 +729,53 @@ Choices that differ from the issue's wording or settle what it left open:
   outside the moved files. The only `impl` for a moved type outside it is
   `impl From<FramePlacement> for Placement` in `ui/modal.rs`, which stays legal
   because `FramePlacement` is local there.
+
+## 2026-11-19: The generated-workflow snapshot entry cap rises to 16384 (#505)
+
+Context: `scripts/check-generated-workflows.sh` rejects a snapshot tree of more
+than `maximum_snapshot_entries` entries. The cap was 8192. After the crate
+split (#451) moved about 2,000 baselines and reference binaries into
+`crates/termrock-functional`, main tracks 11179 files, so the local
+`pre-commit` guard failed on every commit made against main. CI does not run
+the guard, so nothing else caught it.
+
+Options: (a) leave the frozen baselines and reference binaries out of the
+snapshot; (b) raise the cap.
+
+Decision: (b). The cap is 16384, and the trusted-seed metadata bound is now the
+literal 16384 instead of `2 * maximum_snapshot_entries`.
+
+Why not (a): the guard does not count the snapshot as a convenience. It lists
+the whole tree and validates every entry (path safety, no gitlinks, supported
+modes, symlink targets, blob sizes, the approved large-blob allowlist, which
+already names the reference binaries under `crates/termrock-functional`)
+before it materializes anything. Skipping subtrees would make that validation
+and the materialized tree depend on a path list, which is a new thing to keep
+honest and a way to hide an unsafe entry under an excluded prefix. The
+generator also reads the snapshot as one tree.
+
+Why (b) is safe: the entry cap is only a resource bound. It sits beside the
+8 MiB listing-byte cap, the 16 MiB per-blob cap and the 512 MiB total cap, and
+those stay as they are. Main's listing is about 1.9 MB and its blobs total
+about 238 MB, so 16384 entries (1.47 times main) fits well inside the other
+three. The trusted-seed bound protects a reviewed, fixed pack of 539 objects
+and would have been loosened as a side effect of the old derived formula, so
+it keeps its previous value of 16384 as an explicit number.
+
+Pins: the checker digest moved in `scripts/install-generated-workflow-guard.sh`
+(`reviewed_checker_sha256`), `scripts/policy/check-generated-workflow-auth.py`
+(`qualified_checker_sha256`) and
+`scripts/policy/check-generated-workflow-auth-mutants.py` (`expected_checker`).
+
+Tests: `scripts/policy/check-generated-workflows.sh snapshot-limits` now
+builds a 16385-entry tree and expects the entry-count rejection, so the new
+cap is pinned at its upper edge. A positive test (a tree between 8193 and 16384
+entries reaches the Rustup boundary) was tried and dropped: it takes about
+six minutes because the guard materializes every entry, and it cannot pass
+until the separate jactionlint support-policy mismatch below is fixed.
+
+Not fixed here: with the cap raised, `pre-commit` on main still fails at
+"snapshot tool tuple is outside the reviewed support policy". `mise.toml` pins
+jactionlint 2.6.0 (Renovate, #464 era) but the reviewed tuple table in the
+checker only admits jactionlint 2.4.0 for Velnor 0.1.78. That table is a
+reviewed allowlist, so it needs its own qualification and issue.
