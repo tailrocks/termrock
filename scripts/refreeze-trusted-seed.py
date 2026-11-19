@@ -29,7 +29,8 @@ and pin, then runs --check on the result:
 seed alone: it recomputes the configuration and checker digests and rewrites only the pins that
 repeat them (checker, installer, auth policy, mutant harness).
 
---write refuses to run on a dirty tree, and refuses a source commit that is not reachable from the
+--write refuses to run on a dirty tree (any tracked change, or any untracked managed file, including
+the sentinel of step 1), and refuses a source commit that is not reachable from the
 upstream ref (default origin/main). It is Python standard library only and never touches the network.
 The pack bytes are reproducible for one Git and zlib build; the checker verifies the reviewed
 bytes, not a re-derivation, so --check never recompresses.
@@ -65,7 +66,8 @@ MUTANTS = "scripts/policy/check-generated-workflow-auth-mutants.py"
 INSTALLED_TEST = "scripts/policy/check-installed-generated-workflow-guard.sh"
 HARNESS = "scripts/policy/check-generated-workflows.sh"
 
-# Everything --write may change. --write ignores local changes to these paths and refuses any other.
+# Everything --write may change. --write rewrites these paths and refuses to start while any of them
+# has a tracked change or exists untracked, so the pins are computed from committed bytes only.
 MANAGED_PATHS = frozenset({
     COMMIT_FILE, OBJECTS_FILE, PACK_FILE, POLICY_FILE, FIXTURE_PACK_FILE, SEED_LOCK_PATH,
     CHECKER, CONFIG, INSTALLER, GENERATOR, BUILDER, FIXTURE_TEST, AUTH, MUTANTS, INSTALLED_TEST, HARNESS,
@@ -222,12 +224,21 @@ class Rules:
         self.artifact_prefixes = values["artifact_prefixes"]
         self.artifact_paths = frozenset(values["artifact_paths"])
 
-    def classify(self, path):
-        """None (kept in the pack), "baseline" (kept only in the fixture) or "absent" (in neither)."""
+    def classify(self, path, mode, kind):
+        """None (kept in the pack), "baseline" (kept only in the fixture) or "absent" (in neither).
+
+        Mirrors the projection in scripts/check-generated-workflows.sh: a baseline entry must be a
+        regular 100644 blob and an absent entry a regular 100644 or 100755 blob. Any other mode under
+        those paths is refused, not classified, so a symlink there cannot pass as either class.
+        """
         for prefix in self.baseline_prefixes:
             if path.startswith(prefix) and "/" not in path[len(prefix):] and path[len(prefix):].endswith(".tui.pb"):
+                if (mode, kind) != ("100644", "blob"):
+                    fail(f"seed tree baseline entry is not a regular file: {mode} {kind} {path}")
                 return "baseline"
         if path in self.artifact_paths or any(path.startswith(prefix) for prefix in self.artifact_prefixes):
+            if (mode, kind) not in {("100644", "blob"), ("100755", "blob")}:
+                fail(f"seed tree excluded artifact is not a regular file: {mode} {kind} {path}")
             return "absent"
         return None
 
@@ -257,7 +268,7 @@ class Tree:
             if (mode, kind) == ("040000", "tree"):
                 object_type, exclusion = "tree", None
             elif (mode, kind) in {("100644", "blob"), ("100755", "blob"), ("120000", "blob")}:
-                object_type, exclusion = "blob", rules.classify(path)
+                object_type, exclusion = "blob", rules.classify(path, mode, kind)
             else:
                 fail(f"seed tree has an unsupported entry: {mode} {kind} {path}")
             if self.object_types.setdefault(oid, object_type) != object_type:
@@ -619,20 +630,28 @@ def default_message(source, signer):
     )
 
 
+def dirty_problems(root, git):
+    """Every tracked change, and every managed path that exists without being tracked."""
+    problems = git.run(root, "status", "--porcelain", "--untracked-files=no").decode().splitlines()
+    for relative in sorted(MANAGED_PATHS):
+        path = root / relative
+        if path.exists() or path.is_symlink():
+            if git.run(root, "ls-files", "--error-unmatch", "--", relative, check=False).returncode != 0:
+                problems.append(f"?? {relative} (untracked managed file)")
+    return problems
+
+
 def write(root, git, scratch, arguments, log):
-    status = git.run(root, "status", "--porcelain", "--untracked-files=no").decode().splitlines()
-    unmanaged = [line for line in status if line[3:] not in MANAGED_PATHS]
-    if unmanaged:
-        fail("the working tree has changes outside the managed pin files:\n  " + "\n  ".join(unmanaged))
+    problems = dirty_problems(root, git)
+    if problems:
+        fail("--write refuses a dirty tree; commit or remove these first:\n  " + "\n  ".join(problems))
     source = git.run(root, "rev-parse", "--verify", f"{arguments.source}^{{commit}}").decode().strip()
     if not arguments.no_upstream_check:
         result = git.run(root, "merge-base", "--is-ancestor", source, arguments.upstream, check=False)
         if result.returncode != 0:
             fail(f"source {source} is not reachable from {arguments.upstream}; pass --no-upstream-check only for a dry run")
     log("source", source)
-    signer = arguments.signer
-    if re.fullmatch(r"[^<>\n]+ <[^<>\n]+>", signer) is None:
-        fail("--signer must look like 'Name <email>'")
+    signer = SEED_SIGNER
     message = Path(arguments.message).read_text(encoding="utf-8") if arguments.message else default_message(source, signer)
     if f"Signed-off-by: {signer}" not in message.splitlines():
         fail("the seed commit message must carry the signer's Signed-off-by line")
@@ -722,7 +741,6 @@ def main():
     parser.add_argument("--source", default="HEAD", help="--write: commit whose tree becomes the seed tree (default HEAD)")
     parser.add_argument("--upstream", default="origin/main", help="--write: ref that must contain --source")
     parser.add_argument("--no-upstream-check", action="store_true", help="--write: skip the upstream containment check (dry runs only)")
-    parser.add_argument("--signer", default=SEED_SIGNER, help="--write: seed commit identity and sign-off (the generator accepts only the default)")
     parser.add_argument("--message", help="--write: file with the seed commit message (must carry the signer's sign-off)")
     arguments = parser.parse_args()
     root = Path(arguments.repo).resolve(strict=True)
