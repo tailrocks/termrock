@@ -47,6 +47,9 @@ impl Prop {
         self.tone = tone;
         self
     }
+    /// Marks a value that may take several rows. `render`, `measure` and
+    /// `InfoDialog` wrap it. A `PropsList` keeps every prop on one row and shows
+    /// the rest of a long value through its `reveal`.
     pub fn wrap(mut self) -> Self {
         self.wrap = true;
         self
@@ -367,6 +370,11 @@ impl PropsList {
         }
     }
 
+    /// `InfoDialog`'s list wraps its `Prop::wrap` values on rows of their own.
+    /// Library plumbing, not API: it is `#[doc(hidden)] pub` because `InfoDialog`
+    /// in `junie-tui` calls it across the crate boundary (docs/decisions.md,
+    /// #494). An app shows a long value through `reveal`, or draws it with
+    /// `props::render`.
     #[doc(hidden)]
     pub fn wrapping(mut self) -> Self {
         self.wrapping = true;
@@ -565,7 +573,9 @@ impl PropsList {
         self.core.scroll.set_viewport(fitting);
     }
 
-    /// The height that shows every prop whole in a list `width` columns wide.
+    /// The height that shows every prop whole in a list `width` columns wide,
+    /// for `InfoDialog` to size its list. Library plumbing, not API: it assumes
+    /// no scrollbar, and an app sizes a sheet with `props::measure_with`.
     #[doc(hidden)]
     pub fn height_at(&self, width: u16) -> u16 {
         let area = Rect::new(0, 0, width, 1);

@@ -289,3 +289,45 @@ fn master_detail_desired_width_saturates_when_impossible() {
         "desired width {w} holds {m:?} {d:?}"
     );
 }
+
+/// An app that renders a `MasterDetail` into no space calls `layout` with the
+/// empty area, as every app does each frame. That alone leaves a split that is
+/// not on screen with nothing to resize, so apps need no separate "forget the
+/// geometry" call (#494).
+#[test]
+fn master_detail_layout_into_no_space_leaves_nothing_to_resize() {
+    use junie_tui::core::event::Key;
+    use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+
+    let wide = Rect::new(0, 0, 120, 20);
+    let nudge = Key {
+        code: KeyCode::Right,
+        mods: KeyModifiers::ALT | KeyModifiers::SHIFT,
+    };
+    let master_width = |md: &MasterDetail| md.split_rects(wide).expect("split").0.width;
+    let mut focus = Focus::default();
+    focus.focus(MASTER);
+
+    // Control: a laid out split does resize, so the empty cases below prove
+    // something.
+    let mut md = MasterDetail::new(MASTER, DETAIL);
+    layout_at(&mut md, wide, None);
+    let before = master_width(&md);
+    assert!(md.on_key(&nudge, &mut focus).is_some());
+    assert!(master_width(&md) > before, "the keys move a visible seam");
+
+    for collapse_below in [junie_tui::ui::master_detail::SPLIT_MIN, 0] {
+        for empty in [Rect::ZERO, Rect::new(5, 5, 0, 10), Rect::new(0, 0, 50, 0)] {
+            let mut md = MasterDetail::new(MASTER, DETAIL).collapse_below(collapse_below);
+            layout_at(&mut md, wide, None);
+            let before = master_width(&md);
+            layout_at(&mut md, empty, None);
+            let _ = md.on_key(&nudge, &mut focus);
+            assert_eq!(
+                master_width(&md),
+                before,
+                "collapse_below {collapse_below}, area {empty:?}: a split with no space was resized"
+            );
+        }
+    }
+}
