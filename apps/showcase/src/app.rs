@@ -1057,7 +1057,7 @@ impl App {
                 }
                 Request::Help => self.open_help(),
                 Request::RefusedOutsideClick(dismiss) => {
-                    let now = self.clock.now_ms();
+                    let now = self.clock.now().as_millis();
                     termrock::ui::modal::refuse_outside_click(
                         &mut self.shell.pointer,
                         dismiss,
@@ -1205,7 +1205,7 @@ impl App {
                 _ => Outcome::Changed,
             },
             Dismissed::Refused => {
-                let now = self.clock.now_ms();
+                let now = self.clock.now().as_millis();
                 termrock::ui::modal::refuse_outside_click(&mut self.shell.pointer, dismiss, now);
                 Outcome::Changed
             }
@@ -2162,7 +2162,7 @@ impl shell::App for App {
         TooSmall::new(BRAND)
     }
     fn now_ms(&self) -> u64 {
-        self.clock.now_ms()
+        self.clock.now().as_millis()
     }
     fn tick(&self) -> u64 {
         self.tick
@@ -2229,7 +2229,7 @@ impl PointerHost for App {
     }
 
     fn now_ms(&self) -> u64 {
-        self.clock.now_ms()
+        self.clock.now().as_millis()
     }
 
     fn deliver(&mut self, ev: &PointerEvent) -> Response<()> {

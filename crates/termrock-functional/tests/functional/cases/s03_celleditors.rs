@@ -3,8 +3,6 @@
 //! Tuiscotti test ids are `[a-z0-9_-]` segments, so the baseline directory is
 //! `pre_refactor/s03_celleditors/` and each case id's dots become underscores.
 
-use std::time::{Duration, Instant};
-
 use tui_test::{SnapshotColor, TerminalSnapshot};
 use tuiscotti_latest::check::CheckOutcome;
 
@@ -1023,12 +1021,26 @@ fn option_popup_width_narrow() {
 
 #[test]
 fn option_cursor_bar() {
-    let app = page(
-        "s03-celleditors-cursor",
-        Some("celleditors.cursor_style=bar"),
-        120,
-        40,
-    );
+    // The press flash that `bar_still_pressed` reads lasts 140 ms of the app's
+    // own time. On the stepped test clock it lasts until `settle_flash`, so the
+    // bar move is read inside it however late a frame is drawn, and the case
+    // needs no retry. A retry would end in Esc, and its "Edit cancelled" toast
+    // would still be showing when the final screen is checked.
+    let mut launch = Launch::new("s03-celleditors-cursor", SHOWCASE);
+    launch.args = [
+        "--page",
+        "celleditors",
+        "--opt",
+        "celleditors.cursor_style=bar",
+    ]
+    .map(str::to_string)
+    .to_vec();
+    launch.cols = 120;
+    launch.rows = 40;
+    launch.color = Some("truecolor".to_string());
+    launch.motion = Some("paused".to_string());
+    launch.clock = true;
+    let app = try_launch(launch).unwrap_or_else(|error| panic!("{error}"));
     click_tab(&app, "Options");
     let options = app.wait_text("Popup cursor");
     assert_value(&options, "Popup cursor", "bar", &["fill"]);
@@ -1036,36 +1048,10 @@ fn option_cursor_bar() {
     click_tab(&app, "Playground");
     app.wait_text("Deployment targets");
     focus_table(&app);
-    let mut moved = None;
-    for _ in 0..6 {
-        app.key("enter");
-        app.key("down");
-        let started = Instant::now();
-        let mut since: Option<Instant> = None;
-        while started.elapsed() < Duration::from_millis(500) {
-            let screen = app.screen();
-            if bar_still_pressed(&screen) {
-                let held = since.get_or_insert_with(Instant::now);
-                if held.elapsed() >= Duration::from_millis(120) {
-                    moved = Some(screen);
-                    break;
-                }
-            } else {
-                since = None;
-            }
-            std::thread::sleep(Duration::from_millis(15));
-        }
-        if moved.is_some() {
-            break;
-        }
-        app.key("esc");
-    }
-    let moved = moved.unwrap_or_else(|| {
-        panic!(
-            "bar move did not keep the pressed row\n{}",
-            text(&app.screen())
-        )
-    });
+    app.key("enter");
+    app.wait_text(CHOOSING);
+    app.key("down");
+    let moved = app.wait_screen("bar move keeps the pressed row", bar_still_pressed);
     let blob = popup_blob(&moved);
     let current = lines_with(&moved, "› Production");
     assert!(
