@@ -2,6 +2,13 @@ crates/termrock-core/src/edit.rs  clipboard::store
 crates/termrock-core/src/event.rs  pin::PlatformPin
 crates/termrock-core/src/event.rs  pin::PlatformPin::new
 crates/termrock-core/src/event.rs  use pin::PlatformPin
+crates/termrock-core/src/field.rs  text_select
+crates/termrock-core/src/field/edit.rs  EditField::cancel_pointer_selection
+crates/termrock-core/src/field/text_select.rs  PlainCell
+crates/termrock-core/src/field/text_select.rs  TextSelect
+crates/termrock-core/src/field/text_select.rs  is_word
+crates/termrock-core/src/field/text_select.rs  plain_cells
+crates/termrock-core/src/field/text_select.rs  word_bounds
 crates/termrock-core/src/hints.rs  PinnedKeys
 crates/termrock-core/src/hit.rs  HitMark::regions_len
 crates/termrock-core/src/hit.rs  HitRegistry::clip_mark

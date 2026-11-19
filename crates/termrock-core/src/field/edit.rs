@@ -5,14 +5,14 @@ use std::rc::Rc;
 
 use ratatui::layout::Position;
 
-use crate::core::edit::{EditKind, FieldKeys, TextCmd, UndoStack};
-use crate::core::event::{Key, Outcome};
-use crate::core::id::WidgetId;
-use crate::core::keymap::KeyMap;
-use crate::core::text::TextBuffer;
-use crate::widgets::field_common::{
+use crate::edit::{EditKind, FieldKeys, TextCmd, UndoStack};
+use crate::event::{Key, Outcome};
+use crate::field::field_common::{
     Applied, EditAction, PointerField, PointerSelect, apply_edit, edit_key_in, unbound_key,
 };
+use crate::id::WidgetId;
+use crate::keymap::KeyMap;
+use termrock_text::buffer::TextBuffer;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FieldError {
@@ -276,8 +276,8 @@ impl EditField {
 
     fn bound_cmd(&self, key: &Key) -> Option<TextCmd> {
         match &self.text_keymap {
-            Some(map) => crate::core::keymap::lookup(map, key),
-            None => crate::core::keymap::lookup(&self.keys.text_keymap(), key),
+            Some(map) => crate::keymap::lookup(map, key),
+            None => crate::keymap::lookup(&self.keys.text_keymap(), key),
         }
     }
 
@@ -340,10 +340,10 @@ impl EditField {
 
     pub fn run_as(&mut self, cmd: TextCmd, read_only: bool) -> EditResult {
         if cmd == TextCmd::Paste {
-            let text = crate::core::edit::clipboard::text().unwrap_or_default();
+            let text = crate::edit::clipboard::text().unwrap_or_default();
             return EditResult::changed(self.paste_as(&text, read_only));
         }
-        let action = crate::widgets::field_common::text_cmd_action(cmd, self.multiline);
+        let action = crate::field::field_common::text_cmd_action(cmd, self.multiline);
         let key = Key {
             code: ratatui::crossterm::event::KeyCode::Null,
             mods: ratatui::crossterm::event::KeyModifiers::NONE,
@@ -353,8 +353,8 @@ impl EditField {
 
     pub fn shortcut(&self, cmd: TextCmd) -> Option<String> {
         match &self.text_keymap {
-            Some(map) => crate::core::keymap::label_for(map, cmd),
-            None => crate::core::keymap::label_for(&self.keys.text_keymap(), cmd),
+            Some(map) => crate::keymap::label_for(map, cmd),
+            None => crate::keymap::label_for(&self.keys.text_keymap(), cmd),
         }
     }
 
@@ -490,7 +490,8 @@ impl EditField {
         self.undo.seal();
     }
 
-    pub(crate) fn cancel_pointer_selection(&mut self) {
+    #[doc(hidden)]
+    pub fn cancel_pointer_selection(&mut self) {
         self.press = PressState::default();
     }
 
@@ -510,7 +511,7 @@ impl EditField {
 
     pub fn graphemes(text: &str) -> Vec<(usize, String, usize)> {
         unicode_segmentation::UnicodeSegmentation::grapheme_indices(text, true)
-            .map(|(bi, g)| (bi, g.to_owned(), crate::ui::text::width(g)))
+            .map(|(bi, g)| (bi, g.to_owned(), termrock_text::cells::width(g)))
             .collect()
     }
 
@@ -786,7 +787,7 @@ mod issue35_tests {
 #[cfg(test)]
 mod read_only_override_tests {
     use super::*;
-    use crate::core::edit::clipboard;
+    use crate::edit::clipboard;
 
     fn field(text: &str, read_only: bool) -> EditField {
         let mut field = EditField::single(text);

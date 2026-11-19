@@ -1457,8 +1457,10 @@ name = "termrock-core"
 version = "0.1.0"
 dependencies = [
  "ratatui",
+ "serde_json",
  "termrock-metrics",
  "termrock-text",
+ "unicode-segmentation",
 ]
 
 [[package]]

@@ -9,6 +9,7 @@
 pub mod data;
 pub mod edit;
 pub mod event;
+pub mod field;
 pub mod focus;
 pub mod hints;
 pub mod hit;

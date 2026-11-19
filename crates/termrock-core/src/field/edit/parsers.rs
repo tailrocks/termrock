@@ -3,10 +3,10 @@
 //! Each helper checks one documented grammar over the exact text it is given.
 //! None trims, normalises or rewrites: the caller keeps the user's spelling.
 //! They return `Ok(())` so a caller can attach the validated text to whichever
-//! value type it uses. [`crate::widgets::grid::default_validator`] trims, then
+//! value type it uses. `widgets::grid::default_validator` trims, then
 //! calls these for `Json`, `Id` and `Timestamp` columns. An application that
 //! wants a looser or different grammar supplies its own
-//! [`crate::widgets::grid::cell_validator`].
+//! `widgets::grid::cell_validator`.
 
 use super::FieldError;
 
