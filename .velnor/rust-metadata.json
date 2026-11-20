@@ -1810,6 +1810,11 @@
               "name": "unicode-width",
               "kind": "normal",
               "manifest": null
+            },
+            {
+              "name": "base64",
+              "kind": "dev",
+              "manifest": null
             }
           ],
           "targets": [
@@ -1868,6 +1873,11 @@
             {
               "name": "unicode-segmentation",
               "kind": "normal",
+              "manifest": null
+            },
+            {
+              "name": "base64",
+              "kind": "dev",
               "manifest": null
             },
             {
@@ -2805,7 +2815,7 @@
       ]
     },
     "crates/termrock/tests/consumers/jackin-host/Cargo.toml": {
-      "target_dir": "crates/termrock/tests/consumers/jackin-host/target",
+      "target_dir": "target/velnor-roots/crates_termrock_tests_consumers_jackin_host",
       "members": [
         {
           "name": "termrock-consumer-jackin-host",
@@ -2834,7 +2844,7 @@
       ]
     },
     "crates/termrock/tests/consumers/keyed-modal/Cargo.toml": {
-      "target_dir": "crates/termrock/tests/consumers/keyed-modal/target",
+      "target_dir": "target/velnor-roots/crates_termrock_tests_consumers_keyed_modal",
       "members": [
         {
           "name": "termrock-consumer-keyed-modal",
@@ -2868,7 +2878,7 @@
       ]
     },
     "crates/termrock/tests/consumers/minimal/Cargo.toml": {
-      "target_dir": "crates/termrock/tests/consumers/minimal/target",
+      "target_dir": "target/velnor-roots/crates_termrock_tests_consumers_minimal",
       "members": [
         {
           "name": "termrock-consumer-minimal",
@@ -2902,7 +2912,7 @@
       ]
     },
     "crates/termrock/tests/consumers/terminal/Cargo.toml": {
-      "target_dir": "crates/termrock/tests/consumers/terminal/target",
+      "target_dir": "target/velnor-roots/crates_termrock_tests_consumers_terminal",
       "members": [
         {
           "name": "termrock-consumer-terminal",
@@ -2935,9 +2945,9 @@
     }
   },
   "manifests": {
-    "Cargo.toml": "8c8d16edcc7418e4574867faf368ff7b67be695bb70bc5b7cc7897bb89333f54",
+    "Cargo.toml": "5abaca1ef8aa03d4cba99dfb4079c5b6972cf2d803fa63ef0702bf419b267dde",
     "apps/holla/Cargo.toml": "c82d77a8d9c52b5a1d74f0a443fb0c397d58935a3143a75f4c873a08cb5f942e",
-    "apps/jackin/Cargo.toml": "80e485fae0189f2c469d671ba8e8183c6312d886d46774b800ceb02cffb40335",
+    "apps/jackin/Cargo.toml": "a996366ec12d3f3e1dec4595e7d1650580cf56ea3c96618b9592b9a8fadc8eb5",
     "apps/showcase/Cargo.toml": "e476a80e2eb4db31229f365493df716b66ce0542866f8e3464d5c0882e5d3938",
     "apps/tablepro/Cargo.toml": "cf8a61dc5c6a16b98963d4cf33a39e19258a3d67d11594aaaace071259dee782",
     "crates/functional-cross/Cargo.toml": "e98104b8591f37d44952f503b8dad573b5dc2595b7a22392c8cbdf489cc62814",
@@ -2961,7 +2971,7 @@
     "crates/termrock-runtime/Cargo.toml": "74800a92362ba6c39a6587d6df6bdb3396254c8fbe7895d661329dd043b87939",
     "crates/termrock-session/Cargo.toml": "ee5fdb8aed6552bbf02f12309dcaab64bc8862e01bc34a7fdeeedfe112a27619",
     "crates/termrock-shell/Cargo.toml": "92c7de1834b8798e175e0ce6212658306d11d34232f60d830c2a8a9f1af9f8b3",
-    "crates/termrock-terminal/Cargo.toml": "15b8b5dbe648519c8537d8dc9661889ea4f27b189815b4c9d8b95425ecedede0",
+    "crates/termrock-terminal/Cargo.toml": "35c2cead2eec99f0c7849e0a49ee5c568620bef69da6e4d527f122d983d671e3",
     "crates/termrock-text/Cargo.toml": "829578259c963db6fc6a930a10705763b1ec19a1942796b460b33f994ab43ce3",
     "crates/termrock-theme/Cargo.toml": "bcda59ba8b95709617670a8b10b50ec12272c242cf79627b137353ce9e61ef02",
     "crates/termrock-viewport/Cargo.toml": "ed060c003c74d38b3a983224c5c7dc18aa6b484e14cca4f82a27b194a7c18e4a",
