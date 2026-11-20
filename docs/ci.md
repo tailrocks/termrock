@@ -30,7 +30,7 @@ roots: the workspace at `.` and the four consumer fixtures.
 - **rust-lint-root** — `cargo fmt --check`, `cargo clippy --workspace
   --all-targets -D warnings` and `cargo doc` (rustdoc warnings denied) with the
   default features, and one `Check <crate> alone` step per workspace member
-  (`cargo check -p <crate>`, so each crate builds with only its own features).
+  (`cargo check -p <crate>`, default features only, warnings allowed).
 - **rust-test-root** — builds the default-feature nextest archive once, then
   runs the *all-features lane* (below): tests, clippy and rustdoc with
   `cli,demo,product,terminal,test-support,work-metrics`. This job is where the
@@ -61,6 +61,16 @@ roots: the workspace at `.` and the four consumer fixtures.
   only place the library shapes without default features (`minimal`,
   `terminal`, `jackin-host`) are built. `bash scripts/check-consumers.sh` runs
   the same four locally and also checks each normal dependency tree.
+- **lint-crates-alone** — the mise task `check-crates-alone`: every workspace
+  member on its own (`cargo clippy --package <member> --all-targets -D
+  warnings`), once with default features and once with `--all-features`. A
+  workspace build unifies features across members, so a member that misses a
+  feature forward (the #446 `work-metrics` defect) or leaves an import unused
+  when a consumer leaves a feature off builds there and fails only alone. The
+  generated `Check <crate> alone` steps cannot catch either: they run
+  `cargo check` with default features and no `-D warnings`. This job is the
+  replacement for the 27 per-crate `--all-features` jobs on that point. It
+  has no cache, so it compiles from scratch.
 - **lint-jactionlint** — jactionlint (with ShellCheck) over the workflows,
   configured by `.github/jactionlint.yaml`.
 - **lint-generated-workflows** — runs `velnor-gen check` (the mise task
@@ -93,10 +103,14 @@ does today, and none is a functional test.
 `tests/regressions/performance_inventory.rs` pins that the lane exists, carries
 no other filter, names every package and that `Required` waits for its job.
 
-The old `product` configuration (`--no-default-features --features product`) is
-not generated. The apps declare `default = []`, so their default build is the
-product shape; the library shapes without default features are the consumer
-fixtures. The feature `product` still enables nothing in `jackin-console`.
+The old `product` configuration (`--no-default-features --features product`,
+run for `junie-tui`, `termrock` and `jackin-console`) is not generated. `product`
+gates no code: it is an alias of `terminal`. For `jackin-console` it is empty
+and `default = []`, so the default build is the same build. For `termrock` and
+`junie-tui` the shape is `terminal` without `cli`, which no generated job builds
+with `--all-targets`; the library code of that shape is built by the
+`termrock-consumer-terminal` and `termrock-consumer-jackin-host` fixtures, and the
+all-features lane and `lint-crates-alone` build the rest.
 
 ## Test targets and generated CI
 

@@ -1566,6 +1566,19 @@ The job-by-job mapping is in [CI](ci.md). Points that change behaviour:
   shapes without default features are built by the four consumer roots. The
   junie-tui shape `terminal` without `cli` has no direct job any more except
   through `termrock-consumer-terminal` and `termrock-consumer-jackin-host`.
+- Per-crate isolation is kept by the `crates-alone` lint, not by velnor-gen's
+  `Check <crate> alone` steps. Those steps are `cargo check -p <crate>` with
+  default features and no `-D warnings`, so they miss the class of #446, #521
+  and #524 (a crate built alone with `--all-features`, a missing feature
+  forward, an unused import when a consumer leaves a feature off). Shown on
+  review: with `termrock-overlays` forwarding `work-metrics` to
+  `termrock-metrics` only, `cargo check -p termrock-overlays` and the
+  workspace lane both pass, and `cargo check -p termrock-overlays
+  --all-features` fails with E0599. The mise task `check-crates-alone` runs
+  `cargo clippy --package <member> --all-targets -D warnings` for every member,
+  once with default features and once with `--all-features`; the
+  `lint-crates-alone` job runs it and `Required` waits for it. It has no
+  cache, so it compiles from scratch.
 - `--all-features` is a hand-listed `[[test_lane]]` (`cli`, `demo`, `product`,
   `terminal`, `test-support`, `work-metrics`). A crate that adds a feature must
   add it to the list.

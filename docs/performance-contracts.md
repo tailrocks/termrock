@@ -308,10 +308,8 @@ Also unmet:
   their state before round 0 do so in setup (`ListBox`, `TextArea`); the
   others have no pre-check on round 0, so a state that was already wrong before
   the first round would go unnoticed there.
-- The `performance` CI suite builds with the default features, because the
-  generator gives a suite no feature field, so the counters are compiled out of
-  its build. It runs the inventory gate, whose nested `nextest list` uses
-  `--all-features`, and the `Rust / <crate>` jobs execute the contracts. See
+- Generated CI has no `performance` suite: the contracts execute in the
+  all-features lane of `rust-test-root`, which also runs the inventory gate. See
   "The performance profile and its inventory gate".
 - Holla's batch summary loop and `tick_plan` are not counted. A Holla
   scheduling count covers the activity and plan traversal only, so a zero or a
@@ -541,8 +539,6 @@ scripts/measure-performance.sh
 scripts/performance-report.sh
 ```
 
-CI builds the Rust jobs with `--all-features`, so these tests already run in
-the `Rust / termrock-conformance`, `Rust / termrock-shell`, `Rust / jackin-console` and `Rust / termrock-holla`,
-`-tablepro` and `-showcase` jobs. The product
-shape builds without `work-metrics`, where the tests compile away and
+The all-features lane of `rust-test-root` runs these tests for every package.
+The default-feature builds are without `work-metrics`, where the tests compile away and
 `metrics_disabled_does_not_evaluate_arguments` runs instead.

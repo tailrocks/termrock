@@ -23,13 +23,15 @@ mise install
 cargo nextest run --locked --workspace --profile functional --no-tests fail
 ```
 
-This is the command CI runs in `suite-functional`. The profile selects
+This is the local command. CI does not use the `functional` profile: its
+`rust-test-functional-*` jobs run the same binaries under `--profile ci`,
+selected by filter (see [CI](ci.md)). The profile selects
 the `functional` target of the workspace crates and retains a JUnit
 report. The `functional` target of `jackin-console` needs the feature
 `demo`, which is off by default, so this command runs the root journeys
 only (the root target reads its candidate binaries from
 `TERMROCK_TEST_<NAME>`, which the `app-bins` setup script exports). Add `--all-features` to include the jackin journeys; CI runs them in
-`Rust / jackin-console` (see [CI](ci.md#the-demo-feature)). To run the
+`rust-test-functional-apps-root` (see [CI](ci.md)). To run the
 target without the profile:
 
 ```sh
@@ -172,9 +174,9 @@ that crate's `tests/regressions/main.rs`, and the same under `apps/jackin/tests/
 lists every test target, so each new one changes the generated workflows
 (see [CI](ci.md#test-targets-and-generated-ci)).
 `cargo nextest run --all-features --all-targets` runs them, and so do the
-`Rust / <crate>` and `Rust / jackin-console` CI jobs
-(`nextest run --profile ci --package <crate> --all-features`); the `functional` suite
-does not.
+`rust-test-root` all-features lane
+(`nextest run --profile ci --features ... -E 'not binary(functional)'`); the
+`functional` groups do not.
 
 Three files prove the packaging rule that the demo is off by default.
 `product_mode.rs` compiles only without `demo`: it builds a `World` from

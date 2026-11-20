@@ -43,3 +43,23 @@ env = { MBX_CARGO_SHIM_MODE = "1" }
 [tasks.check-generated-workflows]
 description = "Fail when .github/workflows/rust-ci.yml or .velnor/rust-metadata.json differs from velnor-gen output"
 run = "velnor-gen --root . check"
+
+# Builds every workspace member on its own, once with the features it declares
+# as defaults and once with all of its features, and denies warnings. A
+# workspace build unifies features across the members, so a member that lacks a
+# feature forward, or leaves an import unused when a consumer leaves a feature
+# off, still builds there; `cargo clippy --package <member>` resolves only that
+# member's own dependency graph (the defects of #521 and #524). velnor-gen's own
+# `Check <crate> alone` step is a default-feature `cargo check` without
+# `-D warnings`, so it cannot catch either. Run by the `lint-crates-alone` CI
+# job (docs/ci.md).
+[tasks.check-crates-alone]
+description = "Fail when a workspace member does not build, or warns, on its own with default or all features"
+run = '''
+set -eu
+for package in $(cargo tree --workspace --depth 0 --prefix none --format '{p}' | awk 'NF { print $1 }'); do
+  echo "== $package"
+  cargo clippy --locked --package "$package" --all-targets -- -D warnings
+  cargo clippy --locked --package "$package" --all-targets --all-features -- -D warnings
+done
+'''

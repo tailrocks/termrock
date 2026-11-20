@@ -64,3 +64,15 @@ name = "Generated workflows"
 task = "check-generated-workflows"
 tools = ["github:tailrocks/velnor-new", "rust", "mr-boxington"]
 timeout_minutes = 10
+
+# velnor-gen's `Check <crate> alone` steps are default-feature `cargo check`
+# runs without `-D warnings`. This job builds every workspace member alone,
+# with default and with all features, under clippy `-D warnings` (mise task
+# `check-crates-alone`), which is what the 27 per-crate jobs did.
+[[lint]]
+kind = "mise-task"
+id = "crates-alone"
+name = "Crates alone"
+task = "check-crates-alone"
+tools = ["rust", "mr-boxington"]
+timeout_minutes = 45

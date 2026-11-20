@@ -1,5 +1,5 @@
 # This fixture is its own Cargo workspace, so nextest does not read the
-# repository's .config/nextest.toml. The generated `Rust / <crate>` job runs
+# repository's .config/nextest.toml. The generated `rust-crates_termrock_tests_consumers_*` job runs
 # `--profile ci`, so the profile must exist here.
 
 [profile.default]

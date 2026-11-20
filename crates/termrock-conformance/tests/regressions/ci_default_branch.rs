@@ -288,3 +288,52 @@ fn repository_velnor_gen_pin_agrees_across_the_lock_and_mise() {
     );
     assert!(problems.is_empty(), "{problems:#?}");
 }
+
+/// `velnor-gen`'s `Check <crate> alone` steps are default-feature `cargo check`
+/// runs that allow warnings, so the per-crate `--all-features` build of the
+/// old CI lives in the `crates-alone` lint (mise task `check-crates-alone`).
+/// It must stay configured, must deny warnings for both feature shapes and must
+/// be one of the jobs that `Required` waits for.
+#[test]
+fn the_crates_alone_lint_is_configured_and_required() {
+    let config = toml_table(
+        include_str!("../.velnor/rust-ci.toml"),
+        ".velnor/rust-ci.toml",
+    );
+    let lint = config
+        .get("lint")
+        .and_then(toml::Value::as_array)
+        .into_iter()
+        .flatten()
+        .find(|lint| lint.get("id").and_then(toml::Value::as_str) == Some("crates-alone"))
+        .expect("`.velnor/rust-ci.toml` has no `[[lint]]` with id = \"crates-alone\"");
+    assert_eq!(
+        lint.get("task").and_then(toml::Value::as_str),
+        Some("check-crates-alone")
+    );
+
+    let mise = toml_table(include_str!("../mise.toml"), "mise.toml");
+    let run = mise
+        .get("tasks")
+        .and_then(|tasks| tasks.get("check-crates-alone"))
+        .and_then(|task| task.get("run"))
+        .and_then(toml::Value::as_str)
+        .expect("mise.toml has no task `check-crates-alone`");
+    assert!(run.contains("--package"), "{run}");
+    assert!(
+        run.contains("--all-targets --all-features -- -D warnings"),
+        "{run}"
+    );
+    assert!(
+        run.lines()
+            .any(|line| line.contains("--all-targets -- -D warnings")),
+        "the default-feature pass is missing: {run}"
+    );
+
+    let workflow = include_str!("../.github/workflows/rust-ci.yml");
+    assert!(workflow.contains("\n  lint-crates-alone:\n"));
+    assert!(
+        workflow.contains("\n      - lint-crates-alone\n"),
+        "`Required` does not wait for lint-crates-alone"
+    );
+}
