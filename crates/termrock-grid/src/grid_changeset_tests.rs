@@ -1,7 +1,7 @@
 use super::*;
-use crate::core::id::WidgetId;
-use crate::widgets::grid::{CellEditResult, CellKind, ColumnSpec, GridRows, RowTotal};
-use crate::widgets::table::SortDir;
+use crate::grid::{CellEditResult, CellKind, ColumnSpec, GridRows, RowTotal};
+use crate::table::SortDir;
+use termrock_core::id::WidgetId;
 
 const ID: usize = 0;
 const NAME: usize = 1;
@@ -395,14 +395,14 @@ fn a_snapshot_lists_typed_rows_and_the_pending_draft_names_the_same_keys() {
         [NAME]
     );
 
-    let pending: &crate::widgets::grid::PendingChanges = g.pending();
+    let pending: &crate::grid::PendingChanges = g.pending();
     assert_eq!(pending.inserted().collect::<Vec<_>>(), [inserted[0].key()]);
     assert_eq!(pending.deleted().collect::<Vec<_>>(), [deleted[0].key()]);
     assert!(pending.is_inserted(inserted[0].key()));
     assert!(!pending.is_inserted(updated[0].key()));
 
     let undone = g.undo().expect("not locked").expect("something to undo");
-    assert_eq!(undone.kind, crate::widgets::grid::GridUndoKind::Insert);
+    assert_eq!(undone.kind, crate::grid::GridUndoKind::Insert);
     assert_eq!(undone.key, inserted[0].key());
     assert!(
         !g.pending().is_inserted(inserted[0].key()),

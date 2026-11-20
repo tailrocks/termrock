@@ -4,13 +4,13 @@ use std::rc::Rc;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 
 use super::*;
-use crate::core::event::{Key, Outcome};
-use crate::core::id::WidgetId;
-use crate::widgets::grid::FinishEdit;
-use crate::widgets::grid::{
+use crate::grid::FinishEdit;
+use crate::grid::{
     CellEditResult, CellKind, CellValue, ColumnSpec, CommittedRow, GridAction, GridCmd,
     GridDataError, GridEditError, GridRows, PendingChanges, RowTotal, default_validator,
 };
+use termrock_core::event::{Key, Outcome};
+use termrock_core::id::WidgetId;
 
 fn text(s: &str) -> CellValue {
     CellValue::Text(s.into())

@@ -3,17 +3,17 @@ use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::Rect;
 use ratatui::style::Color;
 
-use crate::core::event::Key;
-use crate::core::hit::HitRegistry;
-use crate::core::id::WidgetId;
-use crate::theme::{ColorLevel, Theme};
-use crate::ui::ctx::{Interaction, RenderCtx};
-use crate::widgets::grid::{
+use crate::grid::{
     CellKind, CellValue, ColumnSpec, DataGrid, GridAction, GridCommitError, GridRows, RowTotal,
 };
-use crate::widgets::option_editor::{ColumnEditor, Options};
-use crate::widgets::table::{Cell, Column, DataTable, TableAction};
+use crate::table::{Cell, Column, DataTable, TableAction};
 use ratatui::layout::Constraint;
+use termrock_core::event::Key;
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::WidgetId;
+use termrock_overlays::option_editor::{ColumnEditor, Options};
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_theme::{ColorLevel, Theme};
 
 fn key(code: KeyCode) -> Key {
     Key {
@@ -190,7 +190,7 @@ fn issue32_redraw_removes_popup_regions() {
     let paint = |t: &mut DataTable| {
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 12));
         let mut hits = HitRegistry::default();
-        let mut ring = crate::core::focus::FocusRing::default();
+        let mut ring = termrock_core::focus::FocusRing::default();
         let interaction = Interaction {
             focus: Some(t.id),
             ..Default::default()

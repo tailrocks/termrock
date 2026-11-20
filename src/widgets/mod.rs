@@ -2,20 +2,10 @@ pub mod choice_dialog;
 pub mod dialog;
 pub mod file_browser;
 pub mod form_dialog;
-pub mod grid;
-#[cfg(test)]
-mod grid_sort_tests;
-mod grid_specimen;
-#[cfg(test)]
-mod grid_undo_tests;
 pub mod help;
 pub mod info_dialog;
 pub mod inspect_changes;
-pub mod table;
-mod table_specimen;
 
-#[cfg(test)]
-mod collection_edit_tests;
 #[cfg(all(test, feature = "work-metrics"))]
 mod keyed_cost_tests;
 // Drives a `Select` and a `TextInput`, so it sits above the collections crate; #449 moves it to `termrock-conformance`.
@@ -38,6 +28,7 @@ pub use termrock_feedback::{
     empty, meter_list, notice, page_header, progress, statusbar, too_small,
 };
 pub use termrock_fields::{chips, input, select};
+pub use termrock_grid::{grid, table};
 pub use termrock_layout::splitter;
 pub use termrock_navigation::{
     breadcrumb, document_workspace, nav_list, rail, steps, tabs, toolbar,
