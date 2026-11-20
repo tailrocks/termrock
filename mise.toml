@@ -8,7 +8,7 @@ zizmor = "1.32.0"
 jactionlint = "2.6.0"
 gh = "2.105.0"
 hk = "2.13.0"
-"github:tailrocks/velnor-new" = { version = "0.1.78", bin = "velnor-actions" }
+"github:tailrocks/velnor-new" = { version = "0.1.81", bin = "velnor-actions" }
 "cargo:https://github.com/tailrocks/tuiscotti" = { version = "rev:f1fb3f276b8d49948881c07b3bbc619840b6cc93", crate = "tuiscotti-cli" }
 mr-boxington = { version = "1.30.0", postinstall = "mbx setup --yes" }
 rust = { version = "1.99.1", profile = "minimal", components = [

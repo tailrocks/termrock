@@ -110,7 +110,7 @@ terminal-evidence artifact. Run the same commands locally with the
 flags above.
 
 The reason is a limit of the generator. `velnor-actions` 0.1.72 (still true of
-0.1.78) gives a suite no feature field, so `suite-functional` and
+0.1.81) gives a suite no feature field, so `suite-functional` and
 `suite-performance` cannot take
 `--all-features`. The demo journeys (the `functional` target of
 `jackin-console`, which has `required-features = ["demo"]`) therefore
