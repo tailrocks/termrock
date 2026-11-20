@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use syn::visit::Visit;
 use syn::{Expr, Pat, Type};
 
-#[path = "support/api_inventory.rs"]
+#[path = "../../src/inventory.rs"]
 mod api_inventory;
 
 fn picker_api(source: &str) -> BTreeSet<String> {
@@ -507,12 +507,21 @@ fn validate_picker_sources(
     }
 }
 
+/// The repository root: this crate is `crates/termrock-catalog`, two levels below it.
+fn repository_root() -> &'static std::path::Path {
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(2)
+        .expect("termrock-catalog sits at crates/termrock-catalog")
+}
+
 fn repository_sources() -> (String, String, String, String, String) {
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let root = repository_root();
     (
         std::fs::read_to_string(root.join("crates/termrock-overlays/src/picker.rs"))
             .expect("picker source reads"),
-        std::fs::read_to_string(root.join("src/catalog.rs")).expect("catalog source reads"),
+        std::fs::read_to_string(root.join("crates/termrock-catalog/src/catalog.rs"))
+            .expect("catalog source reads"),
         std::fs::read_to_string(root.join("apps/showcase/src/pages/pickers.rs"))
             .expect("picker showcase page reads"),
         std::fs::read_to_string(root.join("crates/termrock-overlays/src/option_list.rs"))
@@ -689,7 +698,7 @@ fn picker_scope_respects_let_else_pattern_shadow() {
 
 #[test]
 fn terminal_session_coverage_declares_catalog_capabilities() {
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let root = repository_root();
     let source = std::fs::read_to_string(root.join("apps/showcase/src/coverage.rs"))
         .expect("showcase coverage source reads");
     let file = syn::parse_file(&source).expect("coverage source parses");
@@ -718,7 +727,7 @@ fn terminal_session_coverage_declares_catalog_capabilities() {
         };
         let id = id.value();
         assert!(
-            junie_tui::catalog::find(&id).is_some(),
+            termrock_catalog::catalog::find(&id).is_some(),
             "declared id is not a catalog capability: {id}"
         );
         assert!(seen.insert(id.clone()), "duplicate coverage entry: {id}");

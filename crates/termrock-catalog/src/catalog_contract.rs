@@ -7,20 +7,14 @@
 //! the tuiscotti journeys in `tests/functional` give visual evidence
 //! (layer 3). Name matching here is never behavioral proof.
 
-#[path = "../tests/support/api_inventory.rs"]
-mod api_inventory;
-
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
-#[path = "../tests/support/scenario_reach.rs"]
-mod scenario_reach;
-
-use api_inventory::{
-    ApiKind, CrateRoot, Expansion, Inventory, MATRIX, Record, SourceTree, TestFn, Value, build,
-    build_crates, idents,
+use crate::inventory::{
+    self, ApiKind, CrateRoot, Expansion, Inventory, MATRIX, Record, SourceTree, TestFn, Value,
+    build, build_crates, idents,
 };
-use scenario_reach::FnIndex;
+use crate::scenario_reach::FnIndex;
 use sha2::{Digest, Sha256};
 use syn::visit::Visit;
 
@@ -134,8 +128,12 @@ struct Sources {
     tests: BTreeMap<String, TestFn>,
 }
 
+/// The repository root: this crate is `crates/termrock-catalog`, two levels below it.
 fn root() -> &'static Path {
     Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(2)
+        .expect("termrock-catalog sits at crates/termrock-catalog")
 }
 
 /// The crates whose public API the gate walks, the facade first, from `docs/layering.toml`.
@@ -238,7 +236,7 @@ impl Sources {
         Self {
             tree: SourceTree::from_dirs(root(), &dirs),
             crates: crates.clone(),
-            catalog: read("src/catalog.rs"),
+            catalog: read("crates/termrock-catalog/src/catalog.rs"),
             coverage: read("apps/showcase/src/coverage.rs"),
             coverage_lanes: dir_files("apps/showcase/src/coverage", "rs"),
             cases: read("apps/showcase/src/app_tests_catalog.rs"),
@@ -256,7 +254,7 @@ impl Sources {
                 })
                 .map(|(path, text)| (path.display().to_string(), text))
                 .collect(),
-            tests: api_inventory::test_names(root(), &test_dirs),
+            tests: inventory::test_names(root(), &test_dirs),
         }
     }
 }
@@ -477,7 +475,7 @@ impl Sources {
 
     fn records(&self, name: &str) -> Vec<Record> {
         self.coverage_sources()
-            .flat_map(|text| api_inventory::records_from_source(text, name))
+            .flat_map(|text| inventory::records_from_source(text, name))
             .collect()
     }
 }
@@ -586,7 +584,7 @@ fn validate(rows: &[(&'static str, Inventory)], s: &Sources) -> (Vec<String>, Re
     let case_fns: BTreeSet<String> = s.case_sources().flat_map(zero_arg_fns).collect();
     let cases: Vec<Record> = s
         .case_sources()
-        .flat_map(|text| api_inventory::records_from_source(text, "ScenarioCase"))
+        .flat_map(|text| inventory::records_from_source(text, "ScenarioCase"))
         .collect();
     let mut registered: BTreeSet<String> = BTreeSet::new();
     for case in &cases {
@@ -877,7 +875,7 @@ const DOC_HIDDEN: &str = "tests/regressions/doc-hidden-items.txt";
 fn doc_hidden_lines(tree: &SourceTree) -> String {
     let mut lines = BTreeSet::new();
     for (path, text) in &tree.files {
-        let items = api_inventory::doc_hidden_items(text)
+        let items = inventory::doc_hidden_items(text)
             .unwrap_or_else(|e| panic!("parse {}: {e}", path.display()));
         lines.extend(
             items
@@ -926,7 +924,7 @@ fn catalog_doc_hidden_scan_sees_each_kind_of_hidden_item() {
         #[doc(hidden)] pub use outer::C as Alias;\n\
         #[doc(hidden)] #[macro_export] macro_rules! quiet { () => {}; }\n";
     assert_eq!(
-        api_inventory::doc_hidden_items(source).expect("parses"),
+        inventory::doc_hidden_items(source).expect("parses"),
         [
             "E::B",
             "S",
@@ -1808,7 +1806,7 @@ fn catalog_test_discovery_scans_every_crate_src_and_tests() {
     let crates = vec![("termrock".to_owned(), "src".to_owned())];
     let dirs = test_dirs(&ws.0, &crates);
     let dirs: Vec<&str> = dirs.iter().map(String::as_str).collect();
-    let found = api_inventory::test_names(&ws.0, &dirs);
+    let found = inventory::test_names(&ws.0, &dirs);
     let keys: Vec<_> = found.keys().map(String::as_str).collect();
     assert_eq!(
         keys,
@@ -1978,7 +1976,7 @@ fn catalog_rejects_stale_exception() {
 #[test]
 fn catalog_rejects_nonexistent_exception_test() {
     let mut s = Sources::load();
-    let record = api_inventory::records_from_source(&s.coverage, "CapabilityException")
+    let record = inventory::records_from_source(&s.coverage, "CapabilityException")
         .into_iter()
         .next()
         .expect("an exception");
@@ -2069,12 +2067,12 @@ fn catalog_rejects_an_ignored_exception_test() {
 #[test]
 fn catalog_test_scan_sees_ignore_and_the_owning_file() {
     let mut found = BTreeMap::new();
-    api_inventory::scan_tests(
+    inventory::scan_tests(
         "a.rs",
         "#[test] fn live() {}\n#[test] #[ignore] fn off() {}\n#[test] #[ignore = \"slow\"] fn off_why() {}\n#[cfg_attr(unix, ignore)] #[test] fn off_unix() {}\nmod m { #[test] fn nested() {} }\nfn plain() {}\n",
         &mut found,
     );
-    api_inventory::scan_tests("b.rs", "#[test] fn live() {}", &mut found);
+    inventory::scan_tests("b.rs", "#[test] fn live() {}", &mut found);
     let got: Vec<_> = found.iter().map(|(k, v)| (k.as_str(), v.ignored)).collect();
     assert_eq!(
         got,
@@ -2092,7 +2090,7 @@ fn catalog_test_scan_sees_ignore_and_the_owning_file() {
 #[test]
 fn catalog_test_scan_reads_the_body_including_macro_arguments() {
     let mut found = BTreeMap::new();
-    api_inventory::scan_tests(
+    inventory::scan_tests(
         "a.rs",
         "use owner::Thing;\n#[test] fn t() { let v = make(); assert_eq!(v.member_in_macro(), 1); v.plain_call(); }\nfn helper() { unrelated_helper(); }\n",
         &mut found,
@@ -2166,7 +2164,7 @@ fn catalog_accepts_an_exception_whose_test_names_the_api() {
 #[test]
 fn catalog_test_scan_ignores_string_literals_and_comments() {
     let mut found = BTreeMap::new();
-    api_inventory::scan_tests(
+    inventory::scan_tests(
         "a.rs",
         "// Owner in a comment\nuse owner::Thing;\n#[test] fn t() { assert_eq!(1, 1, \"in_a_string\"); assert!(real_call(\"also_a_string\", r#\"raw_string\"#, 'c'), \"msg {inline}\"); /* in_a_block_comment */ // in_a_line_comment\n}\n",
         &mut found,
@@ -2279,7 +2277,7 @@ fn catalog_deferral_is_decided_by_the_kind_and_not_by_the_reason_text() {
 #[test]
 fn catalog_rejects_proof_and_exception_on_one_api() {
     let mut s = Sources::load();
-    let api = api_inventory::exceptions_from_source(&s.coverage)
+    let api = inventory::exceptions_from_source(&s.coverage)
         .into_keys()
         .next()
         .expect("an exception");
@@ -2291,7 +2289,7 @@ fn catalog_rejects_proof_and_exception_on_one_api() {
 
 #[test]
 fn catalog_metric_expansion_matches_the_compiled_consumer() {
-    use crate::metrics::Metric;
+    use termrock_metrics::Metric;
     let manifest = EXPANSIONS
         .iter()
         .find(|e| e.site == "@termrock_metrics::metrics")
@@ -2316,7 +2314,7 @@ fn catalog_metric_expansion_matches_the_compiled_consumer() {
 
 #[test]
 fn catalog_part_expansion_matches_the_compiled_consumer() {
-    use crate::core::id::Part;
+    use termrock_core::id::Part;
     let listed: BTreeSet<String> = EXPANSIONS[0]
         .ids
         .iter()
@@ -2402,7 +2400,7 @@ fn catalog_accepts_a_proof_recorded_in_a_lane_file() {
 #[test]
 fn catalog_rejects_a_duplicate_proof_across_files() {
     let mut s = Sources::load();
-    let api = api_inventory::proof_ids_from_source(&s.coverage)
+    let api = inventory::proof_ids_from_source(&s.coverage)
         .into_iter()
         .next()
         .expect("a proof in coverage.rs");

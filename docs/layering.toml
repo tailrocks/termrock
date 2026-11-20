@@ -112,10 +112,7 @@ termrock = ["metrics", "text", "core", "theme", "runtime", "session", "controls"
 functional = ["termrock"]
 
 # Pre-split stage only: source file to target crate, from the implementation
-# maps of #444 to #449. `tests/support/*` is the test support that
-# `src/catalog_contract.rs` includes through `#[path]`: #449 moves
-# `api_inventory.rs` into `termrock-catalog`, and `scenario_reach.rs`, which only
-# `catalog_contract` uses, follows it. The shim modules (`lib.rs`,
+# maps of #444 to #449. The shim modules (`lib.rs`,
 # `core/mod.rs`, `ui/mod.rs`, `widgets/mod.rs`) hold only `mod` lines and belong
 # to the facade.
 [files]
@@ -161,13 +158,6 @@ functional = ["termrock"]
 
 # cli
 "src/cli.rs" = "cli"
-
-# catalog
-"src/catalog.rs" = "catalog"
-"src/catalog_contract.rs" = "catalog"
-"src/docs.rs" = "catalog"
-"tests/support/api_inventory.rs" = "catalog"
-"tests/support/scenario_reach.rs" = "catalog"
 
 # conformance
 # `src/metrics.rs` re-exports `termrock-metrics` and declares the three files below, so it goes with them until #449.

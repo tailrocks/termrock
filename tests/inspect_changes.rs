@@ -581,7 +581,7 @@ mod showcase_coverage {
         };
         (
             read("src/widgets/inspect_changes.rs"),
-            read("src/catalog.rs"),
+            read("crates/termrock-catalog/src/catalog.rs"),
             read("apps/showcase/src/pages/diff.rs"),
         )
     }
