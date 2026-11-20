@@ -299,16 +299,6 @@
               "requires_features": false
             },
             {
-              "name": "reason",
-              "kinds": [
-                "test"
-              ],
-              "tests": true,
-              "doctest": false,
-              "source": "tests/reason.rs",
-              "requires_features": false
-            },
-            {
               "name": "regressions",
               "kinds": [
                 "test"
@@ -913,6 +903,16 @@
               "doctest": false,
               "source": "crates/termrock-overlays/src/lib.rs",
               "requires_features": false
+            },
+            {
+              "name": "regressions",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-overlays/tests/regressions/main.rs",
+              "requires_features": false
             }
           ]
         },
@@ -974,6 +974,16 @@
               "tests": true,
               "doctest": false,
               "source": "crates/termrock-layout/src/lib.rs",
+              "requires_features": false
+            },
+            {
+              "name": "regressions",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-layout/tests/regressions/main.rs",
               "requires_features": false
             }
           ]
@@ -1194,6 +1204,16 @@
               "doctest": false,
               "source": "crates/termrock-grid/src/lib.rs",
               "requires_features": false
+            },
+            {
+              "name": "regressions",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-grid/tests/regressions/main.rs",
+              "requires_features": false
             }
           ]
         },
@@ -1266,6 +1286,16 @@
               "doctest": false,
               "source": "crates/termrock-navigation/src/lib.rs",
               "requires_features": false
+            },
+            {
+              "name": "regressions",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-navigation/tests/regressions/main.rs",
+              "requires_features": false
             }
           ]
         },
@@ -1313,6 +1343,16 @@
               "tests": true,
               "doctest": false,
               "source": "crates/termrock-session/src/lib.rs",
+              "requires_features": false
+            },
+            {
+              "name": "regressions",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-session/tests/regressions/main.rs",
               "requires_features": false
             }
           ]
@@ -2574,5 +2614,5 @@
     "crates/termrock/tests/consumers/minimal/Cargo.toml": "19c74d3936796f92e88759aa944f9e4a5f48425e3da58bf65dbac08c400a4d2f",
     "crates/termrock/tests/consumers/terminal/Cargo.toml": "18849d2fded7a0e5b8d51d0a1849b80f33672dc49759343d5f691cc8f0656c95"
   },
-  "layout": "9aaaacba96316daeb537422391dfb92df88f00dcad9cdcfe5cacdeba5da001ef"
+  "layout": "15e9807f84fbc6c6270b722d725baa1534ba024563efc9f4752907eb30512c48"
 }
