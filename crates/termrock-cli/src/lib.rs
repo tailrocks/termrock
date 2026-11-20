@@ -1,7 +1,7 @@
 use clap::{Parser, ValueEnum};
 
-use crate::motion::Motion;
-use crate::theme::{Charset, ColorLevel, Theme};
+use termrock_core::motion::Motion;
+use termrock_theme::{Charset, ColorLevel, Theme};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
 pub enum ColorArg {

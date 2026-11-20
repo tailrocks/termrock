@@ -570,11 +570,11 @@ dependencies = [
  "libc",
  "ratatui",
  "serde_json",
- "termpane",
  "termrock-catalog",
  "termrock-collections",
  "termrock-controls",
  "termrock-core",
+ "termrock-dialogs",
  "termrock-editors",
  "termrock-feedback",
  "termrock-fields",
@@ -585,6 +585,7 @@ dependencies = [
  "termrock-overlays",
  "termrock-runtime",
  "termrock-session",
+ "termrock-terminal",
  "termrock-text",
  "termrock-theme",
  "termrock-viewport",
@@ -1531,6 +1532,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "termrock-dialogs"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "termrock-collections",
+ "termrock-controls",
+ "termrock-core",
+ "termrock-editors",
+ "termrock-fields",
+ "termrock-layout",
+ "termrock-navigation",
+ "termrock-overlays",
+ "termrock-runtime",
+ "termrock-text",
+ "termrock-theme",
+ "termrock-viewport",
+]
+
+[[package]]
 name = "termrock-editors"
 version = "0.1.0"
 dependencies = [
@@ -1661,6 +1681,22 @@ dependencies = [
  "termrock-core",
  "termrock-metrics",
  "termrock-text",
+]
+
+[[package]]
+name = "termrock-terminal"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "termpane",
+ "termrock-controls",
+ "termrock-core",
+ "termrock-metrics",
+ "termrock-runtime",
+ "termrock-text",
+ "termrock-theme",
+ "termrock-viewport",
+ "unicode-width",
 ]
 
 [[package]]

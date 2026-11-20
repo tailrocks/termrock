@@ -15,9 +15,11 @@ members = [
     "apps/tablepro",
     "crates/termrock",
     "crates/termrock-catalog",
+    "crates/termrock-cli",
     "crates/termrock-collections",
     "crates/termrock-controls",
     "crates/termrock-core",
+    "crates/termrock-dialogs",
     "crates/termrock-editors",
     "crates/termrock-feedback",
     "crates/termrock-fields",
@@ -28,6 +30,7 @@ members = [
     "crates/termrock-overlays",
     "crates/termrock-runtime",
     "crates/termrock-session",
+    "crates/termrock-terminal",
     "crates/termrock-text",
     "crates/termrock-theme",
     "crates/termrock-viewport",
@@ -42,9 +45,11 @@ default-members = [
     "apps/tablepro",
     "crates/termrock",
     "crates/termrock-catalog",
+    "crates/termrock-cli",
     "crates/termrock-collections",
     "crates/termrock-controls",
     "crates/termrock-core",
+    "crates/termrock-dialogs",
     "crates/termrock-editors",
     "crates/termrock-feedback",
     "crates/termrock-fields",
@@ -55,6 +60,7 @@ default-members = [
     "crates/termrock-overlays",
     "crates/termrock-runtime",
     "crates/termrock-session",
+    "crates/termrock-terminal",
     "crates/termrock-text",
     "crates/termrock-theme",
     "crates/termrock-viewport",
@@ -68,9 +74,11 @@ ratatui = { version = "0.30", features = ["crossterm_0_29"] }
 serde_json = "1"
 sha2 = "0.11.0"
 termrock-catalog = { path = "crates/termrock-catalog", version = "0.1.0" }
+termrock-cli = { path = "crates/termrock-cli", version = "0.1.0" }
 termrock-collections = { path = "crates/termrock-collections", version = "0.1.0" }
 termrock-controls = { path = "crates/termrock-controls", version = "0.1.0" }
 termrock-core = { path = "crates/termrock-core", version = "0.1.0" }
+termrock-dialogs = { path = "crates/termrock-dialogs", version = "0.1.0" }
 termrock-editors = { path = "crates/termrock-editors", version = "0.1.0" }
 termrock-feedback = { path = "crates/termrock-feedback", version = "0.1.0" }
 termrock-fields = { path = "crates/termrock-fields", version = "0.1.0" }
@@ -81,6 +89,7 @@ termrock-navigation = { path = "crates/termrock-navigation", version = "0.1.0" }
 termrock-overlays = { path = "crates/termrock-overlays", version = "0.1.0" }
 termrock-runtime = { path = "crates/termrock-runtime", version = "0.1.0" }
 termrock-session = { path = "crates/termrock-session", version = "0.1.0" }
+termrock-terminal = { path = "crates/termrock-terminal", version = "0.1.0" }
 termrock-text = { path = "crates/termrock-text", version = "0.1.0" }
 termrock-theme = { path = "crates/termrock-theme", version = "0.1.0" }
 termrock-viewport = { path = "crates/termrock-viewport", version = "0.1.0" }
@@ -89,10 +98,10 @@ tuiscotti-latest = { package = "tuiscotti", git = "https://github.com/tailrocks/
 
 [features]
 default = ["cli", "terminal"]
-cli = ["dep:clap", "termrock-core/cli"]
-terminal = ["dep:termpane"]
+cli = ["dep:termrock-cli", "termrock-core/cli"]
+terminal = ["dep:termrock-terminal"]
 product = ["terminal"]
-work-metrics = ["termrock-catalog/work-metrics", "termrock-collections/work-metrics", "termrock-controls/work-metrics", "termrock-core/work-metrics", "termrock-editors/work-metrics", "termrock-feedback/work-metrics", "termrock-fields/work-metrics", "termrock-grid/work-metrics", "termrock-metrics/work-metrics", "termrock-navigation/work-metrics", "termrock-overlays/work-metrics", "termrock-runtime/work-metrics", "termrock-session/work-metrics", "termrock-viewport/work-metrics"]
+work-metrics = ["termrock-catalog/work-metrics", "termrock-collections/work-metrics", "termrock-controls/work-metrics", "termrock-core/work-metrics", "termrock-editors/work-metrics", "termrock-feedback/work-metrics", "termrock-fields/work-metrics", "termrock-grid/work-metrics", "termrock-metrics/work-metrics", "termrock-navigation/work-metrics", "termrock-overlays/work-metrics", "termrock-runtime/work-metrics", "termrock-session/work-metrics", "termrock-terminal?/work-metrics", "termrock-viewport/work-metrics"]
 
 [lib]
 name = "junie_tui"
@@ -101,16 +110,16 @@ path = "src/lib.rs"
 doctest = false
 
 [dependencies]
-clap = { workspace = true, optional = true }
-termpane = { git = "https://github.com/tailrocks/termpane", rev = "d05d114bdce504d184b00836376a350851806f61", optional = true, default-features = false }
 ratatui = { workspace = true }
 unicode-width = "0.2.3"
 unicode-segmentation = "1"
 serde_json = { workspace = true }
 termrock-catalog = { workspace = true }
+termrock-cli = { workspace = true, optional = true }
 termrock-collections = { workspace = true }
 termrock-controls = { workspace = true }
 termrock-core = { workspace = true }
+termrock-dialogs = { workspace = true }
 termrock-editors = { workspace = true }
 termrock-feedback = { workspace = true }
 termrock-fields = { workspace = true }
@@ -121,6 +130,7 @@ termrock-navigation = { workspace = true }
 termrock-overlays = { workspace = true }
 termrock-runtime = { workspace = true }
 termrock-session = { workspace = true }
+termrock-terminal = { workspace = true, optional = true }
 termrock-text = { workspace = true }
 termrock-theme = { workspace = true }
 termrock-viewport = { workspace = true }
@@ -130,6 +140,8 @@ termrock-viewport = { workspace = true }
 libc = "0.2"
 
 [dev-dependencies]
+# tests/terminal_guard.rs builds a `termpane::DamageGrid` directly.
+termpane = { git = "https://github.com/tailrocks/termpane", rev = "d05d114bdce504d184b00836376a350851806f61", default-features = false }
 syn = { version = "=3.0.10", features = ["full", "visit"] }
 toml = "=1.2.1"
 

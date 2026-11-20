@@ -1,29 +1,29 @@
-use crate::core::event::{Key, Outcome};
-use crate::core::focus::Focus;
-use crate::core::hit::Axis;
-use crate::core::id::WidgetId;
-use crate::core::intent::Phase;
-use crate::core::pointer::{MouseTarget, PointerEvent};
-use crate::core::scroll::{ScrollState, TrackClick};
-use crate::ui::ctx::{RenderCtx, fill, legible_on_fill};
-use crate::ui::layout::{Split, SplitDir};
-use crate::ui::text::{fit, paint_clipped, paint_truncated, truncate_middle, width};
+use termrock_core::event::{Key, Outcome};
+use termrock_core::focus::Focus;
+use termrock_core::hit::Axis;
+use termrock_core::id::WidgetId;
+use termrock_core::intent::Phase;
+use termrock_core::pointer::{MouseTarget, PointerEvent};
+use termrock_core::scroll::{ScrollState, TrackClick};
+use termrock_layout::layout::{Split, SplitDir};
+use termrock_runtime::ctx::{RenderCtx, fill, legible_on_fill};
+use termrock_text::cells::{fit, paint_clipped, paint_truncated, truncate_middle, width};
 
-use crate::widgets::diff::DiffView;
-use crate::widgets::keyhint::{Hint, hint};
-use crate::widgets::scrollbar;
-use crate::widgets::splitter::Splitter;
-use crate::widgets::tree::{TreeAction, TreeNode, TreeView};
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style};
+use termrock_collections::tree::{TreeAction, TreeNode, TreeView};
+use termrock_controls::keyhint::{Hint, hint};
+use termrock_controls::scrollbar;
+use termrock_editors::diff::DiffView;
+use termrock_layout::splitter::Splitter;
 
-use crate::core::scroll::Scrollable;
-use crate::ui::layer::{DismissReason, Layer, LayerCx, LayerOut, LayerSpec};
-use crate::ui::modal::modal_frame;
-use crate::ui::popup::Dismiss;
-use crate::widgets::diff::{DiffFile as ChangedFile, DiffStatus, UnreadFile};
+use termrock_core::scroll::Scrollable;
+use termrock_editors::diff::{DiffFile as ChangedFile, DiffStatus, UnreadFile};
+use termrock_overlays::layer::{DismissReason, Layer, LayerCx, LayerOut, LayerSpec};
+use termrock_overlays::modal::modal_frame;
+use termrock_runtime::popup::Dismiss;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ChangeSet {
@@ -456,7 +456,7 @@ impl InspectChanges {
                 buf,
                 top,
                 0,
-                &crate::ui::reveal::cut(top, &head),
+                &termrock_runtime::reveal::cut(top, &head),
                 t.secondary().bg(bg),
             );
             let mode = format!("{} · {VIEW_KEY} switches", self.diff.mode.label());
@@ -759,10 +759,10 @@ fn build_tree(
     (nodes, leaves)
 }
 
-fn view_hint(mode: crate::widgets::diff::DiffMode) -> Hint {
-    crate::widgets::keyhint::toggle_hint(
+fn view_hint(mode: termrock_editors::diff::DiffMode) -> Hint {
+    termrock_controls::keyhint::toggle_hint(
         VIEW_KEY,
-        mode == crate::widgets::diff::DiffMode::Review,
+        mode == termrock_editors::diff::DiffMode::Review,
         "Show unified",
         "Show side by side",
     )
@@ -815,9 +815,9 @@ impl<R: From<InspectOutcome> + 'static, W: 'static> Layer<R, W> for InspectChang
             return self.wheel_at(axis, delta, pos);
         }
         let click = ev.is(Phase::Click);
-        let dismissal = if id == crate::ui::modal::CLOSE {
+        let dismissal = if id == termrock_overlays::modal::CLOSE {
             Some(DismissReason::CloseButton)
-        } else if id == crate::ui::modal::BACKDROP {
+        } else if id == termrock_overlays::modal::BACKDROP {
             Some(DismissReason::OutsideClick)
         } else {
             None

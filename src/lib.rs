@@ -1,5 +1,5 @@
 #[cfg(feature = "cli")]
-pub mod cli;
+pub use termrock_cli as cli;
 pub mod core;
 pub mod metrics;
 pub use termrock_catalog::{catalog, docs};
@@ -8,7 +8,7 @@ pub use termrock_session::clock;
 pub mod runtime;
 pub mod shell;
 #[cfg(feature = "terminal")]
-pub mod terminal;
+pub use termrock_terminal as terminal;
 pub use termrock_theme as theme;
 pub mod ui;
 pub mod widgets;

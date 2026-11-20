@@ -1183,3 +1183,81 @@ unchanged `tests/regressions/api-ids.sha256`).
   15-minute timeout.
 - **Void items of #449.** `test_alloc.rs` and `work.rs` do not move (decided in
   #447 and the #449 design); nothing of the run loop became `pub`.
+
+## 2026-11-18: `termrock-terminal` (#448)
+
+`termrock-terminal` holds the termpane emulator, `TerminalViewport` and the
+session controller (`src/terminal.rs` is its `lib.rs`; `forward`, `guard`,
+`session` and `viewport` keep their names). `junie-tui` keeps
+`#[cfg(feature = "terminal")] pub use termrock_terminal as terminal;`, and its
+`terminal` feature is `dep:termrock-terminal`, so `termrock::terminal::*` and
+the consumer trees (`termpane` present only with the feature, never `clap`) are
+unchanged. `termpane` moved to the crate as a normal dependency; the root
+package keeps it as a dev-dependency because `tests/terminal_guard.rs` builds a
+`termpane::DamageGrid`. The crate depends only on what the layering table
+allows (`viewport`, `controls`, `runtime`, `theme`, `core`, `text`, `metrics`),
+plus `unicode-width`; `libc` is not used by the moved files.
+
+- **No hidden items, no coherence break.** Every path the files used from
+  `junie-tui` already resolves in a lower crate
+  (`termrock_core::field::{field_common, text_select}`,
+  `termrock_viewport::{viewport::CellPos, viewport_ops}`,
+  `termrock_runtime::{ctx, fade}`, `termrock_text::cells::thousands`,
+  `termrock_controls::scrollbar`), so no `pub(crate)` item became `pub`.
+- **`widgets::text_select`.** The `pub(crate) use termrock_core::field::text_select`
+  line of `src/widgets/mod.rs` had one user left, `terminal/viewport.rs`, so the
+  line is gone.
+- **The facade is untouched.** `#448` planned to add `dep:termrock-terminal`
+  under the facade's features. `termrock`'s `terminal` feature forwards to
+  `junie-tui/terminal`, which now pulls the crate, so the facade needs no edit
+  until #452 re-points its re-exports.
+- **Path edits.** `tests/terminal/session_catalog.rs` reads
+  `crates/termrock-terminal/src/session.rs`. The `terminal` and `jackin-host`
+  consumer lockfiles gain the crate; `minimal` and `keyed-modal` do not resolve
+  it.
+- **`work-metrics`.** The root feature forwards as
+  `termrock-terminal?/work-metrics`, so it does not enable the optional crate.
+- **Feature forwarding.** `termrock-terminal/work-metrics` forwards to every
+  dependency that has the feature (`controls`, `core`, `metrics`, `runtime`,
+  `viewport`), so `cargo check -p termrock-terminal --all-features` builds on its
+  own and does not rely on workspace feature unification.
+
+## 2026-11-18: `termrock-cli` (#448)
+
+`termrock-cli` holds `ColorArg`, `GlyphsArg`, `CommonArgs`, `motion_help` and
+`parse` (`src/cli.rs` is its `lib.rs`). It depends on `clap`, `termrock-core`
+with `features = ["cli"]` (for `Motion: ValueEnum`) and `termrock-theme`, which
+is what the layering table allows (`core`, `theme`). `junie-tui` keeps
+`#[cfg(feature = "cli")] pub use termrock_cli as cli;`, and its `cli` feature is
+`dep:termrock-cli`, which now carries both `clap` and `termrock-core/cli`. The
+root package has no `clap` dependency left. The facade and the consumer
+lockfiles need no edit: no fixture resolves the optional crate, and
+`termrock::cli::*` still resolves through `junie-tui`.
+
+## 2026-11-18: `termrock-dialogs` (#448)
+
+`termrock-dialogs` holds `dialog`, `choice_dialog`, `info_dialog`, `help`,
+`form_dialog` (with its `tests.rs`), `file_browser`, `inspect_changes`, and the
+two `ui` modules `layers` and `leave`. It is cut in two branches, as the issue
+planned: part 1 creates the crate with `dialog`, `choice_dialog`, `info_dialog`,
+`help`, `leave` and `layers`; part 2 adds `form_dialog`, `file_browser` and
+`inspect_changes`. `junie-tui` re-exports each module at its old path
+(`widgets::*`, `ui::{layers, leave}`), so no `termrock::` path, type identity or
+API id changes.
+
+- **One crate, no hidden items.** Every item the moved files use from a lower
+  crate was already `pub` (or hidden `pub` from #446 and #447), so no
+  `pub(crate)` item became hidden `pub` and `doc-hidden-items.txt` is unchanged.
+  No `impl` crosses the crate boundary: each dialog implements `Layer` for a
+  local type.
+- **`ui/layers.rs`** is the one line `pub use termrock_overlays::layer::LayerResult`;
+  it moves with the dialogs because the issue maps it there, and the spelling
+  `ui::layers::LayerResult` is kept.
+- **Dependencies.** `ratatui` and the twelve termrock crates the sources name
+  (`collections`, `controls`, `core`, `editors`, `fields`, `layout`,
+  `navigation`, `overlays`, `runtime`, `text`, `theme`, `viewport`), all
+  allowed for `dialogs` by `docs/layering.toml`.
+- **No `work-metrics` feature.** No file of the crate records work or reads a
+  `work-metrics` counter, so the crate has no feature and the root feature does
+  not forward to it; the guard added in #446 only applies to a crate that
+  declares the feature.

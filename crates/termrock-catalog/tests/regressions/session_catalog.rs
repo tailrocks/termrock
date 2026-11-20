@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 use syn::{ImplItem, Item, TraitItem, Type, Visibility};
 use termrock_catalog::catalog;
 
-const SOURCE: &str = include_str!("../../../../src/terminal/session.rs");
+const SOURCE: &str = include_str!("../../../termrock-terminal/src/session.rs");
 
 fn public(vis: &Visibility) -> bool {
     matches!(vis, Visibility::Public(_))

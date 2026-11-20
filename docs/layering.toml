@@ -121,18 +121,6 @@ functional = ["termrock"]
 # Re-exports `termrock-text` at `core::text`; the buffer itself is in the crate.
 "src/core/text.rs" = "text"
 
-# dialogs
-"src/ui/layers.rs" = "dialogs"
-"src/ui/leave.rs" = "dialogs"
-"src/widgets/choice_dialog.rs" = "dialogs"
-"src/widgets/dialog.rs" = "dialogs"
-"src/widgets/file_browser.rs" = "dialogs"
-"src/widgets/form_dialog.rs" = "dialogs"
-"src/widgets/form_dialog/tests.rs" = "dialogs"
-"src/widgets/help.rs" = "dialogs"
-"src/widgets/info_dialog.rs" = "dialogs"
-"src/widgets/inspect_changes.rs" = "dialogs"
-
 # shell
 # `src/runtime.rs` is `Application` and the run loop generic over it. They stay in
 # `junie-tui` until #448 moves them next to `App` (see docs/decisions.md, #445).
@@ -149,15 +137,6 @@ functional = ["termrock"]
 "src/shell/router.rs" = "shell"
 "src/shell/status.rs" = "shell"
 
-# terminal
-"src/terminal.rs" = "terminal"
-"src/terminal/forward.rs" = "terminal"
-"src/terminal/guard.rs" = "terminal"
-"src/terminal/session.rs" = "terminal"
-"src/terminal/viewport.rs" = "terminal"
-
-# cli
-"src/cli.rs" = "cli"
 
 # conformance
 # `src/metrics.rs` re-exports `termrock-metrics` and declares the three files below, so it goes with them until #449.

@@ -2,30 +2,30 @@ use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Constraint, Margin, Position, Rect};
 
-use crate::core::event::{Key, Outcome};
-use crate::core::focus::FocusChange;
-use crate::core::hints::{HasHints, HintCx};
-use crate::core::hit::Axis;
-use crate::core::id::WidgetId;
-use crate::core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
-use crate::core::pointer::PointerEvent;
-use crate::core::response::Response;
-use crate::core::scroll::{HScroll, ScrollPane, ScrollState, Scrollable};
-use crate::theme::{ButtonKind, StatusKind, Strings};
-use crate::ui::ctx::{Backdrop, RenderCtx, fill};
-use crate::ui::layer::{
+use ratatui::style::Color;
+use termrock_controls::button::{Button, ButtonRow, RowAlign, RowOverflow};
+use termrock_controls::icon_button::IconButton;
+use termrock_controls::keyhint::{Hint, hint};
+use termrock_controls::scrollbar;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::focus::FocusChange;
+use termrock_core::hints::{HasHints, HintCx};
+use termrock_core::hit::Axis;
+use termrock_core::id::WidgetId;
+use termrock_core::keymap::{Actions, KeyBinding, KeyMap, Nav, NavKeys, lookup};
+use termrock_core::pointer::PointerEvent;
+use termrock_core::response::Response;
+use termrock_core::scroll::{HScroll, ScrollPane, ScrollState, Scrollable};
+use termrock_fields::input::{InputAction, TextInput};
+use termrock_overlays::layer::{
     DismissReason, Layer, LayerCx, LayerOut, LayerResult, LayerSpec, Overlay, layer_out,
 };
-pub use crate::ui::modal::{OUTER_MARGIN, body_bounds};
-use crate::ui::popup::{Dismiss, Place, Placement, place_with};
-use crate::ui::specimen::{Specimen, SpecimenState};
-use crate::widgets::button::{Button, ButtonRow, RowAlign, RowOverflow};
-use crate::widgets::icon_button::IconButton;
-use crate::widgets::input::{InputAction, TextInput};
-use crate::widgets::keyhint::{Hint, hint};
-use crate::widgets::panel::Panel;
-use crate::widgets::scrollbar;
-use ratatui::style::Color;
+pub use termrock_overlays::modal::{OUTER_MARGIN, body_bounds};
+use termrock_runtime::ctx::{Backdrop, RenderCtx, fill};
+use termrock_runtime::popup::{Dismiss, Place, Placement, place_with};
+use termrock_runtime::specimen::{Specimen, SpecimenState};
+use termrock_theme::{ButtonKind, StatusKind, Strings};
+use termrock_viewport::panel::Panel;
 
 #[derive(Debug, Clone)]
 pub enum DialogBody {
@@ -33,7 +33,7 @@ pub enum DialogBody {
     Input(TextInput),
 
     Facts {
-        facts: Vec<crate::widgets::props::Prop>,
+        facts: Vec<termrock_collections::props::Prop>,
         code: Vec<String>,
         ack: Option<AckInput>,
     },
@@ -72,7 +72,7 @@ pub struct Dialog {
 
     pub dismiss: Dismiss,
 
-    pub close_button: crate::widgets::icon_button::IconButton,
+    pub close_button: termrock_controls::icon_button::IconButton,
 
     pub confirm_index: Option<usize>,
 
@@ -94,7 +94,7 @@ pub struct Dialog {
 
     gap: u16,
 
-    pad: crate::theme::Insets,
+    pad: termrock_theme::Insets,
 
     pub scroll: ScrollPane,
 
@@ -285,7 +285,9 @@ impl Dialog {
             result: None,
             initial_focus: ok_id,
             dismiss: Dismiss::LIGHT,
-            close_button: crate::widgets::icon_button::IconButton::close(crate::ui::modal::CLOSE),
+            close_button: termrock_controls::icon_button::IconButton::close(
+                termrock_overlays::modal::CLOSE,
+            ),
             title_status: None,
             confirm_index: None,
             body_scroll: true,
@@ -298,8 +300,8 @@ impl Dialog {
             button_row: ButtonRow::new()
                 .align(RowAlign::End)
                 .overflow(RowOverflow::Wrap),
-            gap: crate::theme::Spacing::DEFAULT.button_gap,
-            pad: crate::theme::Spacing::DEFAULT.dialog,
+            gap: termrock_theme::Spacing::DEFAULT.button_gap,
+            pad: termrock_theme::Spacing::DEFAULT.dialog,
             scroll: ScrollPane::default(),
             horizontal: None,
             strings: Strings::DEFAULT,
@@ -328,7 +330,9 @@ impl Dialog {
             result: None,
             initial_focus: cancel_id,
             dismiss: Dismiss::LIGHT,
-            close_button: crate::widgets::icon_button::IconButton::close(crate::ui::modal::CLOSE),
+            close_button: termrock_controls::icon_button::IconButton::close(
+                termrock_overlays::modal::CLOSE,
+            ),
             title_status: None,
             confirm_index: None,
             body_scroll: true,
@@ -341,8 +345,8 @@ impl Dialog {
             button_row: ButtonRow::new()
                 .align(RowAlign::End)
                 .overflow(RowOverflow::Wrap),
-            gap: crate::theme::Spacing::DEFAULT.button_gap,
-            pad: crate::theme::Spacing::DEFAULT.dialog,
+            gap: termrock_theme::Spacing::DEFAULT.button_gap,
+            pad: termrock_theme::Spacing::DEFAULT.dialog,
             scroll: ScrollPane::default(),
             horizontal: None,
             strings: Strings::DEFAULT,
@@ -372,7 +376,9 @@ impl Dialog {
             result: None,
             initial_focus: input_id,
             dismiss: Dismiss::LIGHT,
-            close_button: crate::widgets::icon_button::IconButton::close(crate::ui::modal::CLOSE),
+            close_button: termrock_controls::icon_button::IconButton::close(
+                termrock_overlays::modal::CLOSE,
+            ),
             title_status: None,
             confirm_index: None,
             body_scroll: true,
@@ -385,8 +391,8 @@ impl Dialog {
             button_row: ButtonRow::new()
                 .align(RowAlign::End)
                 .overflow(RowOverflow::Wrap),
-            gap: crate::theme::Spacing::DEFAULT.button_gap,
-            pad: crate::theme::Spacing::DEFAULT.dialog,
+            gap: termrock_theme::Spacing::DEFAULT.button_gap,
+            pad: termrock_theme::Spacing::DEFAULT.dialog,
             scroll: ScrollPane::default(),
             horizontal: None,
             strings: Strings::DEFAULT,
@@ -419,7 +425,7 @@ impl Dialog {
     pub fn facts(
         id: WidgetId,
         title: &str,
-        facts: Vec<crate::widgets::props::Prop>,
+        facts: Vec<termrock_collections::props::Prop>,
         code: Vec<String>,
         token: Option<&str>,
         confirm: Button,
@@ -453,7 +459,9 @@ impl Dialog {
             } else {
                 Dismiss::LIGHT
             },
-            close_button: crate::widgets::icon_button::IconButton::close(crate::ui::modal::CLOSE),
+            close_button: termrock_controls::icon_button::IconButton::close(
+                termrock_overlays::modal::CLOSE,
+            ),
             title_status: None,
             confirm_index: token.map(|_| 1),
             body_scroll: true,
@@ -466,8 +474,8 @@ impl Dialog {
             button_row: ButtonRow::new()
                 .align(RowAlign::End)
                 .overflow(RowOverflow::Wrap),
-            gap: crate::theme::Spacing::DEFAULT.button_gap,
-            pad: crate::theme::Spacing::DEFAULT.dialog,
+            gap: termrock_theme::Spacing::DEFAULT.button_gap,
+            pad: termrock_theme::Spacing::DEFAULT.dialog,
             scroll: ScrollPane::default(),
             horizontal: None,
             strings: Strings::DEFAULT,
@@ -579,14 +587,14 @@ impl Dialog {
         v.extend(dismiss_hint());
 
         if matches!(self.body, DialogBody::Text(_)) {
-            if let Some(k) = crate::core::keymap::hint_key(&self.keymap, DialogCmd::Confirm)
+            if let Some(k) = termrock_core::keymap::hint_key(&self.keymap, DialogCmd::Confirm)
                 && let Some(p) = self.actions.iter().find(|b| {
                     matches!(b.kind, ButtonKind::Primary | ButtonKind::Danger) && b.can_activate()
                 })
             {
                 v.push(Hint::new(k, p.label.clone()));
             }
-            if let Some(k) = crate::core::keymap::hint_key(&self.keymap, DialogCmd::Cancel)
+            if let Some(k) = termrock_core::keymap::hint_key(&self.keymap, DialogCmd::Cancel)
                 && let Some(c) = cancel_label
             {
                 v.push(Hint::new(k, c));
@@ -612,12 +620,12 @@ impl Dialog {
         self
     }
 
-    pub fn close_button(mut self, button: crate::widgets::icon_button::IconButton) -> Self {
+    pub fn close_button(mut self, button: termrock_controls::icon_button::IconButton) -> Self {
         self.close_button = button;
         self
     }
 
-    pub fn edit_entry(mut self, entry: crate::core::edit::EditEntry) -> Self {
+    pub fn edit_entry(mut self, entry: termrock_core::edit::EditEntry) -> Self {
         if let Some(inp) = self.input_mut() {
             inp.set_edit_entry(entry);
         }
@@ -675,7 +683,7 @@ impl Dialog {
     fn code_extent(code: &[String], inner_w: u16) -> ScrollState {
         let widest = code
             .iter()
-            .map(|l| crate::ui::text::width(l))
+            .map(|l| termrock_text::cells::width(l))
             .max()
             .unwrap_or(0);
         let mut s = ScrollState::new(widest);
@@ -717,10 +725,10 @@ impl Dialog {
     fn scroll_rows(&self, width: u16) -> u16 {
         let inner_w = self.inner_width(width);
         match &self.body {
-            DialogBody::Text(t) => crate::ui::text::wrap(t, inner_w as usize).len() as u16,
+            DialogBody::Text(t) => termrock_text::cells::wrap(t, inner_w as usize).len() as u16,
             DialogBody::Input(_) => 0,
             DialogBody::Facts { facts, code, .. } => {
-                crate::widgets::props::measure(facts, inner_w) + Self::code_rows(code)
+                termrock_collections::props::measure(facts, inner_w) + Self::code_rows(code)
             }
         }
     }
@@ -839,8 +847,8 @@ impl Dialog {
     pub fn on_key(
         &mut self,
         key: &Key,
-        focus: &mut crate::core::focus::Focus,
-        ring: &crate::core::focus::FocusRing,
+        focus: &mut termrock_core::focus::Focus,
+        ring: &termrock_core::focus::FocusRing,
     ) -> Outcome {
         let cur = focus.current();
 
@@ -848,7 +856,7 @@ impl Dialog {
             && self.dismiss.escape
             && let Some(inp) = self.input_mut()
             && cur == Some(inp.id)
-            && inp.entry() == crate::core::edit::EditEntry::Immediate
+            && inp.entry() == termrock_core::edit::EditEntry::Immediate
         {
             return self.dismissed();
         }
@@ -991,7 +999,7 @@ impl Dialog {
         }
     }
 
-    pub fn on_blur(&mut self, change: crate::core::focus::FocusChange) -> Outcome {
+    pub fn on_blur(&mut self, change: termrock_core::focus::FocusChange) -> Outcome {
         match self.input_mut() {
             Some(inp) if inp.id == change.from => match inp.on_blur() {
                 Some(_) => Outcome::Changed,
@@ -1019,7 +1027,7 @@ impl Dialog {
         &mut self,
         id: WidgetId,
         pos: Position,
-        focus: &mut crate::core::focus::Focus,
+        focus: &mut termrock_core::focus::Focus,
     ) -> Outcome {
         self.on_click_count(id, pos, 1, focus)
     }
@@ -1029,9 +1037,9 @@ impl Dialog {
         id: WidgetId,
         pos: Position,
         count: u8,
-        focus: &mut crate::core::focus::Focus,
+        focus: &mut termrock_core::focus::Focus,
     ) -> Outcome {
-        if id == crate::ui::modal::CLOSE && self.dismiss.shows_close() {
+        if id == termrock_overlays::modal::CLOSE && self.dismiss.shows_close() {
             return self.dismissed();
         }
         if let Some(inp) = self.input_mut()
@@ -1079,7 +1087,7 @@ impl Dialog {
         self.scroll.begin(ctx.track_click);
         self.gap = t.spacing.button_gap;
 
-        self.pad = crate::theme::Insets::new(t.spacing.dialog.x.max(1), t.spacing.dialog.y);
+        self.pad = termrock_theme::Insets::new(t.spacing.dialog.x.max(1), t.spacing.dialog.y);
 
         ctx.modal_backdrop_with(buf, screen, self.backdrop);
         let bounds = bounds.intersection(screen);
@@ -1118,11 +1126,11 @@ impl Dialog {
         let block = ratatui::widgets::Block::new()
             .borders(ratatui::widgets::Borders::ALL)
             .border_set(t.glyphs.border)
-            .border_style(crate::ui::modal::border_style(ctx, bg));
+            .border_style(termrock_overlays::modal::border_style(ctx, bg));
         ratatui::widgets::Widget::render(block, area, buf);
         let _ = panel;
         let close = if self.dismiss.shows_close() {
-            crate::ui::modal::close_button_with(&self.close_button, area, buf, ctx, bg)
+            termrock_overlays::modal::close_button_with(&self.close_button, area, buf, ctx, bg)
         } else {
             Rect::ZERO
         };
@@ -1135,12 +1143,15 @@ impl Dialog {
             let (glyph, st) = t.status(kind);
             let fg = t.legible(st.fg.unwrap_or(t.text_primary), bg);
             buf.set_string(title_x, inner.y, glyph, st.fg(fg).bg(bg));
-            title_x += crate::ui::text::width(glyph) as u16 + 1;
+            title_x += termrock_text::cells::width(glyph) as u16 + 1;
         }
         buf.set_string(
             title_x,
             inner.y,
-            crate::ui::text::truncate(&self.title, inner.right().saturating_sub(title_x) as usize),
+            termrock_text::cells::truncate(
+                &self.title,
+                inner.right().saturating_sub(title_x) as usize,
+            ),
             t.title().bg(bg),
         );
         let body_y = inner.y + 2;
@@ -1163,7 +1174,7 @@ impl Dialog {
         let field_w = inner.right() - field_x;
         match &mut self.body {
             DialogBody::Text(text) => {
-                let lines = crate::ui::text::wrap(text, inner.width as usize);
+                let lines = termrock_text::cells::wrap(text, inner.width as usize);
                 for (i, l) in lines
                     .iter()
                     .skip(offset as usize)
@@ -1179,10 +1190,10 @@ impl Dialog {
             }
             DialogBody::Facts { facts, code, ack } => {
                 let sheet_area = Rect::new(0, 0, inner.width, content);
-                let mut sheet = crate::ui::ctx::scratch_buffer(sheet_area);
+                let mut sheet = termrock_runtime::ctx::scratch_buffer(sheet_area);
                 fill(&mut sheet, sheet_area, ratatui::style::Style::new().bg(bg));
-                crate::widgets::props::render(sheet_area, &mut sheet, t, facts, bg);
-                let facts_h = crate::widgets::props::measure(facts, inner.width);
+                termrock_collections::props::render(sheet_area, &mut sheet, t, facts, bg);
+                let facts_h = termrock_collections::props::measure(facts, inner.width);
                 let mut y = scroll_bottom;
                 if !code.is_empty() {
                     let extent = Self::code_extent(code, inner.width);
@@ -1197,9 +1208,9 @@ impl Dialog {
                     self.scroll.h.offset = off;
                     let cut = |line: &str, w: u16| {
                         if off > 0 {
-                            crate::ui::text::slice_cells(line, off, w as usize)
+                            termrock_text::cells::slice_cells(line, off, w as usize)
                         } else {
-                            crate::ui::text::truncate(line, w as usize)
+                            termrock_text::cells::truncate(line, w as usize)
                         }
                     };
                     let code_y = facts_h + 1;
@@ -1243,7 +1254,7 @@ impl Dialog {
                 buf.set_string(
                     inner.x,
                     scroll_bottom,
-                    crate::ui::text::truncate(
+                    termrock_text::cells::truncate(
                         &format!(
                             "{} {}",
                             t.glyphs.arrows[1],
@@ -1289,7 +1300,7 @@ impl Dialog {
             ctx.hits.register(b.id, b.area);
         }
         if !close.is_empty() {
-            ctx.clickable(crate::ui::modal::CLOSE, close);
+            ctx.clickable(termrock_overlays::modal::CLOSE, close);
         }
 
         let track = self.scroll.v_track();
@@ -1339,11 +1350,11 @@ impl Scrollable for Dialog {
 impl Dialog {
     pub fn pointer_in(
         &mut self,
-        ev: &crate::core::pointer::PointerEvent,
-        focus: &mut crate::core::focus::Focus,
+        ev: &termrock_core::pointer::PointerEvent,
+        focus: &mut termrock_core::focus::Focus,
     ) -> Response<()> {
-        use crate::core::intent::Phase;
-        use crate::core::pointer::MouseTarget;
+        use termrock_core::intent::Phase;
+        use termrock_core::pointer::MouseTarget;
         if let Some(inp) = self.input_mut()
             && let Some(r) = inp.route(ev)
         {
@@ -1356,7 +1367,7 @@ impl Dialog {
             return Response::ignored();
         }
         if ev.on(self.id)
-            && let Some(r) = crate::core::pointer::scroll_input(self, ev)
+            && let Some(r) = termrock_core::pointer::scroll_input(self, ev)
         {
             return r;
         }
@@ -1401,8 +1412,8 @@ impl Specimen for Dialog {
         let _ = bg;
         let mut d = self.clone();
         d.outer_margin = ratatui::layout::Margin::new(0, 0);
-        d.placement = crate::ui::popup::Placement::Center;
-        d.backdrop = crate::ui::ctx::Backdrop::FULL;
+        d.placement = termrock_runtime::popup::Placement::Center;
+        d.backdrop = termrock_runtime::ctx::Backdrop::FULL;
         d.width = area.width;
         let target = dialog_target(&d);
         let v = state.visual();
@@ -1448,7 +1459,7 @@ fn dialog_target(d: &Dialog) -> usize {
             d.actions.iter().position(|b| {
                 matches!(
                     b.kind,
-                    crate::theme::ButtonKind::Primary | crate::theme::ButtonKind::Danger
+                    termrock_theme::ButtonKind::Primary | termrock_theme::ButtonKind::Danger
                 )
             })
         })
