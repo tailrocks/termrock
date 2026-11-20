@@ -1,13 +1,13 @@
-use junie_tui::core::focus::FocusRing;
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::{ItemKey, WidgetId};
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::ui::popup::backdrop_id;
-use junie_tui::widgets::option_list::Item as ListItem;
-use junie_tui::widgets::picker::{Picker, PickerStatus};
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
+use termrock_core::focus::FocusRing;
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::{ItemKey, WidgetId};
+use termrock_overlays::option_list::Item as ListItem;
+use termrock_overlays::picker::{Picker, PickerStatus};
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_runtime::popup::backdrop_id;
+use termrock_theme::{ColorLevel, Theme};
 
 fn picker_with_items(id: &str, count: usize) -> Picker {
     let mut picker = Picker::new(WidgetId::of(id), "Rows");

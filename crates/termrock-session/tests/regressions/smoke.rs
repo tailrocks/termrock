@@ -1,4 +1,4 @@
-use junie_tui::clock::SimClock;
+use termrock_session::clock::SimClock;
 
 #[test]
 fn sim_clock_reports_relative_age_in_the_largest_unit() {
