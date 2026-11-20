@@ -55,9 +55,9 @@ specifiers = ["rev:f1fb3f276b8d49948881c07b3bbc619840b6cc93"]
 crate = "tuiscotti-cli"
 
 [[tools."cargo:https://github.com/tailrocks/velnor-new"]]
-version = "tag:tools-v0.1.106"
+version = "rev:1f9762b239202d138ceec484da17fa5b27f2c3a3"
 backend = "cargo:https://github.com/tailrocks/velnor-new"
-specifiers = ["tag:tools-v0.1.106"]
+specifiers = ["rev:1f9762b239202d138ceec484da17fa5b27f2c3a3"]
 
 [tools."cargo:https://github.com/tailrocks/velnor-new".options]
 crate = "velnor-gen"
