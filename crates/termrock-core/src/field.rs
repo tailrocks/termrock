@@ -2,7 +2,7 @@
 //! helpers and the value parsers.
 //!
 //! `termrock::widgets::{edit, field_common}` are `edit` and `field_common`
-//! here; `junie-tui` re-exports them at those paths.
+//! here; the `termrock` facade re-exports them at those paths.
 
 pub mod edit;
 pub mod field_common;

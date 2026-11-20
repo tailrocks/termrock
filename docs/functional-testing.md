@@ -166,13 +166,13 @@ lives in `apps/jackin/tests`. These tests add no visual baseline and are
 not journeys: a user-visible flow still needs a functional journey.
 
 Put a new data or regression test in the package's shared `regressions`
-target: `tests/regressions/<topic>.rs` with a `mod <topic>;` line in
-`tests/regressions/main.rs`, and the same under `apps/jackin/tests/` for
+target: `crates/<owner>/tests/regressions/<topic>.rs` with a `mod <topic>;` line in
+that crate's `tests/regressions/main.rs`, and the same under `apps/jackin/tests/` for
 `jackin-console`. Do not add a new top-level `tests/*.rs`: the generated CI
 lists every test target, so each new one changes the generated workflows
 (see [CI](ci.md#test-targets-and-generated-ci)).
 `cargo nextest run --all-features --all-targets` runs them, and so do the
-`Rust / junie-tui` and `Rust / jackin-console` CI jobs
+`Rust / <crate>` and `Rust / jackin-console` CI jobs
 (`nextest run --profile ci --package <crate> --all-features`); the `functional` suite
 does not.
 
@@ -261,7 +261,7 @@ without the fix.
 
 - `JUNIE_TUI_DRAW_LAG_MS=<ms>` holds every frame of the app back by that many
   milliseconds after the input that caused it was handled and before any byte of
-  it reaches the terminal (`draw_lag` in `src/runtime.rs`). The harness forwards
+  it reaches the terminal (`draw_lag` in `crates/termrock-shell/src/runtime.rs`). The harness forwards
   it to every launch, so
   `JUNIE_TUI_DRAW_LAG_MS=300 python3 scripts/run_functional.py --test-name s07_`
   runs that file with every frame 300 ms late.

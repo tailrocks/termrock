@@ -3,7 +3,7 @@
 //! preference.
 //!
 //! `termrock::core::<module>` is the module of the same name here; the
-//! `junie-tui` package re-exports each at that path. `termrock::motion` is
+//! the `termrock` facade re-exports each at that path. `termrock::motion` is
 //! `motion`.
 
 pub mod data;

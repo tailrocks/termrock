@@ -2,7 +2,7 @@
 //!
 //! `termrock::widgets::{choice_dialog, dialog, file_browser, form_dialog, help,
 //! info_dialog, inspect_changes}` and `termrock::ui::{layers, leave}` are the
-//! modules of the same name here; the `junie-tui` package re-exports each at
+//! modules of the same name here; the `termrock` facade re-exports each at
 //! that path.
 
 pub mod choice_dialog;

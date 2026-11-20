@@ -2,7 +2,7 @@
 //! line-indexed text buffer behind the editors (`buffer`).
 //!
 //! `termrock::ui::text` is `cells` and `termrock::core::text` is `buffer`; the
-//! `junie-tui` package re-exports both at those paths.
+//! the `termrock` facade re-exports both at those paths.
 
 pub mod buffer;
 pub mod cells;

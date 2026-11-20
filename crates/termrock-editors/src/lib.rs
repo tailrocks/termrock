@@ -1,7 +1,7 @@
 //! The code editor, the text area and the diff view.
 //!
 //! `termrock::widgets::{code, diff, textarea}` are the modules of the same name
-//! here; the `junie-tui` package re-exports each at that path.
+//! here; the `termrock` facade re-exports each at that path.
 
 pub mod code;
 mod code_specimen;

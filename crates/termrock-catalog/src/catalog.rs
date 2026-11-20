@@ -5243,9 +5243,9 @@ pub struct Allowed {
     pub reason: &'static str,
 }
 
-const HOST_FED: &str = "used by the host that feeds the terminal state (the jackin Capsule) and pinned by tests/terminal.rs, tests/terminal_viewport.rs and tests/forward_policy.rs; the terminalpane page keeps its approved baseline";
+const HOST_FED: &str = "used by the host that feeds the terminal state (the jackin Capsule) and pinned by crates/termrock-terminal/tests/regressions/terminal.rs, crates/termrock-terminal/tests/regressions/terminal_viewport.rs and crates/termrock-terminal/tests/regressions/forward_policy.rs; the terminalpane page keeps its approved baseline";
 
-const TEXT_FILTER: &str = "used by the feed guard that keeps these characters out of every cell and by the jackin console's title filter, and pinned by tests/terminal_guard.rs";
+const TEXT_FILTER: &str = "used by the feed guard that keeps these characters out of every cell and by the jackin console's title filter, and pinned by crates/termrock-terminal/tests/regressions/terminal_guard.rs";
 
 pub static ALLOWLIST: &[Allowed] = &[
     Allowed {

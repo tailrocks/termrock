@@ -3,7 +3,7 @@
 //!
 //! `termrock::ui::{context, edit_menu, layer, modal}` and `termrock::widgets::
 //! {completion, menu, option_editor, option_list, picker, row_menu}` are the modules of the same
-//! name here; the `junie-tui` package re-exports each at that path.
+//! name here; the `termrock` facade re-exports each at that path.
 
 pub mod completion;
 pub mod context;

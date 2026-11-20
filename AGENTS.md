@@ -11,8 +11,11 @@ desktop interfaces (macOS is the reference for interaction conventions) and
 to ship that behaviour as reusable widgets, components and blocks, not as
 one-off screen code.
 
-The `junie-tui` crate is a component library first. It holds only
-reusable components, widgets, blocks and shells. The apps (`showcase`,
+The `termrock-*` crates under `crates/` are a component library first. They hold
+only reusable components, widgets, blocks and shells, and the `termrock` crate
+(`crates/termrock`) is the one import path that re-exports them. The repository
+root is a virtual workspace: it holds no package, no `src/`, no `tests/` and no
+`examples/`. The apps (`showcase`,
 `tablepro`, `holla`, `jackin`) are demos of how to build an app from those
 parts; they prove the components work and are not where behaviour lives.
 Code that only jackin needs lives outside the library, in the
@@ -52,10 +55,12 @@ workspaces, Docker, OpenShell, Codex).
   hand; change the config and run `velnor-actions generate` instead. See
   `docs/ci.md`.
 - New integration tests go into the shared `regressions` target:
-  `tests/regressions/<topic>.rs` plus a `mod <topic>;` line in
-  `tests/regressions/main.rs`, and the same under `apps/jackin/tests/` for
-  `jackin-console` and `crates/termrock-conformance/tests/regressions/` for the
-  cost contracts and the performance inventory. Never add a new top-level `tests/*.rs` or
+  `crates/<owner>/tests/regressions/<topic>.rs` plus a `mod <topic>;` line in
+  that crate's `tests/regressions/main.rs`, where `<owner>` is the highest crate
+  the test imports (`crates/termrock` when it needs several siblings or the
+  facade paths), and the same under `apps/jackin/tests/` for `jackin-console`
+  and `crates/termrock-conformance/tests/regressions/` for the cost contracts
+  and the performance inventory. Never add a new top-level `tests/*.rs` or
   `apps/jackin/tests/*.rs`: generated CI lists every test target, so each
   one changes the generated workflows. See `docs/ci.md`.
 - Keep dependencies on their latest releases: crates (majors included),
@@ -67,7 +72,7 @@ workspaces, Docker, OpenShell, Codex).
 ### Component architecture
 
 - Fix behaviour in the component or in the shared layer it belongs to
-  (`src/ui`, `src/core`, `src/widgets`), never screen by screen. A fix must
+  (the owning `crates/termrock-*` crate), never screen by screen. A fix must
   reach every screen and every app that uses the component. If a page needs
   a workaround, the component is wrong.
 - Defaults must be good and follow established standards: platform HIGs
@@ -92,8 +97,8 @@ workspaces, Docker, OpenShell, Codex).
 - Hints never advertise keys the terminal cannot deliver.
 - Behaviour comes only from shared library code. Two places must never
   implement the same interaction, routing or state logic separately. If
-  apps or widgets need the same behaviour, it lives once in `src/core`,
-  `src/ui` or `src/widgets` and both use it. Duplicated logic found in
+  apps or widgets need the same behaviour, it lives once in the owning
+  `crates/termrock-*` crate and both use it. Duplicated logic found in
   review is a defect to fix, not a style issue. Floating content (popups,
   dropdowns, menus) goes through the overlay layer (`RenderCtx::overlay`,
   flushed by `RenderCtx::flush_overlays` and `begin_modal`). It must never
@@ -101,9 +106,9 @@ workspaces, Docker, OpenShell, Codex).
   `RenderCtx::modal_backdrop`.
 - Dependencies point down the layers in `docs/layering.toml`
   (foundations, runtime, components, facade). A change that adds an upward
-  dependency fails the `layering` regression test: fix the design (move the
-  item down or invert the dependency) and never extend
-  `tests/regressions/layering-allowlist.tsv`, which may only shrink.
+  dependency, or a dependency on the `junie-tui` shim, fails the `layering`
+  regression test in `crates/termrock/tests/regressions/layering.rs`: fix the
+  design (move the item down or invert the dependency). There is no allowlist.
 - Interfaces are shared and composable. Widgets implement the same core
   traits (rendering, focus, keyboard, mouse, scrolling, selection, hints,
   context menus), so containers and apps compose them without glue code.
@@ -114,10 +119,13 @@ workspaces, Docker, OpenShell, Codex).
   and similar shell behaviour belong to the library.
 - The four apps (`apps/showcase`, `apps/tablepro`, `apps/holla`,
   `apps/jackin`) depend on the `termrock` facade (`crates/termrock`) and
-  import `termrock::`, never `junie_tui::`; `junie-tui` stays the
-  implementation package. `tests/regressions/facade_contract.rs` enforces it.
-  A new public module is added to the facade explicitly, and the facade keeps
-  empty default features. The independent consumer fixtures under
+  import `termrock::`, never `junie_tui::`. `junie-tui` (`crates/junie-tui`) is a
+  deprecated shim that is `pub use termrock::*;` with the old default features,
+  kept for consumers that depend on it by git; nothing in this workspace depends
+  on it. `crates/termrock/tests/regressions/facade_contract.rs` enforces the
+  apps' side. A new public module is added to the facade with an explicit
+  `pub use` list, never a glob over a crate (a crate's `#[doc(hidden)]` items
+  must stay out), and the facade keeps empty default features. The independent consumer fixtures under
   `crates/termrock/tests/consumers/` each have their own `[workspace]` and `Cargo.lock`; keep
   them compiling from their declared features alone (`docs/api-contract.md`,
   `scripts/check-consumers.sh`).
@@ -203,7 +211,7 @@ workspaces, Docker, OpenShell, Codex).
   (`crates/termrock-*`, #443) and spells each id the way the facade exports it,
   so a definition keeps its id when it moves into a crate behind a `pub use`;
   when it has several public spellings the one that already has a catalog line
-  wins. `tests/regressions/api-ids.sha256` holds the digest of the sorted ids of
+  wins. `crates/termrock-catalog/tests/regressions/api-ids.sha256` holds the digest of the sorted ids of
   each matrix row (`catalog_api_ids_match_the_committed_digest`). A PR that moves
   code must not change it; a PR that adds or removes API on purpose reruns that
   test with `UPDATE_API_IDS=1` and commits the file. After a file with a
