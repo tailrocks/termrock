@@ -103,17 +103,20 @@ fn row_has(screen: &TerminalSnapshot, mark: &str, label: &str) -> bool {
         .any(|line| line.contains(mark) && line.contains(label))
 }
 
+/// Moves focus down one row at a time until `needle` is focused.
+///
+/// Each key is fenced, so every read is the frame that the keys sent so far
+/// produced. A wait that accepted any change of the focused line could take a
+/// frame where an earlier key (such as `right`, which expands the row) had
+/// landed but a later `down` had not, and send one `down` too many.
 fn focus_down(app: &App, needle: &str) {
+    app.fence();
     for _ in 0..20 {
         if focused_line(&app.screen()).contains(needle) {
             return;
         }
-        let before = focused_line(&app.screen());
         app.key("down");
-        app.wait_screen(needle, |screen| {
-            let line = focused_line(screen);
-            line.contains(needle) || line != before
-        });
+        app.fence();
     }
     panic!("never focused {needle}\n{}", text(&app.screen()));
 }
