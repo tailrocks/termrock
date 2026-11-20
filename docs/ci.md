@@ -37,6 +37,11 @@ roots: the workspace at `.` and the four consumer fixtures.
   `work-metrics` cost contracts of #56 execute; see [performance contracts](performance-contracts.md).
 - **rust-test-default-root** — every test no group names, from the archive,
   under the `ci` nextest profile.
+- **termrock-catalog gate** — the declared-API gate of #14 (`catalog_` tests in
+  `termrock-catalog`, which hold the committed id digest and the
+  `doc-hidden-items.txt` list). It runs in the all-features lane. Its command with
+  the Showcase scenarios is `cargo nextest run -p termrock-catalog -p
+  termrock-showcase --all-features --no-tests fail -E 'test(catalog_)'`.
 - **rust-test-functional-{cases-a,cases-b,cases-c,apps}-root** — the
   `functional` binaries (`termrock-functional`, `functional-cross`,
   `jackin-console`), 1,371 PTY tests, split into four disjoint
