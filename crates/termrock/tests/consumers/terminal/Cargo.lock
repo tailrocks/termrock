@@ -555,37 +555,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "junie-tui"
-version = "0.1.0"
-dependencies = [
- "libc",
- "ratatui",
- "serde_json",
- "termrock-catalog",
- "termrock-collections",
- "termrock-controls",
- "termrock-core",
- "termrock-dialogs",
- "termrock-editors",
- "termrock-feedback",
- "termrock-fields",
- "termrock-grid",
- "termrock-layout",
- "termrock-metrics",
- "termrock-navigation",
- "termrock-overlays",
- "termrock-runtime",
- "termrock-session",
- "termrock-shell",
- "termrock-terminal",
- "termrock-text",
- "termrock-theme",
- "termrock-viewport",
- "unicode-segmentation",
- "unicode-width",
-]
-
-[[package]]
 name = "kasuari"
 version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1458,7 +1427,26 @@ dependencies = [
 name = "termrock"
 version = "0.1.0"
 dependencies = [
- "junie-tui",
+ "termrock-catalog",
+ "termrock-collections",
+ "termrock-controls",
+ "termrock-core",
+ "termrock-dialogs",
+ "termrock-editors",
+ "termrock-feedback",
+ "termrock-fields",
+ "termrock-grid",
+ "termrock-layout",
+ "termrock-metrics",
+ "termrock-navigation",
+ "termrock-overlays",
+ "termrock-runtime",
+ "termrock-session",
+ "termrock-shell",
+ "termrock-terminal",
+ "termrock-text",
+ "termrock-theme",
+ "termrock-viewport",
 ]
 
 [[package]]
