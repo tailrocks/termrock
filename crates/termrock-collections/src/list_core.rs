@@ -2,16 +2,16 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::Color;
 
-use crate::core::event::Key;
-use crate::core::keymap::NavKeys;
-use crate::core::list::{Cursor, KeyStep, Moved, NavProfile, RowSource, TypeAheadPrecedence};
-use crate::core::scroll::ScrollPane;
-use crate::core::selection::{ClickPolicy, RowSelection};
-use crate::core::typeahead::TypeAhead;
-use crate::ui::content::{self, ContentState};
-use crate::ui::ctx::RenderCtx;
-use crate::ui::reveal::RevealState;
-use crate::widgets::empty::EmptyState;
+use crate::content::{self, ContentState};
+use termrock_core::event::Key;
+use termrock_core::keymap::NavKeys;
+use termrock_core::list::{Cursor, KeyStep, Moved, NavProfile, RowSource, TypeAheadPrecedence};
+use termrock_core::scroll::ScrollPane;
+use termrock_core::selection::{ClickPolicy, RowSelection};
+use termrock_core::typeahead::TypeAhead;
+use termrock_feedback::empty::EmptyState;
+use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::reveal::RevealState;
 
 #[derive(Debug, Clone)]
 pub struct ListCore {
@@ -43,7 +43,7 @@ pub struct ListCore {
 
     pub skip_when_empty: bool,
 
-    pub inactive_selection: Option<crate::theme::InactiveSelection>,
+    pub inactive_selection: Option<termrock_theme::InactiveSelection>,
 }
 
 impl ListCore {
@@ -114,7 +114,7 @@ impl ListCore {
                 true
             }
             ContentState::Error(e) => {
-                crate::widgets::empty::render_ctx(area, buf, ctx, e, bg);
+                termrock_feedback::empty::render_ctx(area, buf, ctx, e, bg);
                 true
             }
             ContentState::Ready if len == 0 => {

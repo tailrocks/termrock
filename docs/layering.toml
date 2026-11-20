@@ -124,20 +124,6 @@ functional = ["termrock"]
 # Re-exports `termrock-text` at `core::text`; the buffer itself is in the crate.
 "src/core/text.rs" = "text"
 
-# collections
-"src/ui/content.rs" = "collections"
-"src/ui/list_core.rs" = "collections"
-"src/widgets/detail_card.rs" = "collections"
-"src/widgets/list.rs" = "collections"
-"src/widgets/list_detail.rs" = "collections"
-"src/widgets/props.rs" = "collections"
-"src/widgets/search_detail.rs" = "collections"
-"src/widgets/search_detail/detail.rs" = "collections"
-"src/widgets/search_detail/projection.rs" = "collections"
-"src/widgets/search_detail/session.rs" = "collections"
-"src/widgets/search_detail/session/tests.rs" = "collections"
-"src/widgets/tree.rs" = "collections"
-
 # navigation
 "src/widgets/breadcrumb.rs" = "navigation"
 "src/widgets/document_workspace.rs" = "navigation"

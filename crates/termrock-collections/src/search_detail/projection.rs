@@ -1,11 +1,11 @@
 //! The selectable keys of one accepted result source, in visible order.
 
 use super::{ResultRowKind, SearchError, SearchSource};
-use crate::core::id::ItemKey;
-use crate::core::keyed::KeyedSourceError;
-use crate::core::list::{KeyedRowSource, RowSource, SourceStamp};
-use crate::core::selection::ClickPolicy;
 use std::collections::HashSet;
+use termrock_core::id::ItemKey;
+use termrock_core::keyed::KeyedSourceError;
+use termrock_core::list::{KeyedRowSource, RowSource, SourceStamp};
+use termrock_core::selection::ClickPolicy;
 
 /// One selectable item or cell. Slots are sorted by `row`, then `cell`.
 ///
@@ -37,7 +37,7 @@ impl Slot {
 /// spacers and cell containers are not selectable, so reconciliation never
 /// sees them, and each must still be listed exactly once among the rows.
 pub(super) fn build<S: SearchSource + ?Sized>(source: &S) -> Result<Vec<Slot>, SearchError> {
-    crate::record_work!(ProjectionRebuilds, 1usize);
+    termrock_metrics::record_work!(ProjectionRebuilds, 1usize);
     let authoritative: HashSet<ItemKey> = (0..source.source_len())
         .map(|i| source.source_key(i))
         .collect();

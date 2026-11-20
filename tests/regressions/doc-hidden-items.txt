@@ -1,3 +1,6 @@
+crates/termrock-collections/src/props.rs  PropsList::height_at
+crates/termrock-collections/src/props.rs  PropsList::row_of
+crates/termrock-collections/src/props.rs  PropsList::wrapping
 crates/termrock-controls/src/button.rs  Button::intrinsic_width
 crates/termrock-controls/src/button.rs  place_lines
 crates/termrock-controls/src/button.rs  wrap_lines
