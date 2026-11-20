@@ -1588,11 +1588,18 @@ The job-by-job mapping is in [CI](ci.md). Points that change behaviour:
   test, no overlap, and `velnor-ci test-groups check` repeats the overlap check
   in CI). They replace four hash partitions with the same eight test threads;
   the limit is 30 minutes per group instead of 15. There is no `functional`
-  nextest profile, no failure-evidence artifact upload (`target/functional`,
-  `target/nextest/functional`, 14 days), and the group step passes
-  `--no-tests=pass` instead of `--no-tests fail`, so a vanished `functional`
-  binary no longer fails by itself. `scripts/check-refactor-coverage.py` and
-  the coverage inventory still pin the cases. All reported upstream.
+  nextest profile and no failure-evidence artifact upload (`target/functional`,
+  `target/nextest/functional`, 14 days). Under helper 0.1.109 a group step runs
+  with `--no-tests=fail`, so a group whose filter selects nothing fails; the
+  default test job still passes with `--no-tests=pass`.
+  `scripts/check-refactor-coverage.py` and the coverage inventory still pin the
+  cases. All reported upstream.
+- A fifth group, `cargo-tools`, holds the three tests that run `cargo metadata`
+  (`product_manifest::manifest_shape` and two `layering` tests of `termrock`).
+  The default test job installs only cargo-nextest, so they fail there (the
+  first CI run showed `cargo` not found and an mbx wrapper that could not exec);
+  a group with `needs = ["cargo"]` installs the toolchain and the default job
+  leaves its tests out. They also run in the all-features lane.
 - The performance suite is the all-features lane (it runs every test except
   the `functional` binaries, which have their groups). The old `suite-performance`
   built default features, so the counter-gated contracts compiled out of it and
@@ -1714,8 +1721,13 @@ Weakened, accepted, and recorded here so a reviewer can object:
   digest and verify restored tool caches the way velnor-actions did. Helper
   0.1.109 adds `tools-verify` for the second; the mise digest is still unpinned.
 - velnor-gen does not compare `.velnor/rust-ci.lock` with `mise.toml` or
-  `mise.lock`, so `[velnor-gen]` in the lock was unenforced. `tests/ci_default_branch.rs`
-  now pins its Linux digest, `version` and `commit` to the mise pins.
+  `mise.lock`, so the lock's `version` and `commit` were unenforced.
+  `tests/ci_default_branch.rs` now pins them to the mise pins. Helper 0.1.109
+  does compare the `[velnor-gen]` digest with the running binary on Linux, but
+  `pin-helper` writes the archive digest there while the check wants the
+  digest of the extracted binary (`BINARY-SHA256SUMS`); the first CI run failed
+  `Generated workflows` on that. The lock holds the binary digests, and the
+  mismatch is reported upstream.
 - No macOS asset for `velnor-gen` and `velnor-ci`; announced for `0.1.108`,
   still absent in `0.1.109`.
   Until then, `mise.toml` has two pins, `cargo:` for macOS and `github:` for

@@ -41,6 +41,18 @@ needs = ["cargo"]
 test_threads = 8
 timeout_minutes = 30
 
+# The default test job installs only cargo-nextest and no Rust, so a test that
+# runs `cargo metadata` cannot pass there. These three read the workspace graph
+# with cargo; a group that needs `cargo` installs the toolchain and mbx, and the
+# default job leaves its tests out.
+[[test_groups]]
+name = "cargo-tools"
+filter = "(binary_id(=jackin-console::product_manifest) and test(=manifest_shape)) or (binary_id(=termrock::regressions) and (test(=layering::layering_crates_follow_the_table) or test(=layering::layering_stage_b_runs_on_the_extracted_crates)))"
+root = "."
+needs = ["cargo"]
+test_threads = 4
+timeout_minutes = 30
+
 [[test_lane]]
 root = "."
 features = ["cli", "demo", "product", "terminal", "test-support", "work-metrics"]

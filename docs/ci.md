@@ -37,6 +37,12 @@ roots: the workspace at `.` and the four consumer fixtures.
   `work-metrics` cost contracts of #56 execute; see [performance contracts](performance-contracts.md).
 - **rust-test-default-root** — every test no group names, from the archive,
   under the `ci` nextest profile.
+- **rust-test-cargo-tools-root** — the three tests that run `cargo metadata`
+  (`jackin-console::product_manifest::manifest_shape`,
+  `termrock::regressions::layering::{layering_crates_follow_the_table,layering_stage_b_runs_on_the_extracted_crates}`).
+  The default job has no Rust toolchain, so this `[[test_groups]]` entry
+  (`needs = ["cargo"]`) runs them and the default job leaves them out. A new
+  test that shells out to `cargo` belongs in this group's filter.
 - **termrock-catalog gate** — the declared-API gate of #14 (`catalog_` tests in
   `termrock-catalog`, which hold the committed id digest and the
   `doc-hidden-items.txt` list). It runs in the all-features lane. Its command with
@@ -167,8 +173,12 @@ in two places:
 `velnor-gen` comes from `mise.toml`: a source build of the commit of tag `tools-v0.1.109` on
 macOS (the tools release has no macOS asset) and the prebuilt release asset on
 Linux, with its checksum in `mise.lock`. `tests/ci_default_branch.rs` pins the
-Linux digest, `version` and `commit` of `.velnor/rust-ci.lock` to those pins,
-because `velnor-gen check` does not compare them. The generator reads the checkout's own
+`version` and `commit` of `.velnor/rust-ci.lock` to those pins, because
+`velnor-gen check` does not compare them. On Linux `velnor-gen check` compares the
+lock's `[velnor-gen]` digest with the running binary, so that entry holds the
+digest of the extracted binary (`BINARY-SHA256SUMS`), not the archive digest that
+`velnor-gen pin-helper` writes and `mise.lock` records. After `pin-helper`, copy the
+`velnor-gen-*` lines of `BINARY-SHA256SUMS` into `[velnor-gen]`. The generator reads the checkout's own
 `mise.toml`, so the check proves reproducibility, not authorization.
 
 ## Workflow policy boundary
