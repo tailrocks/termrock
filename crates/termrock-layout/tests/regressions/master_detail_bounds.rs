@@ -1,12 +1,12 @@
-use junie_tui::core::focus::{Focus, FocusRing};
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::WidgetId;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::ui::master_detail::{DetailSize, MasterDetail, MdLayout, Mode};
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::Color;
+use termrock_core::focus::{Focus, FocusRing};
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::WidgetId;
+use termrock_layout::master_detail::{DetailSize, MasterDetail, MdLayout, Mode};
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_theme::{ColorLevel, Theme};
 
 const MASTER: WidgetId = WidgetId::of("t.mdb.master");
 const DETAIL: WidgetId = WidgetId::of("t.mdb.detail");
@@ -296,8 +296,8 @@ fn master_detail_desired_width_saturates_when_impossible() {
 /// geometry" call (#494).
 #[test]
 fn master_detail_layout_into_no_space_leaves_nothing_to_resize() {
-    use junie_tui::core::event::Key;
     use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+    use termrock_core::event::Key;
 
     let wide = Rect::new(0, 0, 120, 20);
     let nudge = Key {
@@ -316,7 +316,7 @@ fn master_detail_layout_into_no_space_leaves_nothing_to_resize() {
     assert!(md.on_key(&nudge, &mut focus).is_some());
     assert!(master_width(&md) > before, "the keys move a visible seam");
 
-    for collapse_below in [junie_tui::ui::master_detail::SPLIT_MIN, 0] {
+    for collapse_below in [termrock_layout::master_detail::SPLIT_MIN, 0] {
         for empty in [Rect::ZERO, Rect::new(5, 5, 0, 10), Rect::new(0, 0, 50, 0)] {
             let mut md = MasterDetail::new(MASTER, DETAIL).collapse_below(collapse_below);
             layout_at(&mut md, wide, None);
