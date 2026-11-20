@@ -14,7 +14,7 @@ use std::time::{Duration, Instant};
 use tui_test::TerminalSnapshot;
 
 use crate::support::{
-    App, Open, check_stored, holla_bin, refuse, require, showcase_bin, tablepro_bin, text,
+    App, Open, assert_frame, holla_bin, refuse, require, showcase_bin, tablepro_bin, text,
 };
 
 const HELP_EXIT: i32 = 0;
@@ -121,7 +121,7 @@ fn shot(app: &App, test_id: &str, cols: u32, rows: u32) {
     refuse(&screen, SHOWCASE_UI);
     app.wait_exit(&format!("{test_id} left the UI running"));
     app.expect_exited(HELP_EXIT);
-    check_stored(app, &screen, test_id);
+    assert_frame(app, &screen, test_id);
 }
 
 #[test]

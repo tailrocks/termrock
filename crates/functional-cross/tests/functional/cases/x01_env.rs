@@ -15,7 +15,7 @@ use std::time::{Duration, Instant};
 use tui_test::{SnapshotColor, TerminalSnapshot};
 
 use crate::support::{
-    App, Open, check_stored, find_all, holla_bin, refuse, require, rgb_cells, row_text,
+    App, Open, assert_frame, find_all, holla_bin, refuse, require, rgb_cells, row_text,
     showcase_bin, tablepro_bin, text,
 };
 
@@ -402,7 +402,7 @@ fn assert_checkpoints() {
     assert_eq!(glyph_fg(&wide, FOCUS), ACCENT);
     assert_eq!(wide.cols(), 120);
     assert_eq!(wide.rows(), 40);
-    check_stored(&app, &wide, WIDE_ID);
+    assert_frame(&app, &wide, WIDE_ID);
 
     app.resize(80, 24);
     let narrow = app.wait_screen(NARROW_ID, |screen| {
@@ -412,7 +412,7 @@ fn assert_checkpoints() {
     assert_eq!(glyph_fg(&narrow, FOCUS), ACCENT);
     assert_eq!(narrow.cols(), 80);
     assert_eq!(narrow.rows(), 24);
-    check_stored(&app, &narrow, NARROW_ID);
+    assert_frame(&app, &narrow, NARROW_ID);
 
     app.resize(120, 40);
     let restored = app.wait_screen("restored", |screen| {

@@ -30,7 +30,7 @@ use std::time::{Duration, Instant};
 use tui_test::{SnapshotColor, TerminalSnapshot};
 
 use crate::support::{
-    App, BOLD, INVERSE, Open, Point, check_stored, find_all, holla_bin, kill, mods_at, require,
+    App, BOLD, INVERSE, Open, Point, assert_frame, find_all, holla_bin, kill, mods_at, require,
     showcase_bin, tablepro_bin, text,
 };
 
@@ -709,8 +709,8 @@ fn checkpoint() {
     );
     let (wide, narrow) = checkpoint_frames(&app);
     app.finish();
-    check_stored(&app, &wide, WIDE_ID);
-    check_stored(&app, &narrow, NARROW_ID);
+    assert_frame(&app, &wide, WIDE_ID);
+    assert_frame(&app, &narrow, NARROW_ID);
 }
 
 #[test]
