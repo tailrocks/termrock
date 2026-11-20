@@ -103,14 +103,6 @@ fn no_secrets(screen: &TerminalSnapshot) {
     }
 }
 
-fn selection(visible: &str) -> String {
-    visible
-        .lines()
-        .find(|line| line.contains('▎'))
-        .unwrap_or("")
-        .to_string()
-}
-
 fn step_until(app: &App, key: &str, label: &str, ready: impl Fn(&str) -> bool) -> TerminalSnapshot {
     for _ in 0..30 {
         let screen = app.screen();
@@ -119,16 +111,12 @@ fn step_until(app: &App, key: &str, label: &str, ready: impl Fn(&str) -> bool) -
             no_secrets(&screen);
             return screen;
         }
-        let before = selection(&visible);
         app.key(key);
-        let deadline = Instant::now() + Duration::from_millis(800);
-        loop {
-            let moved = selection(&text(&app.screen()));
-            if moved != before || Instant::now() >= deadline {
-                break;
-            }
-            std::thread::sleep(Duration::from_millis(20));
-        }
+        // The fence returns once the app has handled the key and painted the
+        // result, so the next read is the screen that key produced. A timed poll
+        // of the selection read a stale frame under draw lag, and the next key
+        // then landed on a row the test had not seen.
+        app.fence();
     }
     panic!("{label}\n{}", text(&app.screen()));
 }
@@ -242,16 +230,6 @@ fn row_place(visible: &str, header: &str) -> RowPlace {
     }
 }
 
-fn wait_selection_change(app: &App, before: &str) {
-    let deadline = Instant::now() + Duration::from_millis(800);
-    loop {
-        if selection(&text(&app.screen())) != before || Instant::now() >= deadline {
-            break;
-        }
-        std::thread::sleep(Duration::from_millis(20));
-    }
-}
-
 /// Where the account row `name` sits against the focus. Only panel body lines
 /// count, so the title crumb that repeats the focused name is not the row.
 fn account_place(visible: &str, name: &str) -> RowPlace {
@@ -312,14 +290,12 @@ fn hold_row(
         match place {
             RowPlace::On => {}
             RowPlace::Below => {
-                let before = selection(&visible);
                 app.key("up");
-                wait_selection_change(app, &before);
+                app.fence();
             }
             RowPlace::Above | RowPlace::Missing => {
-                let before = selection(&visible);
                 app.key("down");
-                wait_selection_change(app, &before);
+                app.fence();
             }
         }
         assert!(
