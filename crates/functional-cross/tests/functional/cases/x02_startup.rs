@@ -9,7 +9,7 @@
 use tui_test::TerminalSnapshot;
 
 use crate::support::{
-    App, Open, Point, check_stored, holla_bin, refuse, require, row_text, showcase_bin,
+    App, Open, Point, assert_frame, holla_bin, refuse, require, row_text, showcase_bin,
     tablepro_bin, text,
 };
 
@@ -169,7 +169,7 @@ fn showcase_burst() {
     refuse(&wide, CHOSEN);
     assert_eq!((wide.cols(), wide.rows()), (120, 40));
     assert!(app.child_running(), "wide frame stopped showcase");
-    check_stored(&app, &wide, WIDE_ID);
+    assert_frame(&app, &wide, WIDE_ID);
 
     app.resize(80, 24);
     let narrow = frame_with(&app, 80, 24);
@@ -177,7 +177,7 @@ fn showcase_burst() {
     require(&narrow, BRANCHES);
     refuse(&narrow, CHOSEN);
     assert_eq!((narrow.cols(), narrow.rows()), (80, 24));
-    check_stored(&app, &narrow, NARROW_ID);
+    assert_frame(&app, &narrow, NARROW_ID);
 
     app.resize(120, 40);
     let restored = frame_with(&app, 120, 40);

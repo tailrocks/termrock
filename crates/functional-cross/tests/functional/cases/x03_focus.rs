@@ -22,7 +22,7 @@
 use tui_test::{SnapshotColor, TerminalSnapshot};
 
 use crate::support::{
-    App, Point, check_stored, find_all, holla_bin, open, require, showcase_bin, tablepro_bin, text,
+    App, Point, assert_frame, find_all, holla_bin, open, require, showcase_bin, tablepro_bin, text,
 };
 
 const BAR: &str = "▎";
@@ -364,8 +364,8 @@ fn checkpoint() {
         &["--page", "dialogs"],
     );
     let (wide, narrow) = dialog(&app);
-    check_stored(&app, &wide, WIDE_ID);
-    check_stored(&app, &narrow, NARROW_ID);
+    assert_frame(&app, &wide, WIDE_ID);
+    assert_frame(&app, &narrow, NARROW_ID);
 }
 
 #[test]

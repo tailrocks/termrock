@@ -24,7 +24,7 @@ use std::time::{Duration, Instant};
 use tui_test::TerminalSnapshot;
 
 use crate::support::{
-    App, Open, check_stored, find, holla_bin, kill, require, row_containing, row_text,
+    App, Open, assert_frame, find, holla_bin, kill, require, row_containing, row_text,
     showcase_bin, tablepro_bin, text,
 };
 
@@ -288,8 +288,8 @@ fn checkpoint() {
     let _back = reveal_idle(&app, FRAME_0, false);
     assert!(app.child_running(), "status hints exited before Ctrl+Q");
     app.finish();
-    check_stored(&app, &wide, WIDE_ID);
-    check_stored(&app, &narrow, NARROW_ID);
+    assert_frame(&app, &wide, WIDE_ID);
+    assert_frame(&app, &narrow, NARROW_ID);
 }
 
 #[test]

@@ -8,10 +8,10 @@
 //! clock off, including for jackin.
 
 use tui_test::TerminalSnapshot;
-use tuiscotti_latest::check::CheckOutcome;
 
 use crate::support::{
-    App, Point, find_all, holla_bin, open, refuse, require, showcase_bin, tablepro_bin, text,
+    App, Point, find_all, frame_mismatch, holla_bin, open, refuse, require, showcase_bin,
+    tablepro_bin, text,
 };
 
 const TOO_SMALL: &str = "Terminal too small";
@@ -100,31 +100,6 @@ fn assert_ui(app: &App, cols: u16, rows: u16, marker: &str) -> TerminalSnapshot 
     screen
 }
 
-fn check_frame(app: &App, screen: &TerminalSnapshot, test_id: &str) -> Result<(), String> {
-    let root = crate::support::oracle_baselines();
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    let bytes = sample.to_bytes().expect("serialize Tuiscotti sample");
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store =
-        tuiscotti_latest::check::FrozenStore::new(&root, &artifacts).expect("open frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let CheckOutcome::Failure(failure) = outcome {
-        return Err(format!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        ));
-    }
-    Ok(())
-}
-
 fn open_quick_picker(app: &App) {
     app.wait_text("Open quickly");
     click_labeled(app, "Open quickly", |hit| hit.y > 4 && hit.x >= 24);
@@ -183,15 +158,13 @@ fn picker_checkpoint() {
     app.wait_absent(PICKER_OPEN);
     app.finish();
 
-    let narrow_check = check_frame(&app, &narrow, NARROW_ID);
-    let wide_check = check_frame(&app, &wide, WIDE_ID);
-    let mut errors = Vec::new();
-    if let Err(error) = narrow_check {
-        errors.push(error);
-    }
-    if let Err(error) = wide_check {
-        errors.push(error);
-    }
+    let errors: Vec<String> = [
+        frame_mismatch(&app, &narrow, NARROW_ID),
+        frame_mismatch(&app, &wide, WIDE_ID),
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
     assert!(errors.is_empty(), "{}", errors.join("\n"));
 }
 

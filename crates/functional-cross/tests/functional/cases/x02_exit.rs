@@ -20,7 +20,7 @@
 use tui_test::TerminalSnapshot;
 
 use crate::support::{
-    App, Open, check_stored, find_all, holla_bin, refuse, require, row_text, showcase_bin,
+    App, Open, assert_frame, find_all, holla_bin, refuse, require, row_text, showcase_bin,
     tablepro_bin, text,
 };
 
@@ -320,8 +320,8 @@ fn showcase_guard() {
 
     confirm_focused(&app, STOP_LEAVE, STAY, guard_open);
     await_exit(&app, "confirmed Stop and leave left showcase running");
-    check_stored(&app, &wide, WIDE_ID);
-    check_stored(&app, &narrow, NARROW_ID);
+    assert_frame(&app, &wide, WIDE_ID);
+    assert_frame(&app, &narrow, NARROW_ID);
 }
 
 fn tablepro_clean() {

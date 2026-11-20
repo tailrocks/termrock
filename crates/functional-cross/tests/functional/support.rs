@@ -155,42 +155,6 @@ pub fn kill(app: &App) {
     assert!(!app.child_running(), "child still running");
 }
 
-pub fn sample_bytes(screen: &TerminalSnapshot, test_id: &str) -> Vec<u8> {
-    let sample = tuiscotti_latest::sample::Sample::state(
-        test_id,
-        screen.clone(),
-        tuiscotti_latest::sample::Observation::empty(),
-    )
-    .expect("build Tuiscotti state sample");
-    sample.to_bytes().expect("serialize Tuiscotti sample")
-}
-
-/// Check a frame against its stored baseline; the error names the candidate.
-pub fn stored_result(app: &App, screen: &TerminalSnapshot, test_id: &str) -> Result<(), String> {
-    let bytes = sample_bytes(screen, test_id);
-    let root = oracle_baselines();
-    let artifacts = app.evidence_dir().join("check-artifacts");
-    let store = tuiscotti_latest::check::FrozenStore::new(&root, &artifacts)
-        .expect("open Tuiscotti frozen store");
-    let outcome = store.check(&bytes).expect("run Tuiscotti frozen check");
-    if let tuiscotti_latest::check::CheckOutcome::Failure(failure) = outcome {
-        return Err(format!(
-            "{test_id} {} sha {} path {} cells {}",
-            failure.reason(),
-            failure.candidate_sha256(),
-            failure.candidate_path().display(),
-            failure.changed_cell_total()
-        ));
-    }
-    Ok(())
-}
-
-pub fn check_stored(app: &App, screen: &TerminalSnapshot, test_id: &str) {
-    if let Err(message) = stored_result(app, screen, test_id) {
-        panic!("{message}");
-    }
-}
-
 pub const BOLD: u8 = 1;
 pub const DIM: u8 = 2;
 pub const INVERSE: u8 = 4;

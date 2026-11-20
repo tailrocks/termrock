@@ -22,7 +22,7 @@
 use tui_test::TerminalSnapshot;
 
 use crate::support::{
-    check_stored, holla_bin, kill, open, require, row_containing, showcase_bin, tablepro_bin, text,
+    assert_frame, holla_bin, kill, open, require, row_containing, showcase_bin, tablepro_bin, text,
 };
 
 const TITLE: &str = "Text areas";
@@ -438,8 +438,8 @@ fn checkpoint() {
     let _back = app.wait_screen("ascii text areas back at 120x40", wide_ascii);
     assert!(app.child_running(), "text areas exited before Ctrl+Q");
     app.finish();
-    check_stored(&app, &wide, WIDE_ID);
-    check_stored(&app, &narrow, NARROW_ID);
+    assert_frame(&app, &wide, WIDE_ID);
+    assert_frame(&app, &narrow, NARROW_ID);
 }
 
 #[test]

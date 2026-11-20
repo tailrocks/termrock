@@ -5,13 +5,10 @@
 //! report, captures 120×40, resizes to 80×24, captures that frame, then
 //! resizes back. `Launch::new` leaves the clock off, including for jackin.
 
-use std::thread;
-use std::time::{Duration, Instant};
-
 use tui_test::TerminalSnapshot;
 
 use crate::support::{
-    App, Point, check_stored, find_all, holla_bin, open, refuse, require, row_text, showcase_bin,
+    App, Point, assert_frame, find_all, holla_bin, open, refuse, require, row_text, showcase_bin,
     tablepro_bin, text,
 };
 
@@ -44,13 +41,7 @@ fn click_one(app: &App, label: &str, keep: impl Fn(&TerminalSnapshot, Point) -> 
 
 fn ctrl_c_exits(app: &App) {
     app.key("ctrl+c");
-    let deadline = Instant::now() + Duration::from_secs(3);
-    while app.child_running() && Instant::now() < deadline {
-        thread::sleep(Duration::from_millis(25));
-    }
-    if app.child_running() {
-        panic!("ctrl+c left the process running\n{}", text(&app.screen()));
-    }
+    app.wait_exit("ctrl+c left the process running");
     app.expect_exited(0);
 }
 
@@ -217,14 +208,14 @@ fn checkpoints() {
     require(&wide, REPORT);
     require(&wide, "Copy report");
     refuse(&wide, "Not copied");
-    check_stored(&app, &wide, WIDE_ID);
+    assert_frame(&app, &wide, WIDE_ID);
 
     app.resize(80, 24);
     let narrow = frame_with(&app, REPORT, 80, 24);
     require(&narrow, REPORT);
     refuse(&narrow, "Not copied");
     assert_eq!((narrow.cols(), narrow.rows()), (80, 24));
-    check_stored(&app, &narrow, NARROW_ID);
+    assert_frame(&app, &narrow, NARROW_ID);
 
     app.resize(120, 40);
     let restored = frame_with(&app, REPORT, 120, 40);

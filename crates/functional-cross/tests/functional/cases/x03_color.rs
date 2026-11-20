@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 use tui_test::{SnapshotColor, TerminalSnapshot};
 
 use crate::support::{
-    App, BOLD, DIM, INVERSE, Open, Point, UNDER, check_stored, find_all, holla_bin, mods_at,
+    App, BOLD, DIM, INVERSE, Open, Point, UNDER, assert_frame, find_all, holla_bin, mods_at,
     require, rgb_cells, showcase_bin, tablepro_bin, text,
 };
 
@@ -399,8 +399,8 @@ fn checkpoint() {
     require(&restored, RUN);
     assert!(app.child_running(), "the resize quit showcase");
     app.finish();
-    check_stored(&app, &wide, WIDE_ID);
-    check_stored(&app, &narrow, NARROW_ID);
+    assert_frame(&app, &wide, WIDE_ID);
+    assert_frame(&app, &narrow, NARROW_ID);
 }
 
 #[test]
