@@ -990,6 +990,7 @@ dependencies = [
  "termrock-catalog",
  "termrock-cli",
  "termrock-collections",
+ "termrock-conformance",
  "termrock-controls",
  "termrock-core",
  "termrock-dialogs",
@@ -2207,6 +2208,33 @@ dependencies = [
  "termrock-text",
  "termrock-theme",
  "termrock-viewport",
+]
+
+[[package]]
+name = "termrock-conformance"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "serde_json",
+ "syn 3.0.10",
+ "termrock-collections",
+ "termrock-controls",
+ "termrock-core",
+ "termrock-editors",
+ "termrock-feedback",
+ "termrock-fields",
+ "termrock-grid",
+ "termrock-layout",
+ "termrock-metrics",
+ "termrock-navigation",
+ "termrock-overlays",
+ "termrock-runtime",
+ "termrock-shell",
+ "termrock-terminal",
+ "termrock-text",
+ "termrock-theme",
+ "termrock-viewport",
+ "toml 1.2.1+spec-1.1.0",
 ]
 
 [[package]]

@@ -6,7 +6,7 @@
 //! Every number below was measured with
 //!
 //! ```text
-//! cargo nextest run -p junie-tui --features work-metrics --test regressions \
+//! cargo nextest run -p termrock-conformance --features work-metrics --test regressions \
 //!     --no-tests fail -E 'test(/^work_budgets::/)'
 //! ```
 //!
@@ -18,31 +18,31 @@
 
 use std::ops::Range;
 
-use junie_tui::core::event::Key;
-use junie_tui::core::focus::FocusRing;
-use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::{ItemKey, WidgetId};
-use junie_tui::metrics::harness::assert_exact;
-use junie_tui::metrics::report::ScenarioReport;
-use junie_tui::metrics::{Metric, WorkDelta, measure};
-use junie_tui::theme::SyntaxTone;
-use junie_tui::theme::{ColorLevel, Theme};
-use junie_tui::ui::ctx::{Interaction, RenderCtx};
-use junie_tui::ui::scroll_view::ScrollView;
-use junie_tui::widgets::code::CodeEditor;
-use junie_tui::widgets::completion::Completion;
-use junie_tui::widgets::list::{ListBox, ListItem, SelectMode};
-use junie_tui::widgets::option_list::Item;
-use junie_tui::widgets::picker::Picker;
-use junie_tui::widgets::select::Select;
-use junie_tui::widgets::table::{Cell, Column, DataTable};
-use junie_tui::widgets::textarea::TextArea;
-use junie_tui::widgets::tree::{TreeNode, TreeView};
-use junie_tui::widgets::viewport::{Line, Span, TextViewport};
-use junie_tui::widgets::viewport_ops::ViewportOps;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::layout::{Constraint, Rect, Size};
+use termrock_collections::list::{ListBox, ListItem, SelectMode};
+use termrock_collections::tree::{TreeNode, TreeView};
+use termrock_conformance::harness::assert_exact;
+use termrock_conformance::report::ScenarioReport;
+use termrock_core::event::Key;
+use termrock_core::focus::FocusRing;
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::{ItemKey, WidgetId};
+use termrock_editors::code::CodeEditor;
+use termrock_editors::textarea::TextArea;
+use termrock_fields::select::Select;
+use termrock_grid::table::{Cell, Column, DataTable};
+use termrock_metrics::{Metric, WorkDelta, measure};
+use termrock_overlays::completion::Completion;
+use termrock_overlays::option_list::Item;
+use termrock_overlays::picker::Picker;
+use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_theme::SyntaxTone;
+use termrock_theme::{ColorLevel, Theme};
+use termrock_viewport::scroll_view::ScrollView;
+use termrock_viewport::viewport::{Line, Span, TextViewport};
+use termrock_viewport::viewport_ops::ViewportOps;
 
 mod scroll_panel;
 mod terminal;
@@ -1061,7 +1061,7 @@ fn work_contract_textarea_prepared_frame() {
 
 #[test]
 fn work_report_is_count_only_json_with_every_metric() {
-    let work = measure(|| junie_tui::record_work!(SegmentedLines, 3usize)).1;
+    let work = measure(|| termrock_metrics::record_work!(SegmentedLines, 3usize)).1;
     let report = ScenarioReport {
         scenario: "report_shape",
         operation: "one_count",
@@ -1075,7 +1075,7 @@ fn work_report_is_count_only_json_with_every_metric() {
     assert_eq!(parsed["schema_version"], 1);
     assert_eq!(
         parsed["schema_version"],
-        junie_tui::metrics::report::SCHEMA_VERSION,
+        termrock_conformance::report::SCHEMA_VERSION,
         "the JSON states the schema version the crate exports"
     );
     assert_eq!(parsed["instrumentation_enabled"], true);

@@ -88,7 +88,7 @@ is 0 at any cursor position. Other key scans (`Picker` `retain`, `TreeView`,
 
 ## Budgets
 
-Library budgets live in `tests/regressions/work_budgets.rs`. Each test builds a
+Library budgets live in `crates/termrock-conformance/tests/regressions/work_budgets.rs`. Each test builds a
 fixture at 1,000, 10,000 and 100,000 seeded rows or lines (60,000 for
 `ScrollView`, whose extent is `u16`) in a fixed 100x30 viewport, warms it,
 performs one operation and checks the delta. App scenarios live beside their
@@ -96,8 +96,8 @@ apps:
 
 | Test | File |
 | --- | --- |
-| `work_contract_scroll_panel_flat_measures_once_and_appends_incrementally`, `work_contract_scroll_panel_wrapped_builds_once_per_content_change` | `tests/regressions/work_budgets/scroll_panel.rs` |
-| `work_contract_terminal_prepared_paint`, `work_contract_terminal_feed_and_copy_units` | `tests/regressions/work_budgets/terminal.rs` |
+| `work_contract_scroll_panel_flat_measures_once_and_appends_incrementally`, `work_contract_scroll_panel_wrapped_builds_once_per_content_change` | `crates/termrock-conformance/tests/regressions/work_budgets/scroll_panel.rs` |
+| `work_contract_terminal_prepared_paint`, `work_contract_terminal_feed_and_copy_units` | `crates/termrock-conformance/tests/regressions/work_budgets/terminal.rs` |
 | `work_contract_runtime_raw_filtered_events_yield`, `work_contract_runtime_flood_services_input`, `work_contract_runtime_frame_diff_and_bytes_written` | `crates/termrock-shell/src/runtime/raw_input_tests/work.rs` (lib unit tests of `termrock-shell`: they drive the private `scan_next`, `service_turn`, `drain_ready_inputs` and `paint`) |
 | `work_contract_jackin_scripted_output_budget` | `apps/jackin/src/sim/link/tests/work.rs` (lib unit test over the real `SimLink` and `TerminalPane`) |
 | `work_contract_holla_idle_and_source_update`, `work_contract_holla_background_updates_keep_projection`, `work_contract_holla_file_preview_prefix` | `apps/holla/src/work_metrics_tests.rs` |
@@ -110,7 +110,7 @@ equal its measured count and every unlisted metric must be zero. A ceiling
 cannot tell a deleted counter from cheap work, so an exact count is the default
 for a measured fact, and a counter that stops recording fails its test. The
 `Picker`, `Select`, `Completion`, `CodeEditor` and `TextArea` tests in
-`tests/regressions/work_budgets.rs`, and every test in the rows above that
+`work_budgets.rs`, and every test in the rows above that
 covers `ScrollPanel`, terminal, runtime or transport work, use `assert_exact`
 too. The older viewport,
 list, table, tree and scroll tests there use ceilings
@@ -118,8 +118,10 @@ list, table, tree and scroll tests there use ceilings
 today's behaviour of an unfixed path says so beside it. Lowering it when the
 owning issue lands is the intended change.
 
-The app tests share `junie_tui::metrics::harness::Harness`, which drives an
-`Application` through its real input and render path and writes the report.
+The app tests share `termrock::metrics::harness::Harness` (defined in
+`termrock-conformance` and re-exported by the facade under `work-metrics`), which
+drives an `Application` through its real input and render path and writes the
+report.
 
 ### Measured counts
 
@@ -215,8 +217,9 @@ list, table, grid and tree widget in the frame.
   to the screen is bounded by the window.
 - Drawing a `TextViewport` through a shared reference after a change, without
   preparing it first, clones the whole history.
-- Keyed collections (#41) are measured by `widgets::keyed_cost_tests` and
-  `widgets::search_detail_cost_tests` with the metrics above, in the
+- Keyed collections (#41) are measured by `keyed_cost::` and
+  `search_detail_cost::` (the `termrock-conformance::regressions` target, in
+  `crates/termrock-conformance/tests/regressions/`) with the metrics above, in the
   `performance` profile. A `KeyedState` whose `SourceStamp` is unchanged
   enumerates 0 source rows; a data revision enumerates the authoritative and the
   visible rows once each (1,000 for a 500-row store). `Picker` indexes n items
@@ -349,9 +352,10 @@ gate below. The profile is `[profile.performance]` in `.config/nextest.toml`.
 It needs `--all-features` because the counters compile away without
 `work-metrics`; without it the budgets would not run at all.
 
-`tests/regressions/performance_inventory.rs` (the `performance_inventory`
-module of the shared `regressions` target) is the required-suite gate. It reads
-the inventory from `tests/regressions/performance-inventory.tsv`, which lists each required suite with its nextest binary, the filter that selects it,
+`crates/termrock-conformance/tests/regressions/performance_inventory.rs` (the
+`performance_inventory` module of the shared `regressions` target of
+`termrock-conformance`) is the required-suite gate. It reads
+the inventory from `crates/termrock-conformance/tests/regressions/performance-inventory.tsv`, which lists each required suite with its nextest binary, the filter that selects it,
 its source file and the tests it must hold, and fails when
 
 - nextest does not list a required test, lists it `#[ignore]`d, or the profile
@@ -420,8 +424,8 @@ suite needs no edit while the operand still selects it. A new suite needs an
 inventory entry and an operand together. `gate_logic::*` runs the same checks
 on synthetic input, including a removed suite and a narrowed matcher.
 
-Both measurement files live in the shared `regressions` target
-(`tests/regressions/work_measurements.rs`, `performance_inventory.rs`), as
+Both measurement files live in the shared `regressions` target of
+`termrock-conformance` (`work_measurements.rs`, `performance_inventory.rs`), as
 `docs/ci.md` prescribes, so the generated workflows list no new test target.
 
 `[profile.performance-measure]` selects the ignored timing tests and sets
@@ -457,7 +461,7 @@ enabled until repeatable baselines exist.
 
 ## Release measurements
 
-`scripts/measure-performance.sh` is the procedure. It builds `tests/regressions/work_measurements.rs`
+`scripts/measure-performance.sh` is the procedure. It builds `crates/termrock-conformance/tests/regressions/work_measurements.rs`
 in the release profile without `work-metrics`, runs the ignored tests one at a
 time through `performance-measure`, and prints a summary table of the reports
 with the commit, machine, CPU, compiler and the load average before and after.
@@ -525,14 +529,14 @@ reading, none is estimated, and a family with no timing scenario shows none.
 ## Commands
 
 ```sh
-cargo nextest run -p junie-tui --features work-metrics --test regressions \
+cargo nextest run -p termrock-conformance --features work-metrics --test regressions \
     --no-tests fail -E 'test(/^work_budgets::/)'
 cargo nextest run -p termrock-holla -p termrock-tablepro -p termrock-showcase \
     --features work-metrics --bins --no-tests fail -E 'test(/^work_metrics_tests::/)'
 cargo nextest run -p jackin-console --features demo,work-metrics --test regressions \
     --no-tests fail -E 'test(/^work_budgets::/)'
-cargo nextest run -p junie-tui --features work-metrics --lib --no-tests fail \
-    -E 'test(/metrics/) | test(/work_contract_/)'
+cargo nextest run -p termrock-conformance --features work-metrics --no-tests fail \
+    -E 'test(/^metrics_tests::/) | test(/^overflow_work::/) | test(/^keyed_cost::/) | test(/^search_detail_cost::/)'
 cargo nextest run -p termrock-shell --features work-metrics --lib --no-tests fail \
     -E 'test(/work_contract_/)'
 cargo nextest run -p jackin-console --features demo,work-metrics --lib --no-tests fail \
@@ -543,7 +547,7 @@ scripts/performance-report.sh
 ```
 
 CI builds the Rust jobs with `--all-features`, so these tests already run in
-the `Rust / junie-tui`, `Rust / termrock-shell`, `Rust / jackin-console` and `Rust / termrock-holla`,
+the `Rust / termrock-conformance`, `Rust / termrock-shell`, `Rust / jackin-console` and `Rust / termrock-holla`,
 `-tablepro` and `-showcase` jobs. The product
 shape builds without `work-metrics`, where the tests compile away and
 `metrics_disabled_does_not_evaluate_arguments` runs instead.

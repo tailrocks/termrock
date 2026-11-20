@@ -7,7 +7,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use super::{ENABLED, Metric, WorkDelta};
+use termrock_metrics::{ENABLED, Metric, WorkDelta};
 
 pub const SCHEMA_VERSION: u32 = 1;
 

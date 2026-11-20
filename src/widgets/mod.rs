@@ -1,10 +1,3 @@
-#[cfg(all(test, feature = "work-metrics"))]
-mod keyed_cost_tests;
-// Drives a `Select` and a `TextInput`, so it sits above the collections crate; #449 moves it to `termrock-conformance`.
-#[cfg(all(test, feature = "work-metrics"))]
-#[path = "search_detail/cost_tests.rs"]
-mod search_detail_cost_tests;
-
 // Transitional: the line-edit fields live in `termrock-core` (#444); #452 removes this.
 pub use termrock_collections::{detail_card, list, list_detail, props, search_detail, tree};
 pub use termrock_controls::{

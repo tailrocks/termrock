@@ -8,11 +8,11 @@
 //! `TerminalBytesFed` counts the bytes handed to its `feed`.
 
 use super::*;
-use junie_tui::terminal::{TerminalState, TerminalView, TerminalViewport};
 use ratatui::crossterm::event::KeyModifiers;
 use ratatui::layout::Position;
 use ratatui::style::Color;
 use ratatui::widgets::Widget;
+use termrock_terminal::{TerminalState, TerminalView, TerminalViewport};
 
 const ROWS: u64 = 30;
 const CHUNK_LINES: usize = 100;

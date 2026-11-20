@@ -1323,3 +1323,148 @@ the run loop"). Nothing about the blanket impl changed.
 - **`x02_suspend.rs`.** Its header named `src/runtime.rs` for job control; it
   now names `crates/termrock-session/src/runtime.rs` (where `job_control` is) and
   the loop's new file.
+
+## 2026-11-19: `termrock-conformance` holds the harness and report (#449)
+
+`termrock-conformance` is the second half of #449. This part moves
+`metrics/harness.rs`, `metrics/report.rs` and `metrics/tests.rs`; the cross-crate
+regression tests follow in the next part. The crate is `crates/termrock-conformance`
+with `harness`, `report` and a `#[cfg(test)] mod metrics_tests` (the old
+`metrics/tests.rs`), all under `work-metrics`. `Harness<A: Application>` needs
+`termrock-shell`, so it cannot sit with the counters in `termrock-metrics`.
+
+- **The facade keeps its spelling.** `src/metrics.rs` is now
+  `#[cfg(feature = "work-metrics")] pub use termrock_conformance::{harness, report};`
+  beside the `termrock_metrics` re-exports, so `termrock::metrics::harness::*`
+  and `termrock::metrics::report::*` resolve as before and every API id is
+  unchanged. `junie-tui` declares the dependency as optional and enables it from
+  `work-metrics` (`dep:termrock-conformance`, `termrock-conformance/work-metrics`);
+  no library crate depends on `termrock-conformance`, and `termrock` reaches it
+  only through `junie-tui`'s `work-metrics`. `docs/layering.toml` gains
+  `conformance` in the `junie-tui` row of `[allow]`: `junie-tui` is the
+  transitional implementation of the facade, whose row already lists it, and
+  #452 deletes the row with the package. `src/metrics.rs` moves from `conformance`
+  to `termrock` in `[files]`, because it only re-exports now.
+- **Dependencies.** Normal: `ratatui`, `termrock-core`, `termrock-metrics` and
+  `termrock-shell`, which is all the harness names. No other library crate is a
+  normal dependency; the regression tests that follow add the rest as
+  dev-dependencies. `work-metrics` forwards to the three that declare it (the
+  forwarding guard of stage B).
+- **No allocation counter.** As decided in #447 the counter is a `#[cfg(test)]`
+  module of `termrock-editors`, so `termrock-conformance` has no allocator and no
+  `alloc_budgets.rs`. Never install a `#[global_allocator]` in this crate's
+  shared `regressions` target.
+- **The performance profile.** The counter-core operand is
+  `binary_id(=termrock-conformance) & test(/^metrics_tests::/)`; the inventory row
+  and its six `T` lines follow, and the source file is
+  `crates/termrock-conformance/src/metrics_tests.rs`. Same 19 tests; only the
+  binary id and the module prefix changed.
+- **Coverage strings.** Ten `regression_test:` strings of
+  `apps/showcase/src/coverage.rs` (the `metrics::harness`, `metrics::measure`,
+  `metrics::reset`, `metrics::snapshot` and `metrics::suspended` exceptions) named
+  `src/metrics/tests.rs`; `scripts/rewrite-regression-paths.py` rewrote them.
+- **Tests.** The unit tests implement `Application` for local types
+  (`LabelApp`, `CountingApp`), which stays legal; never add `impl App for` them
+  (the blanket impl of `termrock-shell` would then overlap).
+
+## 2026-11-19: the cross-crate cost and intrinsic tests move to `termrock-conformance::regressions` (#449)
+
+Seven test files of `junie-tui` moved to `crates/termrock-conformance/tests/regressions/`
+with `git mv`, as modules of one shared `regressions` target:
+`ui/intrinsic_tests.rs` is `intrinsic.rs`, `ui/intrinsic_wide_tests.rs` is
+`intrinsic_wide.rs`, `ui/overflow_parity_tests.rs` is `overflow_parity.rs`,
+`ui/overflow_work_tests.rs` is `overflow_work.rs`,
+`ui/scroll_view/window_tests.rs` is `scroll_view_window.rs`,
+`widgets/keyed_cost_tests.rs` is `keyed_cost.rs` and
+`widgets/search_detail/cost_tests.rs` is `search_detail_cost.rs`. The three that
+count work (`overflow_work`, `keyed_cost`, `search_detail_cost`) are
+`#[cfg(feature = "work-metrics")]`, as their `mod` lines were.
+
+- **No hidden items.** Every item the files use from another crate was already
+  `pub`, so nothing became `#[doc(hidden)] pub` and `doc-hidden-items.txt` is
+  unchanged. The `crate::...` paths of the facade became the owner crate's own path
+  (`crate::widgets::select` is `termrock_fields::select`, `crate::ui::ctx` is
+  `termrock_runtime::ctx`, and so on); no file reaches the facade, so
+  `termrock-conformance` does not depend on `junie-tui` or `termrock`, which
+  would close a cycle with the facade's `work-metrics` edge.
+  `overflow_parity.rs` writes `termrock_metrics::record_work!`; the macro was
+  already at the root of `termrock-metrics`.
+- **Dev-dependencies.** The regression target needs the component crates
+  (`collections`, `controls`, `feedback`, `fields`, `layout`, `navigation`,
+  `overlays`, `runtime`, `text`, `theme`, `viewport`), all of which `conformance`
+  may depend on in `docs/layering.toml`. They are dev-dependencies, so the
+  library of `termrock-conformance` still holds only the harness and the report.
+  The crate's `work-metrics` forwards to every one of them that declares the
+  feature, so `cargo nextest run -p termrock-conformance --all-features` (the
+  generated `Rust / termrock-conformance` job) counts work in all of them
+  without relying on workspace feature unification.
+- **The performance profile.** The three operands are now
+  `binary_id(=termrock-conformance::regressions) & test(/^overflow_work::/)`,
+  `... & test(/^keyed_cost::/)` and `... & test(/^search_detail_cost::/)`; the
+  inventory rows and their `T` lines carry the module names without the old
+  `ui::` and `widgets::` prefixes and the new source paths. The same 16 tests
+  run. Together with the metrics rows of the previous part, `cargo nextest list
+  --profile performance` selects the same 168 tests; only their binary ids and
+  module prefixes changed.
+- **Coverage strings.** Three `regression_test:` strings of
+  `apps/showcase/src/coverage.rs` (the `ScrollView` window helpers) named
+  `src/ui/scroll_view/window_tests.rs`; `scripts/rewrite-regression-paths.py`
+  rewrote them.
+- **No allocator.** The shared target installs no `#[global_allocator]`; these tests
+  assert counted work, not bytes (see the #447 decision).
+
+## 2026-11-19: the #56 gate, the budgets and the default-branch guard move to `termrock-conformance` (#449)
+
+The root tests that #450 mapped to `conformance` ("450-g") move here, with the
+rest of the crate they belong to, so the #56 gate runs from one crate:
+`tests/regressions/{performance_inventory,work_budgets,work_measurements}.rs`,
+`work_budgets/{scroll_panel,terminal}.rs`, `performance-inventory.tsv` and
+`tests/ci_default_branch.rs` are now modules of
+`crates/termrock-conformance/tests/regressions/` (`ci_default_branch` stops being
+a top-level target of `junie-tui`, so the generated workflows lose one test
+target). Every file is `git mv`'d; `work_budgets*.rs` and `work_measurements.rs`
+name the owner crates instead of `junie_tui::`.
+
+- **`performance_inventory.rs` is parametrised by one constant each.** Its
+  `root()` is the third ancestor of `CARGO_MANIFEST_DIR` (the crate sits two
+  levels below the repository), `INVENTORY_FILE` and `MEASUREMENT_FILE` name the
+  files in the crate, and the `performance-measure` profile check, which hardcoded
+  `binary_id(=junie-tui::regressions)`, now names
+  `binary_id(=termrock-conformance::regressions)`. The synthetic cases of
+  `gate_logic` follow: the stale-job case removes `rust-termrock-conformance`
+  from the workflow, and the "filter does not select" case edits the
+  `termrock-conformance::regressions` binary.
+- **The inventory.** Every `junie-tui::regressions` row (the library budgets, the
+  two `ScrollPanel` and terminal budget files, the measurement-sampling check and
+  this gate) is `termrock-conformance::regressions` now, and the source column
+  points into the crate. The `T` lines keep their names, so no required test
+  changed. `junie-tui` no longer owns a required test, so
+  `performance_contracts_run_in_required_all_features_ci_jobs` no longer demands
+  `rust-junie-tui`; it demands `rust-termrock-conformance`, which the generator
+  produces (`nextest run --profile ci --package termrock-conformance
+  --all-features`) and `Required` waits for. Under that job the contracts run with
+  the counters on, because the crate's `work-metrics` forwards to every library
+  crate the tests drive.
+- **The nextest profiles.** Every `binary_id(=junie-tui::regressions)` operand of
+  `[profile.performance]`, and the filter of `[profile.performance-measure]`, name
+  `termrock-conformance::regressions`. `cargo nextest list --profile performance
+  --workspace --all-features` selects the same 168 tests as the base of this
+  stack; the set differs only in the binary ids and in the module prefixes of the
+  tests that moved in the two earlier parts of #449.
+- **Coverage strings.** Five `regression_test:` strings of
+  `apps/showcase/src/coverage.rs` (the `metrics::report::*` exceptions) named
+  `tests/regressions/work_budgets.rs`; `scripts/rewrite-regression-paths.py`
+  rewrote them, and `catalog_` is green.
+- **Terminal budgets.** `work_budgets/terminal.rs` drives `termrock-terminal`,
+  which is a dev-dependency here without a feature gate: it is a library crate
+  like the others and the facade's `terminal` feature has no role in this crate.
+- **Timing reports.** `work_measurements.rs` falls back to
+  `<workspace>/target` when `CARGO_TARGET_DIR` is unset (the crate is two levels
+  down), and `scripts/measure-performance.sh` runs `-p termrock-conformance --test
+  regressions`. `docs/performance-contracts.md`, `docs/ci.md`,
+  `docs/functional-testing.md` and `docs/dependencies.md` carry the new paths and
+  commands.
+- **Dev-dependencies.** `serde_json`, `syn` and `toml` (the gate reads the nextest
+  config, the generated manifest and `.velnor/config.toml`) are dev-dependencies
+  of the crate at the pins `junie-tui` used; `junie-tui` keeps `syn` and `toml` for
+  `layering`.
