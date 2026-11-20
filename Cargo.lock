@@ -2139,6 +2139,7 @@ name = "termrock"
 version = "0.1.0"
 dependencies = [
  "ratatui",
+ "syn 3.0.10",
  "termrock-catalog",
  "termrock-cli",
  "termrock-collections",

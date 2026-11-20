@@ -160,7 +160,7 @@ state. The tests of the library's own types live in the library's root
 `tests/` directory instead: `fixed.rs` and `reason.rs` (the fixed
 control state and the reason widths, rendered into a test buffer and
 driven with keys and clicks), `shell.rs` (the refusal slot and the
-redraw rule, through a minimal `shell::App` in `tests/common/mod.rs`)
+redraw rule, through a minimal `shell::App` in `crates/termrock/tests/regressions/common/mod.rs`)
 and `status.rs` (the sticky status line). No test of a `junie-tui` type
 lives in `apps/jackin/tests`. These tests add no visual baseline and are
 not journeys: a user-visible flow still needs a functional journey.
