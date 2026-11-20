@@ -182,6 +182,10 @@ quote. Pinned by `issue181_every_postgres_reserved_word_is_quoted_in_filter_sql`
 
 ## 2026-11-18: The performance CI suite and app-page timing (#56)
 
+> Superseded for CI shape by 2026-11-20 (velnor-gen): the `performance` suite
+> is now the all-features test lane. The reasoning below about the generator
+> giving a suite no feature field describes velnor-actions.
+
 Context: the #56 audit found no `performance` suite in `.velnor/config.toml`
 and no timing scenario for an app page or for `CodeEditor` and `TextArea`.
 The suite is now declared (id `performance`, profile `performance`, four
@@ -1529,3 +1533,158 @@ Rejected: removing `junie-tui` now (it breaks both git consumers at their next b
 requests that do not exist); keeping the package at the root next to a virtual manifest (impossible, a
 virtual manifest has no package); a `[patch]` or `package =` alias in the facade (a second name for one
 crate); `#[deprecated]` on the shim (see above).
+## 2026-11-20: CI moves from velnor-actions to velnor-gen; Rust moves to 1.100.0
+
+Context: Rust 1.100.0 (Renovate PR #484) was held because velnor-actions
+generated the CI and qualified Rust only up to 1.99.1. velnor-actions is
+end-of-life (0.1.81 is its last release; tailrocks/velnor-new#1625 was closed
+as obsolete). velnor-gen (tag `tools-v0.1.106`, helper `velnor-ci` 0.1.106)
+supports 1.100.0. The owner decided that this repository moves to it.
+
+Decision: `.velnor/config.toml`, `.velnor/release-manifest.json`, the four
+velnor-actions workflows (`ci.yml`, `state-seal.yml`, `suites.yml`,
+`cache-prune.yml`), `.github/actions/`, `.github/scripts/`, `.github/velnor/`
+and `.github/AGENTS.md` are removed. `.velnor/rust-ci.toml`,
+`.velnor/rust-ci.lock`, `.velnor/rust-metadata.json` and
+`.github/workflows/rust-ci.yml` replace them. The Renovate
+`allowedVersions: "<1.100.0"` cap is gone and `rust-toolchain.toml` and
+`mise.toml` pin 1.100.0. The crate `rust-version` stays `1.99`: it is the
+MSRV, and raising it was not asked for. Rust 1.100.0 raised two new
+findings, both fixed rather than allowed: clippy `needless_bool` in
+`s03_columns.rs` (the guard now returns its condition), and cargo's new
+`cargo::unused_dependencies` lint, which flagged a `sha2` dev-dependency in
+`apps/holla`, `apps/showcase` and `apps/tablepro` that no code uses (removed,
+`Cargo.lock` follows).
+
+### What changed in the shape of CI
+
+The job-by-job mapping is in [CI](ci.md). Points that change behaviour:
+
+- One job set per Cargo root (five roots), not one per crate, and no `product`
+  configuration. velnor-gen has no `--no-default-features`. The apps declare
+  `default = []`, so their default build is the product shape; the library
+  shapes without default features are built by the four consumer roots. The
+  junie-tui shape `terminal` without `cli` has no direct job any more except
+  through `termrock-consumer-terminal` and `termrock-consumer-jackin-host`.
+- `--all-features` is a hand-listed `[[test_lane]]` (`cli`, `demo`, `product`,
+  `terminal`, `test-support`, `work-metrics`). A crate that adds a feature must
+  add it to the list.
+- The functional suite is four `[[test_groups]]` (`functional-cases-a`, `-b`,
+  `-c`, `-apps`) of 317 to 384 tests each, disjoint by construction (checked
+  here against `cargo nextest list`: union 1,371 = every `binary(functional)`
+  test, no overlap, and `velnor-ci test-groups check` repeats the overlap check
+  in CI). They replace four hash partitions with the same eight test threads;
+  the limit is 30 minutes per group instead of 15. There is no `functional`
+  nextest profile, no failure-evidence artifact upload (`target/functional`,
+  `target/nextest/functional`, 14 days), and the group step passes
+  `--no-tests=pass` instead of `--no-tests fail`, so a vanished `functional`
+  binary no longer fails by itself. `scripts/check-refactor-coverage.py` and
+  the coverage inventory still pin the cases. All reported upstream.
+- The performance suite is the all-features lane (it runs every test except
+  the `functional` binaries, which have their groups). The old `suite-performance`
+  built default features, so the counter-gated contracts compiled out of it and
+  ran in the per-crate all-features jobs (decision of 2026-11-18, "Decision 1").
+  They still run in an all-features job, now the lane. The inventory proof (the
+  nested `cargo nextest list --profile performance --all-features`) used to run
+  only under `--profile performance`; generated CI always runs `--profile ci`,
+  so it now also runs under `ci` when `work-metrics` is compiled in, which is
+  the lane. Verified locally with the lane's feature list: 24 inventory tests
+  pass, the nested list included (8 s). The lane's `not binary(functional)`
+  filter satisfies `velnor-ci lane-guard`: of the 82 tests that exist only with
+  the lane's features, none is in a `functional` binary.
+- `suites.yml` (`workflow_dispatch` with `suite` and `tier` inputs) is gone. The
+  generated workflow has a plain `workflow_dispatch` that runs everything.
+- `state-seal.yml` (the compiled-state producer and seal) has no equivalent
+  workflow. The default-branch runs of `rust-ci.yml` save the Tools, Sources and
+  Target caches instead. That save is refused while `Cargo.lock` holds a git
+  source (`termpane`, `tuiscotti`, both public), so until velnor-new makes
+  public git sources cacheable (announced for `tools-v0.1.108`) every run is
+  cold. `timeout_minutes` is 45 (default 30) for that reason; lower it after
+  `0.1.108`. `cache-prune.yml` is
+  replaced by the `rust-trim` job.
+- The `Required` check keeps its name. A ruleset needs no edit.
+
+### Contracts of the removed tests and scripts
+
+| Removed or changed | Contract | Disposition |
+| --- | --- | --- |
+| `tests/ci_default_branch.rs` (`[workflow].default_branch` of `config.toml`) | The configured default branch is `main` and has a sane TOML shape | Kept, rewritten for the top-level `default_branch` of `rust-ci.toml` (absent means `main`). New: the generated workflow pushes only that branch. Dropped: the `[workflow]` table-shape cases, which no longer exist |
+| `performance_inventory.rs`: `performance_suite_is_a_required_generated_ci_job` | The suite is declared, required, four partitions, three triggers, job generated and awaited by `Required` | Replaced by `performance_contracts_run_in_a_required_all_features_ci_lane`: the lane exists in `rust-ci.toml`, is unfiltered, and `Required` waits for the job that runs it. Dropped: partitions (not expressible) and the triggers (the workflow always runs on pull request, push and dispatch) |
+| `performance_inventory.rs`: `performance_contracts_run_in_required_all_features_ci_jobs` | Each package that owns a required test has a generated `--all-features` task and a `rust-<package>` job that `Required` waits for | Replaced by the same lane test. Dropped: the per-package job, which velnor-gen does not generate |
+| `scripts/check-generated-workflows.sh` and the installer, config, seed and mise/Python inventory | See the guard decision below | Replaced |
+| `scripts/policy/check-generated-workflows.sh` regression matrix, `check-installed-generated-workflow-guard.sh`, install-recovery, mutants, auth checker, Python inventory and seed-fixture tests | The guard's own behaviour | Dropped with the guard; they tested code that no longer exists |
+| `scripts/validate-snapshot-blob-sizes.py`, `snapshot-large-blob-allowlist.tsv`, `test_snapshot_blob_sizes.py` | Bounded blob size in the guard's snapshot, with the reference binaries allowlisted | Dropped: a resource bound for the snapshot reader, not a repository policy. Nothing else reads the allowlist |
+| `scripts/materialize-git-tree.py`, `test_materialize_git_tree.py` | Hardened snapshot materialization | Dropped: no snapshot is materialized |
+| Decision 2026-11-19 (#505) snapshot cap 16384 and the unfixed jactionlint tuple mismatch | Local `pre-commit` failed on main | Obsolete: the failure source is removed |
+| `scripts/generate-execution-ledger.py` | Names `.velnor/config.toml` and `velnor_actions` in recorded task data | Unchanged: it regenerates a historical ledger, and those are facts about the run it records |
+| `docs/testing/cases/*.json`, `docs/testing/known-gaps.md`, acceptance receipts, `docs/P9.3-red-green.md` | Mention velnor-actions | Unchanged: dated evidence, not live instructions |
+
+### The generated-workflow guard
+
+The old guard (issue #509 and its trusted seed) was a 20,000-line subsystem
+whose only job was to prove that the committed workflow files equal what
+velnor-actions generates from the staged tree, using a checker, a generator
+pin, Mise and Python copied out of the checkout into Git metadata so that the
+branch under test could not replace them. It is bound to velnor-actions end to
+end (the seed is a velnor-actions tree, the support-policy table lists
+velnor-actions tuples, the comparison runs `velnor-actions generate`), and it
+cannot run on velnor-gen. It is replaced, not ported, by three smaller checks:
+
+1. `velnor-gen check` in the hk `pre-commit` and `pre-push` hooks (`hk.pkl`).
+2. The same command in CI as the `lint-generated-workflows` job, a `[[lint]]`
+   `mise-task` that `Required` waits for. Before, the equivalent was the Plan
+   job's "files differ" failure; the old guard docs already said the CI check
+   establishes reproducibility and does not authorize a change.
+3. `velnor-ci check-metadata` in every Rust job, which fails when
+   `.velnor/rust-metadata.json` differs from `cargo metadata`.
+
+Why this is enough:
+
+- The guard's value was local feedback plus a reproducibility proof. Both
+  survive: the hook gives the feedback, the CI job gives the proof server-side
+  where a bypassed hook cannot hide it. Hook-only enforcement would be a
+  regression, so CI is the part that matters.
+- The trust-anchor design (a checker outside the checkout) defended against a
+  branch that changes its own generator. In CI that defence never held, since a
+  pull request edits its own workflow file. Locally the hook is a convenience
+  and was documented as bypassable. The remaining anchor is smaller and
+  reviewable: `.velnor/rust-ci.lock` holds the digest of every helper asset,
+  and the generator and helper versions are visible lines in `mise.toml` and
+  the lock. Server-side authorization is still the open owner action: a ruleset
+  that requires a trusted workflow, unchanged by this migration.
+- The hermetic snapshot machinery (no network, scrubbed environment, path and
+  symlink validation, blob bounds, GitHub blob API hydration) existed because
+  velnor-actions was run on an untrusted materialized snapshot. velnor-gen reads
+  the working tree and runs `cargo metadata --no-deps --offline`; there is no
+  snapshot to harden.
+
+Weakened, accepted, and recorded here so a reviewer can object:
+
+- The hook checks the working tree, not the staged index, and the pre-push hook
+  checks the tree at `HEAD` instead of every pushed commit. A partial stage or
+  an intermediate commit can pass locally. The CI job checks each pull request
+  head, and the merge queue checks the merge result.
+- The checker and generator come from the checkout's `mise.toml`, so a branch
+  can change what the local hook runs.
+- Cold setup is `mise install` (a source build of `velnor-gen` on macOS). The
+  old explicit trust action (`install-generated-workflow-guard.sh`) is gone;
+  `mise exec -- hk install --mise` registers the hooks.
+
+### Gaps reported to velnor-new (velnor-new-12)
+
+- Public git sources disable every base cache; `tools-v0.1.108` is announced to
+  fix it.
+- No macOS asset for `velnor-gen` and `velnor-ci`; announced for `0.1.108`.
+  Until then, `mise.toml` has two pins, `cargo:` for macOS and `github:` for
+  Linux. velnor-gen refuses any tool that applies on the runner OS without a
+  prebuilt binary, so `tuiscotti` is also `os = ["macos"]`.
+- `tools.postinstall` is refused, so `mbx setup --yes` is no longer run by
+  mise. velnor-new says the wrapper and `mr_boxington = true` already route
+  cargo through mbx; run `mise exec -- mbx setup --yes` by hand if needed.
+- Requests sent: `no_default_features` and `all_features` on `[[test_lane]]`;
+  `partitions`, failure artifacts and a no-tests policy on `[[test_groups]]`;
+  a per-root job timeout; cache restore for a group job; a key for
+  `velnor-ci check-configurations`.
+
+Revisit when `tools-v0.1.108` lands: use one `github:` pin for velnor-gen, check
+that the base caches save, and then lower `timeout_minutes`.

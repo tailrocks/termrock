@@ -1,9 +1,13 @@
 # Development
 
-Install pinned tools with `mise install` (Rust 1.99.1 and the tool
+Install pinned tools with `mise install` (Rust 1.100.0 and the tool
 pins in `mise.toml`), then install the repository hooks with
 `mise exec -- hk install --mise`. Run both commands from the workspace
-root.
+root. The `pre-commit` and `pre-push` hooks run `velnor-gen check`, which fails
+when the generated CI (`.github/workflows/rust-ci.yml`,
+`.velnor/rust-metadata.json`) is stale; fix it with
+`mise exec -- velnor-gen generate` (see [CI](ci.md)). If `mbx` asks for a
+one-time setup, run `mise exec -- mbx setup --yes`.
 
 ## Commands
 
@@ -36,10 +40,11 @@ Cargo invocation and target directory.
 `fixtures` and `sim` modules, the `jackin-preview` binary and the
 `functional` target of the crate are not built, so a command that does
 not pass `--all-features` skips the demo tests without a failure. CI
-runs `--all-features` in `Rust / <crate>` and the product shape in
-`Rust / <crate> (product)`; `suite-functional` runs the default features
-(see [CI](ci.md#the-demo-feature)). Check that a change did not drop a
-test with `cargo nextest list --locked --workspace --all-features`.
+runs the default features in `rust-test-default-root` and
+`rust-test-functional-root`, and every feature in the all-features lane of
+`rust-test-root` (see [CI](ci.md#the-all-features-lane)). Check that a change
+did not drop a test with
+`cargo nextest list --locked --workspace --all-features`.
 
 All test commands use `cargo nextest`, never `cargo test`. Run the
 functional suite, clippy and fmt before reporting work as done; see
