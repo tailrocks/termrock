@@ -1,7 +1,5 @@
-pub mod breadcrumb;
 pub mod choice_dialog;
 pub mod dialog;
-pub mod document_workspace;
 pub mod file_browser;
 pub mod form_dialog;
 pub mod grid;
@@ -13,13 +11,8 @@ mod grid_undo_tests;
 pub mod help;
 pub mod info_dialog;
 pub mod inspect_changes;
-pub mod nav_list;
-pub mod rail;
-pub mod steps;
 pub mod table;
 mod table_specimen;
-pub mod tabs;
-pub mod toolbar;
 
 #[cfg(test)]
 mod collection_edit_tests;
@@ -46,5 +39,8 @@ pub use termrock_feedback::{
 };
 pub use termrock_fields::{chips, input, select};
 pub use termrock_layout::splitter;
+pub use termrock_navigation::{
+    breadcrumb, document_workspace, nav_list, rail, steps, tabs, toolbar,
+};
 pub use termrock_overlays::{completion, menu, option_editor, option_list, picker, row_menu};
 pub use termrock_viewport::{panel, viewport, viewport_ops};

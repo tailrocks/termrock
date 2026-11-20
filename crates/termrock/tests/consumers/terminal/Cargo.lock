@@ -570,6 +570,7 @@ dependencies = [
  "termrock-fields",
  "termrock-layout",
  "termrock-metrics",
+ "termrock-navigation",
  "termrock-overlays",
  "termrock-runtime",
  "termrock-session",
@@ -1569,6 +1570,22 @@ name = "termrock-metrics"
 version = "0.1.0"
 dependencies = [
  "serde_json",
+]
+
+[[package]]
+name = "termrock-navigation"
+version = "0.1.0"
+dependencies = [
+ "ratatui",
+ "termrock-collections",
+ "termrock-controls",
+ "termrock-core",
+ "termrock-metrics",
+ "termrock-overlays",
+ "termrock-runtime",
+ "termrock-text",
+ "termrock-theme",
+ "unicode-segmentation",
 ]
 
 [[package]]
