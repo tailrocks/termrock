@@ -1,0 +1,25 @@
+[package]
+name = "junie-tui"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+description = "Deprecated: re-export of `termrock`, kept so existing `junie_tui::` imports keep compiling"
+license = "MIT"
+
+[lib]
+name = "junie_tui"
+path = "src/lib.rs"
+doctest = false
+
+[features]
+default = ["cli", "terminal"]
+cli = ["termrock/cli"]
+terminal = ["termrock/terminal"]
+product = ["termrock/product"]
+work-metrics = ["termrock/work-metrics"]
+
+[dependencies]
+termrock = { workspace = true }
+
+[dev-dependencies]
+ratatui = { workspace = true }

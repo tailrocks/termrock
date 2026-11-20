@@ -175,10 +175,10 @@ fn crate_roots(root: &Path) -> Vec<(String, String)> {
     out
 }
 
-/// The directories whose `#[test]` fns can prove an API: the facade and apps as before, and every
-/// crate's `src` and `tests`.
+/// The directories whose `#[test]` fns can prove an API: the apps, and every crate's `src` and
+/// `tests`. The repository root has neither (#452).
 fn test_dirs(root: &Path, crates: &[(String, String)]) -> Vec<String> {
-    let mut dirs: Vec<String> = ["src", "tests", "apps"].map(str::to_owned).into();
+    let mut dirs: Vec<String> = ["apps"].map(str::to_owned).into();
     let mut members: Vec<_> = std::fs::read_dir(root.join("crates"))
         .map(|d| d.flatten().map(|e| e.path()).collect())
         .unwrap_or_default();
@@ -1845,8 +1845,8 @@ fn catalog_test_discovery_scans_every_crate_src_and_tests() {
         "crates/termrock-text/benches/skip.rs",
         "#[test]\nfn skipped() {}\n",
     );
-    ws.write("src/lib.rs", "#[test]\nfn facade() {}\n");
-    let crates = vec![("termrock".to_owned(), "src".to_owned())];
+    ws.write("crates/termrock/src/lib.rs", "#[test]\nfn facade() {}\n");
+    let crates = vec![("termrock".to_owned(), "crates/termrock/src".to_owned())];
     let dirs = test_dirs(&ws.0, &crates);
     let dirs: Vec<&str> = dirs.iter().map(String::as_str).collect();
     let found = inventory::test_names(&ws.0, &dirs);
@@ -1856,7 +1856,7 @@ fn catalog_test_discovery_scans_every_crate_src_and_tests() {
         [
             "crates/termrock-text/src/wrap.rs::wraps",
             "crates/termrock-text/tests/edge.rs::edge",
-            "src/lib.rs::facade",
+            "crates/termrock/src/lib.rs::facade",
         ]
     );
 }
