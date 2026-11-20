@@ -7,6 +7,7 @@
 mod forward_policy;
 mod pane_edge;
 mod session;
+mod support;
 mod terminal;
 mod terminal_guard;
 mod terminal_viewport;

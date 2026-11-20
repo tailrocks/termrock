@@ -10,10 +10,11 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc;
 use std::time::Duration;
 
-use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
-use ratatui::widgets::Widget;
-use termrock_terminal::{TermEvent, TerminalState, TerminalView};
+use base64::Engine as _;
+use base64::engine::general_purpose::STANDARD;
+use termrock_terminal::{TermEvent, TerminalState};
+
+use super::support::draw_state;
 
 struct Counting;
 
@@ -57,14 +58,6 @@ fn row(state: &TerminalState, row: u16) -> String {
         .to_owned()
 }
 
-fn cell_text(state: &TerminalState, col: u16) -> String {
-    state
-        .view(0)
-        .cell(0, col)
-        .map(|c| c.text().to_owned())
-        .unwrap_or_default()
-}
-
 fn text_at(state: &TerminalState, row: u16, col: u16) -> String {
     state
         .view(0)
@@ -75,25 +68,6 @@ fn text_at(state: &TerminalState, row: u16, col: u16) -> String {
 
 fn osc52(payload: &str) -> Vec<u8> {
     format!("\x1b]52;c;{payload}\x07").into_bytes()
-}
-
-fn base64(bytes: &[u8]) -> String {
-    const ABC: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut out = String::new();
-    for chunk in bytes.chunks(3) {
-        let n = chunk
-            .iter()
-            .enumerate()
-            .fold(0u32, |n, (i, b)| n | u32::from(*b) << (16 - 8 * i));
-        for i in 0..4 {
-            out.push(if i <= chunk.len() {
-                ABC[(n >> (18 - 6 * i) & 63) as usize] as char
-            } else {
-                '='
-            });
-        }
-    }
-    out
 }
 
 #[test]
@@ -109,7 +83,7 @@ fn a_mebibyte_of_combining_marks_feeds_in_well_under_a_second() {
         for chunk in bytes.chunks(65_536) {
             state.feed(chunk);
         }
-        let _ = tx.send((started.elapsed(), cell_text(&state, 0)));
+        let _ = tx.send((started.elapsed(), text_at(&state, 0, 0)));
     });
     let (took, cell) = rx
         .recv_timeout(Duration::from_secs(5))
@@ -151,12 +125,12 @@ fn marks_are_counted_across_feeds_and_through_escape_sequences() {
         state.feed("\u{301}".as_bytes());
         state.feed(b"\x1b[0m");
     }
-    assert_eq!(cell_text(&state, 0).chars().count(), 1 + 16);
+    assert_eq!(text_at(&state, 0, 0).chars().count(), 1 + 16);
 
     state.feed(b"b");
     state.feed("\u{301}".as_bytes());
     assert_eq!(
-        cell_text(&state, 1).chars().count(),
+        text_at(&state, 0, 1).chars().count(),
         2,
         "a new base starts again"
     );
@@ -225,7 +199,7 @@ fn normal_strings_still_work_up_to_the_clipboard_limit() {
     );
     assert_eq!(row(&state, 0), "x");
 
-    let payload = base64(&vec![b'z'; 100_000]);
+    let payload = STANDARD.encode(vec![b'z'; 100_000]);
     let events = state.feed(&osc52(&payload));
     assert_eq!(
         events,
@@ -241,20 +215,12 @@ fn normal_strings_still_work_up_to_the_clipboard_limit() {
     );
 }
 
-fn draw(state: &TerminalState) -> Buffer {
-    let (rows, cols) = state.size();
-    let area = Rect::new(0, 0, cols, rows);
-    let mut buf = Buffer::empty(area);
-    TerminalView::new(state).render(area, &mut buf);
-    buf
-}
-
 #[test]
 fn a_delete_byte_never_reaches_a_cell() {
     let mut state = TerminalState::new(2, 10);
     state.feed(b"A\x7fB");
     assert_eq!(row(&state, 0), "AB");
-    let buf = draw(&state);
+    let buf = draw_state(&state, false);
     assert_eq!(buf[(0, 0)].symbol(), "A");
     assert_eq!(buf[(1, 0)].symbol(), "B");
 }
@@ -309,7 +275,7 @@ fn marks() -> String {
 }
 
 fn cell_marks(state: &TerminalState, col: u16) -> usize {
-    cell_text(state, col).chars().count().saturating_sub(1)
+    text_at(state, 0, col).chars().count().saturating_sub(1)
 }
 
 #[test]
@@ -437,22 +403,30 @@ fn a_cluster_keeps_its_marks_up_to_the_cap_on_every_line() {
 
 const CELL_CHARS: usize = 1 + MARKS;
 
-fn longest_cell(state: &TerminalState) -> usize {
+fn cell_texts(state: &TerminalState) -> Vec<String> {
     let view = state.view(0);
     (0..view.rows())
         .flat_map(|row| (0..view.cols()).map(move |col| (row, col)))
         .filter_map(|(row, col)| view.cell(row, col))
-        .map(|cell| cell.text().chars().count())
+        .map(|cell| cell.text().to_owned())
+        .collect()
+}
+
+fn longest_cell(state: &TerminalState) -> usize {
+    cell_texts(state)
+        .iter()
+        .map(|text| text.chars().count())
         .max()
         .unwrap_or(0)
 }
 
+fn assert_cells_bounded(state: &TerminalState) {
+    let longest = longest_cell(state);
+    assert!(longest <= CELL_CHARS, "{longest}");
+}
+
 fn any_cell_holds(state: &TerminalState, wanted: char) -> bool {
-    let view = state.view(0);
-    (0..view.rows())
-        .flat_map(|row| (0..view.cols()).map(move |col| (row, col)))
-        .filter_map(|(row, col)| view.cell(row, col))
-        .any(|cell| cell.text().contains(wanted))
+    cell_texts(state).iter().any(|text| text.contains(wanted))
 }
 
 #[test]
@@ -468,11 +442,7 @@ fn a_dcs_ended_by_a_raw_st_byte_cannot_release_text_unfiltered() {
         !any_cell_holds(&state, '\u{202e}'),
         "a bidi control reached a cell"
     );
-    assert!(
-        longest_cell(&state) <= CELL_CHARS,
-        "{}",
-        longest_cell(&state)
-    );
+    assert_cells_bounded(&state);
     assert_eq!(
         row(&state, 0),
         "visiblex",
@@ -487,11 +457,7 @@ fn a_printable_after_a_joiner_cannot_grow_a_cell_without_bound() {
     for _ in 0..2_000 {
         state.feed("\u{200d}b".as_bytes());
     }
-    assert!(
-        longest_cell(&state) <= CELL_CHARS,
-        "{}",
-        longest_cell(&state)
-    );
+    assert_cells_bounded(&state);
     assert_eq!(cell_marks(&state, 0), MARKS);
 }
 
@@ -503,11 +469,7 @@ fn marks_after_a_soft_reset_at_the_margin_cannot_grow_the_last_cell() {
         state.feed(b"b");
         state.feed("\u{301}".repeat(20).as_bytes());
     }
-    assert!(
-        longest_cell(&state) <= CELL_CHARS,
-        "{}",
-        longest_cell(&state)
-    );
+    assert_cells_bounded(&state);
 }
 
 #[test]
@@ -518,11 +480,7 @@ fn marks_after_a_wide_glyph_suppressed_by_no_wrap_cannot_grow_the_last_cell() {
         state.feed(b"b");
         state.feed("\u{301}".repeat(20).as_bytes());
     }
-    assert!(
-        longest_cell(&state) <= CELL_CHARS,
-        "{}",
-        longest_cell(&state)
-    );
+    assert_cells_bounded(&state);
 }
 
 const SPOOFING: [(char, char); 5] = [

@@ -30,3 +30,6 @@ termrock-text = { workspace = true }
 termrock-theme = { workspace = true }
 termrock-viewport = { workspace = true }
 unicode-width = "0.2.3"
+
+[dev-dependencies]
+base64 = { workspace = true }

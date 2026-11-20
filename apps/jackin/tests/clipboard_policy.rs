@@ -5,6 +5,8 @@ mod pane_support;
 
 use std::sync::Arc;
 
+use base64::Engine as _;
+use base64::engine::general_purpose::STANDARD;
 use jackin_console::panes::{
     ClipboardWrite, EndKind, Lease, LinkEvent, LinkStatus, PaneBody, PaneEffect, PanePolicy,
     TerminalPane, sanitize_title,
@@ -13,25 +15,6 @@ use pane_support::*;
 use termrock::theme::Tone;
 
 const HELLO: &[u8] = b"\x1b]52;c;SGVsbG8=\x07";
-
-fn base64(bytes: &[u8]) -> String {
-    const ABC: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut out = String::new();
-    for chunk in bytes.chunks(3) {
-        let n = chunk
-            .iter()
-            .enumerate()
-            .fold(0u32, |n, (i, b)| n | u32::from(*b) << (16 - 8 * i));
-        for i in 0..4 {
-            if i <= chunk.len() {
-                out.push(ABC[(n >> (18 - 6 * i) & 63) as usize] as char);
-            } else {
-                out.push('=');
-            }
-        }
-    }
-    out
-}
 
 fn osc52(selection: &str, data: &str) -> Vec<u8> {
     format!("\x1b]52;{selection};{data}\x07").into_bytes()
@@ -103,12 +86,12 @@ fn osc52_allowed_cases() {
         "the selection field is ignored"
     );
     assert_eq!(
-        rig.write(4_200, &osc52("c", &base64("日本".as_bytes()))),
+        rig.write(4_200, &osc52("c", &STANDARD.encode("日本".as_bytes()))),
         [copied("日本", "from Codex · 2 characters")]
     );
 
     let exact = "x".repeat(100_000);
-    let effects = rig.write(4_300, &osc52("c", &base64(exact.as_bytes())));
+    let effects = rig.write(4_300, &osc52("c", &STANDARD.encode(exact.as_bytes())));
     assert_eq!(
         effects.len(),
         1,
@@ -138,12 +121,7 @@ fn the_gesture_window_is_five_seconds_from_the_last_forwarded_key() {
 
 fn rig_without_gesture() -> Rig {
     let bench = Bench::new();
-    let mut pane = pane(&bench);
-    pane.sync_size(inner(80, 24));
-    bench.push(0, LinkEvent::Attached);
-    bench.push(0, LinkEvent::Lease(Lease::Owner));
-    pane.tick(0);
-    pane.tick(800);
+    let mut pane = live(&bench);
     pane.focus_changed(true, 800);
     Rig { bench, pane }
 }
@@ -218,7 +196,7 @@ fn osc52_refusal_matrix() {
         "bad base64 is dropped"
     );
     assert_eq!(
-        garbage.write(2_100, &osc52("c", &base64(&[0xff, 0xfe, 0xfd]))),
+        garbage.write(2_100, &osc52("c", &STANDARD.encode([0xff_u8, 0xfe, 0xfd]))),
         [],
         "bytes that are not UTF-8 are dropped"
     );
@@ -226,7 +204,7 @@ fn osc52_refusal_matrix() {
     let mut big = Rig::codex();
     let over = "x".repeat(100_001);
     assert_eq!(
-        big.write(2_000, &osc52("c", &base64(over.as_bytes()))),
+        big.write(2_000, &osc52("c", &STANDARD.encode(over.as_bytes()))),
         [blocked("Clipboard write from Codex blocked · too large")]
     );
 

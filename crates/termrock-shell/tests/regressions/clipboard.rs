@@ -56,6 +56,15 @@ impl NativeClipboard for Counting {
     }
 }
 
+/// A shell whose native clipboard counts its writes, after the OSC 52 queue is drained.
+fn counting_shell() -> (Shell<()>, Arc<Counting>) {
+    queued();
+    let native = Arc::new(Counting::default());
+    let mut shell = Shell::<()>::new();
+    shell.set_clipboard(Clipboard::new().native(native.clone()));
+    (shell, native)
+}
+
 fn queued() -> Vec<String> {
     termrock_shell::clipboard::take_output()
 }
@@ -153,10 +162,7 @@ fn a_field_copy_falls_back_to_one_osc52_when_the_native_write_fails() {
 
 #[test]
 fn a_shell_copy_with_the_hook_installed_queues_no_osc52_after_a_native_write() {
-    queued();
-    let native = Arc::new(Counting::default());
-    let mut shell = Shell::<()>::new();
-    shell.set_clipboard(Clipboard::new().native(native.clone()));
+    let (mut shell, native) = counting_shell();
     shell.copy_at(TEXT, None, Moment::ZERO);
     assert_eq!(native.0.load(std::sync::atomic::Ordering::SeqCst), 1);
     assert_eq!(queued(), Vec::<String>::new());
@@ -172,16 +178,31 @@ impl NativeClipboard for Recording {
     }
 }
 
-fn cmd_on(field: &mut TextInput, keys: &[char]) -> Vec<String> {
+/// A shell whose native clipboard records every write. The OSC 52 queue is
+/// drained first, so later assertions see only what the test itself queued.
+fn recording_shell() -> (Shell<()>, Arc<Recording>) {
     let sink = Arc::new(Recording::default());
     let mut shell = Shell::<()>::new();
     shell.set_clipboard(Clipboard::new().native(sink.clone()));
     queued();
+    (shell, sink)
+}
+
+fn recorded(sink: &Recording) -> Vec<String> {
+    sink.0.lock().expect("writes").clone()
+}
+
+fn assert_no_osc52() {
+    assert_eq!(queued(), Vec::<String>::new(), "no OSC 52");
+}
+
+fn cmd_on(field: &mut TextInput, keys: &[char]) -> Vec<String> {
+    let (_shell, sink) = recording_shell();
     for c in keys {
         field.on_key(&cmd(*c));
     }
-    let writes = sink.0.lock().expect("writes").clone();
-    assert_eq!(queued(), Vec::<String>::new(), "no OSC 52");
+    let writes = recorded(&sink);
+    assert_no_osc52();
     writes
 }
 
@@ -229,16 +250,13 @@ fn ctrl_w_in_a_masked_field_deletes_the_word_before_the_cursor_and_copies_nothin
             mods: KeyModifiers::NONE,
         });
     }
-    let sink = Arc::new(Recording::default());
-    let mut shell = Shell::<()>::new();
-    shell.set_clipboard(Clipboard::new().native(sink.clone()));
-    queued();
+    let (_shell, sink) = recording_shell();
     field.on_key(&ctrl_w());
     assert_eq!(field.text(), "sk-one ");
     field.on_key(&ctrl_w());
     assert_eq!(field.text(), "sk-");
-    assert_eq!(sink.0.lock().expect("writes").clone(), Vec::<String>::new());
-    assert_eq!(queued(), Vec::<String>::new(), "no OSC 52");
+    assert_eq!(recorded(&sink), Vec::<String>::new());
+    assert_no_osc52();
 }
 
 #[test]
@@ -246,15 +264,12 @@ fn ctrl_w_over_a_selection_in_a_masked_field_deletes_it_and_copies_nothing() {
     let mut field = TextInput::new(WidgetId::of("t.secret"), "Key")
         .value("sk-secret")
         .masked();
-    let sink = Arc::new(Recording::default());
-    let mut shell = Shell::<()>::new();
-    shell.set_clipboard(Clipboard::new().native(sink.clone()));
-    queued();
+    let (_shell, sink) = recording_shell();
     field.on_key(&cmd('a'));
     field.on_key(&ctrl_w());
     assert_eq!(field.text(), "");
-    assert_eq!(sink.0.lock().expect("writes").clone(), Vec::<String>::new());
-    assert_eq!(queued(), Vec::<String>::new(), "no OSC 52");
+    assert_eq!(recorded(&sink), Vec::<String>::new());
+    assert_no_osc52();
 }
 
 fn ctrl(c: char) -> Key {
@@ -270,15 +285,12 @@ fn ctrl_x_in_a_masked_desktop_field_neither_copies_nor_cuts() {
         .value("sk-secret")
         .masked()
         .field_keys(FieldKeys::Desktop);
-    let sink = Arc::new(Recording::default());
-    let mut shell = Shell::<()>::new();
-    shell.set_clipboard(Clipboard::new().native(sink.clone()));
-    queued();
+    let (_shell, sink) = recording_shell();
     field.on_key(&ctrl('a'));
     field.on_key(&ctrl('x'));
     assert_eq!(field.text(), "sk-secret");
-    assert_eq!(sink.0.lock().expect("writes").clone(), Vec::<String>::new());
-    assert_eq!(queued(), Vec::<String>::new(), "no OSC 52");
+    assert_eq!(recorded(&sink), Vec::<String>::new());
+    assert_no_osc52();
 }
 
 #[test]
@@ -286,22 +298,16 @@ fn ctrl_x_in_an_unmasked_desktop_field_cuts_to_the_clipboard() {
     let mut field = TextInput::new(WidgetId::of("t.plain"), "Name")
         .value("alpha")
         .field_keys(FieldKeys::Desktop);
-    let sink = Arc::new(Recording::default());
-    let mut shell = Shell::<()>::new();
-    shell.set_clipboard(Clipboard::new().native(sink.clone()));
-    queued();
+    let (_shell, sink) = recording_shell();
     field.on_key(&ctrl('a'));
     field.on_key(&ctrl('x'));
     assert_eq!(field.text(), "");
-    assert_eq!(sink.0.lock().expect("writes").clone(), ["alpha"]);
+    assert_eq!(recorded(&sink), ["alpha"]);
 }
 
 #[test]
 fn a_dropped_shell_leaves_no_clipboard_hook_behind() {
-    queued();
-    let native = Arc::new(Counting::default());
-    let mut shell = Shell::<()>::new();
-    shell.set_clipboard(Clipboard::new().native(native.clone()));
+    let (shell, native) = counting_shell();
     termrock_core::edit::clipboard::copy(TEXT);
     assert_eq!(native.0.load(std::sync::atomic::Ordering::SeqCst), 1);
 
