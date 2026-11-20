@@ -80,7 +80,8 @@ struct Suite {
 
 /// The required suites, one `S` line each followed by its `T` lines, in
 /// `performance-inventory.tsv` beside this file.
-const INVENTORY_FILE: &str = "crates/termrock-conformance/tests/regressions/performance-inventory.tsv";
+const INVENTORY_FILE: &str =
+    "crates/termrock-conformance/tests/regressions/performance-inventory.tsv";
 
 fn leak(text: &str) -> &'static str {
     Box::leak(text.to_owned().into_boxed_str())
