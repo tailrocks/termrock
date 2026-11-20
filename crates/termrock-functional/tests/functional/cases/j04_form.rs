@@ -284,9 +284,53 @@ fn j04_form_route() {
     app.finish();
 }
 
+/// Reaches the empty accounts overview through the manager, the same route
+/// every form test starts from.
+fn to_accounts(name: &str) -> App {
+    let app = open(name);
+    reach_manager(&app);
+    open_accounts(&app);
+    app
+}
+
+fn desk_saved(screen: &TerminalSnapshot) -> bool {
+    let visible = text(screen);
+    visible.contains(SAVED_DESK) && !visible.contains(NEW) && !visible.contains(EMPTY)
+}
+
+fn edit_shows_desk(screen: &TerminalSnapshot) -> bool {
+    let visible = text(screen);
+    visible.contains(EDIT_DESK)
+        && visible.contains(FOLDER_LABEL)
+        && visible.contains(HOME)
+        && visible.contains(EDITS)
+}
+
+fn cancelled_without_edit(screen: &TerminalSnapshot) -> bool {
+    text(screen).contains(CANCELLED) && !text(screen).contains(EDIT_DESK)
+}
+
+/// Registers Desk through the form so a test that needs an existing account
+/// starts from it. The save status stays on screen until another action
+/// replaces it, so this replays the edit and cancel that follow the save in
+/// `j04_form_save_cancel`. That leaves the cancelled status the rejection
+/// frames start from. It waits for each frame and asserts nothing; the
+/// checks belong to `j04_form_save_cancel`.
+fn register_desk(app: &App) {
+    open_new(app);
+    fill_desk(app);
+    app.key("tab");
+    click_form_button(app, SAVE);
+    app.wait_screen("saved desk", desk_saved);
+    app.key("e");
+    app.wait_screen("reopen saved", edit_shows_desk);
+    app.key("escape");
+    app.wait_screen("edit cancelled", cancelled_without_edit);
+}
+
 #[test]
-fn j04_form_form() {
-    let app = open("j04-form-form");
+fn j04_form_name_required() {
+    let app = open("j04-form-name-required");
     let manager = reach_manager(&app);
     assert!(text(&manager).contains(DIRECTORY), "{}", text(&manager));
     assert_eq!((manager.cols(), manager.rows()), (120, 40));
@@ -331,12 +375,23 @@ fn j04_form_form() {
         text(&reopened)
     );
     dismiss_empty(&app);
+    app.finish();
+}
 
+#[test]
+fn j04_form_rejections_name() {
+    let app = to_accounts("j04-form-rejections-name");
     reject(&app, REQUIRED, |_| {});
     let overlong = format!("LONGNAME{}", "n".repeat(57));
     assert_eq!(overlong.chars().count(), 65);
     reject(&app, TOO_LONG, |app| set_name(app, &overlong));
     reject(&app, CHOOSE_OP, |app| set_name(app, "Alpha"));
+    app.finish();
+}
+
+#[test]
+fn j04_form_rejections_folder() {
+    let app = to_accounts("j04-form-rejections-folder");
     reject(&app, FOLDER_EMPTY, |app| {
         set_name(app, "Alpha");
         choose_local(app, FOLDER_LABEL);
@@ -355,6 +410,12 @@ fn j04_form_form() {
             set_folder(app, FOLDER_LABEL, "~/.codex-locked");
         },
     );
+    app.finish();
+}
+
+#[test]
+fn j04_form_rejections_credential() {
+    let app = to_accounts("j04-form-rejections-credential");
     reject(
         &app,
         "No credential found: ~/.grok has no auth.json",
@@ -368,7 +429,12 @@ fn j04_form_form() {
         set_name(app, "Alpha");
         choose_plain(app);
     });
+    app.finish();
+}
 
+#[test]
+fn j04_form_save_cancel() {
+    let app = to_accounts("j04-form-save-cancel");
     open_new(&app);
     fill_desk(&app);
     app.key("tab");
@@ -394,10 +460,7 @@ fn j04_form_form() {
     fill_desk(&app);
     app.key("tab");
     click_form_button(&app, SAVE);
-    let saved = app.wait_screen("saved desk", |screen| {
-        let visible = text(screen);
-        visible.contains(SAVED_DESK) && !visible.contains(NEW) && !visible.contains(EMPTY)
-    });
+    let saved = app.wait_screen("saved desk", desk_saved);
     assert!(text(&saved).contains(SAVED_DESK), "{}", text(&saved));
     app.key("e");
     // The detail pane behind the dialog already shows ~/.claude. The folder
@@ -418,7 +481,13 @@ fn j04_form_form() {
     app.wait_screen("edit cancelled", |screen| {
         text(screen).contains(CANCELLED) && !text(screen).contains(EDIT_DESK)
     });
+    app.finish();
+}
 
+#[test]
+fn j04_form_duplicate_source() {
+    let app = to_accounts("j04-form-duplicate-source");
+    register_desk(&app);
     open_new(&app);
     set_name(&app, "Other");
     choose_local(&app, FOLDER_LABEL);
@@ -437,7 +506,13 @@ fn j04_form_form() {
         let visible = text(screen);
         visible.contains(CANCELLED) && visible.contains(DESK) && !visible.contains("Other")
     });
+    app.finish();
+}
 
+#[test]
+fn j04_form_identity() {
+    let app = to_accounts("j04-form-identity");
+    register_desk(&app);
     open_new(&app);
     set_name(&app, "Other");
     choose_local(&app, FOLDER_LABEL);

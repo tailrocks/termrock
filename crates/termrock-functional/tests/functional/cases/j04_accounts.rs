@@ -609,11 +609,11 @@ fn j04_accounts_scenario_accounts_mixed() {
 }
 
 #[test]
-fn j04_accounts_accounts() {
-    let first = open("j04-accounts-first-use", "first-use");
-    reach_manager(&first);
-    first.key("c");
-    let empty = first.wait_text(EMPTY);
+fn j04_accounts_first_use() {
+    let app = open("j04-accounts-first-use", "first-use");
+    reach_manager(&app);
+    app.key("c");
+    let empty = app.wait_text(EMPTY);
     let visible = text(&empty);
     assert!(visible.contains("a adds one"), "{visible}");
     assert!(
@@ -627,18 +627,24 @@ fn j04_accounts_accounts() {
     assert!(!visible.contains(REVOKED), "{visible}");
     assert!(!visible.contains("discovery pending"), "{visible}");
     assert_secrets(&empty);
-    first.finish();
+    app.finish();
+}
 
-    let returning = open("j04-accounts-returning", "returning");
-    reach_manager(&returning);
-    returning.key("c");
-    show_mixed(&returning);
-    returning.finish();
+#[test]
+fn j04_accounts_returning() {
+    let app = open("j04-accounts-returning", "returning");
+    reach_manager(&app);
+    app.key("c");
+    show_mixed(&app);
+    app.finish();
+}
 
-    let hard = open("j04-accounts-hard-cases", "hard-cases");
-    reach_manager(&hard);
-    hard.key("c");
-    let locked = hard.wait_text(LOCKED);
+#[test]
+fn j04_accounts_hard_cases() {
+    let app = open("j04-accounts-hard-cases", "hard-cases");
+    reach_manager(&app);
+    app.key("c");
+    let locked = app.wait_text(LOCKED);
     assert!(
         text(&locked).contains("1Password locked"),
         "{}",
@@ -646,15 +652,18 @@ fn j04_accounts_accounts() {
     );
     assert!(text(&locked).contains(REVOKED), "{}", text(&locked));
     assert_secrets(&locked);
-    let revoked = take_revoked(&hard);
+    let revoked = take_revoked(&app);
     let visible = text(&revoked);
     assert!(visible.contains(UNAUTHORIZED), "{visible}");
     assert!(visible.contains(HTTP_401), "{visible}");
     assert!(visible.contains(ONE_PASSWORD), "{visible}");
     assert_secrets(&revoked);
-    hard.finish();
+    app.finish();
+}
 
-    let app = open("j04-accounts-accounts", "accounts-mixed");
+#[test]
+fn j04_accounts_mixed_session() {
+    let app = open("j04-accounts-mixed-session", "accounts-mixed");
     let opened = app.wait_screen("accounts overview", |screen| {
         screen.cols() == 120 && screen.rows() == 40 && text(screen).contains(OVERVIEW)
     });
@@ -678,6 +687,24 @@ fn j04_accounts_accounts() {
     let chosen = app.wait_text(DEFAULT);
     status_exact(&chosen, DEFAULT);
     assert_secrets(&chosen);
+
+    app.finish();
+}
+
+#[test]
+fn j04_accounts_mixed_removals() {
+    let app = open("j04-accounts-mixed-removals", "accounts-mixed");
+    app.wait_text(OVERVIEW);
+    // Reach the same state the session test leaves: Codex · Primary is the
+    // default set before Experiments is removed. These waits only synchronise;
+    // `j04_accounts_mixed_session` asserts the toggles and the default.
+    select_until(&app, "primary", shows(PRIMARY_CRUMB));
+    app.key("t");
+    app.wait_text(DISABLED);
+    app.key("t");
+    app.wait_text(ENABLED);
+    app.key("space");
+    app.wait_text(DEFAULT);
 
     let experiments = hold_detail(&app, "experiments again", EXP_CRUMB, EXP_FP);
     assert!(
