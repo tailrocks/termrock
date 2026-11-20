@@ -946,7 +946,7 @@ checksum = "3bd1574e617a9a6c1f8f8181bd7e841e1f20e4277607ef28945765188d6284d4"
 name = "jackin-console"
 version = "0.1.0"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.23.1",
  "clap",
  "jackin-console",
  "ratatui",
@@ -2478,7 +2478,7 @@ dependencies = [
 name = "termrock-terminal"
 version = "0.1.0"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.23.1",
  "ratatui",
  "termpane",
  "termrock-controls",
