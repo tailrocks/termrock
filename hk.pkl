@@ -7,19 +7,37 @@ import "package://github.com/jdx/hk/releases/download/v2.11.1/hk@2.11.1#/Builtin
 jobs = 2
 fail_fast = false
 
+// Generated CI is written by velnor-gen from .velnor/rust-ci.toml. `velnor-gen
+// check` exits 1 when .github/workflows/rust-ci.yml or .velnor/rust-metadata.json
+// differs from what `velnor-gen generate` would write. CI runs the same task
+// (`lint-generated-workflows`), so a bypassed hook is caught server-side.
+// Install the hooks once with `mise exec -- hk install`.
+local generatedWorkflows = new Step {
+  glob = List(
+    ".velnor/**",
+    ".github/workflows/**",
+    "**/Cargo.toml",
+    "**/Cargo.lock",
+    "**/rust-toolchain.toml",
+    "mise.toml",
+    "mise.lock",
+    ".cargo/**",
+    ".config/nextest.toml"
+  )
+  check = "mise run check-generated-workflows"
+}
+
 hooks {
   ["pre-commit"] {
     steps {
-      ["generated-workflows"] {
-        check = "bash scripts/check-generated-workflows.sh pre-commit"
-      }
+      ["generated-workflows"] = generatedWorkflows
     }
   }
   ["pre-push"] {
     steps {
-      ["generated-workflows"] {
-        check = "bash scripts/check-generated-workflows.sh pre-push"
-        stdin = "{{ hook_stdin }}"
+      ["generated-workflows"] = (generatedWorkflows) {
+        // A push checks the tree at HEAD, not every pushed commit.
+        glob = null
       }
     }
   }

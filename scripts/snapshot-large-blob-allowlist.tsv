@@ -1,8 +1,0 @@
-# Exact path, Git blob object ID, and byte count for durable macOS reference executables.
-# Update only with reviewed, host-specific binary provenance; this is not a general size override.
-tests/functional/reference-bins/aarch64-apple-darwin/holla	e6c7debc7a4f36855d8c9d0b150b4ff0735dcf03	16835672
-crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/holla	e6c7debc7a4f36855d8c9d0b150b4ff0735dcf03	16835672
-tests/functional/reference-bins/aarch64-apple-darwin/showcase	15d1adf929c8ce69d0e2eddca63a3fab1f40d9b4	20608024
-crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/showcase	15d1adf929c8ce69d0e2eddca63a3fab1f40d9b4	20608024
-tests/functional/reference-bins/aarch64-apple-darwin/pr2-3cbe13c/jackin	7af05a2846a2843e357eb64454e82e51ecd7a36a	20601600
-crates/termrock-functional/tests/functional/reference-bins/aarch64-apple-darwin/pr2-3cbe13c/jackin	7af05a2846a2843e357eb64454e82e51ecd7a36a	20601600
