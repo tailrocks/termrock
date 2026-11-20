@@ -1631,10 +1631,28 @@ fn g05_check_visual_does_not_write_baselines() {
 fn g05_tests_do_not_invoke_accept() {
     let needle = concat!("tuiscotti", " ", "accept");
     let workspace = crate::support::workspace_root();
-    let mut pending = vec![
-        workspace.join("tests"),
-        workspace.join("crates/termrock-functional/tests"),
-    ];
+    // Every `tests` directory of a crate or an app: the repository root has none (#452), and
+    // before the split the tests of every package lived in the one at the root.
+    let mut pending = Vec::new();
+    for parent in ["crates", "apps"] {
+        let members = std::fs::read_dir(workspace.join(parent))
+            .unwrap_or_else(|error| panic!("read {parent}: {error}"));
+        for member in members {
+            let tests = member
+                .unwrap_or_else(|error| panic!("entry: {error}"))
+                .path()
+                .join("tests");
+            if tests.is_dir() {
+                pending.push(tests);
+            }
+        }
+    }
+    assert!(
+        pending
+            .iter()
+            .any(|dir| dir.ends_with("termrock-functional/tests")),
+        "the functional tests are among the scanned directories"
+    );
     while let Some(dir) = pending.pop() {
         for entry in std::fs::read_dir(&dir)
             .unwrap_or_else(|error| panic!("read {}: {error}", dir.display()))
@@ -1650,7 +1668,10 @@ fn g05_tests_do_not_invoke_accept() {
                 // unoptimized test takes 27s when the machine is quiet and
                 // exceeds the functional profile's 90s kill when it is not.
                 // Those files are screenshots, not an accept invocation.
-                if path.file_name().is_some_and(|name| name == "baselines") {
+                if path
+                    .file_name()
+                    .is_some_and(|name| name == "baselines" || name == "target")
+                {
                     continue;
                 }
                 pending.push(path);

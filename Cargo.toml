@@ -118,18 +118,6 @@ doctest = false
 [dependencies]
 termrock = { workspace = true }
 
-[dev-dependencies]
-ratatui = { workspace = true }
-syn = { version = "=3.0.10", features = ["full", "visit"] }
-toml = "=1.2.1"
-
-tui-test = { workspace = true }
-termrock-text = { workspace = true, features = ["test-support"] }
-
-tuiscotti-latest = { workspace = true }
-serde_json = { workspace = true }
-sha2 = { workspace = true }
-
 [profile.dev.package."*"]
 opt-level = 3
 

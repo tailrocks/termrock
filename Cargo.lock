@@ -981,15 +981,7 @@ dependencies = [
 name = "junie-tui"
 version = "0.1.0"
 dependencies = [
- "ratatui",
- "serde_json",
- "sha2 0.11.1",
- "syn 3.0.10",
  "termrock",
- "termrock-text",
- "toml 1.2.1+spec-1.1.0",
- "tuiscotti",
- "tuiscotti-tui-test",
 ]
 
 [[package]]
@@ -2139,6 +2131,7 @@ name = "termrock"
 version = "0.1.0"
 dependencies = [
  "ratatui",
+ "serde_json",
  "syn 3.0.10",
  "termrock-catalog",
  "termrock-cli",
@@ -2162,6 +2155,7 @@ dependencies = [
  "termrock-text",
  "termrock-theme",
  "termrock-viewport",
+ "toml 1.2.1+spec-1.1.0",
 ]
 
 [[package]]
