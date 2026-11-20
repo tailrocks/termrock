@@ -9,6 +9,8 @@ In Showcase, multi-search picker filters accept spaces as text; use
 Ctrl+Space to toggle the focused result and Enter to confirm the chosen
 set.
 
+This repository succeeds the archived [`tailrocks/termrock-legacy`](https://github.com/tailrocks/termrock-legacy), the earlier termrock repository. The two share no git history, so use this repository for git dependencies and issues.
+
 ## Use the library
 
 Depend on the `termrock` facade, with the features you need. The default is
@@ -16,7 +18,7 @@ empty. Termrock is not published to crates.io, so use a path or git dependency:
 
 ```toml
 [dependencies]
-termrock = { git = "https://github.com/tailrocks/terminal-components-baseline", default-features = false, features = ["terminal"] }
+termrock = { git = "https://github.com/tailrocks/termrock", default-features = false, features = ["terminal"] }
 ```
 
 Import from `termrock::` (`termrock::widgets`, `termrock::ui`, `termrock::core`,
