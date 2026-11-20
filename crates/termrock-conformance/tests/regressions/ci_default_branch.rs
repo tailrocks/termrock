@@ -330,6 +330,19 @@ fn the_crates_alone_lint_is_configured_and_required() {
         "the default-feature pass is missing: {run}"
     );
 
+    for package in ["termrock", "junie-tui"] {
+        assert!(
+            run.contains(&format!("for package in {package} "))
+                || run.contains(&format!(" {package}; do")),
+            "the terminal-without-cli pass does not name `{package}`: {run}"
+        );
+    }
+    assert!(
+        run.lines().any(|line| line
+            .contains("--all-targets --no-default-features --features terminal -- -D warnings")),
+        "the terminal-without-cli (former `product`) pass is missing: {run}"
+    );
+
     let workflow = include_str!("../.github/workflows/rust-ci.yml");
     assert!(workflow.contains("\n  lint-crates-alone:\n"));
     assert!(

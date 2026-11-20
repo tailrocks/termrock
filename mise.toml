@@ -45,7 +45,9 @@ description = "Fail when .github/workflows/rust-ci.yml or .velnor/rust-metadata.
 run = "velnor-gen --root . check"
 
 # Builds every workspace member on its own, once with the features it declares
-# as defaults and once with all of its features, and denies warnings. A
+# as defaults and once with all of its features, plus `termrock` and `junie-tui`
+# with `--no-default-features --features terminal` (the former `product` shape),
+# and denies warnings. A
 # workspace build unifies features across the members, so a member that lacks a
 # feature forward, or leaves an import unused when a consumer leaves a feature
 # off, still builds there; `cargo clippy --package <member>` resolves only that
@@ -61,5 +63,11 @@ for package in $(cargo tree --workspace --depth 0 --prefix none --format '{p}' |
   echo "== $package"
   cargo clippy --locked --package "$package" --all-targets -- -D warnings
   cargo clippy --locked --package "$package" --all-targets --all-features -- -D warnings
+done
+# The former `product` shape (`terminal` without `cli`): the library shapes that
+# `product` changed, which no default or all-features pass builds.
+for package in termrock junie-tui; do
+  echo "== $package (no default features, terminal)"
+  cargo clippy --locked --package "$package" --all-targets --no-default-features --features terminal -- -D warnings
 done
 '''
