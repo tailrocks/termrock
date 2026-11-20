@@ -321,9 +321,11 @@ fn j04_chooser_route() {
     app.finish();
 }
 
-#[test]
-fn j04_chooser_chooser() {
-    let app = open("j04-chooser-denied", "first-use");
+/// First-use with the new-account form open and no account chosen. Each
+/// chooser test starts here through the real route: the manager, then `c` to
+/// the accounts overview when needed, then `a` for the form.
+fn first_use_form(name: &str) -> App {
+    let app = open(name, "first-use");
     let manager = reach(&app);
     assert!(
         text(&manager).contains(DIRECTORY) || text(&manager).contains(ACCOUNTS),
@@ -335,6 +337,12 @@ fn j04_chooser_chooser() {
         app.wait_screen("accounts", |screen| text(screen).contains(ACCOUNTS));
     }
     open_form(&app);
+    app
+}
+
+#[test]
+fn j04_chooser_denied() {
+    let app = first_use_form("j04-chooser-denied");
     show_denied(&app);
     let failure = app.wait_screen("denied wide", |screen| {
         screen.cols() == 120 && screen.rows() == 40 && denied_open(screen)
@@ -362,7 +370,13 @@ fn j04_chooser_chooser() {
         screen.cols() == 120 && screen.rows() == 40 && denied_open(screen)
     });
     leave_denied(&app);
+    close_form(&app);
+    app.finish();
+}
 
+#[test]
+fn j04_chooser_cancel_and_back() {
+    let app = first_use_form("j04-chooser-cancel-and-back");
     open_chooser(&app);
     wait_accounts(&app);
     app.key("escape");
@@ -383,7 +397,13 @@ fn j04_chooser_chooser() {
     );
     app.key("escape");
     assert_unchosen(&app);
+    close_form(&app);
+    app.finish();
+}
 
+#[test]
+fn j04_chooser_denied_typed() {
+    let app = first_use_form("j04-chooser-denied-typed");
     open_chooser(&app);
     wait_accounts(&app);
     app.key("enter");
@@ -421,7 +441,13 @@ fn j04_chooser_chooser() {
     wait_accounts(&app);
     app.key("escape");
     assert_unchosen(&app);
+    close_form(&app);
+    app.finish();
+}
 
+#[test]
+fn j04_chooser_items_and_fields() {
+    let app = first_use_form("j04-chooser-items-and-fields");
     open_chooser(&app);
     wait_accounts(&app);
     app.key("enter");
@@ -509,7 +535,13 @@ fn j04_chooser_chooser() {
     wait_accounts(&app);
     app.key("escape");
     assert_unchosen(&app);
+    close_form(&app);
+    app.finish();
+}
 
+#[test]
+fn j04_chooser_reference_chosen() {
+    let app = first_use_form("j04-chooser-reference-chosen");
     open_chooser(&app);
     wait_accounts(&app);
     app.key("enter");
@@ -553,7 +585,10 @@ fn j04_chooser_chooser() {
     );
     secrets_absent(&cancelled);
     app.finish();
+}
 
+#[test]
+fn j04_chooser_locked() {
     let locked = open("j04-chooser-locked", "hard-cases");
     let manager = reach(&locked);
     assert!(
