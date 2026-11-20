@@ -1,9 +1,8 @@
 //! Deterministic work counters.
 //!
-//! The counters live in `termrock-metrics`; this module keeps every old path
-//! valid while the extraction runs (#444). The scenario harness and its report
-//! drive an `Application`, so they live in `termrock-conformance` (#449) and
-//! appear here as `metrics::harness` and `metrics::report` under `work-metrics`.
+//! The counters live in `termrock-metrics`. The scenario harness and its report
+//! drive an `Application`, so they live in `termrock-conformance` and appear here
+//! as `metrics::harness` and `metrics::report` under `work-metrics`.
 
 #[cfg(feature = "work-metrics")]
 pub use termrock_conformance::{harness, report};

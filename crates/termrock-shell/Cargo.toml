@@ -26,3 +26,6 @@ termrock-runtime = { workspace = true }
 termrock-session = { workspace = true }
 termrock-text = { workspace = true }
 termrock-theme = { workspace = true }
+
+[dev-dependencies]
+termrock-fields = { workspace = true }

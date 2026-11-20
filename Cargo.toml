@@ -77,6 +77,7 @@ clap = { version = "4.6", features = ["derive"] }
 ratatui = { version = "0.30", features = ["crossterm_0_29"] }
 serde_json = "1"
 sha2 = "0.11.0"
+termrock = { path = "crates/termrock", version = "0.1.0" }
 termrock-catalog = { path = "crates/termrock-catalog", version = "0.1.0" }
 termrock-cli = { path = "crates/termrock-cli", version = "0.1.0" }
 termrock-collections = { path = "crates/termrock-collections", version = "0.1.0" }
@@ -104,52 +105,21 @@ tuiscotti-latest = { package = "tuiscotti", git = "https://github.com/tailrocks/
 
 [features]
 default = ["cli", "terminal"]
-cli = ["dep:termrock-cli", "termrock-core/cli"]
-terminal = ["dep:termrock-terminal"]
-product = ["terminal"]
-work-metrics = ["dep:termrock-conformance", "termrock-catalog/work-metrics", "termrock-collections/work-metrics", "termrock-conformance/work-metrics", "termrock-controls/work-metrics", "termrock-core/work-metrics", "termrock-editors/work-metrics", "termrock-feedback/work-metrics", "termrock-fields/work-metrics", "termrock-grid/work-metrics", "termrock-metrics/work-metrics", "termrock-navigation/work-metrics", "termrock-overlays/work-metrics", "termrock-runtime/work-metrics", "termrock-session/work-metrics", "termrock-shell/work-metrics", "termrock-terminal?/work-metrics", "termrock-viewport/work-metrics"]
+cli = ["termrock/cli"]
+terminal = ["termrock/terminal"]
+product = ["termrock/product"]
+work-metrics = ["termrock/work-metrics"]
 
 [lib]
 name = "junie_tui"
 path = "src/lib.rs"
-
 doctest = false
 
 [dependencies]
-ratatui = { workspace = true }
-unicode-width = "0.2.3"
-unicode-segmentation = "1"
-serde_json = { workspace = true }
-termrock-catalog = { workspace = true }
-termrock-cli = { workspace = true, optional = true }
-termrock-collections = { workspace = true }
-termrock-conformance = { workspace = true, optional = true }
-termrock-controls = { workspace = true }
-termrock-core = { workspace = true }
-termrock-dialogs = { workspace = true }
-termrock-editors = { workspace = true }
-termrock-feedback = { workspace = true }
-termrock-fields = { workspace = true }
-termrock-grid = { workspace = true }
-termrock-layout = { workspace = true }
-termrock-metrics = { workspace = true }
-termrock-navigation = { workspace = true }
-termrock-overlays = { workspace = true }
-termrock-runtime = { workspace = true }
-termrock-session = { workspace = true }
-termrock-shell = { workspace = true }
-termrock-terminal = { workspace = true, optional = true }
-termrock-text = { workspace = true }
-termrock-theme = { workspace = true }
-termrock-viewport = { workspace = true }
-
-[target.'cfg(unix)'.dependencies]
-
-libc = "0.2"
+termrock = { workspace = true }
 
 [dev-dependencies]
-# tests/terminal_guard.rs builds a `termpane::DamageGrid` directly.
-termpane = { git = "https://github.com/tailrocks/termpane", rev = "d05d114bdce504d184b00836376a350851806f61", default-features = false }
+ratatui = { workspace = true }
 syn = { version = "=3.0.10", features = ["full", "visit"] }
 toml = "=1.2.1"
 

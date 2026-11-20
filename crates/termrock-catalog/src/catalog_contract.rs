@@ -138,11 +138,11 @@ fn root() -> &'static Path {
 
 /// The crates whose public API the gate walks, the facade first, from `docs/layering.toml`.
 ///
-/// The facade is the root package `junie-tui` while its `src/lib.rs` holds the implementation (the
-/// `termrock` crate only re-exports it today), and `crates/termrock` after the cutover (#452).
-/// Every other crate of the table that has a `crates/termrock-<name>/src/lib.rs` follows, except
-/// the transitional facade and the test-only crates. Before the split nothing else exists and the
-/// walk is the root package.
+/// The facade is `crates/termrock`, whatever else the repository root holds (#452): before the
+/// cutover the root package `junie-tui` still had a `src/lib.rs`, and reading it would walk the
+/// wrong tree. Every other crate of the table that has a `crates/termrock-<name>/src/lib.rs`
+/// follows, except the `junie-tui` shim, which only re-exports the facade, and the test-only
+/// crates.
 fn crate_roots(root: &Path) -> Vec<(String, String)> {
     let text = std::fs::read_to_string(root.join("docs/layering.toml"))
         .unwrap_or_else(|e| panic!("read docs/layering.toml: {e}"));
@@ -161,12 +161,7 @@ fn crate_roots(root: &Path) -> Vec<(String, String)> {
         .get("layers")
         .and_then(toml::Value::as_table)
         .expect("layering table has [layers]");
-    let facade = if root.join("src/lib.rs").is_file() {
-        "src"
-    } else {
-        "crates/termrock/src"
-    };
-    let mut out = vec![("termrock".to_owned(), facade.to_owned())];
+    let mut out = vec![("termrock".to_owned(), "crates/termrock/src".to_owned())];
     for name in strings("order") {
         let layer = layers.get(&name).and_then(toml::Value::as_str);
         if matches!(layer, Some("facade" | "test")) {
@@ -1150,7 +1145,7 @@ fn catalog_module_graph_covers_every_source_file() {
     );
 }
 
-const PROBE_FILE: &str = "src/zz_probe.rs";
+const PROBE_FILE: &str = "crates/termrock/src/zz_probe.rs";
 const PROBE_SOURCE: &str = "pub fn probe_fn() {}\n";
 
 fn with_probe_module(declaration: &str) -> Sources {
@@ -1161,7 +1156,7 @@ fn with_probe_module(declaration: &str) -> Sources {
     if !declaration.is_empty() {
         s.tree
             .files
-            .get_mut(Path::new("src/lib.rs"))
+            .get_mut(Path::new("crates/termrock/src/lib.rs"))
             .expect("lib.rs")
             .push_str(&format!("\n{declaration}\n"));
     }
@@ -1191,9 +1186,10 @@ fn catalog_cfg_test_module_children_are_test_only_too() {
         PathBuf::from(PROBE_FILE),
         "mod inner;\npub fn probe_fn() {}\n".to_owned(),
     );
-    s.tree
-        .files
-        .insert(PathBuf::from("src/zz_probe/inner.rs"), String::new());
+    s.tree.files.insert(
+        PathBuf::from("crates/termrock/src/zz_probe/inner.rs"),
+        String::new(),
+    );
     assert!(orphans(&s).is_empty(), "{:?}", orphans(&s));
 }
 
@@ -1390,6 +1386,9 @@ fn catalog_without_a_preferred_spelling_the_definition_path_wins() {
 /// prefers an item re-export (`shell::LayerTag`) to a module re-export (`ui::layer`).
 /// The same holds for the clipboard types of `termrock-shell` (#448): the crate root
 /// re-exports them, and the bare walk prefers that to the `shell::clipboard` module path.
+/// And the facade's `prelude` (#452) re-exports nine items of `core` through paths the walk
+/// resolves, so the bare walk spells them `prelude::<Item>`, where the catalog spells them
+/// where they are defined in `core`.
 const MOVED_KEEPING_SPELLING: &[(&str, &str)] = &[
     ("core::hints::ARROWS", "widgets::keyhint::ARROWS"),
     (
@@ -1447,9 +1446,24 @@ const MOVED_KEEPING_SPELLING: &[(&str, &str)] = &[
     ("widgets::table::HeaderAction", "ui::columns::HeaderAction"),
     ("widgets::table::HeaderLabels", "ui::columns::HeaderLabels"),
     ("widgets::table::header_menu", "ui::columns::header_menu"),
+    ("prelude::Actions", "core::response::Actions"),
+    ("prelude::Flow", "core::response::Flow"),
+    ("prelude::Invalidate", "core::response::Invalidate"),
+    ("prelude::ItemKey", "core::id::ItemKey"),
+    ("prelude::KeyedRowSource", "core::list::KeyedRowSource"),
+    ("prelude::Response", "core::response::Response"),
+    ("prelude::RowSource", "core::list::RowSource"),
+    ("prelude::SourceStamp", "core::list::SourceStamp"),
+    ("prelude::WidgetId", "core::id::WidgetId"),
 ];
 
 fn respelled(id: &str) -> String {
+    // A trait impl is named by the trait's spelling inside `<impl ...>`.
+    let mut id = id.to_owned();
+    for (home, spelled) in MOVED_KEEPING_SPELLING {
+        id = id.replace(&format!("<impl {home}>"), &format!("<impl {spelled}>"));
+    }
+    let id = id.as_str();
     for (home, spelled) in MOVED_KEEPING_SPELLING {
         if id == *home {
             return (*spelled).to_owned();
@@ -1797,6 +1811,26 @@ fn catalog_a_temp_workspace_of_crates_gives_facade_spelled_ids_from_disk() {
 }
 
 #[test]
+fn catalog_walker_takes_the_facade_from_crates_termrock_even_with_a_root_src() {
+    let ws = TempWorkspace::new("facade-rule");
+    ws.write("docs/layering.toml", TEMP_LAYERING);
+    ws.write("src/lib.rs", "pub fn root_remnant() {}\n");
+    ws.write("crates/termrock/src/lib.rs", FACADE);
+    ws.write("crates/termrock-text/src/lib.rs", TEXT_CRATE);
+    ws.write("crates/termrock-metrics/src/lib.rs", METRICS_CRATE);
+    let crates = crate_roots(&ws.0);
+    assert_eq!(
+        crates[0],
+        ("termrock".to_owned(), "crates/termrock/src".to_owned()),
+        "a leftover root `src/lib.rs` must not become the facade"
+    );
+    assert!(
+        crates.iter().all(|(_, dir)| dir != "src"),
+        "the root `src` is not a walked crate: {crates:?}"
+    );
+}
+
+#[test]
 fn catalog_test_discovery_scans_every_crate_src_and_tests() {
     let ws = TempWorkspace::new("tests");
     ws.write(
@@ -2050,14 +2084,14 @@ fn catalog_rejects_an_exception_test_in_another_file() {
     let mut s = Sources::load();
     s.coverage = replaced(
         &s.coverage,
-        "tests/forward_policy.rs::one_line_is_sent_and_many_lines_ask_first",
-        "tests/terminal.rs::one_line_is_sent_and_many_lines_ask_first",
+        "crates/termrock-terminal/tests/regressions/forward_policy.rs::one_line_is_sent_and_many_lines_ask_first",
+        "crates/termrock-terminal/tests/regressions/terminal.rs::one_line_is_sent_and_many_lines_ask_first",
     );
     expect_error(&check(&s), "which is no #[test] fn at that");
     let mut s = Sources::load();
     s.coverage = replaced(
         &s.coverage,
-        "tests/forward_policy.rs::one_line_is_sent_and_many_lines_ask_first",
+        "crates/termrock-terminal/tests/regressions/forward_policy.rs::one_line_is_sent_and_many_lines_ask_first",
         "one_line_is_sent_and_many_lines_ask_first",
     );
     expect_error(&check(&s), "which is no #[test] fn at that");
@@ -2067,7 +2101,7 @@ fn catalog_rejects_an_exception_test_in_another_file() {
 fn catalog_rejects_an_ignored_exception_test() {
     let mut s = Sources::load();
     s.tests
-        .get_mut("tests/forward_policy.rs::one_line_is_sent_and_many_lines_ask_first")
+        .get_mut("crates/termrock-terminal/tests/regressions/forward_policy.rs::one_line_is_sent_and_many_lines_ask_first")
         .expect("the named test exists")
         .ignored = true;
     expect_error(&check(&s), "which never runs");

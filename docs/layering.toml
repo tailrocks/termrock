@@ -1,21 +1,17 @@
-# Crate layering table (#439, #440). Read by tests/regressions/layering.rs.
+# Crate layering table (#439, #440, #452). Read by tests/regressions/layering.rs.
 #
-# The check fails any dependency that points up the layers. Stage A scans the
-# modules of the single `junie-tui` package (`src/`) and attributes each file
-# to its target crate through [files]. Stage B reads `cargo metadata` once the
-# crates exist (`crates/termrock-*`). Both read this one table.
+# The check fails any dependency that points up the layers. It reads
+# `cargo metadata` for the real crate graph and checks it against this table.
+# (Until #452 a second stage scanned the modules of the single `junie-tui`
+# package through a `[files]` section; the package no longer has any.)
 #
 # Names are short: `core` means the package `termrock-core`. `termrock` is the
-# facade (`crates/termrock`). `junie-tui` is the transitional implementation
-# package; #452 turns it into a shim and flips its position here.
+# facade (`crates/termrock`). `junie-tui` is the shim that re-exports it: it sits
+# after `termrock` and may depend on nothing else, and nothing may depend on it.
 #
 # Editing rules
 #   * [allow] is the table of #439 and changes only by a recorded decision.
-#   * An extraction PR (#444 to #448) deletes the [files] entries of the files
-#     it moves, because those files then belong to a crate of their own and
-#     stage B checks their dependencies. #452 deletes [files] entirely.
-#   * [files] is not an allowlist for violations; known violations live in
-#     tests/regressions/layering-allowlist.tsv, which may only shrink.
+#   * There is no allowlist of known violations; fix the dependency.
 
 schema = 1
 
@@ -44,8 +40,8 @@ order = [
     "cli",
     "catalog",
     "conformance",
-    "junie-tui",
     "termrock",
+    "junie-tui",
     "functional",
 ]
 
@@ -107,24 +103,6 @@ terminal = ["viewport", "controls", "runtime", "theme", "core", "text", "metrics
 cli = ["core", "theme"]
 catalog = ["grid", "navigation", "collections", "editors", "fields", "viewport", "controls", "session", "runtime", "core"]
 conformance = ["metrics", "text", "core", "theme", "runtime", "session", "controls", "feedback", "overlays", "viewport", "fields", "editors", "layout", "collections", "navigation", "grid", "dialogs", "shell", "terminal", "cli", "catalog"]
-"junie-tui" = ["metrics", "text", "core", "theme", "runtime", "session", "controls", "feedback", "overlays", "viewport", "fields", "editors", "layout", "collections", "navigation", "grid", "dialogs", "shell", "terminal", "cli", "catalog", "conformance"]
-termrock = ["metrics", "text", "core", "theme", "runtime", "session", "controls", "feedback", "overlays", "viewport", "fields", "editors", "layout", "collections", "navigation", "grid", "dialogs", "shell", "terminal", "cli", "catalog", "conformance", "junie-tui"]
+termrock = ["metrics", "text", "core", "theme", "runtime", "session", "controls", "feedback", "overlays", "viewport", "fields", "editors", "layout", "collections", "navigation", "grid", "dialogs", "shell", "terminal", "cli", "catalog", "conformance"]
+"junie-tui" = ["termrock"]
 functional = ["termrock"]
-
-# Pre-split stage only: source file to target crate, from the implementation
-# maps of #444 to #449. The shim modules (`lib.rs`,
-# `core/mod.rs`, `ui/mod.rs`, `widgets/mod.rs`) hold only `mod` lines and belong
-# to the facade.
-[files]
-
-# text
-# Re-exports `termrock-text` at `core::text`; the buffer itself is in the crate.
-"src/core/text.rs" = "text"
-
-# termrock
-"src/core/mod.rs" = "termrock"
-"src/lib.rs" = "termrock"
-"src/metrics.rs" = "termrock"
-"src/ui/columns.rs" = "termrock"
-"src/ui/mod.rs" = "termrock"
-"src/widgets/mod.rs" = "termrock"

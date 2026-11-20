@@ -2,15 +2,15 @@ use termrock::prelude::{
     Actions, Flow, Invalidate, ItemKey, KeyedRowSource, Response, RowSource, SourceStamp, WidgetId,
 };
 
-fn takes_impl_response(response: junie_tui::core::response::Response<u8>) -> u8 {
+fn takes_impl_response(response: termrock_core::response::Response<u8>) -> u8 {
     response.actions().next().copied().unwrap_or_default()
 }
 
-fn takes_impl_key(key: junie_tui::core::id::ItemKey) -> junie_tui::core::id::ItemKey {
+fn takes_impl_key(key: termrock_core::id::ItemKey) -> termrock_core::id::ItemKey {
     key
 }
 
-fn impl_row_count<S: junie_tui::core::list::RowSource>(source: &S) -> usize {
+fn impl_row_count<S: termrock_core::list::RowSource>(source: &S) -> usize {
     source.len()
 }
 
@@ -31,12 +31,12 @@ fn facade_basic_types_preserve_identity() {
     assert_eq!(takes_impl_response(Response::emit(7)), 7);
     assert_eq!(
         takes_impl_key(ItemKey::num(3)),
-        junie_tui::core::id::ItemKey::num(3)
+        termrock_core::id::ItemKey::num(3)
     );
     assert_eq!(impl_row_count(&Rows(4)), 4);
 
-    let id: junie_tui::core::id::WidgetId = WidgetId::of("facade");
-    assert_eq!(id, junie_tui::core::id::WidgetId::of("facade"));
+    let id: termrock_core::id::WidgetId = WidgetId::of("facade");
+    assert_eq!(id, termrock_core::id::WidgetId::of("facade"));
 
     let ignored: Response = Response::ignored();
     assert_eq!(ignored.flow(), Flow::Ignored);
@@ -45,15 +45,15 @@ fn facade_basic_types_preserve_identity() {
 
 #[test]
 fn facade_module_paths_name_the_implementation_types() {
-    let motion: junie_tui::motion::Motion = termrock::motion::Motion::default();
-    assert_eq!(motion, junie_tui::motion::Motion::default());
+    let motion: termrock_core::motion::Motion = termrock::motion::Motion::default();
+    assert_eq!(motion, termrock_core::motion::Motion::default());
 }
 
 #[cfg(feature = "terminal")]
 #[test]
 fn facade_terminal_feature_exposes_the_viewport() {
-    let state: junie_tui::terminal::TerminalState = termrock::terminal::TerminalState::new(5, 20);
-    let viewport: junie_tui::terminal::TerminalViewport =
+    let state: termrock_terminal::TerminalState = termrock::terminal::TerminalState::new(5, 20);
+    let viewport: termrock_terminal::TerminalViewport =
         termrock::terminal::TerminalViewport::new(WidgetId::of("terminal"), state);
     assert_eq!(viewport.id, WidgetId::of("terminal"));
 }
@@ -61,7 +61,7 @@ fn facade_terminal_feature_exposes_the_viewport() {
 #[cfg(feature = "cli")]
 #[test]
 fn facade_cli_feature_exposes_the_arguments() {
-    let level: junie_tui::theme::ColorLevel = termrock::cli::ColorArg::Mono.into();
+    let level: termrock_theme::ColorLevel = termrock::cli::ColorArg::Mono.into();
     assert_eq!(level, termrock::theme::ColorLevel::Mono);
 }
 
@@ -99,9 +99,9 @@ impl KeyedRowSource for Keyed {
     }
 }
 
-fn impl_stamp<S: junie_tui::core::list::KeyedRowSource>(
+fn impl_stamp<S: termrock_core::list::KeyedRowSource>(
     source: &S,
-) -> junie_tui::core::list::SourceStamp {
+) -> termrock_core::list::SourceStamp {
     source.stamp()
 }
 
@@ -113,7 +113,7 @@ fn facade_keyed_source_contract_preserves_identity() {
 
 #[test]
 fn facade_prelude_actions_preserve_identity() {
-    fn takes_actions(actions: junie_tui::core::response::Actions<u8>) -> usize {
+    fn takes_actions(actions: termrock_core::response::Actions<u8>) -> usize {
         actions.len()
     }
     assert_eq!(takes_actions(Actions::One(9u8)), 1);

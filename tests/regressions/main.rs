@@ -13,7 +13,6 @@ mod collection_menu_lifecycle;
 mod common;
 mod core_extension_points;
 mod data_shape;
-mod deferred_api_calls;
 mod document_workspace;
 mod facade_contract;
 mod file_browser_paths;

@@ -201,8 +201,12 @@ fn has(names: &[String], package: &str) -> bool {
 fn consumer_minimal_excludes_clap_and_termpane() {
     let names = resolved_packages("minimal");
     assert!(
-        has(&names, "termrock") && has(&names, "junie-tui"),
+        has(&names, "termrock") && has(&names, "termrock-core"),
         "{names:?}"
+    );
+    assert!(
+        !has(&names, "junie-tui"),
+        "the facade must not depend on the junie-tui shim"
     );
     assert!(
         !has(&names, "clap"),
@@ -218,8 +222,12 @@ fn consumer_minimal_excludes_clap_and_termpane() {
 fn consumer_keyed_modal_excludes_clap_and_termpane() {
     let names = resolved_packages("keyed-modal");
     assert!(
-        has(&names, "termrock") && has(&names, "junie-tui"),
+        has(&names, "termrock") && has(&names, "termrock-core"),
         "{names:?}"
+    );
+    assert!(
+        !has(&names, "junie-tui"),
+        "the facade must not depend on the junie-tui shim"
     );
     assert!(
         !has(&names, "clap"),

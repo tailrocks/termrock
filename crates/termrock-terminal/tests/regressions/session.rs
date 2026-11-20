@@ -5,18 +5,18 @@
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 
-use junie_tui::core::event::{Key, Outcome};
-use junie_tui::core::hit::Axis;
-use junie_tui::core::id::WidgetId;
-use junie_tui::terminal::{
+use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+use ratatui::layout::Rect;
+use termrock_core::event::{Key, Outcome};
+use termrock_core::hit::Axis;
+use termrock_core::id::WidgetId;
+use termrock_terminal::{
     PENDING_EFFECTS, ReplayTiming, SessionClipboardContext, SessionClipboardDecision,
     SessionClipboardRefusal, SessionCommand, SessionConfig, SessionDetach, SessionEffect,
     SessionEnd, SessionEvent, SessionFault, SessionHostPolicy, SessionKey, SessionLease,
     SessionLink, SessionPaste, SessionSent, SessionSize, SessionSource, SessionStatus,
     TerminalSessionController,
 };
-use ratatui::crossterm::event::{KeyCode, KeyModifiers};
-use ratatui::layout::Rect;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Fault(&'static str);
