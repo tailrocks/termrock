@@ -909,15 +909,19 @@ fn jackin_copy_and_ctrl_c_leave_the_failure_dialog_open() {
 
 #[test]
 fn jackin_resize_preserves_the_first_use_screen() {
-    let app = App::new(
+    let app = configured_launch(
         "jackin-resize",
-        JACKIN,
         &["--scenario", "first-use"],
-        120,
-        40,
-        "truecolor",
+        Some("truecolor"),
+        Some("reduced"),
+        &[],
     );
     app.wait_text(JACKIN_UI);
+    // The intro ends on wall time, so a wait for its caption would race the
+    // resizes below. Pass it first and check the first-use manager it leaves.
+    app.leave_intro("manager after intro", |screen| {
+        text(screen).contains(CURRENT)
+    });
     app.resize(71, 20);
     let too_narrow = app.wait_screen("71x20 too small", |screen| {
         let visible = text(screen);
@@ -925,10 +929,10 @@ fn jackin_resize_preserves_the_first_use_screen() {
             && screen.rows() == 20
             && visible.contains("Terminal too small")
             && visible.contains("Need 72×20, have 71×20")
-            && !visible.contains(JACKIN_UI)
+            && !visible.contains(CURRENT)
     });
     assert!(text(&too_narrow).contains("Need 72×20, have 71×20"));
-    assert!(!text(&too_narrow).contains(JACKIN_UI));
+    assert!(!text(&too_narrow).contains(CURRENT));
     assert!(app.child_running(), "71×20 stopped Jackin");
     app.resize(72, 19);
     let too_short = app.wait_screen("72x19 too small", |screen| {
@@ -937,24 +941,24 @@ fn jackin_resize_preserves_the_first_use_screen() {
             && screen.rows() == 19
             && visible.contains("Terminal too small")
             && visible.contains("Need 72×20, have 72×19")
-            && !visible.contains(JACKIN_UI)
+            && !visible.contains(CURRENT)
     });
     assert!(text(&too_short).contains("Need 72×20, have 72×19"));
-    assert!(!text(&too_short).contains(JACKIN_UI));
+    assert!(!text(&too_short).contains(CURRENT));
     assert!(app.child_running(), "72×19 stopped Jackin");
     app.resize(72, 20);
     let minimum = app.wait_screen("72x20 minimum restored", |screen| {
         screen.cols() == 72
             && screen.rows() == 20
-            && text(screen).contains(JACKIN_UI)
+            && text(screen).contains(CURRENT)
             && !text(screen).contains("Terminal too small")
     });
-    assert!(text(&minimum).contains(CAPTION));
+    assert!(text(&minimum).contains(CURRENT));
     app.resize(120, 40);
     app.wait_screen("120x40 restored", |screen| {
         screen.cols() == 120
             && screen.rows() == 40
-            && text(screen).contains(JACKIN_UI)
+            && text(screen).contains(CURRENT)
             && !text(screen).contains("Terminal too small")
     });
     assert!(app.child_running(), "resize stopped Jackin");
