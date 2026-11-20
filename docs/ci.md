@@ -37,6 +37,13 @@ roots: the workspace at `.` and the four consumer fixtures.
   `work-metrics` cost contracts of #56 execute; see [performance contracts](performance-contracts.md).
 - **rust-test-default-root** — every test no group names, from the archive,
   under the `ci` nextest profile.
+  The `settle` nextest setup script (`scripts/nextest-settle.sh`) runs before
+  the first test of every archive run in CI and waits for velnor-ci's early
+  `nextest list` to exit. That list repeats the run's `--extract-to .
+  --extract-overwrite` (tailrocks/velnor-new#2402, #2361) and rewrites the test
+  binaries that are already being launched, which failed 44 tests with
+  `[double-spawn] failed to exec ... Permission denied` in run 44791274299.
+  Delete the script when velnor-ci stops re-extracting.
 - **rust-test-cargo-tools-root** — the three tests that run `cargo metadata`
   (`jackin-console::product_manifest::manifest_shape`,
   `termrock::regressions::layering::{layering_crates_follow_the_table,layering_stage_b_runs_on_the_extracted_crates}`).
