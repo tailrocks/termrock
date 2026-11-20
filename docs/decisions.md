@@ -1602,7 +1602,14 @@ The job-by-job mapping is in [CI](ci.md). Points that change behaviour:
   cold. `timeout_minutes` is 45 (default 30) for that reason; lower it after
   `0.1.108`. `cache-prune.yml` is
   replaced by the `rust-trim` job.
-- The `Required` check keeps its name. A ruleset needs no edit.
+  Dropping `state-seal.yml` is accepted: it produced and sealed compiled state
+  for cache integrity only and shipped no artifact, so no release trust rested
+  on it. Re-check that conclusion if a second workflow is ever added, and when
+  `tools-v0.1.108` re-enables the cache saves.
+- The `Required` check keeps its name, so a ruleset that requires it keeps
+  working. No such ruleset exists today: server-side enforcement is a ruleset
+  on `main` that requires `Required`, which the coordinator creates through
+  github-terraform at rename time.
 
 ### Contracts of the removed tests and scripts
 
@@ -1666,7 +1673,18 @@ Weakened, accepted, and recorded here so a reviewer can object:
   head, and the merge queue checks the merge result.
 - The checker and generator come from the checkout's `mise.toml`, so a branch
   can change what the local hook runs.
-- Cold setup is `mise install` (a source build of `velnor-gen` on macOS). The
+- The mise binary is no longer sha256-pinned. The old `jdx/mise-action` step
+  carried `sha256:`; the generated step (`Install tools` in `rust-ci.yml`, the
+  `version: '2026.11.10'` and `cache: false` lines) pins the action by commit
+  and the mise version by number only.
+- Restored mise and rustup tool caches are not re-verified. The generated
+  `Restore the tools cache` step (`~/.local/share/mise`, `~/.rustup`, keyed by
+  `mise.lock`) is followed by `mise-action` and nothing checks what was
+  restored. The old workflow ran verifier actions after the restore (restored
+  Rust, the Rust channel manifest, jactionlint).
+- Cold setup is `mise install` (a source build of `velnor-gen` on macOS, pinned
+  to the release commit `1f9762b239202d138ceec484da17fa5b27f2c3a3` rather than
+  the movable tag). The
   old explicit trust action (`install-generated-workflow-guard.sh`) is gone;
   `mise exec -- hk install --mise` registers the hooks.
 
@@ -1674,6 +1692,12 @@ Weakened, accepted, and recorded here so a reviewer can object:
 
 - Public git sources disable every base cache; `tools-v0.1.108` is announced to
   fix it.
+- The two provenance regressions above (mise binary digest, restored tool-cache
+  verification) are sent upstream as gaps: velnor-gen should pin the mise
+  digest and verify restored tool caches the way velnor-actions did.
+- velnor-gen does not compare `.velnor/rust-ci.lock` with `mise.toml` or
+  `mise.lock`, so `[velnor-gen]` in the lock was unenforced. `tests/ci_default_branch.rs`
+  now pins its Linux digest, `version` and `commit` to the mise pins.
 - No macOS asset for `velnor-gen` and `velnor-ci`; announced for `0.1.108`.
   Until then, `mise.toml` has two pins, `cargo:` for macOS and `github:` for
   Linux. velnor-gen refuses any tool that applies on the runner OS without a

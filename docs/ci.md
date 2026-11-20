@@ -11,91 +11,92 @@ mise exec -- velnor-gen generate    # rewrite the generated files
 mise exec -- velnor-gen check       # exit 1 when a generated file is stale
 ```
 
-- **Plan** — computes the job matrix (15-minute timeout; the full
-  history checkout is large).
-- **Suite (functional)** — a required check (`required = true`):
-  `cargo nextest run --workspace --profile functional --no-tests fail`
-  (the profile's default filter selects `binary(functional)`). It must
-  pass with 0 skipped before merge. It builds the default features, so
-  it covers the product-shape journeys only; see the
-  [demo feature](#the-demo-feature) below. See
-  [functional testing](functional-testing.md) for the CI contract.
-- **Suite (performance)** — a required check (`required = true`), four hash
-  partitions: `cargo nextest run --workspace --profile performance` (the
-  profile's default filter selects the deterministic cost contracts of #56).
-  The suite builds the default features, so `work-metrics` is off and the
-  counter-gated contracts compile away in it; the contracts run in the
-  `Rust / <crate>` jobs, and this suite runs the inventory gate that proves,
-  from `cargo nextest list --all-features`, that every family and app still
-  contributes its required tests. See
-  [performance contracts](performance-contracts.md#the-performance-ci-suite).
-- **Rust / `<package>`** (for example **Rust / termrock-core**, **Rust /
-  termrock-grid** and **Rust / jackin-console**) — one job per default workspace
-  member, built with `--all-features`. The root `Cargo.toml` is virtual, so the
-  members are the `termrock-*` library crates under `crates/`, the facade, the
-  `junie-tui` shim, the apps, `termrock-functional` and `functional-cross`. Each runs
-  `cargo nextest run --profile ci --package <crate> --no-tests fail
-  --all-features`, which selects every test target of the package except
-  `functional` (the `ci` profile's default filter is `not binary(functional)`:
-  the `functional` targets run in `suite-functional`), plus clippy `-D warnings`
-  on `--all-targets`, `cargo fmt --check` and `cargo doc`. Keep the filter
-  that way, or the PTY journeys run twice.
-- **Rust / `<package>` (product)** — the same five tasks for the product shape.
-  The second configuration in `.velnor/rust-ci.toml` selects the feature
-  `product`, so `jackin-console` gets `--no-default-features --features product`
-  (no demo data, no `clap`, no `jackin-preview`). `termrock` declares
-  `product = ["terminal"]`, so its job builds the library shape that jackin
-  consumes (`default-features = false, features = ["terminal"]`): `termpane` in,
-  `clap` out.
-- **Rust / termrock** and **Rust / termrock (product)** — the facade crate
-  `crates/termrock`, which re-exports the `termrock-*` crates under the supported
-  import path and has empty default features. Its tests live in the shared
-  `crates/termrock/tests/regressions` target.
-- **Rust / junie-tui** and **Rust / junie-tui (product)** — the deprecated shim
-  `crates/junie-tui`, which is `pub use termrock::*;` with the old default
-  features. Its one test target, `regressions`, holds the identity test of the
-  shim against the facade.
-- **Rust / termrock-catalog** and **termrock-catalog (product)** — the
-  declared-API gate of #14: the source gate `catalog_contract` (the `catalog_`
-  tests; the committed id digest and the `doc-hidden-items.txt` list are in
-  `crates/termrock-catalog/tests/regressions`) and the shared `regressions` target. The command that runs it with the
-  Showcase scenarios is `cargo nextest run -p termrock-catalog -p
-  termrock-showcase --all-features --no-tests fail -E 'test(catalog_)'`.
-- **Rust / termrock-conformance** and **termrock-conformance (product)** — the
-  work-metrics harness and report, and the shared `regressions` target of the
-  cost contracts of #56: the library budgets, the responsive-fit, keyed-collection
-  and search-detail cost tests, the performance inventory gate and the
-  default-branch guard. The job builds with `--all-features`, which is how
-  `work_contract_*` runs with the counters on; the `suite-performance` job runs the
-  same tests under `--profile performance`.
-- **Rust / functional-cross** and **Rust / functional-cross (product)** —
-  the same five tasks for `crates/functional-cross`, which holds the
-  cross-binary functional cases. Its `functional` target is selected by
-  `suite-functional` (`--workspace`), not by these jobs: the `ci` profile
-  filters out `binary(functional)`, so they run no tests
-  (`allow_empty_test_suite`) and guard the crate's format, clippy and docs.
-- **Rust / termrock-showcase**, **termrock-tablepro** and **termrock-holla**,
-  each with a **(product)** job — the five tasks for the three application
-  packages under `apps/`. They import `termrock` only. The binary unit tests
-  (the work-metrics scenarios, the Showcase catalog and coverage gates) run
-  here. The journeys that launch them are the `functional` target of
-  `termrock-functional`, run by `suite-functional`; it takes each binary from
-  `TERMROCK_TEST_<NAME>`, which the nextest setup script `app-bins` exports
-  (see [functional testing](functional-testing.md)).
-- **Rust / termrock-consumer-minimal**, **-keyed-modal**, **-terminal** and
-  **-jackin-host**, each with a **(product)** job — the four independent
-  consumer fixtures under `crates/termrock/tests/consumers/`. Each is its own Cargo workspace
-  with a committed lockfile, so Velnor builds it from its own directory and its
-  declared features alone, apart from the repository workspace. These jobs are
-  the CI gate for the feature contract of [API contract](api-contract.md);
-  `bash scripts/check-consumers.sh` runs the same four locally. The `product`
-  jobs repeat the default job because the fixtures declare no `product` feature.
-- **Required** — the verdict job. Its `needs` are Plan, every Rust
-  job, `suite-functional`, `suite-performance` and jactionlint, as listed in the generated
-  `ci.yml`.
-- **DCO** — every commit must carry `Signed-off-by`
-  (`git commit -s`, committer Alexey Zhokhov
-  <alexey@zhokhov.com>).
+`velnor-gen pin-helper <version>` writes `.velnor/rust-ci.lock`, which pins the
+run-time helper `velnor-ci` (and the digests of every release asset). The
+configuration reference is `generator/CONFIG.md` in velnor-new and the
+behaviour is described in its `docs/rust-ci.md`. Every decision is recorded in
+[decisions](decisions.md) under "CI moves from velnor-actions to velnor-gen".
+
+## Jobs
+
+The workflow is `Rust CI` (`rust-ci.yml`) and runs on pull requests, pushes to
+`main`, the merge queue, a nightly schedule and manual dispatch. The generator
+makes one job set per Cargo root, not one job per crate. The repository has five
+roots: the workspace at `.` and the four consumer fixtures.
+
+- **rust-plan** — `velnor-ci plan` selects the packages a run must test from
+  the diff, and everything on a schedule, a manual run or a change to a
+  toolchain, Cargo or mise file.
+- **rust-lint-root** — `cargo fmt --check`, `cargo clippy --workspace
+  --all-targets -D warnings` and `cargo doc` (rustdoc warnings denied) with the
+  default features, and one `Check <crate> alone` step per workspace member
+  (`cargo check -p <crate>`, so each crate builds with only its own features).
+- **rust-test-root** — builds the default-feature nextest archive once, then
+  runs the *all-features lane* (below): tests, clippy and rustdoc with
+  `cli,demo,product,terminal,test-support,work-metrics`. This job is where the
+  `work-metrics` cost contracts of #56 execute; see [performance contracts](performance-contracts.md).
+- **rust-test-default-root** — every test no group names, from the archive,
+  under the `ci` nextest profile.
+- **rust-test-functional-{cases-a,cases-b,cases-c,apps}-root** — the
+  `functional` binaries (`termrock-functional`, `functional-cross`,
+  `jackin-console`), 1,371 PTY tests, split into four disjoint
+  `[[test_groups]]` of 317 to 384 tests that run from the archive with eight
+  test threads and a 30-minute limit each. They replace the four hash
+  partitions of the old `Suite (functional)`. `cases-a` is `g05`, `h01`-`h06`
+  and `s01`-`s03`, `cases-b` is `s04`-`s07`, `cases-c` is `s08`-`s10`, `t01`-`t05`,
+  `x01` and `x02` plus `functional-cross`, and `apps` is the `showcase`,
+  `tablepro`, `holla`, `lifecycle` and `visual` tests of `termrock-functional`
+  plus `jackin-console`. `velnor-ci test-groups check` fails the build job if
+  two groups select one test. A functional test that no group names (a new
+  `cases::` prefix) runs in `rust-test-default-root`, so add its prefix to a
+  group. Each group needs `cargo` because the nextest setup script `app-bins`
+  builds the app binaries the journeys launch. See
+  [functional testing](functional-testing.md).
+- **rust-crates_termrock_tests_consumers_{minimal,keyed_modal,terminal,jackin_host}**
+  — the four independent consumer fixtures under
+  `crates/termrock/tests/consumers/`. Each is its own Cargo workspace with a
+  committed lockfile, so velnor-gen treats it as its own root and builds it
+  from its own directory with the features it declares alone. They are the CI
+  gate for the feature contract of [API contract](api-contract.md) and the
+  only place the library shapes without default features (`minimal`,
+  `terminal`, `jackin-host`) are built. `bash scripts/check-consumers.sh` runs
+  the same four locally and also checks each normal dependency tree.
+- **lint-jactionlint** — jactionlint (with ShellCheck) over the workflows,
+  configured by `.github/jactionlint.yaml`.
+- **lint-generated-workflows** — runs `velnor-gen check` (the mise task
+  `check-generated-workflows`), so a stale or hand-edited generated file fails
+  the pull request. See [Generated workflow check](#generated-workflow-check).
+- **rust-trim** — "Cache maintenance", on the default branch only: prunes
+  superseded caches towards the budget.
+- **required** — the check named **Required**. It passes only when every
+  selected job ran and passed. Require this one check in the ruleset; its name
+  is unchanged from the velnor-actions workflow, so a ruleset that requires it
+  keeps working. No ruleset requires it yet; it is created at rename time.
+- **cache** — the advisory cache report.
+- **DCO** — every commit must carry `Signed-off-by` (`git commit -s`, committer
+  Alexey Zhokhov <alexey@zhokhov.com>). It is a GitHub app, not a workflow, and
+  is unaffected by the generator. SonarCloud runs as Automatic Analysis
+  (`.sonarcloud.properties`), also not a workflow.
+
+## The all-features lane
+
+velnor-gen builds with the default features and has no `--all-features` flag.
+The `[[test_lane]]` entry of `.velnor/rust-ci.toml` re-runs the selected tests,
+clippy and rustdoc with every feature named. The list must hold every feature
+of every workspace member (`cli`, `demo`, `product`, `terminal`, `test-support`,
+`work-metrics`); add a new feature there when a crate declares one. The lane
+selects every test except the `functional` binaries (`not binary(functional)`),
+which run in the test groups, as the old `ci` nextest profile did for the
+per-crate jobs. A `Test lane guard` step (`velnor-ci lane-guard`) fails the job
+if a test that exists only with those features falls outside the filter. None
+does today, and none is a functional test.
+`tests/regressions/performance_inventory.rs` pins that the lane exists, carries
+no other filter, names every package and that `Required` waits for its job.
+
+The old `product` configuration (`--no-default-features --features product`) is
+not generated. The apps declare `default = []`, so their default build is the
+product shape; the library shapes without default features are the consumer
+fixtures. The feature `product` still enables nothing in `jackin-console`.
 
 ## Test targets and generated CI
 
@@ -142,9 +143,11 @@ in two places:
 - in CI, as the `lint-generated-workflows` job, which `Required` waits for. A
   bypassed or missing hook is therefore caught on the pull request.
 
-`velnor-gen` comes from `mise.toml`: a source build of tag `tools-v0.1.106` on
+`velnor-gen` comes from `mise.toml`: a source build of the commit of tag `tools-v0.1.106` on
 macOS (the tools release has no macOS asset) and the prebuilt release asset on
-Linux, with its checksum in `mise.lock`. The generator reads the checkout's own
+Linux, with its checksum in `mise.lock`. `tests/ci_default_branch.rs` pins the
+Linux digest, `version` and `commit` of `.velnor/rust-ci.lock` to those pins,
+because `velnor-gen check` does not compare them. The generator reads the checkout's own
 `mise.toml`, so the check proves reproducibility, not authorization.
 
 ## Workflow policy boundary
