@@ -1,13 +1,13 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
 use termrock_controls::scrollbar::{THUMB, TRACK};
-use termrock_core::focus::FocusRing;
-use termrock_core::hit::HitRegistry;
 use termrock_core::id::WidgetId;
-use termrock_runtime::ctx::{Interaction, RenderCtx};
+use termrock_core::scroll::TrackClick;
 use termrock_terminal::{TerminalState, TerminalViewport};
 use termrock_theme::{ColorLevel, Theme};
 use termrock_viewport::viewport_ops::ViewportOps;
+
+use super::support::paint_viewport;
 
 const ID: WidgetId = WidgetId::of("t.pane.edge");
 const AREA: Rect = Rect::new(1, 1, 11, 10);
@@ -30,13 +30,13 @@ fn history() -> TerminalViewport {
 }
 
 fn paint(v: &TerminalViewport, caret_allowed: bool) -> (Buffer, Option<Position>) {
-    let theme = Theme::for_level(ColorLevel::TrueColor);
-    let mut buf = Buffer::empty(Rect::new(0, 0, 30, 14));
-    let mut hits = HitRegistry::default();
-    let mut ring = FocusRing::default();
-    let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
-    let cursor = v.draw(AREA, &mut buf, &mut ctx, theme.canvas, caret_allowed);
-    (buf, cursor)
+    paint_viewport(
+        v,
+        AREA,
+        &Theme::for_level(ColorLevel::TrueColor),
+        caret_allowed,
+        TrackClick::default(),
+    )
 }
 
 fn track(buf: &Buffer) -> Vec<String> {

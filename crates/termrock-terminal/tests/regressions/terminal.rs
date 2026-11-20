@@ -10,6 +10,8 @@ use termrock_terminal::{
     Modes, RowWrap, TermEvent, TermView, TerminalState, TerminalView, encode_key,
 };
 
+use super::support::draw_state;
+
 fn lines(from: u32, to: u32) -> Vec<u8> {
     (from..=to)
         .flat_map(|n| format!("L{n:02}\r\n").into_bytes())
@@ -29,16 +31,6 @@ fn view_rows(view: &TermView<'_>) -> Vec<String> {
                 .collect()
         })
         .collect()
-}
-
-fn draw(state: &TerminalState, focused: bool) -> Buffer {
-    let (rows, cols) = state.size();
-    let area = Rect::new(0, 0, cols, rows);
-    let mut buf = Buffer::empty(area);
-    TerminalView::new(state)
-        .focused(focused)
-        .render(area, &mut buf);
-    buf
 }
 
 fn buf_rows(buf: &Buffer) -> Vec<String> {
@@ -66,11 +58,11 @@ fn history_state() -> TerminalState {
 fn scrolled_view_reads_scrollback() {
     let mut state = history_state();
     assert_eq!(state.scrollback_len(), 24);
-    assert_eq!(buf_rows(&draw(&state, false)), numbered(25, 30));
+    assert_eq!(buf_rows(&draw_state(&state, false)), numbered(25, 30));
     for (offset, first) in [(3, 22), (6, 19), (10, 15), (99, 1)] {
         state.set_scrollback(offset);
         assert_eq!(
-            buf_rows(&draw(&state, false)),
+            buf_rows(&draw_state(&state, false)),
             numbered(first, first + 5),
             "offset {offset}"
         );
@@ -93,7 +85,7 @@ fn view_forces_offset_zero_on_the_alternate_screen() {
         assert_eq!(view_rows(&state.view(offset)), live, "view at {offset}");
     }
     state.set_scrollback(6);
-    assert_eq!(buf_rows(&draw(&state, false)), live);
+    assert_eq!(buf_rows(&draw_state(&state, false)), live);
 
     state.feed(b"\x1b[?1049l");
     assert_eq!(view_rows(&state.view(3)), numbered(22, 27));
@@ -163,7 +155,7 @@ fn scrolled_off_counts_only_rows_that_reach_history() {
 fn wide_cell_is_drawn_once() {
     let mut state = TerminalState::new(2, 6);
     state.feed("\x1b[41m日\x1b[0mx".as_bytes());
-    let buf = draw(&state, false);
+    let buf = draw_state(&state, false);
     assert_eq!(buf[(0, 0)].symbol(), "日");
     assert_eq!(buf[(0, 0)].bg, Color::Indexed(1));
     assert_eq!(buf[(1, 0)].symbol(), " ");
@@ -177,18 +169,18 @@ fn phantom_cursor_column_stays_visible() {
     let mut state = TerminalState::new(3, 5);
     state.feed(b"abcde");
     assert_eq!(state.view(0).cursor(), (0, 4));
-    let buf = draw(&state, true);
+    let buf = draw_state(&state, true);
     let reversed: Vec<(u16, u16)> = (0..3)
         .flat_map(|y| (0..5).map(move |x| (x, y)))
         .filter(|&at| buf[at].modifier.contains(Modifier::REVERSED))
         .collect();
     assert_eq!(reversed, vec![(4, 0)]);
 
-    let unfocused = draw(&state, false);
+    let unfocused = draw_state(&state, false);
     assert!(!unfocused[(4, 0)].modifier.contains(Modifier::REVERSED));
 
     state.feed(b"\x1b[?25l");
-    let hidden = draw(&state, true);
+    let hidden = draw_state(&state, true);
     assert!(
         (0..5).all(|x| !hidden[(x, 0)].modifier.contains(Modifier::REVERSED)),
         "a hidden cursor draws nothing"
@@ -274,9 +266,9 @@ fn passthrough_events_map() {
 fn split_utf8_across_feeds() {
     let mut state = TerminalState::new(2, 4);
     state.feed(&[0xE2, 0x94]);
-    assert_eq!(buf_rows(&draw(&state, false))[0], "    ");
+    assert_eq!(buf_rows(&draw_state(&state, false))[0], "    ");
     state.feed(&[0x82, b'x']);
-    assert_eq!(buf_rows(&draw(&state, false))[0], "│x  ");
+    assert_eq!(buf_rows(&draw_state(&state, false))[0], "│x  ");
 }
 
 #[test]
@@ -290,13 +282,13 @@ fn resize_contract() {
     let at = state.cursor(area).expect("cursor inside the area");
     assert!(area.contains(at), "{at:?}");
     state.feed(b"\x1b[1;1HZZ");
-    assert_eq!(buf_rows(&draw(&state, false))[0], "ZZ   ");
+    assert_eq!(buf_rows(&draw_state(&state, false))[0], "ZZ   ");
 
     state.resize(6, 20);
     assert_eq!(state.size(), (6, 20));
     assert!(state.modes().alt_screen);
     state.feed(b"\x1b[6;20Hq");
-    let buf = draw(&state, false);
+    let buf = draw_state(&state, false);
     assert_eq!(buf[(19, 5)].symbol(), "q");
 
     state.resize(0, 0);
@@ -533,10 +525,10 @@ fn the_cursor_stays_visible_on_a_cell_that_is_already_inverse() {
     state.feed(b"\x1b[7mX\x1b[0m\x1b[1D");
     assert_eq!(state.view(0).cursor(), (0, 0));
 
-    let unfocused = draw(&state, false);
+    let unfocused = draw_state(&state, false);
     assert!(unfocused[(0, 0)].modifier.contains(Modifier::REVERSED));
 
-    let focused = draw(&state, true);
+    let focused = draw_state(&state, true);
     assert!(
         !focused[(0, 0)].modifier.contains(Modifier::REVERSED),
         "the cursor flips the inverse cell, so it shows apart from the unfocused look"
@@ -548,7 +540,7 @@ fn strikethrough_text_is_drawn_crossed_out() {
     let mut state = TerminalState::new(2, 8);
     state.feed(b"\x1b[9mgone\x1b[0m ok");
 
-    let buf = draw(&state, false);
+    let buf = draw_state(&state, false);
 
     for x in 0..4 {
         assert!(

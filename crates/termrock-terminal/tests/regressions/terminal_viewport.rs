@@ -13,6 +13,8 @@ use termrock_theme::{ColorLevel, Theme};
 use termrock_viewport::viewport::CellPos;
 use termrock_viewport::viewport_ops::ViewportOps;
 
+use super::support::paint_viewport;
+
 const ID: WidgetId = WidgetId::of("t.terminal.viewport");
 const AREA: Rect = Rect::new(0, 0, 11, 10);
 
@@ -40,14 +42,23 @@ fn viewport(last: u32) -> TerminalViewport {
     v
 }
 
+fn vertical_bar() -> Bar {
+    Bar {
+        id: scrollbar::id_for(ID),
+        owner: ID,
+        axis: Axis::Vertical,
+        track: Rect::new(AREA.right() - 1, AREA.y, 1, AREA.height),
+    }
+}
+
 fn paint(v: &dyn ViewportOps, caret_allowed: bool) -> (Buffer, Option<Position>) {
-    let theme = Theme::for_level(ColorLevel::TrueColor);
-    let mut buf = Buffer::empty(Rect::new(0, 0, 30, 12));
-    let mut hits = HitRegistry::default();
-    let mut ring = FocusRing::default();
-    let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
-    let cursor = v.draw(AREA, &mut buf, &mut ctx, theme.canvas, caret_allowed);
-    (buf, cursor)
+    paint_viewport(
+        v,
+        AREA,
+        &Theme::for_level(ColorLevel::TrueColor),
+        caret_allowed,
+        TrackClick::default(),
+    )
 }
 
 fn grid_rows(buf: &Buffer) -> Vec<String> {
@@ -727,11 +738,7 @@ fn the_ops_drive_the_terminal_viewport_through_the_trait() {
 
 fn paint_at(v: &TerminalViewport, level: ColorLevel) -> (Buffer, Theme) {
     let theme = Theme::for_level(level);
-    let mut buf = Buffer::empty(Rect::new(0, 0, 30, 12));
-    let mut hits = HitRegistry::default();
-    let mut ring = FocusRing::default();
-    let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
-    v.draw(AREA, &mut buf, &mut ctx, theme.canvas, false);
+    let (buf, _) = paint_viewport(v, AREA, &theme, false, TrackClick::default());
     (buf, theme)
 }
 
@@ -800,19 +807,9 @@ fn press_below_the_thumb(app: TrackClick) -> bool {
     let mut v = viewport(300);
     v.jump_start();
     let theme = Theme::for_level(ColorLevel::TrueColor);
-    let mut buf = Buffer::empty(Rect::new(0, 0, 30, 12));
-    let mut hits = HitRegistry::default();
-    let mut ring = FocusRing::default();
-    let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
-    ctx.track_click = app;
-    ViewportOps::draw(&v, AREA, &mut buf, &mut ctx, theme.canvas, false);
+    paint_viewport(&v, AREA, &theme, false, app);
 
-    let bar = Bar {
-        id: scrollbar::id_for(ID),
-        owner: ID,
-        axis: Axis::Vertical,
-        track: Rect::new(AREA.right() - 1, AREA.y, 1, AREA.height),
-    };
+    let bar = vertical_bar();
     v.bar_input(
         &bar,
         Position::new(AREA.right() - 1, AREA.bottom() - 1),
@@ -841,20 +838,10 @@ fn the_track_click_each_terminal_was_drawn_with_decides_its_own_press() {
     second.jump_start();
     let theme = Theme::for_level(ColorLevel::TrueColor);
     for (v, click) in [(&first, TrackClick::Jump), (&second, TrackClick::Page)] {
-        let mut buf = Buffer::empty(Rect::new(0, 0, 30, 12));
-        let mut hits = HitRegistry::default();
-        let mut ring = FocusRing::default();
-        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
-        ctx.track_click = click;
-        ViewportOps::draw(v, AREA, &mut buf, &mut ctx, theme.canvas, false);
+        paint_viewport(v, AREA, &theme, false, click);
     }
 
-    let bar = Bar {
-        id: scrollbar::id_for(ID),
-        owner: ID,
-        axis: Axis::Vertical,
-        track: Rect::new(AREA.right() - 1, AREA.y, 1, AREA.height),
-    };
+    let bar = vertical_bar();
     let press = Position::new(AREA.right() - 1, AREA.bottom() - 1);
     first.bar_input(&bar, press, true);
     second.bar_input(&bar, press, true);
