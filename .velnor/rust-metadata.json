@@ -2945,7 +2945,7 @@
     }
   },
   "manifests": {
-    "Cargo.toml": "5abaca1ef8aa03d4cba99dfb4079c5b6972cf2d803fa63ef0702bf419b267dde",
+    "Cargo.toml": "6bce95746afa6746fc05becb5ffb99db2256b0fd2da802f870969cc55e4c633d",
     "apps/holla/Cargo.toml": "c82d77a8d9c52b5a1d74f0a443fb0c397d58935a3143a75f4c873a08cb5f942e",
     "apps/jackin/Cargo.toml": "a996366ec12d3f3e1dec4595e7d1650580cf56ea3c96618b9592b9a8fadc8eb5",
     "apps/showcase/Cargo.toml": "e476a80e2eb4db31229f365493df716b66ce0542866f8e3464d5c0882e5d3938",
