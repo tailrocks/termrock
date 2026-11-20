@@ -2,9 +2,9 @@ use std::cell::RefCell;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::core::edit::clipboard;
-use crate::theme::Tone;
-use crate::ui::text::{plural, truncate};
+use termrock_core::edit::clipboard;
+use termrock_text::cells::{plural, truncate};
+use termrock_theme::Tone;
 
 static NEXT_OWNER: AtomicU64 = AtomicU64::new(1);
 

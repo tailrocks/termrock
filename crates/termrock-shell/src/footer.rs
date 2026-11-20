@@ -1,9 +1,9 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 
-use crate::theme::{BadgeKind, HintAlign, StatusKind, Tone};
-use crate::ui::ctx::{RenderCtx, fill};
-use crate::widgets::keyhint::{self, Hint, HintPriority, hint};
+use termrock_controls::keyhint::{self, Hint, HintPriority, hint};
+use termrock_runtime::ctx::{RenderCtx, fill};
+use termrock_theme::{BadgeKind, HintAlign, StatusKind, Tone};
 
 use super::Shell;
 
@@ -130,7 +130,7 @@ impl Footer {
 
     pub fn compose(&self, reveal: Option<(&'static str, &'static str)>) -> Vec<Hint> {
         let mut hints = self.hints.clone().unwrap_or_else(|| self.fallback.clone());
-        crate::ui::reveal::advertise(&mut hints, reveal, |h| h.key.as_ref(), hint);
+        termrock_runtime::reveal::advertise(&mut hints, reveal, |h| h.key.as_ref(), hint);
         if self.tab_next && !self.editing && !hints.iter().any(|h| h.key == "Tab") {
             hints.push(hint("Tab", "Next"));
         }
@@ -161,7 +161,7 @@ impl Footer {
         fill(buf, area, t.base());
         let hints = self.compose(ctx.reveal_hint);
         let badge = self.editing.then_some(("EDIT", BadgeKind::Edit));
-        let style = crate::theme::HintBarStyle {
+        let style = termrock_theme::HintBarStyle {
             align: self.align.unwrap_or(t.hintbar.align),
             ..t.hintbar
         };
@@ -175,7 +175,7 @@ impl Footer {
             let room = area.width.saturating_sub(need + 3) as usize;
             if room >= PEEK_MIN {
                 self.status = Some(FooterStatus::Toned {
-                    text: crate::ui::text::truncate(text, room),
+                    text: termrock_text::cells::truncate(text, room),
                     tone: Tone::Secondary,
                     parts: vec![],
                 });
@@ -219,5 +219,5 @@ impl Footer {
 const PEEK_MIN: usize = 8;
 
 pub fn deliverable(key: &str) -> bool {
-    crate::core::keyboard::label_deliverable(key)
+    termrock_core::keyboard::label_deliverable(key)
 }

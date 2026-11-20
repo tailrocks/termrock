@@ -1,10 +1,10 @@
 use std::any::Any;
 
-use crate::core::focus::{Focus, FocusRing};
-use crate::theme::{StatusKind, Tone};
-use crate::ui::context::ContextConfig;
-use crate::ui::layer::{Layer, LayerTag};
-use crate::ui::popup::Dismiss;
+use termrock_core::focus::{Focus, FocusRing};
+use termrock_overlays::context::ContextConfig;
+use termrock_overlays::layer::{Layer, LayerTag};
+use termrock_runtime::popup::Dismiss;
+use termrock_theme::{StatusKind, Tone};
 
 pub type TopFn<R, W> = Box<dyn FnOnce(&mut dyn Layer<R, W>)>;
 
@@ -110,7 +110,7 @@ impl<'a, R, W: ?Sized, G> Cx<'a, R, W, G> {
         self.requests.push(Request::Sticky(s.into()));
     }
 
-    pub fn refused(&mut self, reason: crate::core::refusal::Reason) {
+    pub fn refused(&mut self, reason: termrock_core::refusal::Reason) {
         self.status(reason.text);
     }
 

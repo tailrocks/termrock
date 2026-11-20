@@ -4,26 +4,26 @@ use ratatui::Frame;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 
-use crate::core::event::{Input, InputConfig, Outcome};
-use crate::core::focus::{Focus, FocusChange, FocusFallback, FocusRing};
-use crate::core::hit::HitRegistry;
-use crate::core::id::WidgetId;
-use crate::core::keyboard::KeyboardProtocol;
-use crate::core::pointer::{PointerParts, PointerRouter};
-use crate::motion::Motion;
 use crate::runtime::{Application, Coalesce, ExternalReceiver, RawInputPolicy};
-use crate::theme::Theme;
-use crate::ui::ctx::{Interaction, RenderCtx, fill};
-use crate::widgets::hintbar::HintKeys;
-use crate::widgets::keyhint::Hint;
-use crate::widgets::too_small::TooSmall;
+use termrock_controls::hintbar::HintKeys;
+use termrock_controls::keyhint::Hint;
+use termrock_core::event::{Input, InputConfig, Outcome};
+use termrock_core::focus::{Focus, FocusChange, FocusFallback, FocusRing};
+use termrock_core::hit::HitRegistry;
+use termrock_core::id::WidgetId;
+use termrock_core::keyboard::KeyboardProtocol;
+use termrock_core::motion::Motion;
+use termrock_core::pointer::{PointerParts, PointerRouter};
+use termrock_feedback::too_small::TooSmall;
+use termrock_runtime::ctx::{Interaction, RenderCtx, fill};
+use termrock_theme::Theme;
 
 use super::{Clipboard, ClipboardHook, Copied, Cx, Request, StatusLine, StopHandle};
-use crate::clock::{Moment, TestRequest};
-use crate::theme::Strings;
-use crate::ui::context::ContextConfig;
-use crate::ui::leave::{LeaveGuard, Stakes};
-use crate::widgets::dialog::Dialog;
+use termrock_dialogs::dialog::Dialog;
+use termrock_dialogs::leave::{LeaveGuard, Stakes};
+use termrock_overlays::context::ContextConfig;
+use termrock_session::clock::{Moment, TestRequest};
+use termrock_theme::Strings;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct PageKey(pub u64);
@@ -134,8 +134,8 @@ impl<P> Shell<P> {
             too_small: false,
             quit: false,
             motion: Motion::Full,
-            test_requests: crate::clock::TestRequest::opted_in(),
-            fence_requests: crate::clock::TestRequest::fence_opted_in(),
+            test_requests: termrock_session::clock::TestRequest::opted_in(),
+            fence_requests: termrock_session::clock::TestRequest::fence_opted_in(),
             focus_fallback: FocusFallback::Nearest,
             footer_keys: HintKeys::default(),
             context: ContextConfig::DEFAULT,
@@ -433,7 +433,7 @@ pub fn handle<A: App + ?Sized>(app: &mut A, input: Input) -> Outcome {
         super::clipboard::queue_output(TestRequest::FENCE_ACK.to_owned());
         return Outcome::Ignored;
     }
-    crate::core::refusal::clear_refusal();
+    termrock_core::refusal::clear_refusal();
     let status_before = app.shell().status.revision();
     if request.is_none() {
         app.shell_mut().status.on_input(&input);
@@ -456,7 +456,7 @@ pub fn handle<A: App + ?Sized>(app: &mut A, input: Input) -> Outcome {
     }
     out = out.or(blur_fan_out(app));
     let out = app.after_input(&logged, out);
-    crate::core::refusal::clear_refusal();
+    termrock_core::refusal::clear_refusal();
     out
 }
 
@@ -476,9 +476,9 @@ impl<A: App> Application for A {
     fn coalesce(&self) -> Coalesce {
         App::coalesce(self)
     }
-    fn shapes(&self) -> crate::core::shape::Shapes {
+    fn shapes(&self) -> termrock_core::shape::Shapes {
         let s = self.shell();
-        crate::core::shape::shapes_for(&s.pointer, &s.hits)
+        termrock_core::shape::shapes_for(&s.pointer, &s.hits)
     }
     fn input_config(&self) -> InputConfig {
         App::input_config(self)

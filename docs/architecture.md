@@ -126,8 +126,8 @@ are recorded in [decisions](decisions.md).
    `termrock-runtime` holds `RenderCtx` and its plumbing. `Application` and the
    run loop that is generic over it belong with `App` in `termrock-shell`,
    because `impl<A: App> Application for A` is legal only when both traits are
-   in one crate; until #448 moves them they stay in `junie-tui`. The facade
-   module `termrock::runtime` is `junie-tui`'s `runtime`, which re-exports
+   in one crate, so they moved there in #448. The facade module
+   `termrock::runtime` is `termrock_shell::runtime`, which re-exports
    `termrock-session`'s `runtime` next to them.
 4. Focus, hit testing and key maps stay in `termrock-core`, not in runtime.
    `list`, `keyed` and `intent` depend on them, and `core::{hit, intent,

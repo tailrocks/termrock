@@ -1,8 +1,8 @@
 use ratatui::layout::Rect;
 
-use crate::core::id::WidgetId;
-use crate::widgets::dialog::Dialog;
-use crate::widgets::menu::{MenuBar, MenuBarAction, MenuItem};
+use termrock_core::id::WidgetId;
+use termrock_dialogs::dialog::Dialog;
+use termrock_overlays::menu::{MenuBar, MenuBarAction, MenuItem};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Regions {
