@@ -1,0 +1,14 @@
+version = "0.1.106"
+commit = "1f9762b239202d138ceec484da17fa5b27f2c3a3"
+
+[velnor-ci]
+linux-arm64 = "6acf4600ac8fe1a373deea4eb88e1d6825a3e693ad763faf168a3aeaae33fc73"
+linux-x64 = "963f7ba5989699daf6caf87a7e29755bc70a25e9aa971b062e5ed33eb93de827"
+
+[velnor-ci-binary]
+linux-arm64 = "55638580a2a97eb824940a50006b47101406c39a577dad52afb86bff9e5bdd76"
+linux-x64 = "f25ac82e27cb5a26043ee1ab3ebb64a62a2efd23be0037a3fb5c296ed920fea1"
+
+[velnor-gen]
+linux-arm64 = "2f7ee6147e9d119f1992ca9c32b9d41edf1211ba30ec57ce5bbee7957c8ddca4"
+linux-x64 = "222f7d078b251d74677150a2abc688357fa186ec7e4a820d0cadcf7836e74b9a"

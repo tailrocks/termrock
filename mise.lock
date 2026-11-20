@@ -54,6 +54,14 @@ specifiers = ["rev:f1fb3f276b8d49948881c07b3bbc619840b6cc93"]
 [tools."cargo:https://github.com/tailrocks/tuiscotti".options]
 crate = "tuiscotti-cli"
 
+[[tools."cargo:https://github.com/tailrocks/velnor-new"]]
+version = "tag:tools-v0.1.106"
+backend = "cargo:https://github.com/tailrocks/velnor-new"
+specifiers = ["tag:tools-v0.1.106"]
+
+[tools."cargo:https://github.com/tailrocks/velnor-new".options]
+crate = "velnor-gen"
+
 [[tools.gh]]
 version = "2.105.0"
 backend = "aqua:cli/cli"
@@ -78,26 +86,17 @@ url_api = "https://api.github.com/repos/cli/cli/releases/assets/761188667"
 provenance = "github-attestations"
 
 [[tools."github:tailrocks/velnor-new"]]
-version = "0.1.78"
+version = "tools-v0.1.106"
 backend = "github:tailrocks/velnor-new"
-specifiers = ["0.1.78"]
+specifiers = ["tools-v0.1.106"]
+
+[tools."github:tailrocks/velnor-new".options]
+asset_pattern = "velnor-gen-*-unknown-linux-musl.tar.gz"
 
 [tools."github:tailrocks/velnor-new"."platforms.linux-x64"]
-checksum = "sha256:3caad6b07553a6840496b9a729bfaac86efa8071be2d32268b06a63d2c1aa9e7"
-url = "https://github.com/tailrocks/velnor-new/releases/download/v0.1.78/velnor-actions-0.1.78-x86_64-unknown-linux-gnu"
-url_api = "https://api.github.com/repos/tailrocks/velnor-new/releases/assets/719690387"
-provenance = "github-attestations"
-
-[tools."github:tailrocks/velnor-new"."platforms.macos-arm64"]
-checksum = "sha256:c0435f5b4978ae3ecdb030b4870d2a172ea91fecd7ed23e583ecdd1bcd047ef8"
-url = "https://github.com/tailrocks/velnor-new/releases/download/v0.1.78/velnor-actions-0.1.78-aarch64-apple-darwin"
-url_api = "https://api.github.com/repos/tailrocks/velnor-new/releases/assets/719690385"
-provenance = "github-attestations"
-
-[tools."github:tailrocks/velnor-new"."platforms.macos-x64"]
-checksum = "sha256:bd4099027b21685442d537d6af926336840d917536e4855bfa0d94cbaa735f02"
-url = "https://github.com/tailrocks/velnor-new/releases/download/v0.1.78/velnor-actions-0.1.78-x86_64-apple-darwin"
-url_api = "https://api.github.com/repos/tailrocks/velnor-new/releases/assets/719690429"
+checksum = "sha256:222f7d078b251d74677150a2abc688357fa186ec7e4a820d0cadcf7836e74b9a"
+url = "https://github.com/tailrocks/velnor-new/releases/download/tools-v0.1.106/velnor-gen-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/tailrocks/velnor-new/releases/assets/769953861"
 provenance = "github-attestations"
 
 [[tools.hk]]
@@ -158,9 +157,9 @@ signer = "sigstore-oidc:https://github.com/jdx/mr-boxington/.github/workflows/re
 repository_ids = { repository = "1340721957" }
 
 [[tools.rust]]
-version = "1.99.1"
+version = "1.100.0"
 backend = "core:rust"
-specifiers = ["1.99.1"]
+specifiers = ["1.100.0"]
 
 [tools.rust.options]
 components = "clippy,rustfmt"
