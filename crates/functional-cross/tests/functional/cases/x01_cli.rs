@@ -78,7 +78,7 @@ fn help_of(name: &str, bin: &str, about: &str, running: &str) {
     let screen = wait_settled(&app, name, |screen| text(screen).contains(about));
     require(&screen, about);
     refuse(&screen, running);
-    assert!(!app.child_running(), "{name} left the UI running");
+    app.wait_exit(&format!("{name} left the UI running"));
     app.expect_exited(HELP_EXIT);
 }
 
@@ -95,7 +95,7 @@ fn rejected(
     let screen = wait_settled(&app, name, |screen| text(screen).contains(named));
     require(&screen, named);
     refuse(&screen, running);
-    assert!(!app.child_running(), "{name} left the UI running");
+    app.wait_exit(&format!("{name} left the UI running"));
     app.expect_exited(ERROR_EXIT);
 }
 
@@ -119,7 +119,7 @@ fn shot(app: &App, test_id: &str, cols: u32, rows: u32) {
     require(&screen, HELP_MOTION);
     require(&screen, HELP_TAIL);
     refuse(&screen, SHOWCASE_UI);
-    assert!(!app.child_running(), "{test_id} left the UI running");
+    app.wait_exit(&format!("{test_id} left the UI running"));
     app.expect_exited(HELP_EXIT);
     check_stored(app, &screen, test_id);
 }
