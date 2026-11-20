@@ -23,13 +23,15 @@ mise install
 cargo nextest run --locked --workspace --profile functional --no-tests fail
 ```
 
-This is the command CI runs in `suite-functional`. The profile selects
+This is the local command. CI does not use the `functional` profile: its
+`rust-test-functional-*` jobs run the same binaries under `--profile ci`,
+selected by filter (see [CI](ci.md)). The profile selects
 the `functional` target of the workspace crates and retains a JUnit
 report. The `functional` target of `jackin-console` needs the feature
 `demo`, which is off by default, so this command runs the root journeys
 only (the root target reads its candidate binaries from
 `TERMROCK_TEST_<NAME>`, which the `app-bins` setup script exports). Add `--all-features` to include the jackin journeys; CI runs them in
-`Rust / jackin-console` (see [CI](ci.md#the-demo-feature)). To run the
+`rust-test-functional-apps-root` (see [CI](ci.md)). To run the
 target without the profile:
 
 ```sh
@@ -172,9 +174,9 @@ that crate's `tests/regressions/main.rs`, and the same under `apps/jackin/tests/
 lists every test target, so each new one changes the generated workflows
 (see [CI](ci.md#test-targets-and-generated-ci)).
 `cargo nextest run --all-features --all-targets` runs them, and so do the
-`Rust / <crate>` and `Rust / jackin-console` CI jobs
-(`nextest run --profile ci --package <crate> --all-features`); the `functional` suite
-does not.
+`rust-test-root` all-features lane
+(`nextest run --profile ci --features ... -E 'not binary(functional)'`); the
+`functional` groups do not.
 
 Three files prove the packaging rule that the demo is off by default.
 `product_mode.rs` compiles only without `demo`: it builds a `World` from
@@ -492,20 +494,33 @@ sizes and colors does not replace distinct domain journeys.
 
 ## CI and failure evidence
 
-The source configuration is [.velnor/config.toml](../.velnor/config.toml)
-(`compile_driver = "mbx"`: CI and local builds both run cargo through
-mr-boxington; local setup is the mise postinstall `mbx setup`). The
-dedicated functional suite runs on PRs and branch pushes and can be
-selected manually with `tier=functional`. Its generated command, run
-through `mbx`, is:
+The source configuration is [.velnor/rust-ci.toml](../.velnor/rust-ci.toml)
+(CI and local builds both run cargo through mr-boxington; the mise
+`[wrappers.cargo]` routes every cargo call through `mbx`). The functional
+journeys run on pull requests, branch pushes, the merge queue and manual
+dispatch as four `[[test_groups]]` (`functional-cases-a`, `-b`, `-c`,
+`-apps`; see [CI](ci.md)), each from one default-feature nextest archive.
+Each group runs, through `cargo-nextest`:
+
+```sh
+cargo nextest run --archive-file nextest-archive.tar.zst --test-threads 8 \
+  --profile ci --ignore-default-filter -E '<the group filter>'
+```
+
+The group filters together select exactly `binary(functional)`. Locally, the
+profile `functional` selects the same target:
 
 ```sh
 cargo nextest run --workspace --no-tests fail --profile functional
 ```
 
-The profile selects only the non-ignored functional target, so a missing
-target fails (`--no-tests fail`) instead of passing empty. Failures retain
-`target/functional` and `target/nextest/functional` for fourteen days. The
+and `--no-tests fail` makes a missing target fail instead of passing empty.
+Generated CI passes `--no-tests=pass` for a group (velnor-gen has no setting
+for it), so the local command above is the one that proves the target exists.
+The old generated suite uploaded `target/functional` and
+`target/nextest/functional` for fourteen days on failure; generated CI no longer
+does, so reproduce a CI failure locally with the profile above, which writes the
+same files. The
 harness writes an ordered action trace, a text checkpoint for every wait, and
 final screen evidence. Full-cell JSON is the costly part (about 1.1 MB and
 tens of milliseconds of serialization per checkpoint), so a failing test writes
@@ -521,20 +536,19 @@ termination signal, and restored terminal modes. `Drop` still closes the
 session and removes the child home after assertion failure. A cleanup kill
 does not count as a successful application exit.
 
-Velnor generates the workflows; change its configuration and run
-`velnor-actions generate`, never hand-edit generated YAML. The suite sets
-`required = true`, so the aggregate `Required` check needs
-`suite-functional`. `Required` is the check to require in branch protection.
+velnor-gen generates the workflow; change `.velnor/rust-ci.toml` and run
+`velnor-gen generate`, never hand-edit generated YAML. The aggregate `Required`
+check needs every functional group job. `Required` is the check to require in
+branch protection.
 
 The push filters and the `head_branch` predicates of the follow-up workflows
 (`state-seal`, `cache-prune`) come from `[workflow].default_branch`. That
 value must equal the repository's actual default branch. `crates/termrock-conformance/tests/regressions/ci_default_branch.rs`
 checks it offline: `repository_config_default_branch_is_main` reads
-`.velnor/config.toml`, and fixture tests cover match, mismatch, fork names,
+`.velnor/rust-ci.toml`, and fixture tests cover match, mismatch, fork names,
 and invalid shapes. Run it with `cargo nextest run -p termrock-conformance --test
 regressions --no-tests fail -E 'test(ci_default_branch)'`. To change the branch, edit the source value, run
-`mise exec -- velnor-actions generate` from the repository root, and confirm a
-second generation leaves no diff. After the change merges, record one real
+`mise exec -- velnor-gen generate` from the repository root, and confirm `velnor-gen check` passes. After the change merges, record one real
 push run on that branch in the Actions tab before closing the issue.
 
 On a failure, read the action trace and the last frame first. Classify the

@@ -24,7 +24,6 @@ ratatui = { workspace = true }
 [dev-dependencies]
 syn = { version = "=3.0.10", features = ["full", "visit"] }
 serde_json = { workspace = true }
-sha2 = { workspace = true }
 
 [target.'cfg(unix)'.dev-dependencies]
 libc = "=0.2.191"

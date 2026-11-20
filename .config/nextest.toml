@@ -22,8 +22,9 @@ fail-fast = false
 path = "functional.xml"
 
 [profile.ci]
-# The functional binary is the Suite (functional) job. This profile is the
-# Rust crate job, so it runs library, unit, and integration tests once.
+# The functional binary runs in the `rust-test-functional-*` jobs (their
+# groups also select it by filter). This profile is every other generated
+# job, so it runs library, unit, and integration tests once.
 default-filter = 'not binary(functional)'
 fail-fast = false
 slow-timeout = { period = "60s", terminate-after = 10 }

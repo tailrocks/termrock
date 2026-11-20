@@ -2355,7 +2355,6 @@ dependencies = [
  "clap",
  "ratatui",
  "serde_json",
- "sha2 0.11.1",
  "termrock",
  "unicode-segmentation",
 ]
@@ -2460,7 +2459,6 @@ dependencies = [
  "libc",
  "ratatui",
  "serde_json",
- "sha2 0.11.1",
  "syn 3.0.10",
  "termrock",
 ]
@@ -2473,7 +2471,6 @@ dependencies = [
  "ratatui",
  "regex",
  "serde_json",
- "sha2 0.11.1",
  "termrock",
 ]
 

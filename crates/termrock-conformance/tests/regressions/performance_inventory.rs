@@ -21,12 +21,15 @@
 //! `#[cfg]` that drops the test, a filter that no longer selects it. It runs
 //! only under `--profile performance` and does nothing under other profiles.
 //! The same list, taken with `--profile ci`, must also select every required
-//! test: that is the profile of the `Rust / <crate>` jobs, which build with
-//! `--all-features` and so are where the counted contracts execute (the
-//! generator gives the `performance` suite no feature field).
-//! `performance_contracts_run_in_required_all_features_ci_jobs` pins, in the
-//! generated task manifest and workflow, that each owning package has such a
-//! job and that `Required` waits for it.
+//! test: `ci` is the profile every generated nextest step runs under, and the
+//! all-features test lane is where the counted contracts execute. The list
+//! check runs under `--profile performance` (the documented local command) and
+//! under `--profile ci` when the `work-metrics` feature is compiled in, which
+//! is how the lane builds, so the generated CI runs it.
+//! `performance_contracts_run_in_a_required_all_features_ci_lane` pins, in
+//! `.velnor/rust-ci.toml` and the generated workflow, that the lane exists,
+//! is unfiltered (or only leaves out the `functional` binaries, which run in
+//! their own test groups) and that `Required` waits for the job that runs it.
 //!
 //! The inventory is a floor. Adding a test to an existing suite needs no edit
 //! here as long as the operand still selects it; adding a new suite means
@@ -49,9 +52,14 @@ const NEXTEST_CONFIG: &str = ".config/nextest.toml";
 const PROFILE: &str = "performance";
 const MEASURE_PROFILE: &str = "performance-measure";
 const CI_PROFILE: &str = "ci";
-const TASK_MANIFEST: &str = ".github/velnor/task-execution-manifest-v1.json";
-const VELNOR_CONFIG: &str = ".velnor/config.toml";
-const CI_WORKFLOW: &str = ".github/workflows/ci.yml";
+const RUST_CI_CONFIG: &str = ".velnor/rust-ci.toml";
+const RUST_METADATA: &str = ".velnor/rust-metadata.json";
+const CI_WORKFLOW: &str = ".github/workflows/rust-ci.yml";
+/// The feature whose counters the contracts need; the CI lane must enable it.
+const WORK_METRICS: &str = "work-metrics";
+/// The one filter the lane may carry: the functional journeys have their own
+/// test groups.
+const LANE_FILTER: &str = "not binary(functional)";
 const MEASUREMENT_FILE: &str = "crates/termrock-conformance/tests/regressions/work_measurements.rs";
 
 /// One required suite.
@@ -130,7 +138,6 @@ const MEASUREMENTS: &[&str] = &[
     "measurement_textarea_keystroke_then_frame",
 ];
 
-/// The repository root: this crate is `crates/termrock-conformance`, two levels below it.
 fn root() -> &'static Path {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .ancestors()
@@ -403,81 +410,6 @@ fn missing_tests(suite: &Suite, source: &str) -> Vec<String> {
         .collect()
 }
 
-/// The lines of the `[[stacks.rust.suites]]` entry whose `id` is `id`, without
-/// spaces, up to the next table header.
-fn suite_entry(config: &str, id: &str) -> Option<Vec<String>> {
-    let want = format!("id=\"{id}\"");
-    let mut entries: Vec<Vec<String>> = Vec::new();
-    let mut inside = false;
-    for line in config.lines() {
-        let line = line.trim();
-        if line.starts_with('[') {
-            inside = line == "[[stacks.rust.suites]]";
-            if inside {
-                entries.push(Vec::new());
-            }
-        } else if inside
-            && !line.is_empty()
-            && !line.starts_with('#')
-            && let Some(entry) = entries.last_mut()
-        {
-            entry.push(line.split_whitespace().collect());
-        }
-    }
-    entries.into_iter().find(|entry| entry.contains(&want))
-}
-
-/// What must hold for `performance` to be a required CI suite: it is declared
-/// in `.velnor/config.toml` with the profile, four partitions, the three
-/// triggers and `required = true`, and the generated workflow has its job and
-/// makes the `Required` verdict wait for it. A suite that is declared but not
-/// generated, or generated but not required, fails here.
-fn check_suite(config: &str, workflow: &str) -> Vec<String> {
-    let mut problems = Vec::new();
-    match suite_entry(config, PROFILE) {
-        None => problems.push(format!(
-            "{VELNOR_CONFIG} declares no `[[stacks.rust.suites]]` with id = \"{PROFILE}\""
-        )),
-        Some(entry) => {
-            for (line, why) in [
-                (
-                    "profile=\"performance\"",
-                    "run the `performance` nextest profile",
-                ),
-                ("required=true", "be a required check"),
-                ("partitions=4", "run four partitions"),
-            ] {
-                if !entry.iter().any(|l| l == line) {
-                    problems.push(format!("the `{PROFILE}` suite must {why} (`{line}`)"));
-                }
-            }
-            let triggers = entry.iter().find(|l| l.starts_with("triggers=")).cloned();
-            for trigger in ["pull_request", "push", "workflow_dispatch"] {
-                if !triggers.as_deref().is_some_and(|t| t.contains(trigger)) {
-                    problems.push(format!(
-                        "the `{PROFILE}` suite lacks the `{trigger}` trigger"
-                    ));
-                }
-            }
-        }
-    }
-    let job = format!("suite-{PROFILE}");
-    if !workflow.contains(&format!("\n  {job}:")) {
-        problems.push(format!(
-            "{CI_WORKFLOW} has no `{job}` job: regenerate with `velnor-actions generate`"
-        ));
-    }
-    if !workflow.contains(&format!("\n      - {job}\n")) {
-        problems.push(format!(
-            "the generated `Required` job does not wait for `{job}`"
-        ));
-    }
-    if !workflow.contains("--profile performance") {
-        problems.push(format!("{CI_WORKFLOW} never runs `--profile performance`"));
-    }
-    problems
-}
-
 /// The cargo packages that own the required tests: the part of each binary id
 /// before `::`.
 fn required_packages() -> Vec<&'static str> {
@@ -490,56 +422,133 @@ fn required_packages() -> Vec<&'static str> {
     packages
 }
 
+/// The package names of the members of the repository root in
+/// `.velnor/rust-metadata.json`.
+fn workspace_members(metadata: &str) -> Result<Vec<String>, String> {
+    let parsed: serde_json::Value = serde_json::from_str(metadata)
+        .map_err(|why| format!("cannot parse {RUST_METADATA}: {why}"))?;
+    parsed["roots"]["Cargo.toml"]["members"]
+        .as_array()
+        .map(|members| {
+            members
+                .iter()
+                .filter_map(|m| m["name"].as_str().map(str::to_owned))
+                .collect()
+        })
+        .ok_or_else(|| format!("{RUST_METADATA} has no members for the root Cargo.toml"))
+}
+
+/// The jobs of a generated workflow: the id and the lines of each entry
+/// under `jobs:` (two-space indent), in file order.
+fn workflow_jobs(workflow: &str) -> Vec<(String, Vec<&str>)> {
+    let mut jobs: Vec<(String, Vec<&str>)> = Vec::new();
+    let mut inside = false;
+    for line in workflow.lines() {
+        if line == "jobs:" {
+            inside = true;
+        } else if inside && !line.starts_with(' ') && !line.is_empty() {
+            inside = false;
+        } else if inside
+            && let Some(id) = line.strip_prefix("  ").and_then(|l| l.strip_suffix(':'))
+            && !id.starts_with(' ')
+        {
+            jobs.push((id.to_owned(), Vec::new()));
+        } else if inside && let Some((_, lines)) = jobs.last_mut() {
+            lines.push(line);
+        }
+    }
+    jobs
+}
+
 /// What must hold for the `work_contract_*` tests to execute with the counters
-/// compiled in, in a required job. The `performance` suite cannot do it (the
-/// generator gives a suite no feature field), so each package that owns a
-/// required test needs a generated `nextest run --profile ci --package P
-/// --all-features` task (`manifest`, the generated task manifest), and the
-/// `rust-P` job that runs it must exist and be waited for by `Required`
-/// (`workflow`, the generated `ci.yml`). The nested list of
-/// `performance_nextest_list_runs_every_required_test` then shows that the
-/// `ci` profile selects every required test.
-fn check_ci_jobs(manifest: &str, workflow: &str) -> Vec<String> {
-    let json: String = manifest
-        .lines()
-        .filter(|line| !line.starts_with('#'))
-        .collect::<Vec<_>>()
-        .join("\n");
-    let parsed: serde_json::Value = match serde_json::from_str(&json) {
-        Ok(parsed) => parsed,
-        Err(why) => return vec![format!("cannot parse {TASK_MANIFEST}: {why}")],
-    };
-    let Some(tasks) = parsed.get("tasks").and_then(|t| t.as_object()) else {
-        return vec![format!("{TASK_MANIFEST} has no `tasks` object")];
-    };
-    let argvs: Vec<Vec<&str>> = tasks
-        .values()
-        .filter_map(|task| task.get("argv")?.as_array())
-        .map(|argv| argv.iter().filter_map(|a| a.as_str()).collect())
-        .collect();
-    let follows =
-        |argv: &[&str], flag: &str, value: &str| argv.windows(2).any(|w| w == [flag, value]);
+/// compiled in, in a required job. velnor-gen builds with default features, so
+/// the contracts run in a `[[test_lane]]` of the repository root, unfiltered or
+/// filtered by `not binary(functional)` only,
+/// that turns `work-metrics` on (`config`, `.velnor/rust-ci.toml`). The
+/// generated workflow (`workflow`) must contain that lane's `nextest run`
+/// step under `--profile ci`, in a job that the `required` job waits for. A
+/// lane that names `packages` (it must, to carry a filter) is skipped when the
+/// plan selects none of them, so it has to list every member of the root
+/// (`metadata`, `.velnor/rust-metadata.json`): a new crate that is left out
+/// would never run its tests with the features on.
+fn check_ci_lane(config: &str, workflow: &str, metadata: &str) -> Vec<String> {
     let mut problems = Vec::new();
-    for package in required_packages() {
-        let runs = argvs.iter().any(|argv| {
-            argv.windows(2).any(|w| w == ["nextest", "run"])
-                && follows(argv, "--profile", CI_PROFILE)
-                && follows(argv, "--package", package)
-                && argv.contains(&"--all-features")
+    let document: toml::Table = match config.parse() {
+        Ok(document) => document,
+        Err(why) => return vec![format!("cannot parse {RUST_CI_CONFIG}: {why}")],
+    };
+    let lane = document
+        .get("test_lane")
+        .and_then(toml::Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(toml::Value::as_table)
+        .find(|lane| {
+            lane.get("root").and_then(toml::Value::as_str) == Some(".")
+                && lane
+                    .get("features")
+                    .and_then(toml::Value::as_array)
+                    .is_some_and(|f| f.iter().any(|f| f.as_str() == Some(WORK_METRICS)))
         });
-        if !runs {
-            problems.push(format!(
-                "no generated task runs `nextest run --profile {CI_PROFILE} --package {package} --all-features`: the required tests of `{package}` would run without the work counters"
-            ));
+    match lane {
+        None => problems.push(format!(
+            "{RUST_CI_CONFIG} has no `[[test_lane]]` with root = \".\" and `{WORK_METRICS}` in features: the required tests would run without the work counters"
+        )),
+        Some(lane) => {
+            // Only the `functional` binaries may be left out: they run in the
+            // test groups, and no required test lives in one. Any other filter
+            // would narrow the contracts that run with the counters on.
+            if let Some(filter) = lane.get("filter").and_then(toml::Value::as_str)
+                && filter != LANE_FILTER
+            {
+                problems.push(format!(
+                    "the `{WORK_METRICS}` lane may only set `filter = \"{LANE_FILTER}\"`, not `{filter}`: a wider filter narrows the contracts that run with the counters on"
+                ));
+            }
+            if let Some(packages) = lane.get("packages").and_then(toml::Value::as_array) {
+                let mut members = required_packages()
+                    .into_iter()
+                    .map(str::to_owned)
+                    .collect::<Vec<_>>();
+                match workspace_members(metadata) {
+                    Ok(all) => members.extend(all),
+                    Err(why) => problems.push(why),
+                }
+                members.sort_unstable();
+                members.dedup();
+                for member in members {
+                    if !packages.iter().any(|p| p.as_str() == Some(member.as_str())) {
+                        problems.push(format!(
+                            "the `{WORK_METRICS}` lane's `packages` omits `{member}`: its tests would not run with the features on"
+                        ));
+                    }
+                }
+            }
         }
-        let job = format!("rust-{package}");
-        if !workflow.contains(&format!("\n  {job}:")) {
-            problems.push(format!("{CI_WORKFLOW} has no `{job}` job"));
-        }
-        if !workflow.contains(&format!("\n      - {job}\n")) {
-            problems.push(format!(
-                "the generated `Required` job does not wait for `{job}`"
-            ));
+    }
+    let jobs = workflow_jobs(workflow);
+    let runner = jobs.iter().find(|(_, lines)| {
+        lines.iter().any(|line| {
+            line.contains("nextest run")
+                && line.contains("--features")
+                && line.contains(WORK_METRICS)
+                && line.contains(&format!("--profile {CI_PROFILE}"))
+        })
+    });
+    match runner {
+        None => problems.push(format!(
+            "{CI_WORKFLOW} has no `nextest run --profile {CI_PROFILE} --features ...{WORK_METRICS}...` step: regenerate with `velnor-gen generate`"
+        )),
+        Some((id, _)) => {
+            let waited = jobs
+                .iter()
+                .find(|(job, _)| job == "required")
+                .is_some_and(|(_, lines)| lines.iter().any(|l| *l == format!("      - {id}")));
+            if !waited {
+                problems.push(format!(
+                    "the generated `required` job does not wait for `{id}`, which runs the `{WORK_METRICS}` lane"
+                ));
+            }
         }
     }
     problems
@@ -572,34 +581,40 @@ fn performance_profile_selects_every_required_suite() {
 /// not be a cache hit there and could rebuild the workspace in another shape.
 #[test]
 fn performance_nextest_list_runs_every_required_test() {
-    if std::env::var("NEXTEST_PROFILE").as_deref() != Ok(PROFILE) {
-        eprintln!("not run under `--profile {PROFILE}`: the nextest list check is skipped");
+    // `--profile performance` is the documented local command. Generated CI
+    // always runs `--profile ci`, so the check also runs there when the
+    // counters are compiled in (the all-features lane); the nested list then
+    // has the lane's feature shape and is a cache hit. In the default-feature
+    // pass it would rebuild the workspace, so it is skipped there.
+    let profile = std::env::var("NEXTEST_PROFILE").unwrap_or_default();
+    let counters = cfg!(feature = "work-metrics");
+    if profile != PROFILE && !(profile == CI_PROFILE && counters) {
+        eprintln!(
+            "not run under `--profile {PROFILE}` or `--profile {CI_PROFILE}` with `{WORK_METRICS}`: the nextest list check is skipped"
+        );
         return;
     }
     let json = nextest_list_json(PROFILE).unwrap_or_else(|why| panic!("{why}"));
     fail(check_list(&json, PROFILE));
-    // The `Rust / <crate>` jobs, which build with `--all-features` and so run
-    // the contracts with the counters on, select tests by the `ci` profile.
-    // Every required test must be one of them (second list: a cache hit).
+    // The all-features lane runs the contracts with the counters on and
+    // selects tests by the `ci` profile. Every required test must be one of
+    // them (second list: a cache hit).
     let json = nextest_list_json(CI_PROFILE).unwrap_or_else(|why| panic!("{why}"));
     fail(check_list(&json, CI_PROFILE));
 }
 
-/// The `performance` profile is only a contract if CI runs it. The nested
-/// `nextest list` of `performance_nextest_list_runs_every_required_test`
-/// executes under the generated `suite-performance` job, so dropping that job
-/// would silently drop the real inventory proof.
+/// The contracts need `work-metrics`, which generated CI builds only in the
+/// all-features test lane, so they execute in the job that runs that lane.
+/// This pins the lane in the configuration and the generated workflow, and
+/// that `required` waits for its job, so the suite cannot drop out. It also
+/// carries the nested list of `performance_nextest_list_runs_every_required_test`.
 #[test]
-fn performance_suite_is_a_required_generated_ci_job() {
-    fail(check_suite(&read(VELNOR_CONFIG), &read(CI_WORKFLOW)));
-}
-
-/// The contracts need `work-metrics`, which the `performance` suite cannot
-/// enable, so they execute in the required per-package `ci` jobs instead. This
-/// pins that route in the generated files.
-#[test]
-fn performance_contracts_run_in_required_all_features_ci_jobs() {
-    fail(check_ci_jobs(&read(TASK_MANIFEST), &read(CI_WORKFLOW)));
+fn performance_contracts_run_in_a_required_all_features_ci_lane() {
+    fail(check_ci_lane(
+        &read(RUST_CI_CONFIG),
+        &read(CI_WORKFLOW),
+        &read(RUST_METADATA),
+    ));
 }
 
 #[test]
@@ -685,104 +700,91 @@ mod gate_logic {
         check_list(&list.to_string(), PROFILE)
     }
 
-    const SUITE_CONFIG: &str = "[[stacks.rust.suites]]\nid = \"functional\"\nrequired = true\n\n[[stacks.rust.suites]]\nid = \"performance\"\nprofile = \"performance\"\npartitions = 4\nbuild = \"inline\"\ntriggers = [\"pull_request\", \"push\", \"workflow_dispatch\"]\nrequired = true\n\n[[stacks.rust.configurations]]\nname = \"default\"\n";
-    const SUITE_WORKFLOW: &str = "jobs:\n  required:\n    needs:\n      - suite-functional\n      - suite-performance\n      - jactionlint\n  suite-performance:\n    run: mbx nextest run --profile performance\n";
+    const LANE_CONFIG: &str =
+        "[[test_lane]]\nroot = \".\"\nfeatures = [\"cli\", \"work-metrics\"]\nlint = true\n";
+    const LANE_METADATA: &str =
+        r#"{"roots":{"Cargo.toml":{"members":[{"name":"junie-tui"},{"name":"extra-crate"}]}}}"#;
+    const LANE_WORKFLOW: &str = "jobs:\n  rust-test-root:\n    steps:\n      - run: cargo-nextest nextest run --workspace --features 'cli,work-metrics' --profile ci\n  lint-x:\n    steps: []\n  required:\n    needs:\n      - rust-test-root\n      - lint-x\n    steps: []\n";
 
     #[test]
-    fn a_declared_generated_required_suite_passes() {
+    fn a_required_all_features_lane_passes() {
         assert_eq!(
-            check_suite(SUITE_CONFIG, SUITE_WORKFLOW),
+            check_ci_lane(LANE_CONFIG, LANE_WORKFLOW, LANE_METADATA),
             Vec::<String>::new()
         );
     }
 
     #[test]
-    fn a_missing_suite_fails() {
-        let config = SUITE_CONFIG.replace("id = \"performance\"", "id = \"other\"");
-        assert!(check_suite(&config, SUITE_WORKFLOW)[0].contains("declares no"));
-    }
-
-    #[test]
-    fn a_suite_that_is_not_required_fails() {
-        let config = SUITE_CONFIG.replace("partitions = 4\nbuild = \"inline\"\ntriggers = [\"pull_request\", \"push\", \"workflow_dispatch\"]\nrequired = true", "partitions = 4\nbuild = \"inline\"\ntriggers = [\"pull_request\", \"push\", \"workflow_dispatch\"]\nrequired = false");
-        let problems = check_suite(&config, SUITE_WORKFLOW);
+    fn a_config_without_the_lane_fails() {
+        let config = LANE_CONFIG.replace("work-metrics", "cli2");
+        let problems = check_ci_lane(&config, LANE_WORKFLOW, LANE_METADATA);
         assert_eq!(problems.len(), 1, "{problems:?}");
-        assert!(problems[0].contains("required"));
-    }
-
-    #[test]
-    fn a_suite_without_a_pull_request_trigger_fails() {
-        let config = SUITE_CONFIG.replace("\"pull_request\", ", "");
-        let problems = check_suite(&config, SUITE_WORKFLOW);
-        assert_eq!(problems.len(), 1, "{problems:?}");
-        assert!(problems[0].contains("pull_request"));
-    }
-
-    #[test]
-    fn a_suite_the_workflow_does_not_generate_or_require_fails() {
-        let workflow = SUITE_WORKFLOW.replace("suite-performance", "suite-gone");
-        let problems = check_suite(SUITE_CONFIG, &workflow);
-        assert_eq!(problems.len(), 2, "{problems:?}");
-        let unrequired = SUITE_WORKFLOW.replace("      - suite-performance\n", "");
-        let problems = check_suite(SUITE_CONFIG, &unrequired);
-        assert_eq!(problems.len(), 1, "{problems:?}");
-        assert!(problems[0].contains("Required"));
-    }
-
-    fn ci_manifest(skip: Option<&str>) -> String {
-        let tasks: serde_json::Map<String, serde_json::Value> = required_packages()
-            .into_iter()
-            .filter(|package| Some(*package) != skip)
-            .map(|package| {
-                (
-                    format!("stack/rust/{package}/nextest/default"),
-                    serde_json::json!({ "argv": [
-                        "mbx", "nextest", "run", "--profile", "ci", "--package", package,
-                        "--no-tests", "warn", "--all-features"
-                    ] }),
-                )
-            })
-            .collect();
-        format!("# Generated\n{}", serde_json::json!({ "tasks": tasks }))
-    }
-
-    fn ci_workflow() -> String {
-        let mut text = String::from("jobs:\n  required:\n    needs:\n");
-        for package in required_packages() {
-            text.push_str(&format!("      - rust-{package}\n"));
-        }
-        text.push_str("      - jactionlint\n");
-        for package in required_packages() {
-            text.push_str(&format!("  rust-{package}:\n    name: x\n"));
-        }
-        text
-    }
-
-    #[test]
-    fn all_features_ci_jobs_for_every_package_pass() {
+        assert!(problems[0].contains("no `[[test_lane]]`"));
+        let other_root = LANE_CONFIG.replace("root = \".\"", "root = \"x\"");
         assert_eq!(
-            check_ci_jobs(&ci_manifest(None), &ci_workflow()),
+            check_ci_lane(&other_root, LANE_WORKFLOW, LANE_METADATA).len(),
+            1
+        );
+    }
+
+    #[test]
+    fn a_lane_filtered_by_anything_but_the_functional_binaries_fails() {
+        let config = format!("{LANE_CONFIG}filter = \"package(x)\"\n");
+        let problems = check_ci_lane(&config, LANE_WORKFLOW, LANE_METADATA);
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(problems[0].contains("filter"));
+        let allowed = format!("{LANE_CONFIG}filter = \"{LANE_FILTER}\"\n");
+        assert_eq!(
+            check_ci_lane(&allowed, LANE_WORKFLOW, LANE_METADATA),
             Vec::<String>::new()
         );
     }
 
     #[test]
-    fn a_package_without_an_all_features_ci_task_fails() {
-        let problems = check_ci_jobs(&ci_manifest(Some("termrock-holla")), &ci_workflow());
-        assert_eq!(problems.len(), 1, "{problems:?}");
-        assert!(problems[0].contains("termrock-holla"));
-        let no_features = ci_manifest(None).replace("\"--all-features\"", "\"--locked\"");
-        assert!(check_ci_jobs(&no_features, &ci_workflow()).len() >= required_packages().len());
-        let other_profile = ci_manifest(None).replace("\"ci\"", "\"functional\"");
-        assert!(check_ci_jobs(&other_profile, &ci_workflow()).len() >= required_packages().len());
+    fn a_lane_that_omits_an_owning_package_or_a_member_fails() {
+        let config = format!("{LANE_CONFIG}packages = [\"junie-tui\"]\n");
+        let problems = check_ci_lane(&config, LANE_WORKFLOW, LANE_METADATA);
+        // Every owning package and every root member, but `junie-tui`.
+        let mut expected: Vec<&str> = required_packages();
+        expected.extend(["junie-tui", "extra-crate"]);
+        expected.sort_unstable();
+        expected.dedup();
+        expected.retain(|p| *p != "junie-tui");
+        assert_eq!(problems.len(), expected.len(), "{problems:?}");
+        assert!(problems.iter().any(|p| p.contains("`extra-crate`")));
+        let mut all = required_packages();
+        all.extend(["junie-tui", "extra-crate"]);
+        let listed = all
+            .iter()
+            .map(|p| format!("\"{p}\""))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let config = format!("{LANE_CONFIG}packages = [{listed}]\n");
+        assert_eq!(
+            check_ci_lane(&config, LANE_WORKFLOW, LANE_METADATA),
+            Vec::<String>::new()
+        );
     }
 
     #[test]
-    fn a_ci_job_that_is_not_required_fails() {
-        let workflow = ci_workflow().replace("      - rust-termrock-conformance\n", "");
-        let problems = check_ci_jobs(&ci_manifest(None), &workflow);
+    fn a_workflow_without_the_lane_step_fails() {
+        let workflow = LANE_WORKFLOW.replace("work-metrics", "other");
+        let problems = check_ci_lane(LANE_CONFIG, &workflow, LANE_METADATA);
         assert_eq!(problems.len(), 1, "{problems:?}");
-        assert!(problems[0].contains("Required"));
+        assert!(problems[0].contains("has no `nextest run"));
+        let other_profile = LANE_WORKFLOW.replace("--profile ci", "--profile functional");
+        assert_eq!(
+            check_ci_lane(LANE_CONFIG, &other_profile, LANE_METADATA).len(),
+            1
+        );
+    }
+
+    #[test]
+    fn a_lane_job_that_is_not_required_fails() {
+        let workflow = LANE_WORKFLOW.replace("      - rust-test-root\n", "");
+        let problems = check_ci_lane(LANE_CONFIG, &workflow, LANE_METADATA);
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(problems[0].contains("does not wait"));
     }
 
     #[test]

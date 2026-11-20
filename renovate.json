@@ -52,30 +52,20 @@
       "groupName": "rust toolchain"
     },
     {
-      "description": "Cap the Rust toolchain below 1.100.0. velnor-actions, which generates CI, is end-of-life: v0.1.81 is its last release, and it qualifies Rust only up to 1.99.1 (tailrocks/velnor-new#1625 is closed as obsolete). CI fails on 1.100.0, so Renovate must not propose it (PR #484). Lift this cap only after CI moves to velnor-gen and that generator qualifies a newer Rust.",
-      "matchDepNames": [
-        "rust",
-        "rust-lang/rust"
-      ],
-      "allowedVersions": "<1.100.0"
-    },
-    {
-      "description": "These mise tools publish v-prefixed release tags that Renovate would otherwise write verbatim; the velnor resolver needs bare X.Y.Z, so strip the prefix and ignore tags that are not plain X.Y.Z.",
+      "description": "These mise tools publish v-prefixed release tags that Renovate would otherwise write verbatim; mise needs bare X.Y.Z, so strip the prefix and ignore tags that are not plain X.Y.Z.",
       "matchDepNames": [
         "jactionlint",
-        "mr-boxington",
-        "github:tailrocks/velnor-new"
+        "mr-boxington"
       ],
       "extractVersion": "^v(?<version>\\d+\\.\\d+\\.\\d+)$"
     },
     {
+      "description": "velnor-gen and its helper move together: a new tools-v* release also needs `velnor-gen pin-helper <version>`, `velnor-gen generate` and `mise lock`, and the tag is not a plain X.Y.Z. Bump by hand (docs/dependencies.md).",
       "matchDepNames": [
-        "github:tailrocks/velnor-new"
+        "github:tailrocks/velnor-new",
+        "cargo:https://github.com/tailrocks/velnor-new"
       ],
-      "dependencyDashboardApproval": true,
-      "addLabels": [
-        "needs-regenerate"
-      ]
+      "enabled": false
     }
   ],
   "prHourlyLimit": 4,

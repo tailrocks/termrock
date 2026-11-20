@@ -4,7 +4,7 @@
 //!
 //! This is source, manifest and lockfile scanning; it builds nothing. The
 //! fixtures themselves are compiled and run by `scripts/check-consumers.sh` and
-//! by the generated `Rust / termrock-consumer-*` jobs.
+//! by the generated `rust-crates_termrock_tests_consumers_*` jobs.
 
 use std::path::{Path, PathBuf};
 
@@ -177,7 +177,7 @@ fn facade_scan_sees_each_way_to_name_the_implementation() {
 /// The fixtures declare no dev-dependencies, so the lockfile holds exactly their
 /// normal graph with the declared features applied. Reading it needs no network
 /// and no build. `scripts/check-consumers.sh` and the generated
-/// `Rust / termrock-consumer-*` jobs build each fixture with `--locked`, which
+/// `rust-crates_termrock_tests_consumers_*` jobs build each fixture with `--locked`, which
 /// fails when the lockfile and the manifest disagree, and print `cargo tree`.
 fn resolved_packages(fixture: &str) -> Vec<String> {
     let lock = root()

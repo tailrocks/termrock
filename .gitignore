@@ -16,3 +16,4 @@ docs/refactoring-plan/evidence/*.tar.gz
 
 .claude/
 /crates/termrock/tests/consumers/*/target
+/crates/*/target

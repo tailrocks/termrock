@@ -217,16 +217,12 @@ fn sample_held(
 /// ended, which depends on how the wheel notches batched into frames.
 fn no_color_band(screen: &TerminalSnapshot) -> bool {
     let raw = text(screen);
-    if !raw.contains(CRUMB)
-        || !raw.contains("no color")
-        || !raw.contains(WIDE)
-        || raw.contains("Page options")
-        || raw.contains(CAP_PLAY)
-        || raw.contains("○ Compare levels")
-    {
-        return false;
-    }
-    true
+    raw.contains(CRUMB)
+        && raw.contains("no color")
+        && raw.contains(WIDE)
+        && !raw.contains("Page options")
+        && !raw.contains(CAP_PLAY)
+        && !raw.contains("○ Compare levels")
 }
 
 fn grid_label(screen: &TerminalSnapshot, label: &str) -> bool {

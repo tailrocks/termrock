@@ -1,0 +1,2985 @@
+{
+  "roots": {
+    "Cargo.toml": {
+      "target_dir": "target",
+      "members": [
+        {
+          "name": "termrock-holla",
+          "version": "0.1.0",
+          "manifest": "apps/holla/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "clap",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "derive"
+              ]
+            },
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "serde_json",
+              "kind": "normal",
+              "manifest": null
+            },
+            {
+              "name": "termrock",
+              "kind": "normal",
+              "manifest": "crates/termrock/Cargo.toml",
+              "features": [
+                "cli"
+              ]
+            },
+            {
+              "name": "unicode-segmentation",
+              "kind": "normal",
+              "manifest": null
+            },
+            {
+              "name": "serde_json",
+              "kind": "dev",
+              "manifest": null
+            }
+          ],
+          "targets": [
+            {
+              "name": "holla",
+              "kinds": [
+                "bin"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/holla/src/main.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock",
+          "version": "0.1.0",
+          "manifest": "crates/termrock/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "termrock-catalog",
+              "kind": "normal",
+              "manifest": "crates/termrock-catalog/Cargo.toml"
+            },
+            {
+              "name": "termrock-cli",
+              "kind": "normal",
+              "manifest": "crates/termrock-cli/Cargo.toml",
+              "optional": true
+            },
+            {
+              "name": "termrock-collections",
+              "kind": "normal",
+              "manifest": "crates/termrock-collections/Cargo.toml"
+            },
+            {
+              "name": "termrock-conformance",
+              "kind": "normal",
+              "manifest": "crates/termrock-conformance/Cargo.toml",
+              "optional": true
+            },
+            {
+              "name": "termrock-controls",
+              "kind": "normal",
+              "manifest": "crates/termrock-controls/Cargo.toml"
+            },
+            {
+              "name": "termrock-core",
+              "kind": "normal",
+              "manifest": "crates/termrock-core/Cargo.toml"
+            },
+            {
+              "name": "termrock-dialogs",
+              "kind": "normal",
+              "manifest": "crates/termrock-dialogs/Cargo.toml"
+            },
+            {
+              "name": "termrock-editors",
+              "kind": "normal",
+              "manifest": "crates/termrock-editors/Cargo.toml"
+            },
+            {
+              "name": "termrock-feedback",
+              "kind": "normal",
+              "manifest": "crates/termrock-feedback/Cargo.toml"
+            },
+            {
+              "name": "termrock-fields",
+              "kind": "normal",
+              "manifest": "crates/termrock-fields/Cargo.toml"
+            },
+            {
+              "name": "termrock-grid",
+              "kind": "normal",
+              "manifest": "crates/termrock-grid/Cargo.toml"
+            },
+            {
+              "name": "termrock-layout",
+              "kind": "normal",
+              "manifest": "crates/termrock-layout/Cargo.toml"
+            },
+            {
+              "name": "termrock-metrics",
+              "kind": "normal",
+              "manifest": "crates/termrock-metrics/Cargo.toml"
+            },
+            {
+              "name": "termrock-navigation",
+              "kind": "normal",
+              "manifest": "crates/termrock-navigation/Cargo.toml"
+            },
+            {
+              "name": "termrock-overlays",
+              "kind": "normal",
+              "manifest": "crates/termrock-overlays/Cargo.toml"
+            },
+            {
+              "name": "termrock-runtime",
+              "kind": "normal",
+              "manifest": "crates/termrock-runtime/Cargo.toml"
+            },
+            {
+              "name": "termrock-session",
+              "kind": "normal",
+              "manifest": "crates/termrock-session/Cargo.toml"
+            },
+            {
+              "name": "termrock-shell",
+              "kind": "normal",
+              "manifest": "crates/termrock-shell/Cargo.toml"
+            },
+            {
+              "name": "termrock-terminal",
+              "kind": "normal",
+              "manifest": "crates/termrock-terminal/Cargo.toml",
+              "optional": true
+            },
+            {
+              "name": "termrock-text",
+              "kind": "normal",
+              "manifest": "crates/termrock-text/Cargo.toml"
+            },
+            {
+              "name": "termrock-theme",
+              "kind": "normal",
+              "manifest": "crates/termrock-theme/Cargo.toml"
+            },
+            {
+              "name": "termrock-viewport",
+              "kind": "normal",
+              "manifest": "crates/termrock-viewport/Cargo.toml"
+            },
+            {
+              "name": "ratatui",
+              "kind": "dev",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "serde_json",
+              "kind": "dev",
+              "manifest": null
+            },
+            {
+              "name": "syn",
+              "kind": "dev",
+              "manifest": null,
+              "features": [
+                "full",
+                "visit"
+              ]
+            },
+            {
+              "name": "toml",
+              "kind": "dev",
+              "manifest": null
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock/src/lib.rs",
+              "requires_features": false
+            },
+            {
+              "name": "bounded_messages",
+              "kinds": [
+                "example"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock/examples/bounded_messages.rs",
+              "requires_features": false
+            },
+            {
+              "name": "document_workspace",
+              "kinds": [
+                "example"
+              ],
+              "tests": false,
+              "doctest": false,
+              "source": "crates/termrock/examples/document_workspace.rs",
+              "requires_features": false
+            },
+            {
+              "name": "grid_effects",
+              "kinds": [
+                "example"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock/examples/grid_effects.rs",
+              "requires_features": false
+            },
+            {
+              "name": "keyed_list",
+              "kinds": [
+                "example"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock/examples/keyed_list.rs",
+              "requires_features": false
+            },
+            {
+              "name": "modal_focus",
+              "kinds": [
+                "example"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock/examples/modal_focus.rs",
+              "requires_features": false
+            },
+            {
+              "name": "nested_scroll",
+              "kinds": [
+                "example"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock/examples/nested_scroll.rs",
+              "requires_features": false
+            },
+            {
+              "name": "validated_input",
+              "kinds": [
+                "example"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock/examples/validated_input.rs",
+              "requires_features": false
+            },
+            {
+              "name": "regressions",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock/tests/regressions/main.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-catalog",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-catalog/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "termrock-collections",
+              "kind": "normal",
+              "manifest": "crates/termrock-collections/Cargo.toml"
+            },
+            {
+              "name": "termrock-controls",
+              "kind": "normal",
+              "manifest": "crates/termrock-controls/Cargo.toml"
+            },
+            {
+              "name": "termrock-core",
+              "kind": "normal",
+              "manifest": "crates/termrock-core/Cargo.toml"
+            },
+            {
+              "name": "termrock-fields",
+              "kind": "normal",
+              "manifest": "crates/termrock-fields/Cargo.toml"
+            },
+            {
+              "name": "termrock-grid",
+              "kind": "normal",
+              "manifest": "crates/termrock-grid/Cargo.toml"
+            },
+            {
+              "name": "termrock-navigation",
+              "kind": "normal",
+              "manifest": "crates/termrock-navigation/Cargo.toml"
+            },
+            {
+              "name": "sha2",
+              "kind": "dev",
+              "manifest": null
+            },
+            {
+              "name": "syn",
+              "kind": "dev",
+              "manifest": null,
+              "features": [
+                "full",
+                "visit"
+              ]
+            },
+            {
+              "name": "termrock-metrics",
+              "kind": "dev",
+              "manifest": "crates/termrock-metrics/Cargo.toml"
+            },
+            {
+              "name": "toml",
+              "kind": "dev",
+              "manifest": null
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_catalog",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-catalog/src/lib.rs",
+              "requires_features": false
+            },
+            {
+              "name": "regressions",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-catalog/tests/regressions/main.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-collections",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-collections/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "termrock-controls",
+              "kind": "normal",
+              "manifest": "crates/termrock-controls/Cargo.toml"
+            },
+            {
+              "name": "termrock-core",
+              "kind": "normal",
+              "manifest": "crates/termrock-core/Cargo.toml"
+            },
+            {
+              "name": "termrock-feedback",
+              "kind": "normal",
+              "manifest": "crates/termrock-feedback/Cargo.toml"
+            },
+            {
+              "name": "termrock-fields",
+              "kind": "normal",
+              "manifest": "crates/termrock-fields/Cargo.toml"
+            },
+            {
+              "name": "termrock-layout",
+              "kind": "normal",
+              "manifest": "crates/termrock-layout/Cargo.toml"
+            },
+            {
+              "name": "termrock-metrics",
+              "kind": "normal",
+              "manifest": "crates/termrock-metrics/Cargo.toml"
+            },
+            {
+              "name": "termrock-overlays",
+              "kind": "normal",
+              "manifest": "crates/termrock-overlays/Cargo.toml"
+            },
+            {
+              "name": "termrock-runtime",
+              "kind": "normal",
+              "manifest": "crates/termrock-runtime/Cargo.toml"
+            },
+            {
+              "name": "termrock-text",
+              "kind": "normal",
+              "manifest": "crates/termrock-text/Cargo.toml"
+            },
+            {
+              "name": "termrock-theme",
+              "kind": "normal",
+              "manifest": "crates/termrock-theme/Cargo.toml"
+            },
+            {
+              "name": "termrock-viewport",
+              "kind": "normal",
+              "manifest": "crates/termrock-viewport/Cargo.toml"
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_collections",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-collections/src/lib.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-controls",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-controls/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "termrock-core",
+              "kind": "normal",
+              "manifest": "crates/termrock-core/Cargo.toml"
+            },
+            {
+              "name": "termrock-metrics",
+              "kind": "normal",
+              "manifest": "crates/termrock-metrics/Cargo.toml"
+            },
+            {
+              "name": "termrock-runtime",
+              "kind": "normal",
+              "manifest": "crates/termrock-runtime/Cargo.toml"
+            },
+            {
+              "name": "termrock-text",
+              "kind": "normal",
+              "manifest": "crates/termrock-text/Cargo.toml"
+            },
+            {
+              "name": "termrock-theme",
+              "kind": "normal",
+              "manifest": "crates/termrock-theme/Cargo.toml"
+            },
+            {
+              "name": "unicode-segmentation",
+              "kind": "normal",
+              "manifest": null
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_controls",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-controls/src/lib.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-core",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-core/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "clap",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "derive"
+              ],
+              "optional": true
+            },
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "serde_json",
+              "kind": "normal",
+              "manifest": null
+            },
+            {
+              "name": "termrock-metrics",
+              "kind": "normal",
+              "manifest": "crates/termrock-metrics/Cargo.toml"
+            },
+            {
+              "name": "termrock-text",
+              "kind": "normal",
+              "manifest": "crates/termrock-text/Cargo.toml"
+            },
+            {
+              "name": "unicode-segmentation",
+              "kind": "normal",
+              "manifest": null
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_core",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-core/src/lib.rs",
+              "requires_features": false
+            },
+            {
+              "name": "regressions",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-core/tests/regressions/main.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-metrics",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-metrics/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "serde_json",
+              "kind": "normal",
+              "manifest": null
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_metrics",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-metrics/src/lib.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-text",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-text/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "termrock-metrics",
+              "kind": "normal",
+              "manifest": "crates/termrock-metrics/Cargo.toml"
+            },
+            {
+              "name": "unicode-segmentation",
+              "kind": "normal",
+              "manifest": null
+            },
+            {
+              "name": "unicode-width",
+              "kind": "normal",
+              "manifest": null
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_text",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-text/src/lib.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-runtime",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-runtime/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "termrock-core",
+              "kind": "normal",
+              "manifest": "crates/termrock-core/Cargo.toml"
+            },
+            {
+              "name": "termrock-metrics",
+              "kind": "normal",
+              "manifest": "crates/termrock-metrics/Cargo.toml"
+            },
+            {
+              "name": "termrock-text",
+              "kind": "normal",
+              "manifest": "crates/termrock-text/Cargo.toml"
+            },
+            {
+              "name": "termrock-theme",
+              "kind": "normal",
+              "manifest": "crates/termrock-theme/Cargo.toml"
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_runtime",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-runtime/src/lib.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-theme",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-theme/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "termrock-core",
+              "kind": "normal",
+              "manifest": "crates/termrock-core/Cargo.toml"
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_theme",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-theme/src/lib.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-feedback",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-feedback/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "termrock-controls",
+              "kind": "normal",
+              "manifest": "crates/termrock-controls/Cargo.toml"
+            },
+            {
+              "name": "termrock-core",
+              "kind": "normal",
+              "manifest": "crates/termrock-core/Cargo.toml"
+            },
+            {
+              "name": "termrock-metrics",
+              "kind": "normal",
+              "manifest": "crates/termrock-metrics/Cargo.toml"
+            },
+            {
+              "name": "termrock-runtime",
+              "kind": "normal",
+              "manifest": "crates/termrock-runtime/Cargo.toml"
+            },
+            {
+              "name": "termrock-text",
+              "kind": "normal",
+              "manifest": "crates/termrock-text/Cargo.toml"
+            },
+            {
+              "name": "termrock-theme",
+              "kind": "normal",
+              "manifest": "crates/termrock-theme/Cargo.toml"
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_feedback",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-feedback/src/lib.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-fields",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-fields/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "termrock-controls",
+              "kind": "normal",
+              "manifest": "crates/termrock-controls/Cargo.toml"
+            },
+            {
+              "name": "termrock-core",
+              "kind": "normal",
+              "manifest": "crates/termrock-core/Cargo.toml"
+            },
+            {
+              "name": "termrock-metrics",
+              "kind": "normal",
+              "manifest": "crates/termrock-metrics/Cargo.toml"
+            },
+            {
+              "name": "termrock-overlays",
+              "kind": "normal",
+              "manifest": "crates/termrock-overlays/Cargo.toml"
+            },
+            {
+              "name": "termrock-runtime",
+              "kind": "normal",
+              "manifest": "crates/termrock-runtime/Cargo.toml"
+            },
+            {
+              "name": "termrock-text",
+              "kind": "normal",
+              "manifest": "crates/termrock-text/Cargo.toml"
+            },
+            {
+              "name": "termrock-theme",
+              "kind": "normal",
+              "manifest": "crates/termrock-theme/Cargo.toml"
+            },
+            {
+              "name": "unicode-segmentation",
+              "kind": "normal",
+              "manifest": null
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_fields",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-fields/src/lib.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-overlays",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-overlays/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "termrock-controls",
+              "kind": "normal",
+              "manifest": "crates/termrock-controls/Cargo.toml"
+            },
+            {
+              "name": "termrock-core",
+              "kind": "normal",
+              "manifest": "crates/termrock-core/Cargo.toml"
+            },
+            {
+              "name": "termrock-feedback",
+              "kind": "normal",
+              "manifest": "crates/termrock-feedback/Cargo.toml"
+            },
+            {
+              "name": "termrock-metrics",
+              "kind": "normal",
+              "manifest": "crates/termrock-metrics/Cargo.toml"
+            },
+            {
+              "name": "termrock-runtime",
+              "kind": "normal",
+              "manifest": "crates/termrock-runtime/Cargo.toml"
+            },
+            {
+              "name": "termrock-text",
+              "kind": "normal",
+              "manifest": "crates/termrock-text/Cargo.toml"
+            },
+            {
+              "name": "termrock-theme",
+              "kind": "normal",
+              "manifest": "crates/termrock-theme/Cargo.toml"
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_overlays",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-overlays/src/lib.rs",
+              "requires_features": false
+            },
+            {
+              "name": "regressions",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-overlays/tests/regressions/main.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-layout",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-layout/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "termrock-controls",
+              "kind": "normal",
+              "manifest": "crates/termrock-controls/Cargo.toml"
+            },
+            {
+              "name": "termrock-core",
+              "kind": "normal",
+              "manifest": "crates/termrock-core/Cargo.toml"
+            },
+            {
+              "name": "termrock-overlays",
+              "kind": "normal",
+              "manifest": "crates/termrock-overlays/Cargo.toml"
+            },
+            {
+              "name": "termrock-runtime",
+              "kind": "normal",
+              "manifest": "crates/termrock-runtime/Cargo.toml"
+            },
+            {
+              "name": "termrock-text",
+              "kind": "normal",
+              "manifest": "crates/termrock-text/Cargo.toml"
+            },
+            {
+              "name": "termrock-theme",
+              "kind": "normal",
+              "manifest": "crates/termrock-theme/Cargo.toml"
+            },
+            {
+              "name": "termrock-viewport",
+              "kind": "normal",
+              "manifest": "crates/termrock-viewport/Cargo.toml"
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_layout",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-layout/src/lib.rs",
+              "requires_features": false
+            },
+            {
+              "name": "regressions",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-layout/tests/regressions/main.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-viewport",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-viewport/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "termrock-controls",
+              "kind": "normal",
+              "manifest": "crates/termrock-controls/Cargo.toml"
+            },
+            {
+              "name": "termrock-core",
+              "kind": "normal",
+              "manifest": "crates/termrock-core/Cargo.toml"
+            },
+            {
+              "name": "termrock-metrics",
+              "kind": "normal",
+              "manifest": "crates/termrock-metrics/Cargo.toml"
+            },
+            {
+              "name": "termrock-overlays",
+              "kind": "normal",
+              "manifest": "crates/termrock-overlays/Cargo.toml"
+            },
+            {
+              "name": "termrock-runtime",
+              "kind": "normal",
+              "manifest": "crates/termrock-runtime/Cargo.toml"
+            },
+            {
+              "name": "termrock-text",
+              "kind": "normal",
+              "manifest": "crates/termrock-text/Cargo.toml"
+            },
+            {
+              "name": "termrock-theme",
+              "kind": "normal",
+              "manifest": "crates/termrock-theme/Cargo.toml"
+            },
+            {
+              "name": "unicode-segmentation",
+              "kind": "normal",
+              "manifest": null
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_viewport",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-viewport/src/lib.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-grid",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-grid/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "termrock-controls",
+              "kind": "normal",
+              "manifest": "crates/termrock-controls/Cargo.toml"
+            },
+            {
+              "name": "termrock-core",
+              "kind": "normal",
+              "manifest": "crates/termrock-core/Cargo.toml"
+            },
+            {
+              "name": "termrock-feedback",
+              "kind": "normal",
+              "manifest": "crates/termrock-feedback/Cargo.toml"
+            },
+            {
+              "name": "termrock-metrics",
+              "kind": "normal",
+              "manifest": "crates/termrock-metrics/Cargo.toml"
+            },
+            {
+              "name": "termrock-overlays",
+              "kind": "normal",
+              "manifest": "crates/termrock-overlays/Cargo.toml"
+            },
+            {
+              "name": "termrock-runtime",
+              "kind": "normal",
+              "manifest": "crates/termrock-runtime/Cargo.toml"
+            },
+            {
+              "name": "termrock-text",
+              "kind": "normal",
+              "manifest": "crates/termrock-text/Cargo.toml"
+            },
+            {
+              "name": "termrock-theme",
+              "kind": "normal",
+              "manifest": "crates/termrock-theme/Cargo.toml"
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_grid",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-grid/src/lib.rs",
+              "requires_features": false
+            },
+            {
+              "name": "regressions",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-grid/tests/regressions/main.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-navigation",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-navigation/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "termrock-collections",
+              "kind": "normal",
+              "manifest": "crates/termrock-collections/Cargo.toml"
+            },
+            {
+              "name": "termrock-controls",
+              "kind": "normal",
+              "manifest": "crates/termrock-controls/Cargo.toml"
+            },
+            {
+              "name": "termrock-core",
+              "kind": "normal",
+              "manifest": "crates/termrock-core/Cargo.toml"
+            },
+            {
+              "name": "termrock-metrics",
+              "kind": "normal",
+              "manifest": "crates/termrock-metrics/Cargo.toml"
+            },
+            {
+              "name": "termrock-overlays",
+              "kind": "normal",
+              "manifest": "crates/termrock-overlays/Cargo.toml"
+            },
+            {
+              "name": "termrock-runtime",
+              "kind": "normal",
+              "manifest": "crates/termrock-runtime/Cargo.toml"
+            },
+            {
+              "name": "termrock-text",
+              "kind": "normal",
+              "manifest": "crates/termrock-text/Cargo.toml"
+            },
+            {
+              "name": "termrock-theme",
+              "kind": "normal",
+              "manifest": "crates/termrock-theme/Cargo.toml"
+            },
+            {
+              "name": "unicode-segmentation",
+              "kind": "normal",
+              "manifest": null
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_navigation",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-navigation/src/lib.rs",
+              "requires_features": false
+            },
+            {
+              "name": "regressions",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-navigation/tests/regressions/main.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-cli",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-cli/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "clap",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "derive"
+              ]
+            },
+            {
+              "name": "termrock-core",
+              "kind": "normal",
+              "manifest": "crates/termrock-core/Cargo.toml",
+              "features": [
+                "cli"
+              ]
+            },
+            {
+              "name": "termrock-theme",
+              "kind": "normal",
+              "manifest": "crates/termrock-theme/Cargo.toml"
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_cli",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-cli/src/lib.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-conformance",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-conformance/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "termrock-core",
+              "kind": "normal",
+              "manifest": "crates/termrock-core/Cargo.toml"
+            },
+            {
+              "name": "termrock-metrics",
+              "kind": "normal",
+              "manifest": "crates/termrock-metrics/Cargo.toml"
+            },
+            {
+              "name": "termrock-shell",
+              "kind": "normal",
+              "manifest": "crates/termrock-shell/Cargo.toml"
+            },
+            {
+              "name": "serde_json",
+              "kind": "dev",
+              "manifest": null
+            },
+            {
+              "name": "syn",
+              "kind": "dev",
+              "manifest": null,
+              "features": [
+                "full",
+                "visit"
+              ]
+            },
+            {
+              "name": "termrock-collections",
+              "kind": "dev",
+              "manifest": "crates/termrock-collections/Cargo.toml"
+            },
+            {
+              "name": "termrock-controls",
+              "kind": "dev",
+              "manifest": "crates/termrock-controls/Cargo.toml"
+            },
+            {
+              "name": "termrock-editors",
+              "kind": "dev",
+              "manifest": "crates/termrock-editors/Cargo.toml"
+            },
+            {
+              "name": "termrock-feedback",
+              "kind": "dev",
+              "manifest": "crates/termrock-feedback/Cargo.toml"
+            },
+            {
+              "name": "termrock-fields",
+              "kind": "dev",
+              "manifest": "crates/termrock-fields/Cargo.toml"
+            },
+            {
+              "name": "termrock-grid",
+              "kind": "dev",
+              "manifest": "crates/termrock-grid/Cargo.toml"
+            },
+            {
+              "name": "termrock-layout",
+              "kind": "dev",
+              "manifest": "crates/termrock-layout/Cargo.toml"
+            },
+            {
+              "name": "termrock-navigation",
+              "kind": "dev",
+              "manifest": "crates/termrock-navigation/Cargo.toml"
+            },
+            {
+              "name": "termrock-overlays",
+              "kind": "dev",
+              "manifest": "crates/termrock-overlays/Cargo.toml"
+            },
+            {
+              "name": "termrock-runtime",
+              "kind": "dev",
+              "manifest": "crates/termrock-runtime/Cargo.toml"
+            },
+            {
+              "name": "termrock-terminal",
+              "kind": "dev",
+              "manifest": "crates/termrock-terminal/Cargo.toml"
+            },
+            {
+              "name": "termrock-text",
+              "kind": "dev",
+              "manifest": "crates/termrock-text/Cargo.toml"
+            },
+            {
+              "name": "termrock-theme",
+              "kind": "dev",
+              "manifest": "crates/termrock-theme/Cargo.toml"
+            },
+            {
+              "name": "termrock-viewport",
+              "kind": "dev",
+              "manifest": "crates/termrock-viewport/Cargo.toml"
+            },
+            {
+              "name": "toml",
+              "kind": "dev",
+              "manifest": null
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_conformance",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-conformance/src/lib.rs",
+              "requires_features": false
+            },
+            {
+              "name": "regressions",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-conformance/tests/regressions/main.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-shell",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-shell/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "termrock-controls",
+              "kind": "normal",
+              "manifest": "crates/termrock-controls/Cargo.toml"
+            },
+            {
+              "name": "termrock-core",
+              "kind": "normal",
+              "manifest": "crates/termrock-core/Cargo.toml"
+            },
+            {
+              "name": "termrock-dialogs",
+              "kind": "normal",
+              "manifest": "crates/termrock-dialogs/Cargo.toml"
+            },
+            {
+              "name": "termrock-feedback",
+              "kind": "normal",
+              "manifest": "crates/termrock-feedback/Cargo.toml"
+            },
+            {
+              "name": "termrock-metrics",
+              "kind": "normal",
+              "manifest": "crates/termrock-metrics/Cargo.toml"
+            },
+            {
+              "name": "termrock-navigation",
+              "kind": "normal",
+              "manifest": "crates/termrock-navigation/Cargo.toml"
+            },
+            {
+              "name": "termrock-overlays",
+              "kind": "normal",
+              "manifest": "crates/termrock-overlays/Cargo.toml"
+            },
+            {
+              "name": "termrock-runtime",
+              "kind": "normal",
+              "manifest": "crates/termrock-runtime/Cargo.toml"
+            },
+            {
+              "name": "termrock-session",
+              "kind": "normal",
+              "manifest": "crates/termrock-session/Cargo.toml"
+            },
+            {
+              "name": "termrock-text",
+              "kind": "normal",
+              "manifest": "crates/termrock-text/Cargo.toml"
+            },
+            {
+              "name": "termrock-theme",
+              "kind": "normal",
+              "manifest": "crates/termrock-theme/Cargo.toml"
+            },
+            {
+              "name": "termrock-fields",
+              "kind": "dev",
+              "manifest": "crates/termrock-fields/Cargo.toml"
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_shell",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-shell/src/lib.rs",
+              "requires_features": false
+            },
+            {
+              "name": "regressions",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-shell/tests/regressions/main.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-dialogs",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-dialogs/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "termrock-collections",
+              "kind": "normal",
+              "manifest": "crates/termrock-collections/Cargo.toml"
+            },
+            {
+              "name": "termrock-controls",
+              "kind": "normal",
+              "manifest": "crates/termrock-controls/Cargo.toml"
+            },
+            {
+              "name": "termrock-core",
+              "kind": "normal",
+              "manifest": "crates/termrock-core/Cargo.toml"
+            },
+            {
+              "name": "termrock-editors",
+              "kind": "normal",
+              "manifest": "crates/termrock-editors/Cargo.toml"
+            },
+            {
+              "name": "termrock-fields",
+              "kind": "normal",
+              "manifest": "crates/termrock-fields/Cargo.toml"
+            },
+            {
+              "name": "termrock-layout",
+              "kind": "normal",
+              "manifest": "crates/termrock-layout/Cargo.toml"
+            },
+            {
+              "name": "termrock-navigation",
+              "kind": "normal",
+              "manifest": "crates/termrock-navigation/Cargo.toml"
+            },
+            {
+              "name": "termrock-overlays",
+              "kind": "normal",
+              "manifest": "crates/termrock-overlays/Cargo.toml"
+            },
+            {
+              "name": "termrock-runtime",
+              "kind": "normal",
+              "manifest": "crates/termrock-runtime/Cargo.toml"
+            },
+            {
+              "name": "termrock-text",
+              "kind": "normal",
+              "manifest": "crates/termrock-text/Cargo.toml"
+            },
+            {
+              "name": "termrock-theme",
+              "kind": "normal",
+              "manifest": "crates/termrock-theme/Cargo.toml"
+            },
+            {
+              "name": "termrock-viewport",
+              "kind": "normal",
+              "manifest": "crates/termrock-viewport/Cargo.toml"
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_dialogs",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-dialogs/src/lib.rs",
+              "requires_features": false
+            },
+            {
+              "name": "regressions",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-dialogs/tests/regressions/main.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-editors",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-editors/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "termrock-controls",
+              "kind": "normal",
+              "manifest": "crates/termrock-controls/Cargo.toml"
+            },
+            {
+              "name": "termrock-core",
+              "kind": "normal",
+              "manifest": "crates/termrock-core/Cargo.toml"
+            },
+            {
+              "name": "termrock-fields",
+              "kind": "normal",
+              "manifest": "crates/termrock-fields/Cargo.toml"
+            },
+            {
+              "name": "termrock-metrics",
+              "kind": "normal",
+              "manifest": "crates/termrock-metrics/Cargo.toml"
+            },
+            {
+              "name": "termrock-overlays",
+              "kind": "normal",
+              "manifest": "crates/termrock-overlays/Cargo.toml"
+            },
+            {
+              "name": "termrock-runtime",
+              "kind": "normal",
+              "manifest": "crates/termrock-runtime/Cargo.toml"
+            },
+            {
+              "name": "termrock-text",
+              "kind": "normal",
+              "manifest": "crates/termrock-text/Cargo.toml"
+            },
+            {
+              "name": "termrock-theme",
+              "kind": "normal",
+              "manifest": "crates/termrock-theme/Cargo.toml"
+            },
+            {
+              "name": "termrock-viewport",
+              "kind": "normal",
+              "manifest": "crates/termrock-viewport/Cargo.toml"
+            },
+            {
+              "name": "unicode-segmentation",
+              "kind": "normal",
+              "manifest": null
+            },
+            {
+              "name": "termrock-text",
+              "kind": "dev",
+              "manifest": "crates/termrock-text/Cargo.toml",
+              "features": [
+                "test-support"
+              ]
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_editors",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-editors/src/lib.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-session",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-session/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "termrock-core",
+              "kind": "normal",
+              "manifest": "crates/termrock-core/Cargo.toml"
+            },
+            {
+              "name": "termrock-metrics",
+              "kind": "normal",
+              "manifest": "crates/termrock-metrics/Cargo.toml"
+            },
+            {
+              "name": "termrock-text",
+              "kind": "normal",
+              "manifest": "crates/termrock-text/Cargo.toml"
+            },
+            {
+              "name": "libc",
+              "kind": "normal",
+              "manifest": null,
+              "platform": "cfg(unix)"
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_session",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-session/src/lib.rs",
+              "requires_features": false
+            },
+            {
+              "name": "regressions",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-session/tests/regressions/main.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-terminal",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-terminal/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "termpane",
+              "kind": "normal",
+              "manifest": null
+            },
+            {
+              "name": "termrock-controls",
+              "kind": "normal",
+              "manifest": "crates/termrock-controls/Cargo.toml"
+            },
+            {
+              "name": "termrock-core",
+              "kind": "normal",
+              "manifest": "crates/termrock-core/Cargo.toml"
+            },
+            {
+              "name": "termrock-metrics",
+              "kind": "normal",
+              "manifest": "crates/termrock-metrics/Cargo.toml"
+            },
+            {
+              "name": "termrock-runtime",
+              "kind": "normal",
+              "manifest": "crates/termrock-runtime/Cargo.toml"
+            },
+            {
+              "name": "termrock-text",
+              "kind": "normal",
+              "manifest": "crates/termrock-text/Cargo.toml"
+            },
+            {
+              "name": "termrock-theme",
+              "kind": "normal",
+              "manifest": "crates/termrock-theme/Cargo.toml"
+            },
+            {
+              "name": "termrock-viewport",
+              "kind": "normal",
+              "manifest": "crates/termrock-viewport/Cargo.toml"
+            },
+            {
+              "name": "unicode-width",
+              "kind": "normal",
+              "manifest": null
+            },
+            {
+              "name": "base64",
+              "kind": "dev",
+              "manifest": null
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_terminal",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-terminal/src/lib.rs",
+              "requires_features": false
+            },
+            {
+              "name": "regressions",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-terminal/tests/regressions/main.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "jackin-console",
+          "version": "0.1.0",
+          "manifest": "apps/jackin/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "clap",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "derive"
+              ],
+              "optional": true
+            },
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "termrock",
+              "kind": "normal",
+              "manifest": "crates/termrock/Cargo.toml",
+              "features": [
+                "terminal"
+              ]
+            },
+            {
+              "name": "unicode-segmentation",
+              "kind": "normal",
+              "manifest": null
+            },
+            {
+              "name": "base64",
+              "kind": "dev",
+              "manifest": null
+            },
+            {
+              "name": "jackin-console",
+              "kind": "dev",
+              "manifest": "apps/jackin/Cargo.toml",
+              "features": [
+                "demo"
+              ]
+            },
+            {
+              "name": "serde_json",
+              "kind": "dev",
+              "manifest": null
+            },
+            {
+              "name": "tuiscotti-tui-test",
+              "kind": "dev",
+              "manifest": null,
+              "rename": "tui-test"
+            },
+            {
+              "name": "tuiscotti",
+              "kind": "dev",
+              "manifest": null,
+              "rename": "tuiscotti-latest"
+            }
+          ],
+          "targets": [
+            {
+              "name": "jackin_console",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/src/lib.rs",
+              "requires_features": false
+            },
+            {
+              "name": "jackin-preview",
+              "kinds": [
+                "bin"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/src/bin/jackin-preview/main.rs",
+              "requires_features": true
+            },
+            {
+              "name": "account_data",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/account_data.rs",
+              "requires_features": false
+            },
+            {
+              "name": "attention",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/attention.rs",
+              "requires_features": false
+            },
+            {
+              "name": "capsule_commands",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/capsule_commands.rs",
+              "requires_features": false
+            },
+            {
+              "name": "capsule_input",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/capsule_input.rs",
+              "requires_features": false
+            },
+            {
+              "name": "capsule_panes",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/capsule_panes.rs",
+              "requires_features": false
+            },
+            {
+              "name": "capsule_pointer",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/capsule_pointer.rs",
+              "requires_features": false
+            },
+            {
+              "name": "capsule_spawn",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/capsule_spawn.rs",
+              "requires_features": false
+            },
+            {
+              "name": "clipboard_policy",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/clipboard_policy.rs",
+              "requires_features": false
+            },
+            {
+              "name": "daemon_tabs",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/daemon_tabs.rs",
+              "requires_features": false
+            },
+            {
+              "name": "doctor_screen",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/doctor_screen.rs",
+              "requires_features": false
+            },
+            {
+              "name": "due_held",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/due_held.rs",
+              "requires_features": false
+            },
+            {
+              "name": "effects",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/effects.rs",
+              "requires_features": false
+            },
+            {
+              "name": "entry",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/entry.rs",
+              "requires_features": false
+            },
+            {
+              "name": "external",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/external.rs",
+              "requires_features": false
+            },
+            {
+              "name": "fixed_fields",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/fixed_fields.rs",
+              "requires_features": false
+            },
+            {
+              "name": "fixed_settings",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/fixed_settings.rs",
+              "requires_features": false
+            },
+            {
+              "name": "functional",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/functional/main.rs",
+              "requires_features": true
+            },
+            {
+              "name": "gaps",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/gaps.rs",
+              "requires_features": false
+            },
+            {
+              "name": "gaps_bg2",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/gaps_bg2.rs",
+              "requires_features": false
+            },
+            {
+              "name": "gaps_bg3",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/gaps_bg3.rs",
+              "requires_features": false
+            },
+            {
+              "name": "gaps_bg4",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/gaps_bg4.rs",
+              "requires_features": false
+            },
+            {
+              "name": "gaps_bg5",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/gaps_bg5.rs",
+              "requires_features": false
+            },
+            {
+              "name": "gaps_bg6",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/gaps_bg6.rs",
+              "requires_features": false
+            },
+            {
+              "name": "gaps_bg6_words",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/gaps_bg6_words.rs",
+              "requires_features": false
+            },
+            {
+              "name": "git_url",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/git_url.rs",
+              "requires_features": false
+            },
+            {
+              "name": "launch_blocked",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/launch_blocked.rs",
+              "requires_features": false
+            },
+            {
+              "name": "launch_checks",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/launch_checks.rs",
+              "requires_features": false
+            },
+            {
+              "name": "launch_feed",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/launch_feed.rs",
+              "requires_features": false
+            },
+            {
+              "name": "launch_role",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/launch_role.rs",
+              "requires_features": false
+            },
+            {
+              "name": "library_has_no_demo",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/library_has_no_demo.rs",
+              "requires_features": false
+            },
+            {
+              "name": "live_texts",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/live_texts.rs",
+              "requires_features": false
+            },
+            {
+              "name": "pane_body",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/pane_body.rs",
+              "requires_features": false
+            },
+            {
+              "name": "pane_edge",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/pane_edge.rs",
+              "requires_features": false
+            },
+            {
+              "name": "pane_keys",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/pane_keys.rs",
+              "requires_features": false
+            },
+            {
+              "name": "pane_states",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/pane_states.rs",
+              "requires_features": false
+            },
+            {
+              "name": "pane_text",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/pane_text.rs",
+              "requires_features": false
+            },
+            {
+              "name": "pending",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/pending.rs",
+              "requires_features": false
+            },
+            {
+              "name": "plain_key",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/plain_key.rs",
+              "requires_features": false
+            },
+            {
+              "name": "product_manifest",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/product_manifest.rs",
+              "requires_features": false
+            },
+            {
+              "name": "product_mode",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/product_mode.rs",
+              "requires_features": false
+            },
+            {
+              "name": "regressions",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/regressions/main.rs",
+              "requires_features": false
+            },
+            {
+              "name": "replay_window",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/replay_window.rs",
+              "requires_features": false
+            },
+            {
+              "name": "role_check_replies",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/role_check_replies.rs",
+              "requires_features": false
+            },
+            {
+              "name": "role_editor_screen",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/role_editor_screen.rs",
+              "requires_features": false
+            },
+            {
+              "name": "script_pane",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/script_pane.rs",
+              "requires_features": false
+            },
+            {
+              "name": "scrollbars",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/scrollbars.rs",
+              "requires_features": false
+            },
+            {
+              "name": "sim_replies",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/sim_replies.rs",
+              "requires_features": false
+            },
+            {
+              "name": "snapshot",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/snapshot.rs",
+              "requires_features": false
+            },
+            {
+              "name": "sources",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/sources.rs",
+              "requires_features": false
+            },
+            {
+              "name": "surfaces",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/surfaces.rs",
+              "requires_features": false
+            },
+            {
+              "name": "terminal_pane",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/terminal_pane.rs",
+              "requires_features": false
+            },
+            {
+              "name": "time",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/time.rs",
+              "requires_features": false
+            },
+            {
+              "name": "tuple_data",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/tuple_data.rs",
+              "requires_features": false
+            },
+            {
+              "name": "unavailable_back_navigation",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/unavailable_back_navigation.rs",
+              "requires_features": false
+            },
+            {
+              "name": "unavailable_roster_sanitization",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/unavailable_roster_sanitization.rs",
+              "requires_features": false
+            },
+            {
+              "name": "viewer_replies",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/viewer_replies.rs",
+              "requires_features": false
+            },
+            {
+              "name": "vocabulary",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/vocabulary.rs",
+              "requires_features": false
+            },
+            {
+              "name": "wizard",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/wizard.rs",
+              "requires_features": false
+            },
+            {
+              "name": "world",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/jackin/tests/world.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-showcase",
+          "version": "0.1.0",
+          "manifest": "apps/showcase/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "clap",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "derive"
+              ]
+            },
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "termrock",
+              "kind": "normal",
+              "manifest": "crates/termrock/Cargo.toml",
+              "features": [
+                "cli",
+                "terminal"
+              ]
+            },
+            {
+              "name": "serde_json",
+              "kind": "dev",
+              "manifest": null
+            },
+            {
+              "name": "syn",
+              "kind": "dev",
+              "manifest": null,
+              "features": [
+                "full",
+                "visit"
+              ]
+            },
+            {
+              "name": "libc",
+              "kind": "dev",
+              "manifest": null,
+              "platform": "cfg(unix)"
+            }
+          ],
+          "targets": [
+            {
+              "name": "showcase",
+              "kinds": [
+                "bin"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/showcase/src/main.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-tablepro",
+          "version": "0.1.0",
+          "manifest": "apps/tablepro/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "clap",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "derive"
+              ]
+            },
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "regex",
+              "kind": "normal",
+              "manifest": null
+            },
+            {
+              "name": "termrock",
+              "kind": "normal",
+              "manifest": "crates/termrock/Cargo.toml",
+              "features": [
+                "cli"
+              ]
+            },
+            {
+              "name": "serde_json",
+              "kind": "dev",
+              "manifest": null
+            }
+          ],
+          "targets": [
+            {
+              "name": "tablepro",
+              "kinds": [
+                "bin"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "apps/tablepro/src/main.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "junie-tui",
+          "version": "0.1.0",
+          "manifest": "crates/junie-tui/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "termrock",
+              "kind": "normal",
+              "manifest": "crates/termrock/Cargo.toml"
+            },
+            {
+              "name": "ratatui",
+              "kind": "dev",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            }
+          ],
+          "targets": [
+            {
+              "name": "junie_tui",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/junie-tui/src/lib.rs",
+              "requires_features": false
+            },
+            {
+              "name": "regressions",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/junie-tui/tests/regressions/main.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "functional-cross",
+          "version": "0.1.0",
+          "manifest": "crates/functional-cross/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "serde_json",
+              "kind": "dev",
+              "manifest": null
+            },
+            {
+              "name": "sha2",
+              "kind": "dev",
+              "manifest": null
+            },
+            {
+              "name": "termrock",
+              "kind": "dev",
+              "manifest": "crates/termrock/Cargo.toml",
+              "features": [
+                "cli",
+                "terminal"
+              ]
+            },
+            {
+              "name": "tuiscotti-tui-test",
+              "kind": "dev",
+              "manifest": null,
+              "rename": "tui-test"
+            },
+            {
+              "name": "tuiscotti",
+              "kind": "dev",
+              "manifest": null,
+              "rename": "tuiscotti-latest"
+            }
+          ],
+          "targets": [
+            {
+              "name": "functional_cross",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/functional-cross/src/lib.rs",
+              "requires_features": false
+            },
+            {
+              "name": "functional",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/functional-cross/tests/functional/main.rs",
+              "requires_features": false
+            }
+          ]
+        },
+        {
+          "name": "termrock-functional",
+          "version": "0.1.0",
+          "manifest": "crates/termrock-functional/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "dev",
+              "manifest": null,
+              "features": [
+                "crossterm_0_29"
+              ]
+            },
+            {
+              "name": "serde_json",
+              "kind": "dev",
+              "manifest": null
+            },
+            {
+              "name": "sha2",
+              "kind": "dev",
+              "manifest": null
+            },
+            {
+              "name": "termrock",
+              "kind": "dev",
+              "manifest": "crates/termrock/Cargo.toml",
+              "features": [
+                "cli",
+                "terminal"
+              ]
+            },
+            {
+              "name": "tuiscotti-tui-test",
+              "kind": "dev",
+              "manifest": null,
+              "rename": "tui-test"
+            },
+            {
+              "name": "tuiscotti",
+              "kind": "dev",
+              "manifest": null,
+              "rename": "tuiscotti-latest"
+            },
+            {
+              "name": "libc",
+              "kind": "dev",
+              "manifest": null,
+              "platform": "cfg(unix)"
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_functional",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-functional/src/lib.rs",
+              "requires_features": false
+            },
+            {
+              "name": "functional",
+              "kinds": [
+                "test"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock-functional/tests/functional/main.rs",
+              "requires_features": false
+            }
+          ]
+        }
+      ]
+    },
+    "crates/termrock/tests/consumers/jackin-host/Cargo.toml": {
+      "target_dir": "target/velnor-roots/crates_termrock_tests_consumers_jackin_host",
+      "members": [
+        {
+          "name": "termrock-consumer-jackin-host",
+          "version": "0.0.0",
+          "manifest": "crates/termrock/tests/consumers/jackin-host/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "jackin-console",
+              "kind": "normal",
+              "manifest": "apps/jackin/Cargo.toml"
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_consumer_jackin_host",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": true,
+              "source": "crates/termrock/tests/consumers/jackin-host/src/lib.rs",
+              "requires_features": false
+            }
+          ]
+        }
+      ]
+    },
+    "crates/termrock/tests/consumers/keyed-modal/Cargo.toml": {
+      "target_dir": "target/velnor-roots/crates_termrock_tests_consumers_keyed_modal",
+      "members": [
+        {
+          "name": "termrock-consumer-keyed-modal",
+          "version": "0.0.0",
+          "manifest": "crates/termrock/tests/consumers/keyed-modal/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null
+            },
+            {
+              "name": "termrock",
+              "kind": "normal",
+              "manifest": "crates/termrock/Cargo.toml"
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_consumer_keyed_modal",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": false,
+              "source": "crates/termrock/tests/consumers/keyed-modal/src/lib.rs",
+              "requires_features": false
+            }
+          ]
+        }
+      ]
+    },
+    "crates/termrock/tests/consumers/minimal/Cargo.toml": {
+      "target_dir": "target/velnor-roots/crates_termrock_tests_consumers_minimal",
+      "members": [
+        {
+          "name": "termrock-consumer-minimal",
+          "version": "0.0.0",
+          "manifest": "crates/termrock/tests/consumers/minimal/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "ratatui",
+              "kind": "normal",
+              "manifest": null
+            },
+            {
+              "name": "termrock",
+              "kind": "normal",
+              "manifest": "crates/termrock/Cargo.toml"
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_consumer_minimal",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": true,
+              "source": "crates/termrock/tests/consumers/minimal/src/lib.rs",
+              "requires_features": false
+            }
+          ]
+        }
+      ]
+    },
+    "crates/termrock/tests/consumers/terminal/Cargo.toml": {
+      "target_dir": "target/velnor-roots/crates_termrock_tests_consumers_terminal",
+      "members": [
+        {
+          "name": "termrock-consumer-terminal",
+          "version": "0.0.0",
+          "manifest": "crates/termrock/tests/consumers/terminal/Cargo.toml",
+          "dependencies": [
+            {
+              "name": "termrock",
+              "kind": "normal",
+              "manifest": "crates/termrock/Cargo.toml",
+              "features": [
+                "terminal"
+              ]
+            }
+          ],
+          "targets": [
+            {
+              "name": "termrock_consumer_terminal",
+              "kinds": [
+                "lib"
+              ],
+              "tests": true,
+              "doctest": true,
+              "source": "crates/termrock/tests/consumers/terminal/src/lib.rs",
+              "requires_features": false
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "manifests": {
+    "Cargo.toml": "5abaca1ef8aa03d4cba99dfb4079c5b6972cf2d803fa63ef0702bf419b267dde",
+    "apps/holla/Cargo.toml": "c82d77a8d9c52b5a1d74f0a443fb0c397d58935a3143a75f4c873a08cb5f942e",
+    "apps/jackin/Cargo.toml": "a996366ec12d3f3e1dec4595e7d1650580cf56ea3c96618b9592b9a8fadc8eb5",
+    "apps/showcase/Cargo.toml": "e476a80e2eb4db31229f365493df716b66ce0542866f8e3464d5c0882e5d3938",
+    "apps/tablepro/Cargo.toml": "cf8a61dc5c6a16b98963d4cf33a39e19258a3d67d11594aaaace071259dee782",
+    "crates/functional-cross/Cargo.toml": "e98104b8591f37d44952f503b8dad573b5dc2595b7a22392c8cbdf489cc62814",
+    "crates/junie-tui/Cargo.toml": "481bdbabdc69617e705c7f955441118ce79507673e9f7d857672a2f9194d909e",
+    "crates/termrock-catalog/Cargo.toml": "ae1f2d9ffa164dbbd1992d9906ca27c09a566beedaa330e3fe965ee24a6380c8",
+    "crates/termrock-cli/Cargo.toml": "1ab1a03f7e8d960ab6b38a32d9edf23183d40324fb3e18b7b9d13000edcd7168",
+    "crates/termrock-collections/Cargo.toml": "f2019fa954c506813fc57204be171fc5cb1ae64c59ff333892b73ccb6d26c02d",
+    "crates/termrock-conformance/Cargo.toml": "768befa627ddaf6aa4d11f450c4e507bbc941e07b0655544c175e285d7203c15",
+    "crates/termrock-controls/Cargo.toml": "0dc4427d38f8514c19c6226a0ab518366fbc215a4e187b307f0e706ea6b87bb0",
+    "crates/termrock-core/Cargo.toml": "8c8627bf7cfb2175127656c89f6eba2c59532863bb9f67e33e7291185bc206d3",
+    "crates/termrock-dialogs/Cargo.toml": "5194ef8d9fce6478d4ef70e5f4d40645f10a85f5089c642efabe19240d734d6d",
+    "crates/termrock-editors/Cargo.toml": "83966ff42c9a06c3c897854b18eb1f1274e02dbfd5f8469a7d1ee98af1d4ac66",
+    "crates/termrock-feedback/Cargo.toml": "e0e44d9c89c3dc98b61780ffde15d740dbdb55d0a430c052ea7e44cdc5733a73",
+    "crates/termrock-fields/Cargo.toml": "5321669bb0b5b4f9acbe1726097f03e9c87312d54eb6499f76dec2e0654b6df5",
+    "crates/termrock-functional/Cargo.toml": "53102089de067a054cefe0edabd530c651da372bca1ea0594e8956f5b659a861",
+    "crates/termrock-grid/Cargo.toml": "e290a5745e22497102eb64b16c2044ff9794e6c6259cc184a20b04016bb101bc",
+    "crates/termrock-layout/Cargo.toml": "3808d1518040a9ba244d02a3a0651740a7172f9dcfe671aff0fca8f8bca0e81e",
+    "crates/termrock-metrics/Cargo.toml": "d6cec1a99ce8ae2d9704a2d4fff729ab16953e1bcab4f88944da078f605ac67c",
+    "crates/termrock-navigation/Cargo.toml": "22d9b7452e2f34e2bb5e937bd45a58596686f2d801684d6b9b01fee3e4df2b2e",
+    "crates/termrock-overlays/Cargo.toml": "1168c55f0e55bd655eeb50fd7e2e8c8a8e1b3f6ebb56c334313b769098e320df",
+    "crates/termrock-runtime/Cargo.toml": "74800a92362ba6c39a6587d6df6bdb3396254c8fbe7895d661329dd043b87939",
+    "crates/termrock-session/Cargo.toml": "ee5fdb8aed6552bbf02f12309dcaab64bc8862e01bc34a7fdeeedfe112a27619",
+    "crates/termrock-shell/Cargo.toml": "92c7de1834b8798e175e0ce6212658306d11d34232f60d830c2a8a9f1af9f8b3",
+    "crates/termrock-terminal/Cargo.toml": "35c2cead2eec99f0c7849e0a49ee5c568620bef69da6e4d527f122d983d671e3",
+    "crates/termrock-text/Cargo.toml": "829578259c963db6fc6a930a10705763b1ec19a1942796b460b33f994ab43ce3",
+    "crates/termrock-theme/Cargo.toml": "bcda59ba8b95709617670a8b10b50ec12272c242cf79627b137353ce9e61ef02",
+    "crates/termrock-viewport/Cargo.toml": "ed060c003c74d38b3a983224c5c7dc18aa6b484e14cca4f82a27b194a7c18e4a",
+    "crates/termrock/Cargo.toml": "a3ff365e25c0c82755a6ca0f747ff40bd94bd043aca838a32eaf468cc2fbfd42",
+    "crates/termrock/tests/consumers/jackin-host/Cargo.toml": "e5b392cf39bb5718b5890fb98ff9493bdd5d8337e1b13a6f85fd33073d485c47",
+    "crates/termrock/tests/consumers/keyed-modal/Cargo.toml": "da399411f07b7d464e645e71eaab3430469e06dab32f7a620d3e655ee67e83ad",
+    "crates/termrock/tests/consumers/minimal/Cargo.toml": "19c74d3936796f92e88759aa944f9e4a5f48425e3da58bf65dbac08c400a4d2f",
+    "crates/termrock/tests/consumers/terminal/Cargo.toml": "18849d2fded7a0e5b8d51d0a1849b80f33672dc49759343d5f691cc8f0656c95"
+  },
+  "layout": "5a591261e46422761181f9edf6afdfc9713cd954dd5fd57a3f5ccbeda4de0d27"
+}

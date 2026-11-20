@@ -308,10 +308,8 @@ Also unmet:
   their state before round 0 do so in setup (`ListBox`, `TextArea`); the
   others have no pre-check on round 0, so a state that was already wrong before
   the first round would go unnoticed there.
-- The `performance` CI suite builds with the default features, because the
-  generator gives a suite no feature field, so the counters are compiled out of
-  its build. It runs the inventory gate, whose nested `nextest list` uses
-  `--all-features`, and the `Rust / <crate>` jobs execute the contracts. See
+- Generated CI has no `performance` suite: the contracts execute in the
+  all-features lane of `rust-test-root`, which also runs the inventory gate. See
   "The performance profile and its inventory gate".
 - Holla's batch summary loop and `tick_plan` are not counted. A Holla
   scheduling count covers the activity and plan traversal only, so a zero or a
@@ -369,52 +367,47 @@ its source file and the tests it must hold, and fails when
   after a module rename or a narrowed regex;
 - a required test is no longer a `#[test]` function in its file.
 
-The list check runs only under `--profile performance`: there the nested list
-is a cache hit on the build the run just made. Under any other profile it
+The list check runs under `--profile performance`, and under `--profile ci`
+when the `work-metrics` feature is compiled in. Both are shapes where the
+nested `--all-features` list is a cache hit on the build the run just made:
+the first is the documented local command, the second is the all-features lane
+of generated CI. Under any other profile or in a default-feature build it
 prints that it is skipped, because a list in the wrong feature shape would
-rebuild the workspace. Run the profile with the documented command; a run with
-other `-p` or feature flags still works but rebuilds for the nested list.
+rebuild the workspace. A run with other `-p` or feature flags still works but
+rebuilds for the nested list.
 The gate cannot vouch for itself: an `#[ignore]` on the gate's own tests
 removes the check, and only `--no-tests fail` and review notice that.
 
 ### The `performance` CI suite
 
-`.velnor/config.toml` declares the suite `performance`: profile `performance`,
-four hash partitions, build `inline`, triggers pull request, push and manual
-dispatch, `required = true`. `velnor-actions generate` turns it into the job
-`Suite (performance)` (`suite-performance` in the generated `ci.yml`), which the
-`Required` verdict waits for. The job runs
-`mbx nextest run --workspace --no-tests warn --partition hash:N/4 --profile performance`.
-`performance_suite_is_a_required_generated_ci_job` fails when the declaration,
-the generated job or the `Required` dependency goes missing, or when the suite
-stops being required.
+Generated CI (velnor-gen) has no suite with its own nextest profile. The
+contracts run in the all-features test lane of `.velnor/rust-ci.toml`: a
+`[[test_lane]]` with `root = "."` and every feature (`cli`, `demo`, `product`,
+`terminal`, `test-support`, `work-metrics`), filtered only by
+`not binary(functional)`. It is a step of the job `rust-test-root`, which the
+`Required` check waits for, and it runs under `--profile ci`, so the counters
+are compiled in and the `work_contract_*` tests execute. It replaces the old
+`Suite (performance)` (four hash partitions, profile `performance`), which built
+the default features and so compiled the contracts out; they used to execute in
+the per-crate all-features jobs (see [decisions](decisions.md), 2026-11-18 and
+2026-11-20).
 
-What the suite does and does not run is a limit of the generator, which gives a
-suite no feature field (see [decisions](decisions.md), 2026-11-18). The suite
-builds `--workspace` with the default features, so `work-metrics` is off in that
-build and the `work_contract_*` tests, which need it, are compiled out of it.
-It still has teeth, in two ways:
-
-- `performance_nextest_list_runs_every_required_test` runs in one of the four
-  partitions, with `NEXTEST_PROFILE=performance` set by nextest. It runs the
-  nested `cargo nextest list --profile performance --workspace --all-features`
-  and fails unless every family and every app contributes each of its required
+- `performance_contracts_run_in_a_required_all_features_ci_lane` fails when the
+  lane is missing, names no `work-metrics`, carries another filter, omits a
+  package that owns a required test, or when the generated `rust-ci.yml` has no
+  `nextest run --profile ci --features ...work-metrics...` step or its job is
+  not in the `required` job's `needs`.
+- `performance_nextest_list_runs_every_required_test` runs in that lane with
+  `NEXTEST_PROFILE=ci`. It runs the nested
+  `cargo nextest list --profile performance --workspace --all-features` and
+  fails unless every family and every app contributes each of its required
   tests, listed, not `#[ignore]`d and selected by the profile. That is the real
-  inventory proof, and a nonzero aggregate count cannot stand in for it.
-- The `Rust / <crate>` jobs build with `--all-features`, so they execute the
-  contracts themselves (`ci` profile, which excludes only `binary(functional)`).
-  Two checks pin that route. `performance_contracts_run_in_required_all_features_ci_jobs`
-  reads the generated task manifest and `ci.yml` and fails unless every package
-  that owns a required test has a generated
-  `nextest run --profile ci --package P --all-features` task and a `rust-P` job
-  that `Required` waits for. The nested list of the inventory test is taken a
-  second time with `--profile ci` and must also select every required test, so a
-  test that the suite lists but the jobs would not run fails as well.
+  inventory proof, and a nonzero aggregate count cannot stand in for it. The
+  list is repeated with `--profile ci`, so a test the profile selects but the
+  lane would not run fails as well.
 
-`--no-tests warn` comes from `allow_empty_test_suite`, a stack-wide setting that
-legitimately empty shards elsewhere depend on, so it is not turned off for this
-suite. A shard that holds no test passes; the inventory gate, not the shard, is
-what makes the suite nonempty.
+Four hash partitions are gone because velnor-gen has no partitions; the lane is
+one job. `--no-tests warn` is gone too: the lane runs with `--no-tests=fail`.
 
 The profile filter is read as text, not evaluated, so it must stay a plain
 union of `binary_id(=ID) & test(MATCHER)` terms. The gate refuses `not` and set
@@ -546,8 +539,6 @@ scripts/measure-performance.sh
 scripts/performance-report.sh
 ```
 
-CI builds the Rust jobs with `--all-features`, so these tests already run in
-the `Rust / termrock-conformance`, `Rust / termrock-shell`, `Rust / jackin-console` and `Rust / termrock-holla`,
-`-tablepro` and `-showcase` jobs. The product
-shape builds without `work-metrics`, where the tests compile away and
+The all-features lane of `rust-test-root` runs these tests for every package.
+The default-feature builds are without `work-metrics`, where the tests compile away and
 `metrics_disabled_does_not_evaluate_arguments` runs instead.
