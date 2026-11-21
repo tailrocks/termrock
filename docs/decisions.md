@@ -1713,26 +1713,26 @@ Weakened, accepted, and recorded here so a reviewer can object:
 
 ### Gaps reported to velnor-new (velnor-new-12)
 
-- Public git sources disable every base cache; `tools-v0.1.108` was announced
-  to fix it, and `tools-v0.1.109` still refuses (the generator treats
-  `termpane` and `tuiscotti` as private).
+- Public git sources disabled every base cache until `tools-v0.1.111` (#2136):
+  `termpane` and `tuiscotti` are public, so `.velnor/rust-ci.toml` declares them
+  in `[public_sources]`. The base caches save on pushes to `main` only, so
+  whether they save is confirmed by the first `main` run after the merge.
 - The two provenance regressions above (mise binary digest, restored tool-cache
   verification) are sent upstream as gaps: velnor-gen should pin the mise
   digest and verify restored tool caches the way velnor-actions did. Helper
   0.1.109 adds `tools-verify` for the second; the mise digest is still unpinned.
 - velnor-gen does not compare `.velnor/rust-ci.lock` with `mise.toml` or
-  `mise.lock`, so the lock's `version` and `commit` were unenforced.
-  `tests/ci_default_branch.rs` now pins them to the mise pins. Helper 0.1.109
-  does compare the `[velnor-gen]` digest with the running binary on Linux, but
-  `pin-helper` writes the archive digest there while the check wants the
-  digest of the extracted binary (`BINARY-SHA256SUMS`); the first CI run failed
-  `Generated workflows` on that. The lock holds the binary digests, and the
-  mismatch is reported upstream.
-- No macOS asset for `velnor-gen` and `velnor-ci`; announced for `0.1.108`,
-  still absent in `0.1.109`.
-  Until then, `mise.toml` has two pins, `cargo:` for macOS and `github:` for
-  Linux. velnor-gen refuses any tool that applies on the runner OS without a
-  prebuilt binary, so `tuiscotti` is also `os = ["macos"]`.
+  `mise.lock`. `tests/ci_default_branch.rs` pins `version` and `commit` to the
+  mise pins, and `[velnor-gen].linux-x64` to the archive digest in `mise.lock`.
+  `tools-v0.1.111` (#2340) makes `pin-helper` write the archive digest to
+  `[velnor-gen]` and the extracted-binary digest to `[velnor-gen-binary]`, the
+  section `velnor-gen check` compares, so the digest no longer has to be copied
+  from `BINARY-SHA256SUMS`.
+- No macOS asset for `velnor-gen` and `velnor-ci` in `0.1.111` either (the
+  release has only the Linux musl archives). `mise.toml` keeps two pins,
+  `cargo:` for macOS and `github:` for Linux. velnor-gen refuses any tool that
+  applies on the runner OS without a prebuilt binary, so `tuiscotti` is also
+  `os = ["macos"]`.
 - `tools.postinstall` is refused, so `mbx setup --yes` is no longer run by
   mise. velnor-new says the wrapper and `mr_boxington = true` already route
   cargo through mbx; run `mise exec -- mbx setup --yes` by hand if needed.
@@ -1741,5 +1741,4 @@ Weakened, accepted, and recorded here so a reviewer can object:
   a per-root job timeout; cache restore for a group job; a key for
   `velnor-ci check-configurations`.
 
-Revisit when a release ships the macOS asset and public-git-source caching: use one `github:` pin for velnor-gen, check
-that the base caches save, and then lower `timeout_minutes`.
+Revisit when a release ships the macOS asset: use one `github:` pin for velnor-gen. Once the first `main` run after the `tools-v0.1.111` merge has saved the base caches, measure the warm build jobs and lower `timeout_minutes` (45 until then).

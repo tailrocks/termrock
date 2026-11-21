@@ -7,8 +7,9 @@
 //!
 //! The same file pins the velnor-gen identity: `.velnor/rust-ci.lock` records the
 //! release that `velnor-gen pin-helper` resolved. `velnor-gen check` compares the
-//! `[velnor-gen]` digest with the running binary on Linux, but it never compares the
-//! lock with `mise.toml`, so the tests below tie `version` and `commit` to the mise pins.
+//! `[velnor-gen-binary]` digest with the running binary on Linux, but it never
+//! compares the lock with `mise.toml` or `mise.lock`, so the tests below tie
+//! `version`, `commit` and the `[velnor-gen]` archive digest to the mise pins.
 
 use std::fmt;
 
@@ -198,17 +199,46 @@ fn mise_pin_version(mise_toml: &str, tool: &str) -> Result<String, String> {
         .ok_or_else(|| format!("mise.toml pin of `{tool}` has no version string"))
 }
 
+/// The archive digest that `mise.lock` records for the Linux asset of `tool`,
+/// without the `sha256:` prefix.
+fn mise_lock_linux_digest(mise_lock: &str, tool: &str) -> Result<String, String> {
+    let document = toml_table(mise_lock, "mise.lock");
+    let entry = document
+        .get("tools")
+        .and_then(|tools| tools.get(tool))
+        .ok_or_else(|| format!("mise.lock records no `{tool}`"))?;
+    // A tool with a `[[tools.<name>]]` array of tables holds its platforms in the last entry.
+    let entry = match entry {
+        toml::Value::Array(entries) => entries.last(),
+        table => Some(table),
+    }
+    .ok_or_else(|| format!("mise.lock records no entry of `{tool}`"))?;
+    entry
+        .get("platforms.linux-x64")
+        .and_then(|platform| platform.get("checksum"))
+        .and_then(toml::Value::as_str)
+        .and_then(|checksum| checksum.strip_prefix("sha256:"))
+        .map(str::to_owned)
+        .ok_or_else(|| format!("mise.lock records no linux-x64 sha256 for `{tool}`"))
+}
+
 /// What `.velnor/rust-ci.lock` must agree with: the `tools-v` tag of the Linux
-/// asset that mise installs and the commit that macOS builds. The Linux digest
-/// is the digest of the extracted binary (`BINARY-SHA256SUMS`), which
-/// `mise.lock` does not record (it holds the archive digest), so only
-/// `velnor-gen check` on Linux compares it. Returns every disagreement.
-fn check_velnor_gen_pin(rust_ci_lock: &str, mise_toml: &str) -> Vec<String> {
+/// asset that mise installs, the commit that macOS builds, and the archive
+/// digest that `mise.lock` records for that asset. `[velnor-gen]` holds the
+/// archive digest; `[velnor-gen-binary]` holds the digest of the extracted
+/// binary, which only `velnor-gen check` compares. Returns every disagreement.
+fn check_velnor_gen_pin(rust_ci_lock: &str, mise_toml: &str, mise_lock: &str) -> Vec<String> {
     let lock = toml_table(rust_ci_lock, ".velnor/rust-ci.lock");
     let text = |value: Option<&toml::Value>| value.and_then(toml::Value::as_str).map(str::to_owned);
     let mut problems = Vec::new();
-    if text(lock.get("velnor-gen").and_then(|t| t.get("linux-x64"))).is_none() {
-        problems.push(".velnor/rust-ci.lock has no [velnor-gen].linux-x64".to_owned());
+    let digest = text(lock.get("velnor-gen").and_then(|t| t.get("linux-x64")));
+    match (mise_lock_linux_digest(mise_lock, GEN_RELEASE_TOOL), digest) {
+        (Ok(pin), Some(digest)) if pin == digest => {}
+        (Ok(_), None) => problems.push(".velnor/rust-ci.lock has no [velnor-gen].linux-x64".to_owned()),
+        (Ok(pin), Some(digest)) => problems.push(format!(
+            "mise.lock records the linux-x64 archive of {GEN_RELEASE_TOOL} as `{pin}`, but .velnor/rust-ci.lock [velnor-gen].linux-x64 is `{digest}`"
+        )),
+        (Err(why), _) => problems.push(why),
     }
     let version = text(lock.get("version"));
     match (mise_pin_version(mise_toml, GEN_RELEASE_TOOL), version) {
@@ -232,7 +262,7 @@ fn check_velnor_gen_pin(rust_ci_lock: &str, mise_toml: &str) -> Vec<String> {
 const SAMPLE_COMMIT: &str = "1f9762b239202d138ceec484da17fa5b27f2c3a3";
 const SAMPLE_SUM: &str = "222f7d078b251d74677150a2abc688357fa186ec7e4a820d0cadcf7836e74b9a";
 
-fn sample_files() -> (String, String) {
+fn sample_files() -> (String, String, String) {
     (
         format!(
             "version = \"0.1.106\"\ncommit = \"{SAMPLE_COMMIT}\"\n\n[velnor-gen]\nlinux-x64 = \"{SAMPLE_SUM}\"\n"
@@ -240,36 +270,50 @@ fn sample_files() -> (String, String) {
         format!(
             "[tools]\n\"{GEN_RELEASE_TOOL}\" = {{ version = \"tools-v0.1.106\", os = [\"linux\"] }}\n\"{GEN_SOURCE_TOOL}\" = {{ version = \"rev:{SAMPLE_COMMIT}\", crate = \"velnor-gen\" }}\n"
         ),
+        format!(
+            "[[tools.\"{GEN_RELEASE_TOOL}\"]]\nversion = \"tools-v0.1.106\"\n\n[tools.\"{GEN_RELEASE_TOOL}\".\"platforms.linux-x64\"]\nchecksum = \"sha256:{SAMPLE_SUM}\"\n"
+        ),
     )
 }
 
 #[test]
 fn velnor_gen_pin_agrees_across_the_lock_and_mise() {
-    let (lock, toml) = sample_files();
-    assert_eq!(check_velnor_gen_pin(&lock, &toml), Vec::<String>::new());
+    let (lock, toml, mise_lock) = sample_files();
+    assert_eq!(
+        check_velnor_gen_pin(&lock, &toml, &mise_lock),
+        Vec::<String>::new()
+    );
 }
 
 #[test]
 fn velnor_gen_pin_rejects_a_missing_digest_or_a_tampered_version_or_commit() {
-    let (lock, toml) = sample_files();
+    let (lock, toml, mise_lock) = sample_files();
     let no_digest = lock.replace("[velnor-gen]", "[other]");
-    let problems = check_velnor_gen_pin(&no_digest, &toml);
+    let problems = check_velnor_gen_pin(&no_digest, &toml, &mise_lock);
     assert_eq!(problems.len(), 1, "{problems:?}");
     assert!(problems[0].contains("linux-x64"), "{problems:?}");
 
     let tampered_version = lock.replace("version = \"0.1.106\"", "version = \"0.1.107\"");
-    let problems = check_velnor_gen_pin(&tampered_version, &toml);
+    let problems = check_velnor_gen_pin(&tampered_version, &toml, &mise_lock);
     assert_eq!(problems.len(), 1, "{problems:?}");
     assert!(problems[0].contains("version"), "{problems:?}");
 
     let other = "0".repeat(40);
     let tampered_commit = lock.replace(SAMPLE_COMMIT, &other);
-    let problems = check_velnor_gen_pin(&tampered_commit, &toml);
+    let problems = check_velnor_gen_pin(&tampered_commit, &toml, &mise_lock);
     assert_eq!(problems.len(), 1, "{problems:?}");
     assert!(problems[0].contains("commit"), "{problems:?}");
 
     let moving_tag = toml.replace(&format!("rev:{SAMPLE_COMMIT}"), "tag:tools-v0.1.106");
-    assert_eq!(check_velnor_gen_pin(&lock, &moving_tag).len(), 1);
+    assert_eq!(
+        check_velnor_gen_pin(&lock, &moving_tag, &mise_lock).len(),
+        1
+    );
+
+    let other_digest = lock.replace(SAMPLE_SUM, &"0".repeat(64));
+    let problems = check_velnor_gen_pin(&other_digest, &toml, &mise_lock);
+    assert_eq!(problems.len(), 1, "{problems:?}");
+    assert!(problems[0].contains("linux-x64"), "{problems:?}");
 }
 
 #[test]
@@ -277,6 +321,7 @@ fn repository_velnor_gen_pin_agrees_across_the_lock_and_mise() {
     let problems = check_velnor_gen_pin(
         include_str!("../../../../.velnor/rust-ci.lock"),
         include_str!("../../../../mise.toml"),
+        include_str!("../../../../mise.lock"),
     );
     assert!(problems.is_empty(), "{problems:#?}");
 }

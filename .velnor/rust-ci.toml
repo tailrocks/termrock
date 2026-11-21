@@ -1,8 +1,14 @@
 runner = "ubuntu-26.04"
 hosted = true
-# Cold: the Target and Sources caches are not saved while Cargo.lock holds git
-# sources (docs/ci.md), so the build job compiles the workspace twice from scratch.
+# Kept at 45: the base caches save only on pushes to main, so warm timings exist
+# only after the first main run that saves them (docs/decisions.md).
 timeout_minutes = 45
+
+# Cargo.lock locks termpane and tuiscotti from git. Both repositories are public,
+# so they are declared here: the base caches save and the pull-request deltas
+# work (docs/ci.md).
+[public_sources]
+git = ["https://github.com/tailrocks/termpane", "https://github.com/tailrocks/tuiscotti"]
 
 # The old `functional` suite ran four hash partitions (profile `functional`,
 # eight test threads, 15 minutes each). velnor-gen has no partitions, so the
