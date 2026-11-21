@@ -22,7 +22,7 @@ one-time setup, run `mise exec -- mbx setup --yes`.
 | Format check | `cargo fmt --all --check` |
 
 The workspace is virtual: the root `Cargo.toml` holds no package. The default
-members are the `termrock-*` library crates, `termrock`, the `junie-tui` shim,
+members are the `termrock-*` library crates, `termrock`,
 the four app packages (`apps/holla`, `apps/jackin`, `apps/showcase`,
 `apps/tablepro`), `termrock-functional` and `functional-cross`, so these commands
 cover all of them. The `functional` profile selects the `functional` target of

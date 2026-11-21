@@ -18,19 +18,17 @@ termrock = { git = "https://github.com/tailrocks/termrock", default-features = f
 | Package | Import | Role |
 | --- | --- | --- |
 | `termrock` (`crates/termrock`) | `termrock::` | The supported import path. A re-export facade over the `termrock-*` library crates, with a small prelude. |
-| `junie-tui` (`crates/junie-tui`) | `junie_tui::` | Deprecated. A re-export of `termrock` with the old default features (`cli`, `terminal`), kept so existing consumers keep compiling. It holds no code. |
 | `termrock-showcase`, `termrock-tablepro`, `termrock-holla` (`apps/*`) | none | Applications. They import `termrock` only. |
 | `jackin-console` (`apps/jackin`) | `jackin_console::` | The Jackin host library and its `jackin-preview` demo. It imports `termrock` only. |
 
 Every module of the facade is a `pub use` of the module of the crate that owns
 it (`termrock-core`, `termrock-runtime`, `termrock-controls`, and so on), and
 `core`, `metrics`, `ui` and `widgets` are assembled from several crates with
-explicit lists, so a type has one identity under `termrock::`, under the owning
-crate and under `junie_tui::`. `facade_basic_types_preserve_identity` in
+explicit lists, so a type has one identity under `termrock::` and under the owning
+crate. `facade_basic_types_preserve_identity` in
 `crates/termrock/tests/regressions/type_identity.rs` passes a facade `Response`,
 `ItemKey`, `WidgetId` and `RowSource` to functions typed against the owning
-crates, and `crates/junie-tui/tests/regressions/identity.rs` does the same
-against `junie_tui`. `facade_module_paths_resolve` fails when a module path that
+crates. `facade_module_paths_resolve` fails when a module path that
 the single package exposed before the split stops resolving. A consumer that
 mixes the paths gets no conversion and no second type. Depend on `termrock`,
 not on the `termrock-*` crates: their names and boundaries are not part of this
@@ -56,9 +54,8 @@ The prelude holds `ItemKey`, `WidgetId`, `RowSource`, `KeyedRowSource`,
 | `product` | `terminal` | The shape of a shipped product: no demo code. |
 | `work-metrics` | The work counters behind `record_work!` | Opt-in: off unless a build enables it, whatever the profile. See [performance contracts](performance-contracts.md). |
 
-The `junie-tui` shim keeps the old defaults (`cli` and `terminal`) so that an
-existing `junie-tui` consumer does not change silently, and forwards every
-feature to `termrock`. The facade does not inherit them.
+The facade default is empty: it does not inherit the old `junie-tui` defaults
+(`cli` and `terminal`).
 
 Cargo unifies the features of one package across a whole build, so a workspace
 build with `--all-features` shows nothing about what a single consumer gets.
@@ -179,8 +176,7 @@ Version 0.1 is not a compatibility release. A consumer of an older checkout:
 
 1. Replaces `junie_tui::` with `termrock::` and depends on `crates/termrock`.
    The facade names are the old implementation names, so the replacement is
-   mechanical. The old path keeps compiling: `junie-tui` is now a re-export of
-   `termrock` at `crates/junie-tui` (below).
+   mechanical. There is no shim: `junie_tui::` paths no longer resolve (#565).
 2. Declares the features it needs. The facade default is empty; add `cli`
    and `terminal` explicitly if the code used them through the old defaults.
 3. Reads collection selection by key (`ListBox::keyed`) and iterates
@@ -201,15 +197,10 @@ Version 0.1 is not a compatibility release. A consumer of an older checkout:
    | `Part::{ACTION, BADGE, BODY, BORDER, CHANGE, DETAIL, EMPTY, GUTTER, HELP, LABEL, META, PLACEHOLDER, PREFIX, RULE, SUMMARY, TEXT}` | `Part::custom("name")` for a region of the host's own. The numbers of the remaining parts are unchanged. |
    | `StateFlags` | A host-owned `bitflags` type, or the `VisualState` and `Theme` modifiers the widgets already use. |
 
-6. If it depends on `junie-tui` by git, nothing breaks. The package `junie-tui`
-   is now at `crates/junie-tui`, and Cargo finds it by name in the repository.
-   It re-exports `termrock` with `cli` and `terminal` on by default, so
-   `default-features = false, features = ["terminal"]` keeps its meaning.
-   Replace `junie-tui` by `termrock` (`crates/termrock`, features declared
-   explicitly) and `junie_tui::` by `termrock::`; the paths are identical.
-   `junie-tui` receives no new API.
-
-The removal of `junie-tui` is a separate, versioned decision.
+6. If it depends on `junie-tui` by git, it must move. The package `junie-tui`
+   and its `junie_tui::` shim were removed (#565). Replace `junie-tui` by
+   `termrock` (`crates/termrock`, features declared explicitly) and
+   `junie_tui::` by `termrock::`; the paths are identical.
 
 ## Examples and fixtures that hold this contract
 
@@ -233,7 +224,8 @@ and prints each normal feature tree.
 
 `crates/termrock/tests/regressions/facade_contract.rs` runs in the ordinary test suite: it
 scans the four application packages for any manifest entry or Rust path that
-names `junie_tui` (`facade_apps_have_no_implementation_imports`) and checks the
+names `junie_tui` (`facade_apps_have_no_implementation_imports`), checks that the
+shim is gone (`the_junie_tui_shim_is_gone`), and checks the
 committed lockfile of each fixture, which holds exactly its normal graph
 (`consumer_minimal_excludes_clap_and_termpane`,
 `consumer_keyed_modal_excludes_clap_and_termpane`,

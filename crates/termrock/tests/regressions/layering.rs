@@ -2,12 +2,13 @@
 //!
 //! The rules live in `docs/layering.toml`. `cargo metadata` gives the real
 //! dependency graph of the workspace, which this file checks against that table:
-//! a crate may depend only on crates below it, an application depends on
-//! `termrock` only, and nothing depends on the `junie-tui` shim. The check
-//! also fails a feature that a crate declares but does not forward to a
-//! dependency that declares it, a dependency cycle, and a `crates/termrock-*` or
-//! `apps/*` directory that is not a workspace member. A test asserts that it
-//! ran on the extracted crates, so it cannot pass by checking nothing.
+//! a crate may depend only on crates below it, and an application depends on
+//! `termrock` only. The check also fails a `junie-tui` package, which was removed
+//! with its `junie_tui::` shim (#565), a feature that a crate declares but does
+//! not forward to a dependency that declares it, a dependency cycle, and a
+//! `crates/termrock-*` or `apps/*` directory that is not a workspace member. A
+//! test asserts that it ran on the extracted crates, so it cannot pass by
+//! checking nothing.
 //!
 //! Before the split the same table also scanned the modules of the single
 //! package (stage A, with a `[files]` section and an allowlist that only
@@ -114,7 +115,7 @@ impl Layering {
     /// The package name that stands behind a short crate name.
     fn package(krate: &str) -> String {
         match krate {
-            "termrock" | "junie-tui" => krate.to_string(),
+            "termrock" => krate.to_string(),
             other => format!("termrock-{other}"),
         }
     }
@@ -122,7 +123,7 @@ impl Layering {
     /// The short crate name of a workspace package, if the table lists it.
     fn member(&self, package: &str) -> Option<String> {
         let short = match package {
-            "termrock" | "junie-tui" => package,
+            "termrock" => package,
             other => other.strip_prefix("termrock-")?,
         };
         self.position(short).map(|_| short.to_string())
@@ -198,6 +199,12 @@ fn check_metadata(metadata: &serde_json::Value, layering: &Layering) -> (usize, 
     for package in &packages {
         let name = package["name"].as_str().unwrap_or_default();
         let manifest = package["manifest_path"].as_str().unwrap_or_default();
+        if name == "junie-tui" {
+            problems.push(format!(
+                "{name}: the junie-tui shim was removed (#565); import `termrock::` paths instead of `junie_tui::`"
+            ));
+            continue;
+        }
         let relative = manifest
             .strip_prefix(workspace)
             .unwrap_or(manifest)
@@ -500,7 +507,7 @@ fn layering_crates_follow_the_table() {
 
 const MINI: &str = r#"
 schema = 1
-order = ["text", "core", "controls", "dialogs", "termrock", "junie-tui"]
+order = ["text", "core", "controls", "dialogs", "termrock"]
 layer_order = ["foundations", "components", "facade"]
 
 [layers]
@@ -509,7 +516,6 @@ core = "foundations"
 controls = "components"
 dialogs = "components"
 termrock = "facade"
-"junie-tui" = "facade"
 
 [allow]
 text = []
@@ -517,7 +523,6 @@ core = ["text"]
 controls = ["core"]
 dialogs = ["controls"]
 termrock = ["text", "core", "controls", "dialogs"]
-"junie-tui" = ["termrock"]
 "#;
 
 #[test]
@@ -699,37 +704,17 @@ fn layering_stage_b_runs_on_the_extracted_crates() {
 }
 
 #[test]
-fn layering_crate_level_rejects_a_dependency_on_the_shim() {
+fn layering_crate_level_rejects_a_reintroduced_shim() {
     let layering = Layering::parse(MINI);
     let meta = metadata(&[
-        (
-            "termrock-core",
-            "crates/termrock-core/Cargo.toml",
-            &["junie-tui"],
-        ),
         ("termrock", "crates/termrock/Cargo.toml", &["termrock-core"]),
         ("junie-tui", "crates/junie-tui/Cargo.toml", &["termrock"]),
-        (
-            "termrock-showcase",
-            "apps/showcase/Cargo.toml",
-            &["termrock", "junie-tui"],
-        ),
     ]);
     let (_, problems) = check_metadata(&meta, &layering);
     let joined = problems.join("\n");
     assert!(
-        joined.contains("`termrock-core` must not depend on `junie-tui`"),
+        joined.contains("junie-tui: the junie-tui shim was removed (#565)"),
         "{joined}"
-    );
-    assert!(
-        joined.contains(
-            "termrock-showcase: an application depends on `termrock` only, not on `junie-tui`"
-        ),
-        "{joined}"
-    );
-    assert!(
-        !joined.contains("`junie-tui` must not depend on `termrock`"),
-        "the shim re-exports the facade: {joined}"
     );
 }
 
@@ -743,32 +728,33 @@ fn with_features(name: &str, features: serde_json::Value, dependency: &str) -> s
 }
 
 #[test]
-fn layering_feature_forwarding_covers_the_shim_and_the_facade() {
+fn layering_feature_forwarding_is_checked_between_crates() {
     let layering = Layering::parse(MINI);
-    let facade = serde_json::json!({
-        "name": "termrock",
-        "manifest_path": "/w/crates/termrock/Cargo.toml",
-        "features": {"cli": [], "terminal": []},
+    let core = serde_json::json!({
+        "name": "termrock-core",
+        "manifest_path": "/w/crates/termrock-core/Cargo.toml",
+        "features": {"terminal": []},
         "dependencies": [],
     });
     let forwarding = with_features(
-        "junie-tui",
-        serde_json::json!({"default": ["cli"], "cli": ["termrock/cli"], "terminal": ["termrock/terminal"]}),
-        "termrock",
+        "termrock-controls",
+        serde_json::json!({"default": ["terminal"], "terminal": ["termrock-core/terminal"]}),
+        "termrock-core",
     );
     assert!(
-        feature_forwarding_problems(&[facade.clone(), forwarding], &layering).is_empty(),
-        "a shim that forwards every feature is accepted"
+        feature_forwarding_problems(&[core.clone(), forwarding], &layering).is_empty(),
+        "a crate that forwards every feature is accepted"
     );
     let dropping = with_features(
-        "junie-tui",
-        serde_json::json!({"cli": ["termrock/cli"], "terminal": []}),
-        "termrock",
+        "termrock-controls",
+        serde_json::json!({"terminal": []}),
+        "termrock-core",
     );
-    let problems = feature_forwarding_problems(&[facade, dropping], &layering);
+    let problems = feature_forwarding_problems(&[core, dropping], &layering);
     assert_eq!(problems.len(), 1, "{problems:?}");
     assert!(
-        problems[0].contains("junie-tui: feature `terminal` must forward to `termrock`"),
+        problems[0]
+            .contains("termrock-controls: feature `terminal` must forward to `termrock-core`"),
         "{problems:?}"
     );
 }

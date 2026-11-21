@@ -703,7 +703,7 @@ mod gate_logic {
     const LANE_CONFIG: &str =
         "[[test_lane]]\nroot = \".\"\nfeatures = [\"cli\", \"work-metrics\"]\nlint = true\n";
     const LANE_METADATA: &str =
-        r#"{"roots":{"Cargo.toml":{"members":[{"name":"junie-tui"},{"name":"extra-crate"}]}}}"#;
+        r#"{"roots":{"Cargo.toml":{"members":[{"name":"omitted-crate"},{"name":"extra-crate"}]}}}"#;
     const LANE_WORKFLOW: &str = "jobs:\n  rust-test-root:\n    steps:\n      - run: cargo-nextest nextest run --workspace --features 'cli,work-metrics' --profile ci\n  lint-x:\n    steps: []\n  required:\n    needs:\n      - rust-test-root\n      - lint-x\n    steps: []\n";
 
     #[test]
@@ -742,18 +742,18 @@ mod gate_logic {
 
     #[test]
     fn a_lane_that_omits_an_owning_package_or_a_member_fails() {
-        let config = format!("{LANE_CONFIG}packages = [\"junie-tui\"]\n");
+        let config = format!("{LANE_CONFIG}packages = [\"omitted-crate\"]\n");
         let problems = check_ci_lane(&config, LANE_WORKFLOW, LANE_METADATA);
-        // Every owning package and every root member, but `junie-tui`.
+        // Every owning package and every root member, but `omitted-crate`.
         let mut expected: Vec<&str> = required_packages();
-        expected.extend(["junie-tui", "extra-crate"]);
+        expected.extend(["omitted-crate", "extra-crate"]);
         expected.sort_unstable();
         expected.dedup();
-        expected.retain(|p| *p != "junie-tui");
+        expected.retain(|p| *p != "omitted-crate");
         assert_eq!(problems.len(), expected.len(), "{problems:?}");
         assert!(problems.iter().any(|p| p.contains("`extra-crate`")));
         let mut all = required_packages();
-        all.extend(["junie-tui", "extra-crate"]);
+        all.extend(["omitted-crate", "extra-crate"]);
         let listed = all
             .iter()
             .map(|p| format!("\"{p}\""))

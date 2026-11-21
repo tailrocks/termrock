@@ -87,7 +87,7 @@ class BuildAppBinsTests(unittest.TestCase):
             "nextest run --features=cli,work-metrics",
             "nextest run -F work-metrics",
             "nextest run -Fwork-metrics",
-            "nextest run --features junie-tui/work-metrics",
+            "nextest run --features termrock/work-metrics",
         ]:
             with self.subTest(args=args):
                 self.built.unlink(missing_ok=True)
