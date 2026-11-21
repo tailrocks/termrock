@@ -1,4 +1,4 @@
-min_version = { hard = "2026.11.1", soft = "2026.11.11" }
+min_version = { hard = "2026.11.1", soft = "2026.11.12" }
 
 [tools]
 "aqua:nextest-rs/nextest/cargo-nextest" = "0.9.151"
@@ -45,7 +45,7 @@ description = "Fail when .github/workflows/rust-ci.yml or .velnor/rust-metadata.
 run = "velnor-gen --root . check"
 
 # Builds every workspace member on its own, once with the features it declares
-# as defaults and once with all of its features, plus `termrock` and `junie-tui`
+# as defaults and once with all of its features, plus `termrock`
 # with `--no-default-features --features terminal` (the former `product` shape),
 # and denies warnings. A
 # workspace build unifies features across the members, so a member that lacks a
@@ -66,7 +66,7 @@ for package in $(cargo tree --workspace --depth 0 --prefix none --format '{p}' |
 done
 # The former `product` shape (`terminal` without `cli`): the library shapes that
 # `product` changed, which no default or all-features pass builds.
-for package in termrock junie-tui; do
+for package in termrock; do
   echo "== $package (no default features, terminal)"
   cargo clippy --locked --package "$package" --all-targets --no-default-features --features terminal -- -D warnings
 done

@@ -82,7 +82,7 @@ roots: the workspace at `.` and the four consumer fixtures.
 - **lint-crates-alone** — the mise task `check-crates-alone`: every workspace
   member on its own (`cargo clippy --package <member> --all-targets -D
   warnings`), once with default features and once with `--all-features`, plus
-  `termrock` and `junie-tui` with `--no-default-features --features terminal`
+  `termrock` with `--no-default-features --features terminal`
   (the former `product` shape). A
   workspace build unifies features across members, so a member that misses a
   feature forward (the #446 `work-metrics` defect) or leaves an import unused
@@ -124,11 +124,11 @@ does today, and none is a functional test.
 no other filter, names every package and that `Required` waits for its job.
 
 The old `product` configuration (`--no-default-features --features product`,
-run for `junie-tui`, `termrock` and `jackin-console`) is not generated. `product`
+run for `termrock` and `jackin-console`) is not generated. `product`
 gates no code: it is an alias of `terminal`. For `jackin-console` it is empty
 and `default = []`, so the default build is the same build. For `termrock` and
-`junie-tui` the shape is `terminal` without `cli`; `lint-crates-alone` builds
-both with `--no-default-features --features terminal` under `--all-targets`, and
+the shape is `terminal` without `cli`; `lint-crates-alone` builds
+it with `--no-default-features --features terminal` under `--all-targets`, and
 the `termrock-consumer-terminal` and `termrock-consumer-jackin-host` fixtures
 build the library code of that shape as consumers.
 

@@ -105,8 +105,7 @@ workspaces, Docker, OpenShell, Codex).
   `RenderCtx::modal_backdrop`.
 - Dependencies point down the layers in `docs/layering.toml`
   (foundations, runtime, components, facade). A change that adds an upward
-  dependency, or a dependency on the `junie-tui` shim, fails the `layering`
-  regression test in `crates/termrock/tests/regressions/layering.rs`: fix the
+  dependency fails the `layering` regression test in `crates/termrock/tests/regressions/layering.rs`: fix the
   design (move the item down or invert the dependency). There is no allowlist.
 - Interfaces are shared and composable. Widgets implement the same core
   traits (rendering, focus, keyboard, mouse, scrolling, selection, hints,
@@ -118,11 +117,10 @@ workspaces, Docker, OpenShell, Codex).
   and similar shell behaviour belong to the library.
 - The four apps (`apps/showcase`, `apps/tablepro`, `apps/holla`,
   `apps/jackin`) depend on the `termrock` facade (`crates/termrock`) and
-  import `termrock::`, never `junie_tui::`. `junie-tui` (`crates/junie-tui`) is a
-  deprecated shim that is `pub use termrock::*;` with the old default features,
-  kept for consumers that depend on it by git; nothing in this workspace depends
-  on it. `crates/termrock/tests/regressions/facade_contract.rs` enforces the
-  apps' side. A new public module is added to the facade with an explicit
+  import `termrock::`, never `junie_tui::`. There is no `junie-tui` shim
+  (removed in #565); `junie_tui::` paths do not resolve. Migrate an old import by
+  replacing `junie_tui::` with `termrock::`. `crates/termrock/tests/regressions/facade_contract.rs`
+  enforces the apps' side. A new public module is added to the facade with an explicit
   `pub use` list, never a glob over a crate (a crate's `#[doc(hidden)]` items
   must stay out), and the facade keeps empty default features. The independent consumer fixtures under
   `crates/termrock/tests/consumers/` each have their own `[workspace]` and `Cargo.lock`; keep

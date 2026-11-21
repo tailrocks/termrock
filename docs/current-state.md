@@ -5,8 +5,8 @@ This repository is the design reference implementation: a Cargo workspace
 `termrock-*` crates under `crates/`, and the repository root is a virtual
 workspace manifest. `termrock` (`crates/termrock`) is the supported import
 path for it, a re-export facade with empty default features (see
-[API contract](api-contract.md)); `junie-tui` (`crates/junie-tui`) is a
-deprecated re-export of it for consumers that still name the old package. The demonstration applications are
+[API contract](api-contract.md)). There is no `junie-tui` shim (removed in #565):
+replace `junie_tui::` with `termrock::`. The demonstration applications are
 packages of their own and import `termrock` only: `termrock-showcase`,
 `termrock-tablepro` and `termrock-holla` (`apps/showcase`, `apps/tablepro`,
 `apps/holla`), and `jackin-console` (`apps/jackin`), a library of the jackin console

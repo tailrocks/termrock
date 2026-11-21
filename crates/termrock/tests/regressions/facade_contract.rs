@@ -142,6 +142,22 @@ fn facade_apps_have_no_implementation_imports() {
     );
 }
 
+/// The `junie-tui` shim was removed (#565): no directory and no workspace member
+/// remains, so `junie_tui::` paths cannot resolve anywhere in the repository.
+#[test]
+fn the_junie_tui_shim_is_gone() {
+    assert!(
+        !root().join("crates/junie-tui").exists(),
+        "crates/junie-tui was removed; import `termrock::` instead of `junie_tui::`"
+    );
+    let manifest = std::fs::read_to_string(root().join("Cargo.toml")).expect("root Cargo.toml");
+    assert!(
+        manifest_mentions_implementation(&manifest).is_empty(),
+        "the root workspace still names the removed shim: {:?}",
+        manifest_mentions_implementation(&manifest)
+    );
+}
+
 #[test]
 fn facade_scan_sees_each_way_to_name_the_implementation() {
     for (kind, source) in [
