@@ -6,36 +6,23 @@ timeout_minutes = 45
 
 # The old `functional` suite ran four hash partitions (profile `functional`,
 # eight test threads, 15 minutes each). velnor-gen has no partitions, so the
-# functional binaries are split into four disjoint groups of about 350 tests;
+# functional binaries are split into two disjoint groups of about 700 tests;
 # `velnor-ci test-groups check` fails the build job when two groups select the
 # same test. A functional test that no group names runs in `rust-test-default-root`.
+# Each group builds the workspace once, cold (no cache restore for a group job),
+# so two groups rather than four keep the cache report's repeated compilations
+# of the same units at two (see docs/ci.md, Cache).
 [[test_groups]]
-name = "functional-cases-a"
-filter = "binary_id(=termrock-functional::functional) and (test(/^cases::g05_/) or test(/^cases::h0/) or test(/^cases::s01_/) or test(/^cases::s02_/) or test(/^cases::s03_/))"
+name = "functional-cases-ab"
+filter = "binary_id(=termrock-functional::functional) and (test(/^cases::g05_/) or test(/^cases::h0/) or test(/^cases::s0[1-7]_/))"
 root = "."
 needs = ["cargo"]
 test_threads = 8
 timeout_minutes = 30
 
 [[test_groups]]
-name = "functional-cases-b"
-filter = "binary_id(=termrock-functional::functional) and (test(/^cases::s04_/) or test(/^cases::s05_/) or test(/^cases::s06_/) or test(/^cases::s07_/))"
-root = "."
-needs = ["cargo"]
-test_threads = 8
-timeout_minutes = 30
-
-[[test_groups]]
-name = "functional-cases-c"
-filter = "(binary_id(=termrock-functional::functional) and (test(/^cases::s08_/) or test(/^cases::s09_/) or test(/^cases::s10_/) or test(/^cases::t0/) or test(/^cases::x0/))) or binary_id(=functional-cross::functional)"
-root = "."
-needs = ["cargo"]
-test_threads = 8
-timeout_minutes = 30
-
-[[test_groups]]
-name = "functional-apps"
-filter = "(binary_id(=termrock-functional::functional) and not test(/^cases::/)) or binary_id(=jackin-console::functional)"
+name = "functional-cases-c-apps"
+filter = "(binary_id(=termrock-functional::functional) and (test(/^cases::s0[89]_/) or test(/^cases::s10_/) or test(/^cases::t0/) or test(/^cases::x0/) or not test(/^cases::/))) or binary_id(=functional-cross::functional) or binary_id(=jackin-console::functional)"
 root = "."
 needs = ["cargo"]
 test_threads = 8
