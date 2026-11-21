@@ -2637,48 +2637,6 @@
           ]
         },
         {
-          "name": "junie-tui",
-          "version": "0.1.0",
-          "manifest": "crates/junie-tui/Cargo.toml",
-          "dependencies": [
-            {
-              "name": "termrock",
-              "kind": "normal",
-              "manifest": "crates/termrock/Cargo.toml"
-            },
-            {
-              "name": "ratatui",
-              "kind": "dev",
-              "manifest": null,
-              "features": [
-                "crossterm_0_29"
-              ]
-            }
-          ],
-          "targets": [
-            {
-              "name": "junie_tui",
-              "kinds": [
-                "lib"
-              ],
-              "tests": true,
-              "doctest": false,
-              "source": "crates/junie-tui/src/lib.rs",
-              "requires_features": false
-            },
-            {
-              "name": "regressions",
-              "kinds": [
-                "test"
-              ],
-              "tests": true,
-              "doctest": false,
-              "source": "crates/junie-tui/tests/regressions/main.rs",
-              "requires_features": false
-            }
-          ]
-        },
-        {
           "name": "functional-cross",
           "version": "0.1.0",
           "manifest": "crates/functional-cross/Cargo.toml",
@@ -2945,13 +2903,12 @@
     }
   },
   "manifests": {
-    "Cargo.toml": "6bce95746afa6746fc05becb5ffb99db2256b0fd2da802f870969cc55e4c633d",
+    "Cargo.toml": "1e1c95ae29b5299b062a8c4b8ba81937e96982b78d808481917fdde299afdce3",
     "apps/holla/Cargo.toml": "c82d77a8d9c52b5a1d74f0a443fb0c397d58935a3143a75f4c873a08cb5f942e",
     "apps/jackin/Cargo.toml": "a996366ec12d3f3e1dec4595e7d1650580cf56ea3c96618b9592b9a8fadc8eb5",
     "apps/showcase/Cargo.toml": "e476a80e2eb4db31229f365493df716b66ce0542866f8e3464d5c0882e5d3938",
     "apps/tablepro/Cargo.toml": "cf8a61dc5c6a16b98963d4cf33a39e19258a3d67d11594aaaace071259dee782",
     "crates/functional-cross/Cargo.toml": "e98104b8591f37d44952f503b8dad573b5dc2595b7a22392c8cbdf489cc62814",
-    "crates/junie-tui/Cargo.toml": "481bdbabdc69617e705c7f955441118ce79507673e9f7d857672a2f9194d909e",
     "crates/termrock-catalog/Cargo.toml": "18c1586b1890c8d947a936f05e8f344b7ad4571fa94abd408e47883b838101df",
     "crates/termrock-cli/Cargo.toml": "1ab1a03f7e8d960ab6b38a32d9edf23183d40324fb3e18b7b9d13000edcd7168",
     "crates/termrock-collections/Cargo.toml": "f2019fa954c506813fc57204be171fc5cb1ae64c59ff333892b73ccb6d26c02d",
@@ -2981,5 +2938,5 @@
     "crates/termrock/tests/consumers/minimal/Cargo.toml": "19c74d3936796f92e88759aa944f9e4a5f48425e3da58bf65dbac08c400a4d2f",
     "crates/termrock/tests/consumers/terminal/Cargo.toml": "18849d2fded7a0e5b8d51d0a1849b80f33672dc49759343d5f691cc8f0656c95"
   },
-  "layout": "5a591261e46422761181f9edf6afdfc9713cd954dd5fd57a3f5ccbeda4de0d27"
+  "layout": "e37dc403a19b955f940240137e18615a809bfdeee604fc51b100c88d9896da52"
 }

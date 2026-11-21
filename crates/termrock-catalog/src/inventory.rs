@@ -65,9 +65,9 @@ pub struct CrateRoot<'a> {
     pub dir: &'a str,
 }
 
-/// The single-crate walk of the repository root package.
+/// The single-crate walk of the facade's `src`, the shape the test fixtures use.
 pub const ROOT_CRATE: &[CrateRoot<'static>] = &[CrateRoot {
-    name: "junie_tui",
+    name: "termrock",
     dir: "src",
 }];
 

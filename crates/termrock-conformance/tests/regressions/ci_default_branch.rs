@@ -322,13 +322,14 @@ fn the_crates_alone_lint_is_configured_and_required() {
         "the default-feature pass is missing: {run}"
     );
 
-    for package in ["termrock", "junie-tui"] {
-        assert!(
-            run.contains(&format!("for package in {package} "))
-                || run.contains(&format!(" {package}; do")),
-            "the terminal-without-cli pass does not name `{package}`: {run}"
-        );
-    }
+    assert!(
+        run.contains("for package in termrock; do"),
+        "the terminal-without-cli pass does not name `termrock`: {run}"
+    );
+    assert!(
+        !run.contains("junie-tui"),
+        "the removed shim is still named in check-crates-alone: {run}"
+    );
     assert!(
         run.lines().any(|line| line
             .contains("--all-targets --no-default-features --features terminal -- -D warnings")),

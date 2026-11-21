@@ -3,11 +3,11 @@
 # The check fails any dependency that points up the layers. It reads
 # `cargo metadata` for the real crate graph and checks it against this table.
 # (Until #452 a second stage scanned the modules of the single `junie-tui`
-# package through a `[files]` section; the package no longer has any.)
+# package through a `[files]` section; the package and its shim are gone.)
 #
 # Names are short: `core` means the package `termrock-core`. `termrock` is the
-# facade (`crates/termrock`). `junie-tui` is the shim that re-exports it: it sits
-# after `termrock` and may depend on nothing else, and nothing may depend on it.
+# facade (`crates/termrock`). There is no shim crate: `junie_tui::` was replaced by
+# `termrock::` and the package was removed.
 #
 # Editing rules
 #   * [allow] is the table of #439 and changes only by a recorded decision.
@@ -41,7 +41,6 @@ order = [
     "catalog",
     "conformance",
     "termrock",
-    "junie-tui",
     "functional",
 ]
 
@@ -72,7 +71,6 @@ terminal = "optional"
 cli = "optional"
 catalog = "proof"
 conformance = "proof"
-"junie-tui" = "facade"
 termrock = "facade"
 functional = "test"
 
@@ -104,5 +102,4 @@ cli = ["core", "theme"]
 catalog = ["grid", "navigation", "collections", "editors", "fields", "viewport", "controls", "session", "runtime", "core"]
 conformance = ["metrics", "text", "core", "theme", "runtime", "session", "controls", "feedback", "overlays", "viewport", "fields", "editors", "layout", "collections", "navigation", "grid", "dialogs", "shell", "terminal", "cli", "catalog"]
 termrock = ["metrics", "text", "core", "theme", "runtime", "session", "controls", "feedback", "overlays", "viewport", "fields", "editors", "layout", "collections", "navigation", "grid", "dialogs", "shell", "terminal", "cli", "catalog", "conformance"]
-"junie-tui" = ["termrock"]
 functional = ["termrock"]

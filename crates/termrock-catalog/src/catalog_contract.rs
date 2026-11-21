@@ -138,11 +138,9 @@ fn root() -> &'static Path {
 
 /// The crates whose public API the gate walks, the facade first, from `docs/layering.toml`.
 ///
-/// The facade is `crates/termrock`, whatever else the repository root holds (#452): before the
-/// cutover the root package `junie-tui` still had a `src/lib.rs`, and reading it would walk the
-/// wrong tree. Every other crate of the table that has a `crates/termrock-<name>/src/lib.rs`
-/// follows, except the `junie-tui` shim, which only re-exports the facade, and the test-only
-/// crates.
+/// The facade is `crates/termrock`. The repository root is a virtual manifest and holds no
+/// `src/lib.rs` (#452). Every other crate of the table that has a `crates/termrock-<name>/src/lib.rs`
+/// follows, except the test-only crates.
 fn crate_roots(root: &Path) -> Vec<(String, String)> {
     let text = std::fs::read_to_string(root.join("docs/layering.toml"))
         .unwrap_or_else(|e| panic!("read docs/layering.toml: {e}"));

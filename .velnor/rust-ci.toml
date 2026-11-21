@@ -60,7 +60,7 @@ features = ["cli", "demo", "product", "terminal", "test-support", "work-metrics"
 # (the old `ci` profile filtered `binary(functional)` out of the per-crate jobs).
 # `velnor-ci lane-guard` fails the job if a test that exists only with these
 # features falls outside this filter; none does today.
-packages = ["functional-cross", "jackin-console", "junie-tui", "termrock", "termrock-catalog", "termrock-cli", "termrock-collections", "termrock-conformance", "termrock-controls", "termrock-core", "termrock-dialogs", "termrock-editors", "termrock-feedback", "termrock-fields", "termrock-functional", "termrock-grid", "termrock-holla", "termrock-layout", "termrock-metrics", "termrock-navigation", "termrock-overlays", "termrock-runtime", "termrock-session", "termrock-shell", "termrock-showcase", "termrock-tablepro", "termrock-terminal", "termrock-text", "termrock-theme", "termrock-viewport"]
+packages = ["functional-cross", "jackin-console", "termrock", "termrock-catalog", "termrock-cli", "termrock-collections", "termrock-conformance", "termrock-controls", "termrock-core", "termrock-dialogs", "termrock-editors", "termrock-feedback", "termrock-fields", "termrock-functional", "termrock-grid", "termrock-holla", "termrock-layout", "termrock-metrics", "termrock-navigation", "termrock-overlays", "termrock-runtime", "termrock-session", "termrock-shell", "termrock-showcase", "termrock-tablepro", "termrock-terminal", "termrock-text", "termrock-theme", "termrock-viewport"]
 filter = "not binary(functional)"
 lint = true
 doc = true

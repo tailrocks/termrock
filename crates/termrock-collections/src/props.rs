@@ -372,7 +372,7 @@ impl PropsList {
 
     /// `InfoDialog`'s list wraps its `Prop::wrap` values on rows of their own.
     /// Library plumbing, not API: it is `#[doc(hidden)] pub` because `InfoDialog`
-    /// in `junie-tui` calls it across the crate boundary (docs/decisions.md,
+    /// in another crate calls it across the crate boundary (docs/decisions.md,
     /// #494). An app shows a long value through `reveal`, or draws it with
     /// `props::render`.
     #[doc(hidden)]
