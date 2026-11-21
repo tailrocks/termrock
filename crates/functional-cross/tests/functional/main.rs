@@ -16,4 +16,7 @@ mod cases;
 #[path = "../../../../crates/termrock-functional/tests/functional/legacy_reference_env.rs"]
 mod legacy_reference_env;
 #[allow(dead_code)]
+#[path = "../../../../crates/termrock-functional/tests/functional/legacy_reference_protocol.rs"]
+mod legacy_reference_protocol;
+#[allow(dead_code)]
 mod support;

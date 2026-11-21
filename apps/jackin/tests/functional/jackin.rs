@@ -69,7 +69,7 @@ fn jackin_launch_detach_reconnect_preserves_capsule() {
             && t.contains("Allow edit to src/settlement/config.rs? (y/n)")
             && t.contains("Ctrl+B Pane commands")
     });
-    assert!(!text(&capsule).contains("junie-tui:advance-clock:"));
+    assert!(!text(&capsule).contains("termrock:advance-clock:"));
     assert!(!text(&capsule).contains("Launch failed"));
 
     app.key("ctrl+b");

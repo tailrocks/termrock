@@ -12,6 +12,8 @@ mod bins;
 mod cases;
 mod holla;
 mod legacy_reference_env;
+#[allow(dead_code)]
+mod legacy_reference_protocol;
 mod lifecycle;
 mod showcase;
 #[allow(dead_code)]

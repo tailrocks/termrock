@@ -15,6 +15,7 @@ use tui_test::{
 #[allow(unused_imports)]
 pub use crate::bins::{HOLLA, SHOWCASE, TABLEPRO};
 use crate::legacy_reference_env;
+use crate::legacy_reference_protocol;
 const TIMEOUT: Duration = Duration::from_secs(10);
 /// Jackin's reduced-motion intro holds for `rain::REDUCED_HOLD` ticks of
 /// `rain::TICK_MS` (`apps/jackin/src/rain.rs`).
@@ -141,6 +142,8 @@ pub struct App {
     recent: RefCell<VecDeque<(usize, TerminalSnapshot)>>,
     clock: bool,
     fence: bool,
+    /// Reference-mode session: the frozen binary reads the old paste protocol.
+    reference: bool,
     /// A button was pressed or released since the last [`App::flash_expired`].
     clicked: Cell<bool>,
     /// Whether the cursor was visible on the frame [`App::check_visual`] last compared.
@@ -541,12 +544,30 @@ impl App {
             .expect("paste using negotiated terminal mode");
     }
 
+    /// The stepped-clock request this session speaks: the frozen binary of a
+    /// Reference-mode launch reads the old protocol, a candidate reads `termrock:`.
+    fn advance_request(&self, milliseconds: u64) -> String {
+        if self.reference {
+            legacy_reference_protocol::advance(milliseconds)
+        } else {
+            TestRequest::advance(milliseconds)
+        }
+    }
+
+    fn fence_request(&self) -> &str {
+        if self.reference {
+            legacy_reference_protocol::FENCE
+        } else {
+            TestRequest::FENCE
+        }
+    }
+
     pub fn advance_clock(&self, milliseconds: u64) {
         if !self.clock {
             self.log("clock refused".to_string());
             return;
         }
-        self.paste(&TestRequest::advance(milliseconds));
+        self.paste(&self.advance_request(milliseconds));
     }
 
     /// Waits until `landing` accepts the screen, passing the jackin reduced-motion
@@ -870,7 +891,7 @@ impl App {
         let before = self.bells();
         self.log("fence".to_string());
         self.session
-            .paste(TestRequest::FENCE)
+            .paste(self.fence_request())
             .expect("fence through bracketed paste");
         let deadline = Instant::now() + TIMEOUT;
         while self.bells() == before {
@@ -1178,6 +1199,7 @@ pub fn try_launch(launch: Launch) -> Result<App, LaunchError> {
                 recent: RefCell::new(VecDeque::new()),
                 clock: launch.clock,
                 fence: fenced(&launch),
+                reference: launch.mode == SessionMode::Reference,
                 clicked: Cell::new(false),
                 compared_cursor_visible: Cell::new(false),
             };

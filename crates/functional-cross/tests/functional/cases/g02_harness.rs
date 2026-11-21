@@ -15,7 +15,7 @@ use crate::support::{
 
 const CHANGING: &str = r#"i=0; while :; do printf '%s\n' "$i"; i=$((i+1)); done"#;
 const HISTORY: &str = r#"printf 'HISTORY=%s\n' "$HOLLA_NO_HISTORY""#;
-const CLOCK_PASTE: &str = "junie-tui:advance-clock:";
+const CLOCK_PASTE: &str = "termrock:advance-clock:";
 
 fn shell(name: &str, script: &str, clock: bool, history: bool) -> App {
     let mut launch = Launch::new(name, "/bin/sh");
