@@ -26,4 +26,4 @@ termrock-navigation = { workspace = true }
 sha2 = { workspace = true }
 syn = { version = "=3.0.10", features = ["full", "visit"] }
 termrock-metrics = { workspace = true }
-toml = "=1.2.1"
+toml = "=1.2.2"
