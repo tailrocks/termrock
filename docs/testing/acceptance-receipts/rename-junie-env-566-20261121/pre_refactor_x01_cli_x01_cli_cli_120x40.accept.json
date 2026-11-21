@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/x01_cli/x01_cli_cli_120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/rename-junie-env/target/functional/x01-cli-help-wide-62277-1795264111762658000-11/check-artifacts/pre_refactor/x01_cli/x01_cli_cli_120x40/7664b3b99bce334b736d252f3743e476441b1323d69181ad720a9d82dda0b252/sample.tui.pb"
+  },
+  "candidate_sha256": "7664b3b99bce334b736d252f3743e476441b1323d69181ad720a9d82dda0b252",
+  "baseline_sha256": "7664b3b99bce334b736d252f3743e476441b1323d69181ad720a9d82dda0b252",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/rename-junie-env/crates/termrock-functional/tests/functional/baselines/pre_refactor/x01_cli/x01_cli_cli_120x40.tui.pb"
+  },
+  "error_code": null
+}

@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "sc-shell-shell-override-reduced",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/rename-junie-env/target/functional/s01-shell-override-56416-1795264069790044000-0/check-artifacts/sc-shell-shell-override-reduced/436fbcd71381fcffd3e037888d5ffc96a9fd271d83bf9085e4effd6e0ddff656/sample.tui.pb"
+  },
+  "candidate_sha256": "436fbcd71381fcffd3e037888d5ffc96a9fd271d83bf9085e4effd6e0ddff656",
+  "baseline_sha256": "436fbcd71381fcffd3e037888d5ffc96a9fd271d83bf9085e4effd6e0ddff656",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/rename-junie-env/crates/termrock-functional/tests/functional/baselines/pre_refactor/S01.shell/sc-shell-shell-override-reduced.tui.pb"
+  },
+  "error_code": null
+}
