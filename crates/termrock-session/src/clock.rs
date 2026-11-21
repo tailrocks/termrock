@@ -178,9 +178,9 @@ pub enum TestRequest {
 }
 
 impl TestRequest {
-    pub const ADVANCE_PREFIX: &'static str = "junie-tui:advance-clock:";
+    pub const ADVANCE_PREFIX: &'static str = "termrock:advance-clock:";
 
-    pub const FENCE: &'static str = "junie-tui:fence";
+    pub const FENCE: &'static str = "termrock:fence";
 
     pub const FENCE_ACK: &'static str = "\x07";
 

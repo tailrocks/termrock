@@ -238,7 +238,7 @@ interaction.
 
 `TERMROCK_TEST_FENCE=1` is the opt-in that makes an app answer the shell fence (a BEL queued behind the frame of every earlier input) without freezing the status clock as `TERMROCK_TEST_CLOCK` does; `App::resize` and `App::fence` wait on it for Showcase, TablePro, Holla and Jackin.
 
-`App::settle` begins with a fence: the helper pastes `junie-tui:fence`, and
+`App::settle` begins with a fence: the helper pastes `termrock:fence`, and
 under the same opt-in the shell answers it with a BEL after the frame of every
 input written before it. The helper returns when the terminal's bell count
 rises, so the 150 ms of quiet that follows is the quiet after the frame of

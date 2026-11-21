@@ -2561,11 +2561,11 @@ fn catalog_shell_sim_clock_and_stepping() {
 
 #[test]
 fn catalog_shell_test_requests() {
-    assert_eq!(TestRequest::ADVANCE_PREFIX, "junie-tui:advance-clock:");
-    assert_eq!(TestRequest::FENCE, "junie-tui:fence");
+    assert_eq!(TestRequest::ADVANCE_PREFIX, "termrock:advance-clock:");
+    assert_eq!(TestRequest::FENCE, "termrock:fence");
     assert_eq!(TestRequest::FENCE_ACK, "\x07");
     assert_eq!(TestRequest::ENV, "TERMROCK_TEST_CLOCK");
-    assert_eq!(TestRequest::advance(250), "junie-tui:advance-clock:250");
+    assert_eq!(TestRequest::advance(250), "termrock:advance-clock:250");
     assert_eq!(
         TestRequest::parse(&TestRequest::advance(250)),
         Some(TestRequest::Advance(250))
@@ -2575,11 +2575,11 @@ fn catalog_shell_test_requests() {
         Some(TestRequest::Fence)
     );
     for refused in [
-        "junie-tui:advance-clock:",
-        "junie-tui:advance-clock:0",
-        "junie-tui:advance-clock:-5",
-        "junie-tui:advance-clock:5x",
-        "junie-tui:advance-clock:99999999999999999999999",
+        "termrock:advance-clock:",
+        "termrock:advance-clock:0",
+        "termrock:advance-clock:-5",
+        "termrock:advance-clock:5x",
+        "termrock:advance-clock:99999999999999999999999",
         "hello",
         "",
     ] {

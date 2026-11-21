@@ -845,7 +845,12 @@ fn edit_query_scope_run_why_and_empty() {
         ],
     );
     replace_query(&app, "Search actions", "zzq");
-    let none = app.wait_text("No matches");
+    // "No matches" is already on screen after the first `z`; wait for the whole
+    // typed query so the assertions below read the frame after the last key.
+    let none = app.wait_screen("zzq typed with no matches", |screen| {
+        let visible = text(screen);
+        visible.contains("zzq") && visible.contains("No matches")
+    });
     see(
         &none,
         &[
