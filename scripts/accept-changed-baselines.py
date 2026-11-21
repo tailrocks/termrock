@@ -32,7 +32,8 @@ from pathlib import Path
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parent.parent
-BASELINES = ROOT / "crates/termrock-functional/tests/functional/baselines"
+CRATE = ROOT / "crates/termrock-functional"
+BASELINES = CRATE / "tests/functional/baselines"
 REFRESH_TSV = ROOT / "docs/testing/baseline-refreshes-20261108.tsv"
 BINARY_TSV = ROOT / "docs/testing/binary-baselines-20261108.tsv"
 CHANGED_CELLS = "Changed cells:"
@@ -67,6 +68,14 @@ def find_baseline(test_id):
 
 def baseline_root(test_id, baseline):
     return BASELINES if (BASELINES / f"{test_id}.tui.pb").exists() else baseline.parent
+
+
+def refresh_row(test_id, baseline, accepted, expect, archive, receipt, provenance):
+    """One refresh TSV row; the active path is crate-relative, as the g05 test reads it."""
+    return "\t".join([
+        test_id, str(baseline.relative_to(CRATE)), accepted, expect,
+        archive, receipt, provenance,
+    ])
 
 
 def latest_samples(evidence):
@@ -196,10 +205,9 @@ def main():
             failed += 1
             print(f"FAIL {test_id}: baseline digest {accepted} is not the candidate {digest}")
             continue
-        refresh_rows.append("\t".join([
-            test_id, str(baseline.relative_to(ROOT)), accepted, expect,
-            archive, receipt, provenance,
-        ]))
+        refresh_rows.append(
+            refresh_row(test_id, baseline, accepted, expect, archive, receipt, provenance)
+        )
         if test_id in binary_index:
             fields = binary_rows[binary_index[test_id]].split("\t")
             fields[2], fields[3] = accepted, receipt
