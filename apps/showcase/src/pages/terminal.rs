@@ -274,7 +274,7 @@ fn states_grid() -> StateGrid {
                 Span::plain("❯ ").bold(),
                 Span::plain("cargo build --release"),
             ],
-            vec![Span::muted("   Compiling junie-tui v0.4.0")],
+            vec![Span::muted("   Compiling termrock v0.4.0")],
             vec![Span::new("✓ ", Tone::Secondary), Span::muted("Finished")],
         ]
     };

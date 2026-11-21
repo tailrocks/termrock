@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/x03_chrome/x03_chrome_chrome_120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/junie-names-a/target/functional/x03-chrome-checkpoint-54399-1795264926998619000-5/check-artifacts/pre_refactor/x03_chrome/x03_chrome_chrome_120x40/6037f325ea7043c953a7541769dfbbb2372f0e0cd460428180e22e3f84531402/sample.tui.pb"
+  },
+  "candidate_sha256": "6037f325ea7043c953a7541769dfbbb2372f0e0cd460428180e22e3f84531402",
+  "baseline_sha256": "6037f325ea7043c953a7541769dfbbb2372f0e0cd460428180e22e3f84531402",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/junie-names-a/crates/termrock-functional/tests/functional/baselines/pre_refactor/x03_chrome/x03_chrome_chrome_120x40.tui.pb"
+  },
+  "error_code": null
+}

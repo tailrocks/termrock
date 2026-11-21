@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s07_splitsstacks/opt_splitsstacks_track_click",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/junie-names-a/target/functional/s07-jump-25262-1795265424113543000-0/check-artifacts/pre_refactor/s07_splitsstacks/opt_splitsstacks_track_click/91e6a779816a349bc8e4e475da339878405f37da91ae5c43292f23e2ed3e35f8/sample.tui.pb"
+  },
+  "candidate_sha256": "91e6a779816a349bc8e4e475da339878405f37da91ae5c43292f23e2ed3e35f8",
+  "baseline_sha256": "91e6a779816a349bc8e4e475da339878405f37da91ae5c43292f23e2ed3e35f8",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/junie-names-a/crates/termrock-functional/tests/functional/baselines/pre_refactor/s07_splitsstacks/opt_splitsstacks_track_click.tui.pb"
+  },
+  "error_code": null
+}

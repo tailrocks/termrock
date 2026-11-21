@@ -38,9 +38,9 @@ impl From<NavArg> for NavExpand {
 
 #[derive(Debug, Parser)]
 #[command(
-    name = "junie-tui",
+    name = "showcase",
     about = "Junie-inspired Ratatui design system laboratory",
-    long_about = "Junie-tui — Junie-inspired Ratatui design system laboratory"
+    long_about = "termrock showcase — Junie-inspired Ratatui design system laboratory"
 )]
 struct Cli {
     #[command(flatten)]

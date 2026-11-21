@@ -1,0 +1,75 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Library/Caches/mbx/targets/v1/d53b4ae05b48b54ea2d71a576867a58344c4c7b789bb9cedc189d8e8f683ff16/debug/showcase",
+  "binary_sha256": "b44e2f7bfdf0b406b775156df592ab6f4793295f34be316413303dc689161e50",
+  "fixture_args": [
+    "--page",
+    "panetree"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "91573600ad4dd36b8e82ff6295bc320bc0aa1bef9d36c6ad34b25dc3c3e6bcf5",
+  "expect_baseline": "78a9113b70a4e27a5d12eef5a846809f472eca88195a3342c07ce300fd9824e6",
+  "precondition": "",
+  "session": null,
+  "expected_test_id": "pre_refactor/s07_panetree/sc_panetree_playground_120x40",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/junie-names-570-20261121/pre_refactor_s07_panetree_sc_panetree_playground_120x40.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/junie-names-570-20261121/pre_refactor_s07_panetree_sc_panetree_playground_120x40.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/junie-names-570-20261121/superseded/pre_refactor/s07_panetree/sc_panetree_playground_120x40.tui.pb",
+  "test_id": "pre_refactor/s07_panetree/sc_panetree_playground_120x40",
+  "acceptance": {
+    "expected_baseline_sha256": "78a9113b70a4e27a5d12eef5a846809f472eca88195a3342c07ce300fd9824e6",
+    "accepted_baseline_sha256": "91573600ad4dd36b8e82ff6295bc320bc0aa1bef9d36c6ad34b25dc3c3e6bcf5",
+    "candidate_sha256": "91573600ad4dd36b8e82ff6295bc320bc0aa1bef9d36c6ad34b25dc3c3e6bcf5",
+    "transaction_receipt": "docs/testing/acceptance-receipts/junie-names-570-20261121/pre_refactor_s07_panetree_sc_panetree_playground_120x40.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "78a9113b70a4e27a5d12eef5a846809f472eca88195a3342c07ce300fd9824e6"
+  },
+  "candidate": {
+    "sha256": "91573600ad4dd36b8e82ff6295bc320bc0aa1bef9d36c6ad34b25dc3c3e6bcf5",
+    "path": "crates/termrock-functional/tests/functional/baselines/pre_refactor/s07_panetree/sc_panetree_playground_120x40.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/junie-names-570-20261121/superseded/pre_refactor/s07_panetree/sc_panetree_playground_120x40.tui.pb",
+    "superseded_baseline_sha256": "78a9113b70a4e27a5d12eef5a846809f472eca88195a3342c07ce300fd9824e6"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "crates/termrock-functional/tests/functional/baselines/pre_refactor/s07_panetree/sc_panetree_playground_120x40.tui.pb",
+    "candidate_sha256": "91573600ad4dd36b8e82ff6295bc320bc0aa1bef9d36c6ad34b25dc3c3e6bcf5",
+    "binary_path": "/Users/donbeave/Library/Caches/mbx/targets/v1/d53b4ae05b48b54ea2d71a576867a58344c4c7b789bb9cedc189d8e8f683ff16/debug/showcase",
+    "binary_sha256": "b44e2f7bfdf0b406b775156df592ab6f4793295f34be316413303dc689161e50",
+    "note": "Showcase fake cargo output and prompt renamed from junie-tui to termrock (#570 part A); only the name text and its trailing fg cell changed"
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s07_panetree/sc_panetree_playground_120x40",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/junie-names-a/target/functional/s07-sections-34716-1795266361555391000-0/check-artifacts/pre_refactor/s07_panetree/sc_panetree_playground_120x40/91573600ad4dd36b8e82ff6295bc320bc0aa1bef9d36c6ad34b25dc3c3e6bcf5/sample.tui.pb"
+    },
+    "candidate_sha256": "91573600ad4dd36b8e82ff6295bc320bc0aa1bef9d36c6ad34b25dc3c3e6bcf5",
+    "baseline_sha256": "91573600ad4dd36b8e82ff6295bc320bc0aa1bef9d36c6ad34b25dc3c3e6bcf5",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/junie-names-a/crates/termrock-functional/tests/functional/baselines/pre_refactor/s07_panetree/sc_panetree_playground_120x40.tui.pb"
+    },
+    "error_code": null
+  }
+}

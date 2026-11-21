@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "functional/showcase_page_panetree",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/junie-names-a/target/functional/showcase-page-panetree-26999-1795266017848951000-0/check-artifacts/functional/showcase_page_panetree/829a8a1a80844a461cdba85658960ca291db43179dd97caceea161a9228233e5/sample.tui.pb"
+  },
+  "candidate_sha256": "829a8a1a80844a461cdba85658960ca291db43179dd97caceea161a9228233e5",
+  "baseline_sha256": "829a8a1a80844a461cdba85658960ca291db43179dd97caceea161a9228233e5",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/junie-names-a/crates/termrock-functional/tests/functional/baselines/functional/showcase_page_panetree.tui.pb"
+  },
+  "error_code": null
+}

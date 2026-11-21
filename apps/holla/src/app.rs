@@ -696,7 +696,7 @@ impl App {
             ),
             TextLine::kv(
                 "Design system",
-                "Junie TUI (junie_tui) · one accent, state as geometry, one hint bar",
+                "Junie TUI (termrock) · one accent, state as geometry, one hint bar",
             ),
             TextLine::kv(
                 "Model",

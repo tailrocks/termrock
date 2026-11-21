@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s07_panetree/sc_panetree_panes_before",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/junie-names-a/target/functional/s07-panes-93785-1795265140792687000-0/check-artifacts/pre_refactor/s07_panetree/sc_panetree_panes_before/80000e24774aaaff5ec835d1c802c8963b9cedeea69d7cc58d294b156e5c9b5b/sample.tui.pb"
+  },
+  "candidate_sha256": "80000e24774aaaff5ec835d1c802c8963b9cedeea69d7cc58d294b156e5c9b5b",
+  "baseline_sha256": "80000e24774aaaff5ec835d1c802c8963b9cedeea69d7cc58d294b156e5c9b5b",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/junie-names-a/crates/termrock-functional/tests/functional/baselines/pre_refactor/s07_panetree/sc_panetree_panes_before.tui.pb"
+  },
+  "error_code": null
+}

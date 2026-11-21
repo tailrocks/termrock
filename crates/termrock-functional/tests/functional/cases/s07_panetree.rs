@@ -1115,8 +1115,8 @@ fn option_min_24x6() {
             screen,
             &[
                 MIN_STATUS,
-                "junie-tui",
-                "ca…",
+                "termrock",
+                "car…",
                 "Compiling",
                 "3 panes · focus shell",
             ],

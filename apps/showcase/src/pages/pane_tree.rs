@@ -24,16 +24,16 @@ const PANES: &[(&str, &[&str])] = &[
     (
         "shell",
         &[
-            "~/src/junie-tui $ cargo nextest run",
+            "~/src/termrock $ cargo nextest run",
             "    Starting 1977 tests across 6 binaries",
             "     Summary 1977 passed",
-            "~/src/junie-tui $ ▌",
+            "~/src/termrock $ ▌",
         ],
     ),
     (
         "build",
         &[
-            "   Compiling junie-tui v0.4.0",
+            "   Compiling termrock v0.4.0",
             "    Finished `dev` profile in 4.12s",
         ],
     ),
