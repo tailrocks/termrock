@@ -19,7 +19,7 @@ use crate::support::{
 
 const HELP_EXIT: i32 = 0;
 const ERROR_EXIT: i32 = 2;
-const SHOWCASE_ABOUT: &str = "Junie-tui — Junie-inspired Ratatui design system laboratory";
+const SHOWCASE_ABOUT: &str = "termrock showcase — Junie-inspired Ratatui design system laboratory";
 const TABLEPRO_ABOUT: &str = "TablePro — terminal database workbench on the Junie design system";
 const HOLLA_ABOUT: &str =
     "Holla — this folder, this host, right now (deterministic preview on the Junie design system)";

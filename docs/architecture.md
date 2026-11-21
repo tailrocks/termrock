@@ -13,7 +13,7 @@ no `tests/`, no `examples/`. The library is the 22 crates of the table below
 under `crates/`. `crates/termrock` is the facade the four applications
 (`apps/showcase`, `apps/tablepro`, `apps/holla`, `apps/jackin`) import, and it
 re-exports every module at the path the single package exposed. There is no
-`junie-tui` shim: it was removed in #565, and `junie_tui::` paths are replaced by
+shim for the former package: it was removed in #565, and its import paths are replaced by
 `termrock::`. `crates/termrock-functional` and `crates/functional-cross`
 hold the pseudo-terminal journeys; nothing depends on them.
 
@@ -75,7 +75,7 @@ The `layering` test (`crates/termrock/tests/regressions/layering.rs`) reads
 `cargo metadata` and checks every `termrock-*` package's normal and dev
 dependencies against `[allow]`, rejects cycles, rejects a `termrock-*` package
 missing from the table, requires each application to depend on `termrock` and on
-no library crate, rejects a `junie-tui` package, rejects a
+no library crate, rejects a former-package shim, rejects a
 feature that a crate declares but does not forward to a dependency that
 declares it, and rejects a `crates/termrock-*` or `apps/*` directory that is not
 a workspace member. It also asserts that the root manifest has no `[package]`

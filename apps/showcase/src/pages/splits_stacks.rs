@@ -49,7 +49,7 @@ const EDITOR: &[&str] = &[
     "}",
 ];
 const OUTPUT: &[&str] = &[
-    "   Compiling junie-tui v0.4.0",
+    "   Compiling termrock v0.4.0",
     "    Finished `dev` profile in 4.12s",
     "     Running tests (14 passed)",
 ];

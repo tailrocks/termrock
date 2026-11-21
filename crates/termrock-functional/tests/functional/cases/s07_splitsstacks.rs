@@ -21,7 +21,7 @@ const LEGEND: &str = "▏ depicts a focused sample; it is not where your focus i
 const PAGE_ARGS: &[&str] = &["--page", "splitsstacks"];
 const META: &str = "30% · min 16 · drag a seam, double-click resets";
 const EDITOR_MARK: &str = "pub fn toggle_max";
-const OUTPUT_MARK: &str = "Compiling junie-tui";
+const OUTPUT_MARK: &str = "Compiling termrock";
 const GUTTER: char = '▎';
 
 const OMITTED: &[&str] = &[

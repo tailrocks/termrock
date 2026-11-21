@@ -1133,7 +1133,7 @@ pub(super) fn about_rows(scenario: Scenario) -> Vec<(String, String)> {
         ),
         (
             "Design system",
-            "Junie-inspired Ratatui components (junie_tui)",
+            "Junie-inspired Ratatui components (termrock)",
         ),
     ]
     .into_iter()

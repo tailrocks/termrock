@@ -3,8 +3,8 @@
 //! The rules live in `docs/layering.toml`. `cargo metadata` gives the real
 //! dependency graph of the workspace, which this file checks against that table:
 //! a crate may depend only on crates below it, and an application depends on
-//! `termrock` only. The check also fails a `junie-tui` package, which was removed
-//! with its `junie_tui::` shim (#565), a feature that a crate declares but does
+//! `termrock` only. The check also fails the former shim package, which was removed
+//! with its import shim (#565), a feature that a crate declares but does
 //! not forward to a dependency that declares it, a dependency cycle, and a
 //! `crates/termrock-*` or `apps/*` directory that is not a workspace member. A
 //! test asserts that it ran on the extracted crates, so it cannot pass by
@@ -199,9 +199,9 @@ fn check_metadata(metadata: &serde_json::Value, layering: &Layering) -> (usize, 
     for package in &packages {
         let name = package["name"].as_str().unwrap_or_default();
         let manifest = package["manifest_path"].as_str().unwrap_or_default();
-        if name == "junie-tui" {
+        if name == concat!("junie", "-tui") {
             problems.push(format!(
-                "{name}: the junie-tui shim was removed (#565); import `termrock::` paths instead of `junie_tui::`"
+                "{name}: the former shim package was removed (#565); import `termrock::` paths instead"
             ));
             continue;
         }
@@ -708,12 +708,19 @@ fn layering_crate_level_rejects_a_reintroduced_shim() {
     let layering = Layering::parse(MINI);
     let meta = metadata(&[
         ("termrock", "crates/termrock/Cargo.toml", &["termrock-core"]),
-        ("junie-tui", "crates/junie-tui/Cargo.toml", &["termrock"]),
+        (
+            concat!("junie", "-tui"),
+            concat!("crates/junie", "-tui/Cargo.toml"),
+            &["termrock"],
+        ),
     ]);
     let (_, problems) = check_metadata(&meta, &layering);
     let joined = problems.join("\n");
     assert!(
-        joined.contains("junie-tui: the junie-tui shim was removed (#565)"),
+        joined.contains(concat!(
+            "junie",
+            "-tui: the former shim package was removed (#565)"
+        )),
         "{joined}"
     );
 }

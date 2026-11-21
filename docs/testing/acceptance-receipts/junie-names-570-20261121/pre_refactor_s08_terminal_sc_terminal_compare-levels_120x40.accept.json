@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s08_terminal/sc_terminal_compare-levels_120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/junie-names-a/target/functional/s08-compare-97529-1795265956501092000-0/check-artifacts/pre_refactor/s08_terminal/sc_terminal_compare-levels_120x40/052b623abd069f20001576d271128b896aa00655725c0fbb1c6b3e9b9f8c76ad/sample.tui.pb"
+  },
+  "candidate_sha256": "052b623abd069f20001576d271128b896aa00655725c0fbb1c6b3e9b9f8c76ad",
+  "baseline_sha256": "052b623abd069f20001576d271128b896aa00655725c0fbb1c6b3e9b9f8c76ad",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/junie-names-a/crates/termrock-functional/tests/functional/baselines/pre_refactor/s08_terminal/sc_terminal_compare-levels_120x40.tui.pb"
+  },
+  "error_code": null
+}

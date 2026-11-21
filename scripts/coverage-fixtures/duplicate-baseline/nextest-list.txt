@@ -1,1 +1,1 @@
-junie-tui::functional showcase::miniature
+termrock-functional::functional showcase::miniature

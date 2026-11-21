@@ -1,7 +1,8 @@
-//! Guards the rename away from the old junie-tui names (#566, #570). Every
+//! Guards the rename away from the old product names (#566, #570). Every
 //! tracked text file outside the historical records must be free of the old
-//! environment prefix and of the old paste-protocol prefix, so a stray reader
-//! or fixture cannot quietly bring either back.
+//! environment prefix, of the old paste-protocol prefix, and of the old
+//! package name in any letter case, with either separator, so a stray reader,
+//! fixture or doc cannot quietly bring any of them back.
 //!
 //! Exempt on purpose: the audit and acceptance records and the P9.3 red and
 //! green log are dated evidence of what ran, and `reference-bins/` holds frozen
@@ -40,6 +41,27 @@ const PROTOCOL_EXEMPT_FILES: &[&str] = &[
     "docs/decisions.md",
     "docs/P9.3-red-green.md",
     "crates/termrock-functional/tests/functional/legacy_reference_protocol.rs",
+];
+
+/// The old package name with either separator, matched case-insensitively.
+const OLD_PACKAGE_HYPHEN: &str = concat!("junie", "-tui");
+const OLD_PACKAGE_UNDERSCORE: &str = concat!("junie", "_tui");
+
+/// Every place the old package name may stay: the audit and decision records,
+/// all of `docs/testing` (receipts, case manifests and the nextest list), the
+/// frozen reference binaries, the legacy reference modules of the functional
+/// harness, and the negative detectors in `facade_contract.rs`.
+const NAME_EXEMPT_PREFIXES: &[&str] = &[
+    "docs/audits/",
+    "docs/testing/",
+    "crates/termrock-functional/tests/functional/reference-bins/",
+    "crates/termrock-functional/tests/functional/legacy_reference_",
+];
+
+const NAME_EXEMPT_FILES: &[&str] = &[
+    "docs/decisions.md",
+    "docs/P9.3-red-green.md",
+    "crates/termrock/tests/regressions/facade_contract.rs",
 ];
 
 fn root() -> &'static Path {
@@ -83,9 +105,9 @@ fn offenders(prefixes: &[&str], files: &[&str], spells: impl Fn(&str) -> bool) -
     found
 }
 
-/// True when `text` has `junie-tui:` (any case) followed by a lowercase letter.
-/// The nextest binary id `junie-tui::functional` and the prose `junie-tui: the`
-/// do not match; only a protocol request does.
+/// True when `text` has the old protocol prefix (any case) followed by a
+/// lowercase letter. A nextest binary id and prose after the name do not match;
+/// only a protocol request does.
 fn spells_protocol(text: &str) -> bool {
     let lower = text.to_ascii_lowercase();
     lower
@@ -98,8 +120,14 @@ fn spells_protocol(text: &str) -> bool {
         })
 }
 
+/// True when `text` contains the old package name with `-` or `_`, in any case.
+fn spells_package_name(text: &str) -> bool {
+    let lower = text.to_ascii_lowercase();
+    lower.contains(OLD_PACKAGE_HYPHEN) || lower.contains(OLD_PACKAGE_UNDERSCORE)
+}
+
 #[test]
-fn tracked_sources_do_not_spell_the_old_junie_tui_prefix() {
+fn tracked_sources_do_not_spell_the_old_environment_prefix() {
     let offenders = offenders(ENV_EXEMPT_PREFIXES, ENV_EXEMPT_FILES, |text| {
         text.contains(OLD_PREFIX)
     });
@@ -137,4 +165,24 @@ fn the_protocol_detector_matches_requests_not_binary_ids() {
         "-tui: the shim was removed"
     )));
     assert!(!spells_protocol("termrock:advance-clock:250"));
+}
+
+#[test]
+fn tracked_files_do_not_spell_the_old_package_name_in_any_case() {
+    let offenders = offenders(NAME_EXEMPT_PREFIXES, NAME_EXEMPT_FILES, spells_package_name);
+
+    assert!(
+        offenders.is_empty(),
+        "the old package name must not appear outside the historical records; use termrock: {offenders:#?}"
+    );
+}
+
+#[test]
+fn the_package_name_detector_is_case_insensitive_in_both_separators() {
+    assert!(spells_package_name(concat!("junie", "-tui")));
+    assert!(spells_package_name(concat!("JUNIE", "_TUI")));
+    assert!(spells_package_name(concat!("Junie", "-Tui", " package")));
+    assert!(spells_package_name(concat!("junie", "_tui::ui")));
+    assert!(!spells_package_name("Junie TUI (termrock) design system"));
+    assert!(!spells_package_name("termrock junie"));
 }

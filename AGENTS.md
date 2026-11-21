@@ -117,9 +117,9 @@ workspaces, Docker, OpenShell, Codex).
   and similar shell behaviour belong to the library.
 - The four apps (`apps/showcase`, `apps/tablepro`, `apps/holla`,
   `apps/jackin`) depend on the `termrock` facade (`crates/termrock`) and
-  import `termrock::`, never `junie_tui::`. There is no `junie-tui` shim
-  (removed in #565); `junie_tui::` paths do not resolve. Migrate an old import by
-  replacing `junie_tui::` with `termrock::`. `crates/termrock/tests/regressions/facade_contract.rs`
+  import `termrock::`, never the former implementation crate's path. The former
+  shim crate was removed in #565, and its import paths do not resolve. Migrate an
+  old import by replacing that path prefix with `termrock::`. `crates/termrock/tests/regressions/facade_contract.rs`
   enforces the apps' side. A new public module is added to the facade with an explicit
   `pub use` list, never a glob over a crate (a crate's `#[doc(hidden)]` items
   must stay out), and the facade keeps empty default features. The independent consumer fixtures under
