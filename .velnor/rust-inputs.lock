@@ -45,5 +45,9 @@ crates/termrock-functional/tests/functional/legacy_reference_env.rs	jackin-conso
 crates/termrock-functional/tests/functional/support.rs	functional-cross	crates/functional-cross/Cargo.toml
 crates/termrock-functional/tests/functional/support.rs	jackin-console	apps/jackin/Cargo.toml
 crates/termrock-terminal/src/session.rs	termrock-catalog	crates/termrock-catalog/Cargo.toml
+crates/termrock/tests/consumers/jackin-host/Cargo.toml	termrock-consumer-jackin-host	crates/termrock/tests/consumers/jackin-host/Cargo.toml
+crates/termrock/tests/consumers/keyed-modal/Cargo.toml	termrock-consumer-keyed-modal	crates/termrock/tests/consumers/keyed-modal/Cargo.toml
+crates/termrock/tests/consumers/minimal/Cargo.toml	termrock-consumer-minimal	crates/termrock/tests/consumers/minimal/Cargo.toml
+crates/termrock/tests/consumers/terminal/Cargo.toml	termrock-consumer-terminal	crates/termrock/tests/consumers/terminal/Cargo.toml
 mise.lock	termrock-conformance	crates/termrock-conformance/Cargo.toml
 mise.toml	termrock-conformance	crates/termrock-conformance/Cargo.toml
