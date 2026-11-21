@@ -23,7 +23,7 @@
     "LANG": "C.UTF-8",
     "LC_ALL": "C.UTF-8",
     "TZ": "UTC",
-    "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+    "TERMROCK_CLIENT_PLATFORM": "macos",
     "HOLLA_NO_HISTORY": "1"
   },
   "binaries": {

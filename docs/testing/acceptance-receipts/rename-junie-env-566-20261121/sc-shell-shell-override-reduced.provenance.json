@@ -1,0 +1,75 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Library/Caches/mbx/targets/v1/338b1910d0a54c1a8a9e6119a76bcd169f1f166fbb56b11366746824ae675d73/app-bins-all-features/debug/showcase",
+  "binary_sha256": "2276e145447cf131b7a4a6a2490a6f4fb9a0384abe6fe06cbe1698baf78f4b60",
+  "fixture_args": [
+    "--page",
+    "statushints"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "436fbcd71381fcffd3e037888d5ffc96a9fd271d83bf9085e4effd6e0ddff656",
+  "expect_baseline": "63178276c0d17a79b05f4d07c483df3949d00074851fce2a9e7db027cfbe9a00",
+  "precondition": "",
+  "session": null,
+  "expected_test_id": "sc-shell-shell-override-reduced",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/rename-junie-env-566-20261121/sc-shell-shell-override-reduced.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/rename-junie-env-566-20261121/sc-shell-shell-override-reduced.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/rename-junie-env-566-20261121/superseded/sc-shell-shell-override-reduced.tui.pb",
+  "test_id": "sc-shell-shell-override-reduced",
+  "acceptance": {
+    "expected_baseline_sha256": "63178276c0d17a79b05f4d07c483df3949d00074851fce2a9e7db027cfbe9a00",
+    "accepted_baseline_sha256": "436fbcd71381fcffd3e037888d5ffc96a9fd271d83bf9085e4effd6e0ddff656",
+    "candidate_sha256": "436fbcd71381fcffd3e037888d5ffc96a9fd271d83bf9085e4effd6e0ddff656",
+    "transaction_receipt": "docs/testing/acceptance-receipts/rename-junie-env-566-20261121/sc-shell-shell-override-reduced.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "63178276c0d17a79b05f4d07c483df3949d00074851fce2a9e7db027cfbe9a00"
+  },
+  "candidate": {
+    "sha256": "436fbcd71381fcffd3e037888d5ffc96a9fd271d83bf9085e4effd6e0ddff656",
+    "path": "crates/termrock-functional/tests/functional/baselines/pre_refactor/S01.shell/sc-shell-shell-override-reduced.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/rename-junie-env-566-20261121/superseded/sc-shell-shell-override-reduced.tui.pb",
+    "superseded_baseline_sha256": "63178276c0d17a79b05f4d07c483df3949d00074851fce2a9e7db027cfbe9a00"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "crates/termrock-functional/tests/functional/baselines/pre_refactor/S01.shell/sc-shell-shell-override-reduced.tui.pb",
+    "candidate_sha256": "436fbcd71381fcffd3e037888d5ffc96a9fd271d83bf9085e4effd6e0ddff656",
+    "binary_path": "/Users/donbeave/Library/Caches/mbx/targets/v1/338b1910d0a54c1a8a9e6119a76bcd169f1f166fbb56b11366746824ae675d73/app-bins-all-features/debug/showcase",
+    "binary_sha256": "2276e145447cf131b7a4a6a2490a6f4fb9a0384abe6fe06cbe1698baf78f4b60",
+    "note": "Help text renames JUNIE_TUI_GLYPHS to TERMROCK_GLYPHS (#566); no other cell changed"
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "sc-shell-shell-override-reduced",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/rename-junie-env/target/functional/s01-shell-override-56416-1795264069790044000-0/check-artifacts/sc-shell-shell-override-reduced/436fbcd71381fcffd3e037888d5ffc96a9fd271d83bf9085e4effd6e0ddff656/sample.tui.pb"
+    },
+    "candidate_sha256": "436fbcd71381fcffd3e037888d5ffc96a9fd271d83bf9085e4effd6e0ddff656",
+    "baseline_sha256": "436fbcd71381fcffd3e037888d5ffc96a9fd271d83bf9085e4effd6e0ddff656",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/rename-junie-env/crates/termrock-functional/tests/functional/baselines/pre_refactor/S01.shell/sc-shell-shell-override-reduced.tui.pb"
+    },
+    "error_code": null
+  }
+}

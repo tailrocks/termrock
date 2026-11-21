@@ -48,7 +48,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -103,7 +103,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -170,7 +170,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -237,7 +237,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -292,7 +292,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -359,7 +359,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -426,7 +426,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -481,7 +481,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -548,7 +548,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -615,7 +615,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -672,7 +672,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -905,7 +905,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -962,7 +962,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1008,7 +1008,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "binary_path": "/Users/donbeave/Library/Caches/mbx/targets/v1/f9591a22a420d4cc784ef809516104161683d0d6f52e5cb84def644b82a51656/reference-bins/showcase",
@@ -1054,7 +1054,7 @@
               "LANG": "C.UTF-8",
               "LC_ALL": "C.UTF-8",
               "TZ": "UTC",
-              "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+              "TERMROCK_CLIENT_PLATFORM": "macos",
               "HOLLA_NO_HISTORY": "1"
             },
             "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1094,7 +1094,7 @@
               "LANG": "C.UTF-8",
               "LC_ALL": "C.UTF-8",
               "TZ": "UTC",
-              "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+              "TERMROCK_CLIENT_PLATFORM": "macos",
               "HOLLA_NO_HISTORY": "1"
             },
             "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1162,7 +1162,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1229,7 +1229,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1295,7 +1295,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1361,7 +1361,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1428,7 +1428,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1494,7 +1494,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1560,7 +1560,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1626,7 +1626,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1673,7 +1673,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "binary_path": "/Users/donbeave/Library/Caches/mbx/targets/v1/f9591a22a420d4cc784ef809516104161683d0d6f52e5cb84def644b82a51656/reference-bins/showcase",
@@ -1719,7 +1719,7 @@
               "LANG": "C.UTF-8",
               "LC_ALL": "C.UTF-8",
               "TZ": "UTC",
-              "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+              "TERMROCK_CLIENT_PLATFORM": "macos",
               "HOLLA_NO_HISTORY": "1"
             },
             "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1759,7 +1759,7 @@
               "LANG": "C.UTF-8",
               "LC_ALL": "C.UTF-8",
               "TZ": "UTC",
-              "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+              "TERMROCK_CLIENT_PLATFORM": "macos",
               "HOLLA_NO_HISTORY": "1"
             },
             "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",

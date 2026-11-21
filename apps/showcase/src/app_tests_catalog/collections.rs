@@ -2745,7 +2745,7 @@ fn file_browser_sources() {
     pressed(&mut shelf, &mut focus, key(KeyCode::Enter));
     assert_eq!(shelf.cwd, "/shelf/inner");
 
-    let root = std::env::temp_dir().join(format!("junie-collections-fs-{}", std::process::id()));
+    let root = std::env::temp_dir().join(format!("termrock-collections-fs-{}", std::process::id()));
     std::fs::create_dir_all(root.join("alpha")).expect("a scratch folder");
     std::fs::write(root.join("note.txt"), "hello").expect("a scratch file");
     let start = root.to_string_lossy().into_owned();

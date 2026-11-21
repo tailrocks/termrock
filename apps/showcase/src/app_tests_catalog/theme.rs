@@ -210,7 +210,7 @@ fn env_of(pairs: &'static [(&'static str, &'static str)]) -> impl Fn(&str) -> Op
 /// carry them down to a rendered widget.
 fn theme_charset_glyphs() {
     assert_eq!(Charset::default(), Charset::Unicode);
-    assert_eq!(Charset::OVERRIDE_ENV, "JUNIE_TUI_GLYPHS");
+    assert_eq!(Charset::OVERRIDE_ENV, "TERMROCK_GLYPHS");
     assert_eq!(
         Charset::ASCII_TERMS,
         ["linux", "vt", "cons25", "dumb", "pcansi"]
@@ -224,12 +224,9 @@ fn theme_charset_glyphs() {
     // from_env: the override wins over TERM, ASCII terminals fall back, and a
     // bare Windows console without a modern host is ASCII.
     let from = |pairs: &'static [(&str, &str)], windows| Charset::from_env(env_of(pairs), windows);
+    assert_eq!(from(&[("TERMROCK_GLYPHS", "ascii")], false), Charset::Ascii);
     assert_eq!(
-        from(&[("JUNIE_TUI_GLYPHS", "ascii")], false),
-        Charset::Ascii
-    );
-    assert_eq!(
-        from(&[("JUNIE_TUI_GLYPHS", "UTF-8"), ("TERM", "linux")], false),
+        from(&[("TERMROCK_GLYPHS", "UTF-8"), ("TERM", "linux")], false),
         Charset::Unicode
     );
     for term in ["linux", "vt100", "dumb", "cons25", "pcansi", "vt220-color"] {

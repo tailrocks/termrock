@@ -405,7 +405,7 @@ fn harness_wide_glyph_locator_uses_the_leading_cell() {
 
 #[test]
 fn harness_startup_failure_is_saved() {
-    let mut launch = Launch::new("harness-startup-failure", "/no/such/junie-tui-g02-binary");
+    let mut launch = Launch::new("harness-startup-failure", "/no/such/termrock-g02-binary");
     launch.cols = 20;
     launch.rows = 5;
     let Err(error) = try_launch(launch) else {

@@ -155,7 +155,7 @@ fn assert_glyphs() {
         &[],
         Some("truecolor"),
         Some("reduced"),
-        &[("JUNIE_TUI_GLYPHS", "ascii")],
+        &[("TERMROCK_GLYPHS", "ascii")],
         OVERVIEW,
     );
     require(&from_env, ASCII_ROW);
@@ -167,7 +167,7 @@ fn assert_glyphs() {
         &["--glyphs", "unicode"],
         Some("truecolor"),
         Some("reduced"),
-        &[("JUNIE_TUI_GLYPHS", "ascii")],
+        &[("TERMROCK_GLYPHS", "ascii")],
         OVERVIEW,
     );
     require(&flag, UNICODE_ROW);

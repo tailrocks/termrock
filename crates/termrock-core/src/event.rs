@@ -182,7 +182,7 @@ pub enum ClientPlatform {
 }
 
 impl ClientPlatform {
-    pub const OVERRIDE_ENV: &'static str = "JUNIE_TUI_CLIENT_PLATFORM";
+    pub const OVERRIDE_ENV: &'static str = "TERMROCK_CLIENT_PLATFORM";
 
     pub const MACOS_TERM_PROGRAMS: [&'static str; 2] = ["Apple_Terminal", "iTerm.app"];
 
@@ -227,7 +227,7 @@ impl ClientPlatform {
 
 /// Fixes the platform that [`ClientPlatform::current`] reports on one thread.
 /// Key labels and hints differ by platform, so a work count that includes them
-/// would otherwise depend on the host and on `JUNIE_TUI_CLIENT_PLATFORM`.
+/// would otherwise depend on the host and on `TERMROCK_CLIENT_PLATFORM`.
 #[cfg(feature = "work-metrics")]
 mod pin {
     use std::cell::Cell;

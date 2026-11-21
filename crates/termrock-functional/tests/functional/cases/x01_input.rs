@@ -294,7 +294,7 @@ fn x01_input_input() {
     assert_control_paste();
     assert_protocol(
         "x01-input-protocol-off",
-        &[("JUNIE_TUI_KEYBOARD_PROTOCOL", "off")],
+        &[("TERMROCK_KEYBOARD_PROTOCOL", "off")],
     );
     assert_protocol("x01-input-protocol-default", &[]);
     assert_checkpoints();

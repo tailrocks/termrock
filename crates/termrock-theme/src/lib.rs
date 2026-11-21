@@ -345,7 +345,7 @@ pub enum Charset {
 }
 
 impl Charset {
-    pub const OVERRIDE_ENV: &'static str = "JUNIE_TUI_GLYPHS";
+    pub const OVERRIDE_ENV: &'static str = "TERMROCK_GLYPHS";
 
     pub const ASCII_TERMS: [&'static str; 5] = ["linux", "vt", "cons25", "dumb", "pcansi"];
 

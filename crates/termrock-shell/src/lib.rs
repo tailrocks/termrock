@@ -46,7 +46,7 @@ fn discard_startup_input(
 }
 
 fn start_delay() -> Option<std::time::Duration> {
-    std::env::var("JUNIE_TUI_START_DELAY_MS")
+    std::env::var("TERMROCK_START_DELAY_MS")
         .ok()?
         .parse()
         .ok()

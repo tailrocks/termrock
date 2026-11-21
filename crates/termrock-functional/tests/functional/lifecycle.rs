@@ -105,7 +105,7 @@ fn showcase_popover_survives_resize_and_escape_returns_focus() {
     app.finish();
 }
 
-const SESSION_CHILD: &str = "JUNIE_TUI_LIFECYCLE_CHILD";
+const SESSION_CHILD: &str = "TERMROCK_LIFECYCLE_CHILD";
 static HOST_PANICS: AtomicUsize = AtomicUsize::new(0);
 
 fn await_enter() {

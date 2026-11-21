@@ -483,7 +483,7 @@ pub const OVERFLOW: &str = "…";
 
 #[doc(hidden)]
 pub fn overflow_id(area: Rect) -> WidgetId {
-    WidgetId::of("junie.reveal.overflow").child(((area.x as usize) << 16) | area.y as usize)
+    WidgetId::of("termrock.reveal.overflow").child(((area.x as usize) << 16) | area.y as usize)
 }
 
 thread_local! {
@@ -752,7 +752,7 @@ pub(crate) fn clear_cuts() {
 }
 
 pub fn cut_id(area: Rect) -> WidgetId {
-    WidgetId::of("junie.reveal.cut").child(((area.x as usize) << 16) | area.y as usize)
+    WidgetId::of("termrock.reveal.cut").child(((area.x as usize) << 16) | area.y as usize)
 }
 
 pub(crate) fn flush_cuts(ctx: &mut RenderCtx) {
