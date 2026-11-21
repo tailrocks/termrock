@@ -77,7 +77,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos"
+          "TERMROCK_CLIENT_PLATFORM": "macos"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
         "candidate_sha256": "8913e6fad8edb49ff6329f988b00636c7f058d0b39761bf6edcdd9696c51b868",
@@ -116,7 +116,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos"
+          "TERMROCK_CLIENT_PLATFORM": "macos"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
         "candidate_sha256": "629e507ec488f710d88f4b7a984f8f1821e6c2b8337a98dcd0daa3b6bcebabc5",
