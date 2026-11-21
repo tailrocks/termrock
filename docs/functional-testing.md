@@ -9,7 +9,7 @@ handlers, injects hit-region IDs, or renders into a test backend.
 The reference source is [tests/functional](../crates/termrock-functional/tests/functional/main.rs). The
 initial application review was against PR #26, commit
 `5b3dbd7ae799f325efbb4f4cc11b2f5518dec948`, on
-`design/interaction-polish`. This is the monolithic `junie-tui` package with four binaries. (The former
+`design/interaction-polish`. This is the former monolithic package with four binaries. (The former
 `xtask` workspace member existed only to serve the deleted visual-baseline
 estate; it was removed with that estate — see the migration mapping.) Architecture reports describing
 `crates/*` on other branches are not evidence about these binaries.
@@ -163,7 +163,7 @@ state. The tests of the library's own types live in the library's root
 control state and the reason widths, rendered into a test buffer and
 driven with keys and clicks), `shell.rs` (the refusal slot and the
 redraw rule, through a minimal `shell::App` in `crates/termrock/tests/regressions/common/mod.rs`)
-and `status.rs` (the sticky status line). No test of a `junie-tui` type
+and `status.rs` (the sticky status line). No test of a former-package type
 lives in `apps/jackin/tests`. These tests add no visual baseline and are
 not journeys: a user-visible flow still needs a functional journey.
 

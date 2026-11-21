@@ -24,8 +24,8 @@ termrock = { git = "https://github.com/tailrocks/termrock", default-features = f
 Import from `termrock::` (`termrock::widgets`, `termrock::ui`, `termrock::core`,
 `termrock::prelude`). The library is a set of `termrock-*` crates under
 `crates/`, and `crates/termrock` re-exports them; the repository root is a
-virtual workspace. There is no `junie-tui` shim: it was removed in #565, so replace
-`junie_tui::` with `termrock::`. The supported imports, features, ownership rules
+virtual workspace. There is no shim for the former implementation crate: it was removed in #565, so
+replace its import prefix with `termrock::`. The supported imports, features, ownership rules
 and the v0.1 migration are in the [API contract](docs/api-contract.md).
 
 Working consumers, each an independent package that compiles from its declared

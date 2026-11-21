@@ -1,4 +1,4 @@
-//! Every module path the single `junie-tui` package exposed before the split still
+//! Every module path the single former package exposed before the split still
 //! resolves through the facade (#452). The lists come from `src/{core,ui,widgets}/mod.rs`,
 //! `src/lib.rs` and the `pub mod` lines of the other modules at `ecffc8e21`, the commit the
 //! crate split was planned against, and are committed rather than derived from the current

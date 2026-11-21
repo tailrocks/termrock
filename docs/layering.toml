@@ -2,11 +2,11 @@
 #
 # The check fails any dependency that points up the layers. It reads
 # `cargo metadata` for the real crate graph and checks it against this table.
-# (Until #452 a second stage scanned the modules of the single `junie-tui`
-# package through a `[files]` section; the package and its shim are gone.)
+# (Until #452 a second stage scanned the modules of the single former package
+# through a `[files]` section; the package and its shim are gone.)
 #
 # Names are short: `core` means the package `termrock-core`. `termrock` is the
-# facade (`crates/termrock`). There is no shim crate: `junie_tui::` was replaced by
+# facade (`crates/termrock`). There is no shim crate: the former import prefix was replaced by
 # `termrock::` and the package was removed.
 #
 # Editing rules

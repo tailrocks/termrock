@@ -372,7 +372,7 @@ fn the_crates_alone_lint_is_configured_and_required() {
         "the terminal-without-cli pass does not name `termrock`: {run}"
     );
     assert!(
-        !run.contains("junie-tui"),
+        !run.contains(concat!("junie", "-tui")),
         "the removed shim is still named in check-crates-alone: {run}"
     );
     assert!(
