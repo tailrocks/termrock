@@ -36,4 +36,4 @@ termrock-terminal = { workspace = true }
 termrock-text = { workspace = true }
 termrock-theme = { workspace = true }
 termrock-viewport = { workspace = true }
-toml = "=1.2.1"
+toml = "=1.2.2"
