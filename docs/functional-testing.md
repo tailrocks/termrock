@@ -31,7 +31,7 @@ report. The `functional` target of `jackin-console` needs the feature
 `demo`, which is off by default, so this command runs the root journeys
 only (the root target reads its candidate binaries from
 `TERMROCK_TEST_<NAME>`, which the `app-bins` setup script exports). Add `--all-features` to include the jackin journeys; CI runs them in
-`rust-test-functional-cases-c-apps-root` (see [CI](ci.md)). To run the
+`rust-test-functional-root` (see [CI](ci.md)). To run the
 target without the profile:
 
 ```sh
@@ -498,8 +498,8 @@ The source configuration is [.velnor/rust-ci.toml](../.velnor/rust-ci.toml)
 (CI and local builds both run cargo through mr-boxington; the mise
 `[wrappers.cargo]` routes every cargo call through `mbx`). The functional
 journeys run on pull requests, branch pushes, the merge queue and manual
-dispatch as two `[[test_groups]]` (`functional-cases-ab`, `functional-cases-c-apps`;
-see [CI](ci.md)), each from one default-feature nextest archive.
+dispatch as one `[[test_groups]]` (`functional`; see [CI](ci.md)), from one
+default-feature nextest archive.
 Each group runs, through `cargo-nextest`:
 
 ```sh

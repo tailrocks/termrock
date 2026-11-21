@@ -5,28 +5,20 @@ hosted = true
 timeout_minutes = 45
 
 # The old `functional` suite ran four hash partitions (profile `functional`,
-# eight test threads, 15 minutes each). velnor-gen has no partitions, so the
-# functional binaries are split into two disjoint groups of about 700 tests;
-# `velnor-ci test-groups check` fails the build job when two groups select the
-# same test. A functional test that no group names runs in `rust-test-default-root`.
-# Each group builds the workspace once, cold (no cache restore for a group job),
-# so two groups rather than four keep the cache report's repeated compilations
-# of the same units at two (see docs/ci.md, Cache).
+# eight test threads, 15 minutes each). velnor-gen has no partitions and no
+# base-cache restore for a group job, so every group compiles the workspace
+# cold; the Cache job (`Check cache waste`) fails when two jobs compile the same
+# unit. The functional binaries therefore run as one group of all 1,371 tests
+# (about 20 minutes, under the 40-minute limit). `velnor-ci test-groups check`
+# fails the build job when two groups select the same test. A functional test
+# that no group names runs in `rust-test-default-root`.
 [[test_groups]]
-name = "functional-cases-ab"
-filter = "binary_id(=termrock-functional::functional) and (test(/^cases::g05_/) or test(/^cases::h0/) or test(/^cases::s0[1-7]_/))"
+name = "functional"
+filter = "binary(functional)"
 root = "."
 needs = ["cargo"]
 test_threads = 8
-timeout_minutes = 30
-
-[[test_groups]]
-name = "functional-cases-c-apps"
-filter = "(binary_id(=termrock-functional::functional) and (test(/^cases::s0[89]_/) or test(/^cases::s10_/) or test(/^cases::t0/) or test(/^cases::x0/) or not test(/^cases::/))) or binary_id(=functional-cross::functional) or binary_id(=jackin-console::functional)"
-root = "."
-needs = ["cargo"]
-test_threads = 8
-timeout_minutes = 30
+timeout_minutes = 40
 
 # The default test job installs only cargo-nextest and no Rust, so a test that
 # runs `cargo metadata` cannot pass there. These three read the workspace graph

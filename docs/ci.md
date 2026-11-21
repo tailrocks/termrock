@@ -55,23 +55,19 @@ roots: the workspace at `.` and the four consumer fixtures.
   `doc-hidden-items.txt` list). It runs in the all-features lane. Its command with
   the Showcase scenarios is `cargo nextest run -p termrock-catalog -p
   termrock-showcase --all-features --no-tests fail -E 'test(catalog_)'`.
-- **rust-test-functional-{cases-ab,cases-c-apps}-root** — the
-  `functional` binaries (`termrock-functional`, `functional-cross`,
-  `jackin-console`), 1,371 PTY tests, split into two disjoint
-  `[[test_groups]]` of about 650 to 730 tests that run from the archive with
-  eight test threads and a 30-minute limit each. They replace the four hash
-  partitions of the old `Suite (functional)`. `cases-ab` is `g05`, `h01`-`h06`
-  and `s01`-`s07`; `cases-c-apps` is `s08`-`s10`, `t01`-`t05`, `x01` and `x02`
-  plus `functional-cross`, and the `showcase`, `tablepro`, `holla`, `lifecycle`
-  and `visual` tests of `termrock-functional` plus `jackin-console`.
-  `velnor-ci test-groups check` fails the build job if two groups select one
-  test. A functional test that no group names (a new `cases::` prefix) runs in
-  `rust-test-default-root`, so add its prefix to a group. Each group needs
-  `cargo` because the nextest setup script `app-bins` builds the app binaries
-  the journeys launch, and a group job restores no base cache, so each group
-  compiles the workspace cold. Two groups, not four, keep the Cache report's
-  repeated compilations (`Check cache waste`) at two per unit, the count the
-  lint and test jobs already show. See [functional testing](functional-testing.md).
+- **rust-test-functional-root** — the `functional` binaries
+  (`termrock-functional`, `functional-cross`, `jackin-console`), 1,371 PTY
+  tests, selected by `binary(functional)` as one `[[test_groups]]` entry. It
+  runs from the archive with eight test threads and a 40-minute limit (about 20
+  minutes in practice). It replaces the four hash partitions of the old
+  `Suite (functional)`. A group job restores no base cache, so every group
+  compiles the workspace cold, and the Cache job (`Check cache waste`) fails
+  when two jobs compile the same unit. One group avoids that duplicate
+  compile; splitting the suite again needs velnor-new to restore caches for
+  group jobs. `velnor-ci test-groups check` fails the build job if two groups
+  select one test. The group needs `cargo` because the nextest setup script
+  `app-bins` builds the app binaries the journeys launch. See
+  [functional testing](functional-testing.md).
 - **rust-crates_termrock_tests_consumers_{minimal,keyed_modal,terminal,jackin_host}**
   — the four independent consumer fixtures under
   `crates/termrock/tests/consumers/`. Each is its own Cargo workspace with a
