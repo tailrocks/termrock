@@ -1,3 +1,6 @@
+# The branch whose pushes run CI and save the base caches. Explicit, so a missing
+# key cannot silently fall back to velnor-gen's default (tests/regressions/ci_default_branch.rs).
+default_branch = "main"
 runner = "ubuntu-26.04"
 hosted = true
 # Kept at 45: the base caches save only on pushes to main, so warm timings exist

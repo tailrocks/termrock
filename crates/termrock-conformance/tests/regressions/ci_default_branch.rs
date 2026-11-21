@@ -1,9 +1,10 @@
 //! Guards the `default_branch` source setting of `.velnor/rust-ci.toml`, which
 //! the generated Rust CI derives its push filter and default-branch cache
-//! rules from. velnor-gen defaults it to `main` when the key is absent, and
-//! the helper fails the run when it differs from the repository's default
-//! branch. The check is pure Rust over config text, parsed with the `toml`
-//! crate; no subprocess and no network.
+//! rules from. The key must be present and must equal the repository's default
+//! branch, `main`. velnor-gen would fall back to `main` when the key is absent,
+//! so the guard rejects an absent key rather than inheriting that default. The
+//! check is pure Rust over config text, parsed with the `toml` crate; no
+//! subprocess and no network.
 //!
 //! The same file pins the velnor-gen identity: `.velnor/rust-ci.lock` records the
 //! release that `velnor-gen pin-helper` resolved. `velnor-gen check` compares the
@@ -37,8 +38,6 @@ impl fmt::Display for DefaultBranchError {
     }
 }
 
-const DEFAULT_BRANCH: &str = "main";
-
 fn check_default_branch(config_text: &str, expected: &str) -> Result<(), DefaultBranchError> {
     if expected.is_empty() {
         return Err(DefaultBranchError::Invalid(
@@ -58,14 +57,18 @@ fn check_default_branch(config_text: &str, expected: &str) -> Result<(), Default
 
 /// Reads the top-level `default_branch` of a parsed TOML document, so quoting,
 /// escapes, duplicate keys and table shapes are decided by the TOML parser
-/// rather than by this test. An absent key is velnor-gen's default, `main`.
+/// rather than by this test. An absent key is an error: the key is explicit in
+/// the source so that a generator default cannot change the pushed branches.
 fn configured_default_branch(config_text: &str) -> Result<String, DefaultBranchError> {
     let document: toml::Table = config_text.parse().map_err(|error| {
         DefaultBranchError::Invalid(format!("config is not valid TOML: {error}"))
     })?;
-    let Some(value) = document.get("default_branch") else {
-        return Ok(DEFAULT_BRANCH.to_owned());
-    };
+    let value = document.get("default_branch").ok_or_else(|| {
+        DefaultBranchError::Invalid(
+            "default_branch is not set in .velnor/rust-ci.toml; set default_branch = \"main\""
+                .to_owned(),
+        )
+    })?;
     value
         .as_str()
         .filter(|branch| !branch.is_empty())
@@ -100,9 +103,17 @@ fn default_branch_accepts_match() {
 }
 
 #[test]
-fn default_branch_defaults_to_main_when_absent() {
-    assert_eq!(check_default_branch("runner = \"x\"\n", "main"), Ok(()));
-    let error = check_default_branch("runner = \"x\"\n", "trunk").expect_err("main is not trunk");
+fn default_branch_rejects_a_missing_key() {
+    // velnor-gen would default to `main`; the guard must not inherit that.
+    let error = check_default_branch("runner = \"x\"\n", "main").expect_err("absent key must fail");
+    assert!(matches!(error, DefaultBranchError::Invalid(_)), "{error}");
+    assert!(error.to_string().contains("not set"), "{error}");
+}
+
+#[test]
+fn default_branch_rejects_a_key_that_is_not_main_in_this_repository() {
+    let error = check_default_branch("default_branch = \"trunk\"\n", "main")
+        .expect_err("non-main must fail");
     assert!(
         matches!(error, DefaultBranchError::Mismatch { .. }),
         "{error}"
@@ -143,6 +154,7 @@ fn default_branch_rejects_wrong_toml_shapes() {
         ("branch integer", "default_branch = 1\n"),
         ("branch empty", "default_branch = \"\"\n"),
         ("branch unquoted", "default_branch = main\n"),
+        ("workflow table", "[workflow]\ndefault_branch = \"main\"\n"),
         (
             "duplicate key",
             "default_branch = \"main\"\ndefault_branch = \"main\"\n",
