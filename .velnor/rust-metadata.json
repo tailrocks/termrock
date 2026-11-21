@@ -41,11 +41,6 @@
               "name": "unicode-segmentation",
               "kind": "normal",
               "manifest": null
-            },
-            {
-              "name": "serde_json",
-              "kind": "dev",
-              "manifest": null
             }
           ],
           "targets": [
@@ -2904,7 +2899,7 @@
   },
   "manifests": {
     "Cargo.toml": "1e1c95ae29b5299b062a8c4b8ba81937e96982b78d808481917fdde299afdce3",
-    "apps/holla/Cargo.toml": "c82d77a8d9c52b5a1d74f0a443fb0c397d58935a3143a75f4c873a08cb5f942e",
+    "apps/holla/Cargo.toml": "27a3ce635cb43f097b7bd0166e11e320a3db21442850fb8012672260e338a938",
     "apps/jackin/Cargo.toml": "a996366ec12d3f3e1dec4595e7d1650580cf56ea3c96618b9592b9a8fadc8eb5",
     "apps/showcase/Cargo.toml": "e476a80e2eb4db31229f365493df716b66ce0542866f8e3464d5c0882e5d3938",
     "apps/tablepro/Cargo.toml": "cf8a61dc5c6a16b98963d4cf33a39e19258a3d67d11594aaaace071259dee782",
