@@ -93,7 +93,7 @@ fn mouse_event(kind: MouseEventKind, mods: KeyModifiers) -> Event {
 /// predicates and the outcome a real checkbox reports for the decoded key.
 fn input_decoding() {
     // The client platform comes from the environment, an override first.
-    assert_eq!(ClientPlatform::OVERRIDE_ENV, "JUNIE_TUI_CLIENT_PLATFORM");
+    assert_eq!(ClientPlatform::OVERRIDE_ENV, "TERMROCK_CLIENT_PLATFORM");
     for value in ["macos", "Mac", " DARWIN "] {
         let platform = ClientPlatform::from_env(|name| {
             (name == ClientPlatform::OVERRIDE_ENV).then(|| value.to_owned())
@@ -458,7 +458,7 @@ fn keyboard_negotiation() {
     assert_eq!(keyboard::decode(b"97u"), None);
 
     // The policy comes from the environment and defaults to detection.
-    assert_eq!(KeyboardProtocol::ENV, "JUNIE_TUI_KEYBOARD_PROTOCOL");
+    assert_eq!(KeyboardProtocol::ENV, "TERMROCK_KEYBOARD_PROTOCOL");
     assert_eq!(KeyboardProtocol::default(), KeyboardProtocol::Auto);
     for (value, expected) in [
         ("on", KeyboardProtocol::On),
@@ -509,7 +509,7 @@ fn keyboard_negotiation() {
     );
 
     // Alt keys: the policy from the environment, per platform and terminal.
-    assert_eq!(AltKeys::ENV, "JUNIE_TUI_ALT_KEYS");
+    assert_eq!(AltKeys::ENV, "TERMROCK_ALT_KEYS");
     let alt_env = |platform, pairs: &'static [(&'static str, &'static str)]| {
         AltKeys::from_env(platform, env_of(pairs))
     };

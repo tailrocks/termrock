@@ -11,6 +11,7 @@ mod engine {
 mod bins;
 mod cases;
 mod holla;
+mod legacy_reference_env;
 mod lifecycle;
 mod showcase;
 #[allow(dead_code)]

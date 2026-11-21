@@ -14,7 +14,7 @@ use std::sync::atomic::{AtomicU8, AtomicUsize, Ordering};
 
 use super::{OWNED, REQUESTED, Step, install, on_tstp, take_request};
 
-const MARKER: &str = "JUNIE_TUI_JOB_CONTROL_CHILD";
+const MARKER: &str = "TERMROCK_JOB_CONTROL_CHILD";
 const DONE: &str = "job-control-child-done";
 
 static FAULT: AtomicU8 = AtomicU8::new(0);

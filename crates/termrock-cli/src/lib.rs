@@ -51,7 +51,7 @@ pub struct CommonArgs {
     pub color: Option<ColorArg>,
     /// Glyphs and copy (default: detected from the terminal; ASCII on the
     /// Linux console, VT terminals and the legacy Windows console;
-    /// JUNIE_TUI_GLYPHS=unicode|ascii overrides detection)
+    /// TERMROCK_GLYPHS=unicode|ascii overrides detection)
     #[arg(long, value_enum, value_name = "SET")]
     pub glyphs: Option<GlyphsArg>,
     /// How much moves (default: full, or reduced when the app's NO_MOTION variable is set)

@@ -6,7 +6,7 @@
 
 use std::process::{Command, Output, Stdio};
 
-const MARKER: &str = "JUNIE_TUI_RUNTIME_CHILD";
+const MARKER: &str = "TERMROCK_RUNTIME_CHILD";
 const DONE: &str = "runtime-child-done";
 
 /// Runs `body` in a child process. `module` is the caller's `module_path!()`.

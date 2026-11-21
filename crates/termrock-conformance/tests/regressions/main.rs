@@ -9,6 +9,7 @@
 mod ci_default_branch;
 mod intrinsic;
 mod intrinsic_wide;
+mod junie_env;
 #[cfg(feature = "work-metrics")]
 mod keyed_cost;
 mod overflow_parity;

@@ -1,7 +1,7 @@
 //! Cross-application Unicode and ASCII glyph treatment, before the refactor.
 //!
 //! `CommonArgs::glyphs` is `--glyphs unicode` (alias `utf8`) or `--glyphs
-//! ascii`. An explicit flag wins over detection. `JUNIE_TUI_GLYPHS` is the
+//! ascii`. An explicit flag wins over detection. `TERMROCK_GLYPHS` is the
 //! env override; these launches do not set it (`src/cli.rs`).
 //!
 //! `Glyphs::UNICODE` focus_bar is `▎`, divider is `│`, scroll_thumb is `┃`,

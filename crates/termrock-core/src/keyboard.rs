@@ -105,7 +105,7 @@ pub enum KeyboardProtocol {
 }
 
 impl KeyboardProtocol {
-    pub const ENV: &'static str = "JUNIE_TUI_KEYBOARD_PROTOCOL";
+    pub const ENV: &'static str = "TERMROCK_KEYBOARD_PROTOCOL";
 
     pub fn from_env(get: impl Fn(&str) -> Option<String>) -> Self {
         match get(Self::ENV)
@@ -248,7 +248,7 @@ pub enum AltKeys {
 }
 
 impl AltKeys {
-    pub const ENV: &'static str = "JUNIE_TUI_ALT_KEYS";
+    pub const ENV: &'static str = "TERMROCK_ALT_KEYS";
 
     pub const OPTION_TYPES_TERM_PROGRAMS: [&'static str; 2] = ["Apple_Terminal", "iTerm.app"];
 
