@@ -1100,8 +1100,12 @@ fn option_edit_entry_type_to_edit() {
         );
         assert_toggle(screen, "Read-only", "off");
     });
-    app.key("tab");
-    app.wait_screen("section strip", |screen| footer(screen).contains("Section"));
+    // The Playground click already leaves focus on the section strip. Wait for
+    // that frame, then send one Tab: each key is checked against the frame it
+    // produces, never against an earlier frame that already matched.
+    app.wait_screen("section strip focused", |screen| {
+        footer(screen).contains("Section")
+    });
     app.key("tab");
     let focused = app.wait_screen("editor focused without editing", |screen| {
         footer(screen).contains("i Edit") && row_with(screen, "Mode").contains("navigating")
@@ -1121,10 +1125,6 @@ fn option_edit_entry_type_to_edit() {
     assert!(!text(&ignored).contains(QFETCH), "type-to-edit inserted Q");
     assert_mode(&ignored, "navigating");
     flash_settle(&app);
-    // The resize that clears a press flash leaves the Find button focused.
-    if !footer(&app.settle()).contains("i Edit") {
-        app.key("shift+tab");
-    }
     let focused = app.wait_screen("editor focused after the flash redraw", |screen| {
         footer(screen).contains("i Edit") && row_with(screen, "Mode").contains("navigating")
     });
