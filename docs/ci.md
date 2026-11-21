@@ -160,9 +160,22 @@ Add a new top-level `crates/<crate>/tests/*.rs` only when a test needs its own b
 same change.
 
 `crates/termrock-conformance/tests/regressions/ci_default_branch.rs` checks offline that `default_branch` in
-`.velnor/rust-ci.toml` (default `main`) is `main` and that the generated
+`.velnor/rust-ci.toml` is set explicitly to `main` and that the generated
 workflow pushes only that branch. To change the branch, edit the key, run
 `velnor-gen generate` and confirm a second `velnor-gen check` passes.
+
+The key is explicit because velnor-gen 0.1.111 accepts it at the top level of
+`rust-ci.toml` and falls back to `main` when it is absent. The guard does not
+inherit that fallback: an absent key, or any value other than `main`, fails the
+test. The guard also fails when the generated `push` trigger lists a branch
+other than `main`, lists none, or when the branch list is missing.
+
+Decision (issue #13, re-audit after the velnor-gen migration of #559): the
+original spec required the default branch to be explicit and a missing key to
+fail (exit 2 in the first validator). The velnor-actions `.velnor/config.toml`
+(`[workflow].default_branch`) was removed by the migration, and the replacement
+`rust-ci.toml` had no key, so a missing key passed silently. The fix restores
+the explicit key and makes the guard reject its absence again.
 
 ## Generated workflow check
 
