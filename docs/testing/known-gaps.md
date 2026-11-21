@@ -12,7 +12,7 @@ The omission stays a characterized inventory gap.
 
 ## Clock paste
 
-The shared harness sets `JUNIE_TUI_TEST_CLOCK=1` and Showcase page visits paste `junie-tui:advance-clock:`.
+The shared harness sets `TERMROCK_TEST_CLOCK=1` and Showcase page visits paste `junie-tui:advance-clock:`.
 Only Jackin overrides `advance_clock` to consume that paste.
 `shell::handle` still delivers the paste as ordinary input when `advance_clock` returns `None`.
 The harness must stop sending the paste to applications that do not implement it.

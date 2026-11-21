@@ -222,7 +222,7 @@ effects, and teardown; preserve the same terminal interaction layer.
 
 Use `--motion paused --frame <n>` for held-state and static view tests.
 Holla and TablePro asynchronous operations need normal/reduced motion.
-Jackin and Holla additionally support opt-in `JUNIE_TUI_TEST_CLOCK=1`, which
+Jackin and Holla additionally support opt-in `TERMROCK_TEST_CLOCK=1`, which
 the helper always sets: wall time then never moves the simulated clock (so a
 relative label such as "live · 3 s ago" cannot drift under load), and the
 helper's `advance_clock(ms)` sends its documented bracketed-paste clock
@@ -236,7 +236,7 @@ with `launch.clock` set opts in. Do not assume every application
 implements that clock. Never send clock input as a substitute for a domain
 interaction.
 
-`JUNIE_TUI_TEST_FENCE=1` is the opt-in that makes an app answer the shell fence (a BEL queued behind the frame of every earlier input) without freezing the status clock as `JUNIE_TUI_TEST_CLOCK` does; `App::resize` and `App::fence` wait on it for Showcase, TablePro, Holla and Jackin.
+`TERMROCK_TEST_FENCE=1` is the opt-in that makes an app answer the shell fence (a BEL queued behind the frame of every earlier input) without freezing the status clock as `TERMROCK_TEST_CLOCK` does; `App::resize` and `App::fence` wait on it for Showcase, TablePro, Holla and Jackin.
 
 `App::settle` begins with a fence: the helper pastes `junie-tui:fence`, and
 under the same opt-in the shell answers it with a BEL after the frame of every
@@ -261,11 +261,11 @@ loaded one, so a case that passes tells nothing about it. Two knobs make the
 slow draw deterministic, and the case is then proven by running it with and
 without the fix.
 
-- `JUNIE_TUI_DRAW_LAG_MS=<ms>` holds every frame of the app back by that many
+- `TERMROCK_DRAW_LAG_MS=<ms>` holds every frame of the app back by that many
   milliseconds after the input that caused it was handled and before any byte of
   it reaches the terminal (`draw_lag` in `crates/termrock-shell/src/runtime.rs`). The harness forwards
   it to every launch, so
-  `JUNIE_TUI_DRAW_LAG_MS=300 python3 scripts/run_functional.py --test-name s07_`
+  `TERMROCK_DRAW_LAG_MS=300 python3 scripts/run_functional.py --test-name s07_`
   runs that file with every frame 300 ms late.
 - `TERMROCK_TEST_LEGACY_WAITS=1` makes `App::settle` wait for quiet alone and
   `App::flash_expired` sleep a fixed 200 ms, as they did before the fence. Run a
