@@ -55,9 +55,9 @@ specifiers = ["rev:f1fb3f276b8d49948881c07b3bbc619840b6cc93"]
 crate = "tuiscotti-cli"
 
 [[tools."cargo:https://github.com/tailrocks/velnor-new"]]
-version = "rev:3e56d7299da0cb7e5890a673d118fbc2c5045565"
+version = "rev:146a9960b0b41adf6612462d28982bff2c60a1c6"
 backend = "cargo:https://github.com/tailrocks/velnor-new"
-specifiers = ["rev:3e56d7299da0cb7e5890a673d118fbc2c5045565"]
+specifiers = ["rev:146a9960b0b41adf6612462d28982bff2c60a1c6"]
 
 [tools."cargo:https://github.com/tailrocks/velnor-new".options]
 crate = "velnor-gen"
@@ -86,17 +86,17 @@ url_api = "https://api.github.com/repos/cli/cli/releases/assets/761188667"
 provenance = "github-attestations"
 
 [[tools."github:tailrocks/velnor-new"]]
-version = "tools-v0.1.110"
+version = "tools-v0.1.111"
 backend = "github:tailrocks/velnor-new"
-specifiers = ["tools-v0.1.110"]
+specifiers = ["tools-v0.1.111"]
 
 [tools."github:tailrocks/velnor-new".options]
 asset_pattern = "velnor-gen-*-unknown-linux-musl.tar.gz"
 
 [tools."github:tailrocks/velnor-new"."platforms.linux-x64"]
-checksum = "sha256:b670d97113a9157dc8794c9ff763f73b833a82640c8058d5da5eed9aa43a4369"
-url = "https://github.com/tailrocks/velnor-new/releases/download/tools-v0.1.110/velnor-gen-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/tailrocks/velnor-new/releases/assets/772759803"
+checksum = "sha256:933695ac11db7ba5feba98d10e63a12d5fc2e9e34b27130b2612c2b410519e08"
+url = "https://github.com/tailrocks/velnor-new/releases/download/tools-v0.1.111/velnor-gen-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/tailrocks/velnor-new/releases/assets/775424527"
 provenance = "github-attestations"
 
 [[tools.hk]]

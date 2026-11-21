@@ -10,12 +10,12 @@ gh = "2.105.0"
 hk = "2.13.0"
 # velnor-gen (tools release tag). velnor-gen refuses a tool that applies on the
 # runner OS without a prebuilt binary in mise.lock, and the release has no macOS
-# asset (velnor-new announced one for tools-v0.1.108 but 0.1.110 still has none), so Linux takes the release
+# asset (velnor-new announced one for tools-v0.1.108 but 0.1.111 still has none), so Linux takes the release
 # asset and macOS builds that tag's commit from source (a `rev:`, not the
 # movable tag; tests/ci_default_branch.rs ties it to .velnor/rust-ci.lock). `tuiscotti` is a source build
 # too, so it is macOS only. Bump with `velnor-gen pin-helper <version>`.
-"github:tailrocks/velnor-new" = { version = "tools-v0.1.110", asset_pattern = "velnor-gen-*-unknown-linux-musl.tar.gz", os = ["linux"] }
-"cargo:https://github.com/tailrocks/velnor-new" = { version = "rev:3e56d7299da0cb7e5890a673d118fbc2c5045565", crate = "velnor-gen", os = ["macos"] }
+"github:tailrocks/velnor-new" = { version = "tools-v0.1.111", asset_pattern = "velnor-gen-*-unknown-linux-musl.tar.gz", os = ["linux"] }
+"cargo:https://github.com/tailrocks/velnor-new" = { version = "rev:146a9960b0b41adf6612462d28982bff2c60a1c6", crate = "velnor-gen", os = ["macos"] }
 "cargo:https://github.com/tailrocks/tuiscotti" = { version = "rev:f1fb3f276b8d49948881c07b3bbc619840b6cc93", crate = "tuiscotti-cli", os = ["macos"] }
 mr-boxington = "1.30.0"
 rust = { version = "1.100.0", profile = "minimal", components = [
