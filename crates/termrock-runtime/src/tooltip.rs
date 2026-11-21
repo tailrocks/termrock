@@ -75,7 +75,7 @@ impl Tip {
 }
 
 pub fn tip_id(owner: WidgetId) -> WidgetId {
-    owner.sub("junie.tooltip")
+    owner.sub("termrock.tooltip")
 }
 
 thread_local! {

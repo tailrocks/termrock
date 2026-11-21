@@ -184,12 +184,12 @@ impl TestRequest {
 
     pub const FENCE_ACK: &'static str = "\x07";
 
-    pub const ENV: &'static str = "JUNIE_TUI_TEST_CLOCK";
+    pub const ENV: &'static str = "TERMROCK_TEST_CLOCK";
 
     /// Answers [`TestRequest::FENCE`] and nothing else. [`TestRequest::ENV`] also
     /// freezes the status clock, which the frozen baselines of Showcase and Holla
     /// do not expect, so a harness that only needs the fence sets this one.
-    pub const FENCE_ENV: &'static str = "JUNIE_TUI_TEST_FENCE";
+    pub const FENCE_ENV: &'static str = "TERMROCK_TEST_FENCE";
 
     pub fn fence_opted_in() -> bool {
         static OPTED_IN: std::sync::OnceLock<bool> = std::sync::OnceLock::new();

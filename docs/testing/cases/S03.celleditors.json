@@ -48,7 +48,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -102,7 +102,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -168,7 +168,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -234,7 +234,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -288,7 +288,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -354,7 +354,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -420,7 +420,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -474,7 +474,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -540,7 +540,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -606,7 +606,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -662,7 +662,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -718,7 +718,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -790,7 +790,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -878,7 +878,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -950,7 +950,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1006,7 +1006,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1062,7 +1062,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1134,7 +1134,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1190,7 +1190,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1252,7 +1252,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1290,7 +1290,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1355,7 +1355,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1420,7 +1420,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1486,7 +1486,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1552,7 +1552,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1617,7 +1617,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1682,7 +1682,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1748,7 +1748,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1813,7 +1813,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1878,7 +1878,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -1943,7 +1943,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -2006,7 +2006,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -2044,7 +2044,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",

@@ -175,14 +175,14 @@ pub fn run(app: &mut impl Application) -> std::io::Result<()> {
     result.and(left)
 }
 
-/// Test-only knob: `JUNIE_TUI_DRAW_LAG_MS` holds every frame back by that many
+/// Test-only knob: `TERMROCK_DRAW_LAG_MS` holds every frame back by that many
 /// milliseconds after the input that caused it was handled and before any byte
 /// of it reaches the terminal. It makes a slow draw deterministic, so a
 /// functional case that reads the screen after a fixed quiet wait instead of
 /// waiting for the frame fails on every run, not only on a loaded machine.
 fn draw_lag() -> Option<Duration> {
     static LAG: std::sync::OnceLock<Option<Duration>> = std::sync::OnceLock::new();
-    *LAG.get_or_init(|| parse_draw_lag(std::env::var("JUNIE_TUI_DRAW_LAG_MS").ok().as_deref()))
+    *LAG.get_or_init(|| parse_draw_lag(std::env::var("TERMROCK_DRAW_LAG_MS").ok().as_deref()))
 }
 
 fn parse_draw_lag(value: Option<&str>) -> Option<Duration> {
@@ -191,7 +191,7 @@ fn parse_draw_lag(value: Option<&str>) -> Option<Duration> {
 }
 
 fn first_poll_delay() -> Option<Duration> {
-    std::env::var("JUNIE_TUI_FIRST_POLL_DELAY_MS")
+    std::env::var("TERMROCK_FIRST_POLL_DELAY_MS")
         .ok()?
         .parse()
         .ok()

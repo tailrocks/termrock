@@ -2564,7 +2564,7 @@ fn catalog_shell_test_requests() {
     assert_eq!(TestRequest::ADVANCE_PREFIX, "junie-tui:advance-clock:");
     assert_eq!(TestRequest::FENCE, "junie-tui:fence");
     assert_eq!(TestRequest::FENCE_ACK, "\x07");
-    assert_eq!(TestRequest::ENV, "JUNIE_TUI_TEST_CLOCK");
+    assert_eq!(TestRequest::ENV, "TERMROCK_TEST_CLOCK");
     assert_eq!(TestRequest::advance(250), "junie-tui:advance-clock:250");
     assert_eq!(
         TestRequest::parse(&TestRequest::advance(250)),
@@ -2603,7 +2603,7 @@ fn catalog_shell_motion_resolution() {
     assert_eq!(Motion::default(), Motion::Full);
 
     // PATH is set and non-empty in any test run; the other name is never set.
-    let unset = "JUNIE_TUI_CATALOG_SHELL_NEVER_SET";
+    let unset = "TERMROCK_CATALOG_SHELL_NEVER_SET";
     assert!(Motion::env_requests_reduced("PATH"));
     assert!(!Motion::env_requests_reduced(unset));
     assert_eq!(Motion::from_cli_or_env(None, "PATH"), Motion::Reduced);
@@ -2662,7 +2662,7 @@ fn catalog_shell_cli_arguments() {
     assert_eq!(cli.common.level(), ColorLevel::Ansi16);
     assert_eq!(cli.common.charset(), Charset::Ascii);
     assert_eq!(
-        cli.common.motion("JUNIE_TUI_CATALOG_SHELL_NEVER_SET"),
+        cli.common.motion("TERMROCK_CATALOG_SHELL_NEVER_SET"),
         Motion::Paused
     );
     assert_eq!(
@@ -2673,7 +2673,7 @@ fn catalog_shell_cli_arguments() {
     let bare = Cli::try_parse_from(["app"]).expect("no options parse");
     assert_eq!(bare.common, CommonArgs::default());
     assert_eq!(
-        bare.common.motion("JUNIE_TUI_CATALOG_SHELL_NEVER_SET"),
+        bare.common.motion("TERMROCK_CATALOG_SHELL_NEVER_SET"),
         Motion::Full
     );
     assert_eq!(
@@ -2943,7 +2943,7 @@ fn catalog_shell_external_latency_builder() {
     assert_eq!(ExternalReceiver::DEFAULT_LATENCY, Duration::from_millis(10));
 }
 
-const CHILD: &str = "JUNIE_TUI_CATALOG_SHELL_CHILD";
+const CHILD: &str = "TERMROCK_CATALOG_SHELL_CHILD";
 const CHILD_DONE: &str = "catalog-shell-child-done";
 
 /// The command that re-runs one of this file's tests in a child process of

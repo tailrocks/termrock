@@ -7,7 +7,7 @@
       "application": "holla",
       "kind": "route",
       "result": "PASS",
-      "disposition_reason": "holla --scenario parity-platforms --color truecolor --motion reduced at 120×40 with HOLLA_NO_HISTORY=1 and JUNIE_TUI_CLIENT_PLATFORM=macos opens the finder. The shell paints ~/work/mac and mbp. Quit holla❯?, postgresql@17, and ~/work/box stay absent. Paste Homebrew services and Enter. The page paints redis started and does not paint postgresql@17. Paste Open btm and Enter. The monitor paints q quits the monitor. Ctrl+Q opens the quit guard. src/bin/holla/app.rs open_quit_confirm uses the local title Quit holla❯? when world.host.remote is false, and the body says still running. Quitting stops what holla started. The confirm button is Stop and quit and the focused cancel is ▎Stay. Leave when it settles is absent. Enter on Stay returns to the monitor and the process is still running. s paints terminated (SIGTERM) and the process is still running. finish() sends Ctrl+Q and exits 0. src/bin/holla/domain/parity.rs platforms_mac paints ~/work/mac and a started redis service.",
+      "disposition_reason": "holla --scenario parity-platforms --color truecolor --motion reduced at 120×40 with HOLLA_NO_HISTORY=1 and TERMROCK_CLIENT_PLATFORM=macos opens the finder. The shell paints ~/work/mac and mbp. Quit holla❯?, postgresql@17, and ~/work/box stay absent. Paste Homebrew services and Enter. The page paints redis started and does not paint postgresql@17. Paste Open btm and Enter. The monitor paints q quits the monitor. Ctrl+Q opens the quit guard. src/bin/holla/app.rs open_quit_confirm uses the local title Quit holla❯? when world.host.remote is false, and the body says still running. Quitting stops what holla started. The confirm button is Stop and quit and the focused cancel is ▎Stay. Leave when it settles is absent. Enter on Stay returns to the monitor and the process is still running. s paints terminated (SIGTERM) and the process is still running. finish() sends Ctrl+Q and exits 0. src/bin/holla/domain/parity.rs platforms_mac paints ~/work/mac and a started redis service.",
       "reference_commit": "fffe002e936d3621f22f9132144066a1374d5d74",
       "execution_commit": "7571cc1692bf9a98fe80577d79ccd9e1834040ca",
       "evidence_paths": [],
@@ -76,7 +76,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -114,7 +114,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",

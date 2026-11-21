@@ -189,7 +189,7 @@ fn showcase_burst() {
 
 fn delay_still_moves(name: &str, delay: Option<&str>) {
     let env: &[(&str, &str)] = match delay {
-        Some(value) => &[("JUNIE_TUI_FIRST_POLL_DELAY_MS", value)],
+        Some(value) => &[("TERMROCK_FIRST_POLL_DELAY_MS", value)],
         None => &[],
     };
     let app = open(name, showcase_bin(), &["--page", "lists"], env);

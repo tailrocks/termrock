@@ -7,7 +7,7 @@
       "application": "holla",
       "kind": "route",
       "result": "PASS",
-      "disposition_reason": "holla --scenario parity-gradle --color truecolor --motion reduced at 120×40 with HOLLA_NO_HISTORY=1 and JUNIE_TUI_CLIENT_PLATFORM=macos opens the finder. The shell paints ~/work/android, mbp, build.gradle.kts, android · Gradle build, and Clean Gradle outputs. vm.img, sparse.img, ~/work/big, and 842 of 926 stay absent, as do .idea, workspace.xml, app.iml, and ~/work/ide. Paste Clean Gradle outputs under ~/work/android, the visible prefix of the gradle.clean-all catalog row, and Enter. The crumb is Here › Cleanup › gradle.clean-all. The heading is mode Trash (recoverable until emptied) and live. The page paints ~/work/android/.gradle, ~/work/android/build, ~/work/android/app/build, and 4 selected. d opens gate 1. The header contains · gate 1 of 2 · review the resolved facts, then continue deliberately, the facts line is gradle --stop first · a failed or unknown stop cancels the cleanup, and the focused button is Cancel beside Continue…. Esc sets Cancelled · nothing was executed and leaves the cleanup page. A second Esc returns to the finder, which still shows the pasted prefix and Enter, and does not show Cleanup · or gate 1 of 2. cleanup started and gradle --stop failed stay absent. finish() sends Ctrl+Q and exits 0.",
+      "disposition_reason": "holla --scenario parity-gradle --color truecolor --motion reduced at 120×40 with HOLLA_NO_HISTORY=1 and TERMROCK_CLIENT_PLATFORM=macos opens the finder. The shell paints ~/work/android, mbp, build.gradle.kts, android · Gradle build, and Clean Gradle outputs. vm.img, sparse.img, ~/work/big, and 842 of 926 stay absent, as do .idea, workspace.xml, app.iml, and ~/work/ide. Paste Clean Gradle outputs under ~/work/android, the visible prefix of the gradle.clean-all catalog row, and Enter. The crumb is Here › Cleanup › gradle.clean-all. The heading is mode Trash (recoverable until emptied) and live. The page paints ~/work/android/.gradle, ~/work/android/build, ~/work/android/app/build, and 4 selected. d opens gate 1. The header contains · gate 1 of 2 · review the resolved facts, then continue deliberately, the facts line is gradle --stop first · a failed or unknown stop cancels the cleanup, and the focused button is Cancel beside Continue…. Esc sets Cancelled · nothing was executed and leaves the cleanup page. A second Esc returns to the finder, which still shows the pasted prefix and Enter, and does not show Cleanup · or gate 1 of 2. cleanup started and gradle --stop failed stay absent. finish() sends Ctrl+Q and exits 0.",
       "reference_commit": "fffe002e936d3621f22f9132144066a1374d5d74",
       "execution_commit": "acb0267123431a440b0e776715fa020e7191b46a",
       "evidence_paths": [],
@@ -76,7 +76,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",
@@ -114,7 +114,7 @@
           "LANG": "C.UTF-8",
           "LC_ALL": "C.UTF-8",
           "TZ": "UTC",
-          "JUNIE_TUI_CLIENT_PLATFORM": "macos",
+          "TERMROCK_CLIENT_PLATFORM": "macos",
           "HOLLA_NO_HISTORY": "1"
         },
         "comparator_rev": "d8d54155947f6303a41dfd6079b53c0abc16f29a",

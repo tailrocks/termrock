@@ -93,7 +93,7 @@ fn x02_suspend_ctrl_z_stays() {
     app.finish();
 }
 
-const HOST_HANDLER_CHILD: &str = "JUNIE_TUI_X02_HOST_HANDLER_CHILD";
+const HOST_HANDLER_CHILD: &str = "TERMROCK_X02_HOST_HANDLER_CHILD";
 const HOST_HANDLER_TEST: &str = "cases::x02_suspend::suspend_resume_restores_host_handler";
 
 static HOST_SIGTSTP: AtomicUsize = AtomicUsize::new(0);

@@ -14,6 +14,7 @@ use tui_test::{
 
 #[allow(unused_imports)]
 pub use crate::bins::{HOLLA, SHOWCASE, TABLEPRO};
+use crate::legacy_reference_env;
 const TIMEOUT: Duration = Duration::from_secs(10);
 /// Jackin's reduced-motion intro holds for `rain::REDUCED_HOLD` ticks of
 /// `rain::TICK_MS` (`apps/jackin/src/rain.rs`).
@@ -553,7 +554,7 @@ impl App {
     ///
     /// The intro shows its caption for [`INTRO_HOLD_TICKS`] app ticks and then
     /// ends by itself, and Enter cannot skip the first ticks. Each tick is a
-    /// frame, so under `JUNIE_TUI_DRAW_LAG_MS` the hold takes
+    /// frame, so under `TERMROCK_DRAW_LAG_MS` the hold takes
     /// `ticks * (tick + lag)` of wall time, which is longer than the ten-second
     /// screen deadline at 300 ms. On the stepped clock the intro is stepped out
     /// from the app's own clock: the steps are fenced, so each screen read is
@@ -1777,12 +1778,12 @@ fn effective_launch_env(launch: &Launch, home: &Path) -> BTreeMap<String, String
         ("LC_ALL".to_string(), "C.UTF-8".to_string()),
         ("TZ".to_string(), "UTC".to_string()),
         (
-            "JUNIE_TUI_CLIENT_PLATFORM".to_string(),
+            "TERMROCK_CLIENT_PLATFORM".to_string(),
             launch.platform.clone(),
         ),
     ]);
     if launch.clock {
-        environment.insert("JUNIE_TUI_TEST_CLOCK".to_string(), "1".to_string());
+        environment.insert("TERMROCK_TEST_CLOCK".to_string(), "1".to_string());
     }
     if fenced(launch) {
         environment.insert(TestRequest::FENCE_ENV.to_string(), "1".to_string());
@@ -1799,14 +1800,17 @@ fn effective_launch_env(launch: &Launch, home: &Path) -> BTreeMap<String, String
     for (key, value) in &launch.env {
         environment.insert(key.clone(), value.clone());
     }
+    if launch.mode == SessionMode::Reference {
+        legacy_reference_env::mirror_for_reference(&mut environment);
+    }
     environment
 }
 
 /// The app's draw-lag knob (`src/runtime.rs`). The harness forwards the value
-/// it is run with, so `JUNIE_TUI_DRAW_LAG_MS=300 python3 scripts/run_functional.py`
+/// it is run with, so `TERMROCK_DRAW_LAG_MS=300 python3 scripts/run_functional.py`
 /// holds every frame of every candidate back by 300 ms. Only whole
 /// milliseconds pass, so no other text reaches an application environment.
-const DRAW_LAG_ENV: &str = "JUNIE_TUI_DRAW_LAG_MS";
+const DRAW_LAG_ENV: &str = "TERMROCK_DRAW_LAG_MS";
 
 /// Run with `TERMROCK_TEST_LEGACY_WAITS=1`, [`App::settle`] and
 /// [`App::flash_expired`] wait the way they did before the fence: a quiet
