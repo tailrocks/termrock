@@ -628,6 +628,13 @@ impl App {
     }
 
     fn dispatch_msg(&mut self, m: &Msg) -> Outcome {
+        if let Msg::UsageUpdated { alerts } = m
+            && !alerts.is_empty()
+        {
+            self.shell
+                .status
+                .set_at(alerts.join(" · "), Tone::Warning, self.world.clock.now());
+        }
         if let Msg::PaneWake { instance, pane } = m {
             return if self.world.wake_pane(instance, *pane) {
                 Outcome::Changed

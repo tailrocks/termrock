@@ -11,4 +11,5 @@ pub mod rain;
 pub mod screens;
 #[cfg(feature = "demo")]
 pub mod sim;
+pub mod usage_connections;
 pub mod world;

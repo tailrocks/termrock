@@ -519,6 +519,10 @@ impl Completion {
 }
 
 pub trait Backend: std::fmt::Debug + Send + Sync {
+    fn usage_connections(&self) -> Option<&dyn crate::usage_connections::UsageConnections> {
+        None
+    }
+
     fn perform(&self, effect: &Effect, world: &World) -> Option<Completion>;
 
     /// Messages the backend raises on its own at the current time, such as a

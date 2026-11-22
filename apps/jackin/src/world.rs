@@ -171,6 +171,13 @@ impl From<&GithubRepo> for RepoRef {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Msg {
+    UsageUpdated {
+        alerts: Vec<String>,
+    },
+    UsageConnection {
+        ticket: Ticket,
+        update: crate::usage_connections::UsageUpdate,
+    },
     WorkspaceSaved {
         id: Option<WorkspaceId>,
         result: Result<SaveSuccess, SaveFailure>,
@@ -321,7 +328,9 @@ impl Msg {
             | Msg::OpLoaded { .. }
             | Msg::Takeover { .. }
             | Msg::LaunchCancelled { .. }
-            | Msg::PaneWake { .. } => None,
+            | Msg::PaneWake { .. }
+            | Msg::UsageConnection { .. }
+            | Msg::UsageUpdated { .. } => None,
         }
     }
 }

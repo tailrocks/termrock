@@ -1,3 +1,5 @@
+mod connections;
+
 use crate::domain::vocabulary::Vocabulary;
 use crate::screens::Jackin;
 use junie_tui::shell::Page;
@@ -176,6 +178,7 @@ enum Pick {
 }
 
 pub struct AccountsScreen {
+    connections: connections::Connections,
     pub selected: Sel,
     folded: HashSet<UsageSurface>,
     pub filter: Option<String>,
@@ -223,6 +226,7 @@ impl AccountsScreen {
     pub fn new() -> Self {
         Self {
             selected: Sel::Overview,
+            connections: connections::Connections::default(),
             folded: HashSet::new(),
             filter: None,
             rows: vec![],
@@ -1407,6 +1411,15 @@ impl AccountsScreen {
             ],
             Sel::Add => vec![mk("add", "Add account…", ButtonKind::Primary)],
         };
+        if w.backend.usage_connections().is_some() {
+            self.actions.push(mk(
+                "connect_usage",
+                "Add usage account…",
+                ButtonKind::Secondary,
+            ));
+            self.actions
+                .push(mk("list_usage", "Usage accounts…", ButtonKind::Secondary));
+        }
     }
 
     fn fire(&mut self, name: &str, w: &mut World, cx: &mut Cx) -> Outcome {
@@ -1425,10 +1438,20 @@ impl AccountsScreen {
             ("default", Some(id)) => self.set_default(&id, w, cx),
             ("toggle", Some(id)) => self.toggle_enabled(&id, w, cx),
             ("remove", Some(id)) => self.remove(&id, w, cx),
-            ("add", _) => self.open_form(None, w, cx),
+            ("add", _) => self.open_add(w, cx),
+            ("connect_usage", _) => self.connections.add(w, cx),
+            ("list_usage", _) => self.connections.list(w, cx),
             _ => return Outcome::Consumed,
         }
         Outcome::Changed
+    }
+
+    fn open_add(&mut self, w: &mut World, cx: &mut Cx) {
+        if w.backend.usage_connections().is_some() {
+            self.connections.add(w, cx);
+        } else {
+            self.open_form(None, w, cx);
+        }
     }
 
     fn edit_account(&mut self, a: &Account, w: &World, cx: &mut Cx) {
@@ -2379,6 +2402,9 @@ impl Account {
 
 impl Page<Jackin> for AccountsScreen {
     fn enter(&mut self, w: &mut World, cx: &mut Cx) {
+        if let Some(service) = w.backend.usage_connections() {
+            service.accounts_opened();
+        }
         self.build_rows(w);
         self.md.close_drawer(cx.focus);
     }
@@ -2405,6 +2431,7 @@ impl Page<Jackin> for AccountsScreen {
 
     fn on_msg(&mut self, msg: &Msg, w: &mut World, cx: &mut Cx) -> Outcome {
         match msg {
+            Msg::UsageConnection { ticket, update } => self.connections.update(*ticket, update, cx),
             Msg::AccountsSaved {
                 ticket,
                 added,
@@ -2522,6 +2549,14 @@ impl Page<Jackin> for AccountsScreen {
         let action_focus = self.actions.iter().position(|b| Some(b.id) == focus);
         if action_focus.is_none() {
             match key.code {
+                KeyCode::Char('n') if key.plain() && w.backend.usage_connections().is_some() => {
+                    self.connections.add(w, cx);
+                    return Outcome::Changed;
+                }
+                KeyCode::Char('N') if w.backend.usage_connections().is_some() => {
+                    self.connections.list(w, cx);
+                    return Outcome::Changed;
+                }
                 KeyCode::Char('a') if key.plain() => {
                     self.open_form(None, w, cx);
                     return Outcome::Changed;
@@ -2664,7 +2699,7 @@ impl Page<Jackin> for AccountsScreen {
                 }
                 KeyCode::Enter => {
                     match self.selected.clone() {
-                        Sel::Add => self.open_form(None, w, cx),
+                        Sel::Add => self.open_add(w, cx),
                         Sel::Provider(s) => {
                             if !self.folded.remove(&s) {
                                 self.folded.insert(s);
@@ -2795,6 +2830,9 @@ impl Page<Jackin> for AccountsScreen {
         w: &mut World,
         cx: &mut Cx,
     ) -> Outcome {
+        if tag.kind == "usage_connection" {
+            return self.connections.result(result, w, cx);
+        }
         match (tag.kind, result) {
             ("form", ModalResult::FormAction(name, values)) => {
                 match name.as_str() {
@@ -3028,7 +3066,18 @@ impl Page<Jackin> for AccountsScreen {
             }
             Sel::Add => v.push(hint("Enter", "Add account…")),
         }
-        v.push(hint("a", "Add…"));
+        if w.backend.usage_connections().is_some() {
+            v.push(hint("n", "Add usage account"));
+            v.push(hint("N", "Usage accounts"));
+        }
+        v.push(hint(
+            "a",
+            if w.backend.usage_connections().is_some() {
+                "Execution account…"
+            } else {
+                "Add…"
+            },
+        ));
         v.push(hint("/", "Filter"));
         v.push(hint("m", "Usage"));
         v.push(hint("Esc", "Back"));
@@ -3062,6 +3111,10 @@ impl Screen for AccountsScreen {
     }
 
     fn form_changed(&mut self, tag: &LayerTag, form: &mut FormDialog, w: &World) {
+        if tag.kind == "usage_connection" {
+            self.connections.form_changed(form);
+            return;
+        }
         if tag.kind == "form" {
             Self::reveal(form, w);
             form.error = None;

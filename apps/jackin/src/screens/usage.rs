@@ -1,3 +1,4 @@
+mod board;
 use crate::screens::Jackin;
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::hit::Axis;
@@ -117,6 +118,7 @@ type DetailLine = (String, Tone, Option<(u8, QuotaTone)>);
 
 #[derive(Default)]
 pub struct UsageScreen {
+    board: board::Board,
     pub selected: Option<AccountId>,
     rows: Vec<Row>,
     scroll: ScrollState,
@@ -809,6 +811,13 @@ impl Page<Jackin> for UsageScreen {
     }
 
     fn on_key(&mut self, key: &Key, w: &mut World, cx: &mut Cx) -> Outcome {
+        if key.plain()
+            && w.backend.usage_connections().is_some()
+            && matches!(key.code, KeyCode::Char('p' | 'a'))
+        {
+            self.board.open(w, cx, key.code == KeyCode::Char('p'));
+            return Outcome::Changed;
+        }
         self.build_rows(w);
         let in_detail = cx.focus.is(DETAIL);
         match key.code {
@@ -877,7 +886,29 @@ impl Page<Jackin> for UsageScreen {
         }
     }
 
-    fn on_msg(&mut self, msg: &Msg, _w: &mut World, _cx: &mut Cx) -> Outcome {
+    fn on_layer_result(
+        &mut self,
+        tag: &super::LayerTag,
+        result: super::ModalResult,
+        w: &mut World,
+        cx: &mut Cx,
+    ) -> Outcome {
+        if tag.kind == "usage_board" {
+            self.board.result(result, w, cx)
+        } else {
+            Outcome::Ignored
+        }
+    }
+
+    fn on_msg(&mut self, msg: &Msg, w: &mut World, cx: &mut Cx) -> Outcome {
+        if let Msg::UsageUpdated { .. } = msg {
+            self.board.refreshed(w);
+            return Outcome::Changed;
+        }
+        if let Msg::UsageConnection { ticket, update } = msg {
+            return self.board.receive(*ticket, update, cx);
+        }
+
         if let Msg::AccountRefreshed { .. } = msg {
             return Outcome::Changed;
         }
@@ -899,13 +930,24 @@ impl Page<Jackin> for UsageScreen {
             format!("broker · {}", w.clock.ago(w.last_refresh_secs))
         };
         let focused_any = ctx.interaction.focused(LIST) || ctx.interaction.focused(DETAIL);
-        let inner = Panel::framed(Some("Usage · read-only"))
+        let connected = w.backend.usage_connections().is_some();
+        let title = if connected {
+            "Usage"
+        } else {
+            "Usage · read-only"
+        };
+        let inner = Panel::framed(Some(title))
             .focused(focused_any)
             .meta(&meta)
             .render(area, buf, t);
         if w.accounts.accounts.is_empty() {
-            let e = EmptyState::new("No providers configured.")
-                .hint("r refreshes · m opens Accounts to add one");
+            let e = if connected {
+                EmptyState::new("Connected account usage")
+                    .hint("p opens Priority · a opens All Usage · m opens Accounts")
+            } else {
+                EmptyState::new("No providers configured.")
+                    .hint("r refreshes · m opens Accounts to add one")
+            };
             empty::render(inner, buf, t, &e, t.canvas);
             ctx.control(LIST, Rect::new(inner.x, inner.y, 1, 1), false);
             return;
@@ -932,7 +974,17 @@ impl Page<Jackin> for UsageScreen {
         self.draw_detail(detail, buf, ctx, w);
     }
 
-    fn hints(&self, focus: Option<WidgetId>, _w: &World) -> Vec<Hint> {
+    fn hints(&self, focus: Option<WidgetId>, w: &World) -> Vec<Hint> {
+        if w.backend.usage_connections().is_some() {
+            return vec![
+                hint("p", "Priority"),
+                hint("a", "All Usage"),
+                hint("↑↓", "Move"),
+                hint("Enter", "Details"),
+                hint("m", "Accounts"),
+                hint("Esc", "Back"),
+            ];
+        }
         if focus == Some(DETAIL) {
             return vec![
                 hint("↑↓", "Scroll"),
