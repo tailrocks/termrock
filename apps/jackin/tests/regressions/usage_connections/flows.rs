@@ -241,6 +241,12 @@ fn every_provider_is_choosable_by_keyboard_and_mouse_at_both_sizes() {
                         },
                         "Device sign-in",
                     ),
+                    "antigravity" => (
+                        UsageUpdate::AntigravityStatusLine {
+                            command: "agy --settings fixture".into(),
+                        },
+                        "Copy command",
+                    ),
                     "gemini" => (
                         UsageUpdate::Field {
                             label: "Desktop OAuth client ID".into(),
@@ -300,6 +306,13 @@ fn prompt_modes_mask_credentials_and_cancel_without_accepting_late_replies() {
                     code: "FIXT-1234".into(),
                 },
                 "FIXT-1234",
+            ),
+            (
+                "antigravity-wait",
+                UsageUpdate::AntigravityStatusLine {
+                    command: "agy --settings fixture".into(),
+                },
+                "agy --settings fixture",
             ),
             (
                 "field-optional",

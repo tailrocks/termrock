@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::backend::{PlainKey, Ticket};
 
-pub const PRODUCTS: [(&str, &str); 11] = [
+pub const PRODUCTS: [(&str, &str); 12] = [
     ("claude", "Claude"),
     ("codex", "ChatGPT"),
     ("muse", "Muse"),
@@ -12,6 +12,7 @@ pub const PRODUCTS: [(&str, &str); 11] = [
     ("minimax", "MiniMax"),
     ("mimo", "MiMo"),
     ("gemini", "Gemini Code Assist"),
+    ("antigravity", "Antigravity (Google AI)"),
     ("opencode", "OpenCode"),
     ("openrouter", "OpenRouter"),
 ];
@@ -114,6 +115,9 @@ pub enum UsageUpdate {
         optional: bool,
         masked: bool,
     },
+    AntigravityStatusLine {
+        command: String,
+    },
     Workspaces(Vec<String>),
     Saved(UsageEntry),
     Failed(String),
@@ -129,6 +133,7 @@ impl fmt::Debug for UsageUpdate {
             Self::Key { .. } => "Key",
             Self::Browser { .. } => "Browser",
             Self::Device { .. } => "Device",
+            Self::AntigravityStatusLine { .. } => "AntigravityStatusLine",
             Self::Workspaces(_) => "Workspaces",
             Self::Field { .. } => "Field",
             Self::Saved(_) => "Saved",

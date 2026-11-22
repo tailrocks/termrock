@@ -165,7 +165,7 @@ impl Connections {
                 fields.push(
                     FormField::note(
                         "google_plan",
-                        vec![("Code Assist requires an eligible Google Cloud project. For a personal Google AI Ultra subscription, open All Usage → Providers.".into(), Tone::Secondary)],
+                        vec![("Code Assist requires an eligible Google Cloud project. For Gemini and Claude limits on a personal Google AI plan, choose Antigravity (Google AI).".into(), Tone::Secondary)],
                     )
                     .wrap(true)
                     .hidden(),
@@ -247,6 +247,17 @@ impl Connections {
                     "Device sign-in",
                     "Waiting…",
                     vec![note(vec![format!("Enter code {code} at"), url.clone()])],
+                )
+            }
+            Step::Prompt(UsageUpdate::AntigravityStatusLine { command }) => {
+                actions.push(("copy_command", "Copy command"));
+                (
+                    "Connect Antigravity",
+                    "Waiting for usage…",
+                    vec![note(vec![
+                        "Run this command in another terminal. Antigravity will share your plan and usage limits with Jackin.".into(),
+                        command.clone(),
+                    ])],
                 )
             }
             Step::Prompt(UsageUpdate::Field {
@@ -353,6 +364,15 @@ impl Connections {
                     ("rename", "Rename…"),
                     ("remove", "Remove…"),
                 ]);
+                if entry.provider == "antigravity" {
+                    actions.retain(|(action, _)| *action != "refresh");
+                    if let Some((_, label)) = actions
+                        .iter_mut()
+                        .find(|(action, _)| *action == "reconnect")
+                    {
+                        *label = "Reconnect Antigravity…";
+                    }
+                }
                 if entry.hub.is_some() {
                     actions.retain(|(action, _)| !matches!(*action, "reconnect" | "remove"));
                     actions.push(("hubs", "Manage hub…"));
@@ -427,6 +447,7 @@ impl Connections {
             Step::Busy
                 | Step::Prompt(
                     UsageUpdate::Device { .. }
+                        | UsageUpdate::AntigravityStatusLine { .. }
                         | UsageUpdate::Browser {
                             accepts_paste: false,
                             ..
@@ -505,6 +526,11 @@ impl Connections {
             _ => return Outcome::Ignored,
         };
         match name.as_str() {
+            "copy_command" => {
+                if let Step::Prompt(UsageUpdate::AntigravityStatusLine { command }) = &self.step {
+                    cx.copy_as(command.clone(), "Antigravity command");
+                }
+            }
             "copy_code" => {
                 if let Step::Prompt(UsageUpdate::Device { code, .. }) = &self.step {
                     cx.copy_as(code.clone(), "sign-in code");
