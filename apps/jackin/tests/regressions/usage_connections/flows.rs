@@ -204,6 +204,11 @@ fn every_provider_is_choosable_by_keyboard_and_mouse_at_both_sizes() {
                 let shown = flow.shown();
                 assert!(shown.contains(label), "{shown}");
                 assert_eq!(
+                    shown.contains("Anthropic subscription"),
+                    provider == "claude",
+                    "{shown}"
+                );
+                assert_eq!(
                     shown.contains("Sign-in method"),
                     matches!(provider, "kimi" | "minimax"),
                     "{provider}\n{shown}"
@@ -677,6 +682,35 @@ fn all_usage_first_and_last_readings_are_visible_and_refresh_preserves_focus() {
             }
         ));
     }
+}
+
+#[test]
+fn accounts_tree_offers_manual_refresh_only_for_pollable_usage() {
+    let mut flow = Flow::new((140, 40));
+    flow.app.go(Go::Accounts { select: None });
+    let (ticket, _) = flow.next();
+    flow.deliver(
+        ticket,
+        UsageUpdate::Accounts(vec![
+            entry("antigravity", "Google fixture"),
+            entry("claude", "Anthropic fixture"),
+        ]),
+    );
+    flow.key(KeyCode::Home);
+    flow.key(KeyCode::Down);
+    flow.key(KeyCode::Down);
+    assert!(
+        flow.shown().contains("› Google fixture"),
+        "{}",
+        flow.shown()
+    );
+    assert!(!flow.shown().contains("Refresh usage"), "{}", flow.shown());
+    flow.key(KeyCode::Char('r'));
+    assert!(flow.backend.pending.lock().unwrap().is_empty());
+    flow.key(KeyCode::Down);
+    assert!(flow.shown().contains("Refresh usage"), "{}", flow.shown());
+    flow.key(KeyCode::Char('r'));
+    assert!(matches!(flow.next().1, UsageAction::Refresh(id) if id == "fixture-claude"));
 }
 
 #[test]

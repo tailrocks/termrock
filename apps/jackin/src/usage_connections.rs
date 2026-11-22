@@ -29,6 +29,12 @@ pub struct UsageEntry {
     pub device_login: bool,
 }
 
+impl UsageEntry {
+    pub(crate) fn supports_manual_refresh(&self) -> bool {
+        self.provider != "antigravity"
+    }
+}
+
 #[derive(Clone, PartialEq, Eq)]
 pub struct LoginChoice {
     pub provider: String,

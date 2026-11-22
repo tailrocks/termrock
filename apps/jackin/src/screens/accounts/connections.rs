@@ -95,6 +95,9 @@ impl Connections {
     }
 
     pub(in crate::screens) fn refresh(&mut self, entry: UsageEntry, w: &mut World, cx: &mut Cx) {
+        if !entry.supports_manual_refresh() {
+            return;
+        }
         let id = entry.id.clone();
         self.show(entry, w, cx);
         self.pending(w, cx, UsageAction::Refresh(id));
@@ -135,6 +138,7 @@ impl Connections {
             |row| row.provider.as_str(),
         );
         form.set_visible("google_plan", product == "gemini");
+        form.set_visible("claude_plan", product == "claude" && self.target.is_none());
         form.set_visible("mimo_region", product == "mimo");
         form.set_visible("auth", matches!(product, "kimi" | "minimax"));
         form.set_visible("region", matches!(product, "kimi" | "minimax"));
@@ -166,6 +170,14 @@ impl Connections {
                     FormField::note(
                         "google_plan",
                         vec![("Code Assist requires an eligible Google Cloud project. For Gemini and Claude limits on a personal Google AI plan, choose Antigravity (Google AI).".into(), Tone::Secondary)],
+                    )
+                    .wrap(true)
+                    .hidden(),
+                );
+                fields.push(
+                    FormField::note(
+                        "claude_plan",
+                        vec![("Choose Claude for your Anthropic subscription. For Claude usage through Google AI, choose Antigravity (Google AI).".into(), Tone::Secondary)],
                     )
                     .wrap(true)
                     .hidden(),
@@ -364,7 +376,7 @@ impl Connections {
                     ("rename", "Rename…"),
                     ("remove", "Remove…"),
                 ]);
-                if entry.provider == "antigravity" {
+                if !entry.supports_manual_refresh() {
                     actions.retain(|(action, _)| *action != "refresh");
                     if let Some((_, label)) = actions
                         .iter_mut()
@@ -608,7 +620,9 @@ impl Connections {
                 }
             }
             "refresh" => {
-                if let Step::Details(row) = &self.step {
+                if let Step::Details(row) = &self.step
+                    && row.supports_manual_refresh()
+                {
                     let action = UsageAction::Refresh(row.id.clone());
                     self.pending(w, cx, action);
                 }
