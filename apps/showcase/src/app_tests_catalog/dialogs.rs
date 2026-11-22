@@ -1928,6 +1928,41 @@ fn draw_form(form: &mut FormDialog, screen: Rect, focus: &Focus) -> Stage {
 fn form_dialog_model() {
     let id = WidgetId::of("scenario.form.model");
     let screen = Rect::new(0, 0, 100, 40);
+    use termrock::widgets::list::{ListBox, ListItem, SelectMode};
+
+    let choices = ListBox::new(
+        id.sub("replicas"),
+        vec![ListItem::new("Primary"), ListItem::new("Secondary")],
+        SelectMode::Single,
+    );
+    let mut inline = FormDialog::new(
+        id,
+        "Regions",
+        vec![
+            FormField::note(
+                "help",
+                vec![(
+                    "Choose the available replica closest to your deployment region".into(),
+                    Tone::Secondary,
+                )],
+            )
+            .wrap(true),
+            FormField::list("replicas", choices, 2),
+        ],
+    )
+    .width(28);
+    let rendered = draw_form(&mut inline, screen, &Focus::default());
+    let rows = rows_of(&rendered.buf);
+    assert!(
+        rows.iter()
+            .any(|line| line.contains("region") && !line.contains("Choose"))
+    );
+    assert!(rows.iter().any(|line| line.contains("Secondary")));
+    assert!(inline.field("help").is_some_and(|f| f.wrap));
+    assert!(
+        matches!(inline.field("replicas").map(|f| &f.kind), Some(FormFieldKind::List { rows: 2, list }) if list.area.height == 2)
+    );
+    assert_eq!(inline.choice("replicas"), 0);
     let mut form = build_form(id).meta("draft").width(60);
     assert_eq!((form.width, form.meta.as_deref()), (60, Some("draft")));
 

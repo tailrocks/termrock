@@ -1,0 +1,79 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Library/Caches/mbx/targets/v1/7fba11bdf509c6f21773a76e7321681c0ebefa91d85bedcf37fb89e874691dff/debug/jackin-preview",
+  "binary_sha256": "fe94fa95f1254e29a920f0a1ff31c4c97c876f2678ced8674358d665078660d8",
+  "fixture_args": [
+    "--scenario",
+    "openshell-fixed",
+    "--motion",
+    "paused",
+    "--frame",
+    "40"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "e69e8a85e79cb4fbfe434bae664d3d178a36102e05d4f8876270407f9f087244",
+  "expect_baseline": "f0cd1e7f80e3e6398d2e7ef28335079870648f7d07c7abcee5e14210af74c04d",
+  "precondition": "Fixed account Add form shows the pending validation with Validate focused at120x40.",
+  "session": null,
+  "expected_test_id": "functional/jackin_fixed_account_form_pending",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/usage-app-port-20261122/jackin_fixed_account_form_pending.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/usage-app-port-20261122/jackin_fixed_account_form_pending.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/usage-app-port-20261122/superseded/functional/jackin_fixed_account_form_pending.tui.pb",
+  "test_id": "functional/jackin_fixed_account_form_pending",
+  "acceptance": {
+    "expected_baseline_sha256": "f0cd1e7f80e3e6398d2e7ef28335079870648f7d07c7abcee5e14210af74c04d",
+    "accepted_baseline_sha256": "e69e8a85e79cb4fbfe434bae664d3d178a36102e05d4f8876270407f9f087244",
+    "candidate_sha256": "e69e8a85e79cb4fbfe434bae664d3d178a36102e05d4f8876270407f9f087244",
+    "transaction_receipt": "docs/testing/acceptance-receipts/usage-app-port-20261122/jackin_fixed_account_form_pending.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "f0cd1e7f80e3e6398d2e7ef28335079870648f7d07c7abcee5e14210af74c04d"
+  },
+  "candidate": {
+    "sha256": "e69e8a85e79cb4fbfe434bae664d3d178a36102e05d4f8876270407f9f087244",
+    "path": "apps/jackin/tests/functional/baselines/functional/jackin_fixed_account_form_pending.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/usage-app-port-20261122/superseded/functional/jackin_fixed_account_form_pending.tui.pb",
+    "superseded_baseline_sha256": "f0cd1e7f80e3e6398d2e7ef28335079870648f7d07c7abcee5e14210af74c04d"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "apps/jackin/tests/functional/baselines/functional/jackin_fixed_account_form_pending.tui.pb",
+    "candidate_sha256": "e69e8a85e79cb4fbfe434bae664d3d178a36102e05d4f8876270407f9f087244",
+    "binary_path": "/Users/donbeave/Library/Caches/mbx/targets/v1/7fba11bdf509c6f21773a76e7321681c0ebefa91d85bedcf37fb89e874691dff/debug/jackin-preview",
+    "binary_sha256": "fe94fa95f1254e29a920f0a1ff31c4c97c876f2678ced8674358d665078660d8",
+    "note": "Reviewed actual and expected pinned-Tuiscotti PNGs. Only25 footer cells on row39 change to advertise PgUp/PgDn Scroll for overflowing content. Body, controls, colors and layout unchanged. Intended shared form keyboard affordance port; original sample archived."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "functional/jackin_fixed_account_form_pending",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Library/Caches/mbx/targets/v1/7fba11bdf509c6f21773a76e7321681c0ebefa91d85bedcf37fb89e874691dff/functional/jackin-fixed-account-pending-91003-1795326114317327000-0/check-artifacts/functional/jackin_fixed_account_form_pending/e69e8a85e79cb4fbfe434bae664d3d178a36102e05d4f8876270407f9f087244/sample.tui.pb"
+    },
+    "candidate_sha256": "e69e8a85e79cb4fbfe434bae664d3d178a36102e05d4f8876270407f9f087244",
+    "baseline_sha256": "e69e8a85e79cb4fbfe434bae664d3d178a36102e05d4f8876270407f9f087244",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/termrock/apps/jackin/tests/functional/baselines/functional/jackin_fixed_account_form_pending.tui.pb"
+    },
+    "error_code": null
+  }
+}

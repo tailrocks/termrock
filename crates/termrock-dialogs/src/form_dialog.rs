@@ -2,6 +2,7 @@ use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style};
+use termrock_collections::list::ListBox;
 use termrock_controls::button::{Button, row_layout_right, row_lines};
 use termrock_controls::choice::{Checkbox, RadioGroup};
 use termrock_controls::icon_button::IconButton;
@@ -24,6 +25,7 @@ use termrock_overlays::layer::{
     Layer, LayerCx, LayerOut, LayerResult, LayerSpec, Overlay, layer_out,
 };
 use termrock_runtime::ctx::RenderCtx;
+use termrock_runtime::measure::terminal_extent;
 use termrock_runtime::popup::Dismiss;
 use termrock_text::cells::truncate;
 use termrock_theme::{Strings, Tone};
@@ -40,6 +42,10 @@ pub type FormValues = Vec<(String, FieldValue)>;
 pub enum FormFieldKind {
     Input(TextInput),
     Select(Select),
+    List {
+        list: Box<ListBox>,
+        rows: u16,
+    },
     Check(Checkbox),
     Radio(RadioGroup),
 
@@ -57,6 +63,7 @@ pub struct FormField {
     pub name: String,
     pub kind: FormFieldKind,
     pub visible: bool,
+    pub wrap: bool,
 }
 
 impl FormField {
@@ -65,6 +72,7 @@ impl FormField {
             name: name.into(),
             kind: FormFieldKind::Input(input),
             visible: true,
+            wrap: false,
         }
     }
     pub fn select(name: &str, select: Select) -> Self {
@@ -72,6 +80,7 @@ impl FormField {
             name: name.into(),
             kind: FormFieldKind::Select(select),
             visible: true,
+            wrap: false,
         }
     }
     pub fn check(name: &str, c: Checkbox) -> Self {
@@ -79,6 +88,7 @@ impl FormField {
             name: name.into(),
             kind: FormFieldKind::Check(c),
             visible: true,
+            wrap: false,
         }
     }
     pub fn radio(name: &str, r: RadioGroup) -> Self {
@@ -86,6 +96,7 @@ impl FormField {
             name: name.into(),
             kind: FormFieldKind::Radio(r),
             visible: true,
+            wrap: false,
         }
     }
     pub fn chooser(name: &str, id: WidgetId, label: &str, value: &str, button: &str) -> Self {
@@ -98,6 +109,7 @@ impl FormField {
                 button: Button::secondary(id, button),
             },
             visible: true,
+            wrap: false,
         }
     }
     pub fn note(name: &str, lines: Vec<(String, Tone)>) -> Self {
@@ -105,28 +117,36 @@ impl FormField {
             name: name.into(),
             kind: FormFieldKind::Note(lines),
             visible: true,
+            wrap: false,
         }
     }
-    pub fn hidden(mut self) -> Self {
-        self.visible = false;
+    pub fn list(name: &str, list: ListBox, rows: u16) -> Self {
+        Self {
+            name: name.into(),
+            kind: FormFieldKind::List {
+                list: Box::new(list.skip_when_empty(true)),
+                rows: rows.max(1),
+            },
+            visible: true,
+            wrap: false,
+        }
+    }
+
+    pub fn wrap(mut self, on: bool) -> Self {
+        self.wrap = on;
         self
     }
 
-    fn height(&self) -> u16 {
-        match &self.kind {
-            FormFieldKind::Input(_) => TextInput::HEIGHT,
-            FormFieldKind::Select(_) => Select::HEIGHT,
-            FormFieldKind::Check(_) => 1,
-            FormFieldKind::Radio(r) => r.height(),
-            FormFieldKind::Chooser { detail, .. } => 2 + u16::from(detail.is_some()),
-            FormFieldKind::Note(l) => l.len() as u16,
-        }
+    pub fn hidden(mut self) -> Self {
+        self.visible = false;
+        self
     }
 
     pub fn value(&self) -> FieldValue {
         match &self.kind {
             FormFieldKind::Input(i) => FieldValue::Text(i.text().to_owned()),
             FormFieldKind::Select(s) => FieldValue::Choice(s.selected),
+            FormFieldKind::List { list, .. } => FieldValue::Choice(list.cursor),
             FormFieldKind::Check(c) => FieldValue::Bool(c.checked),
             FormFieldKind::Radio(r) => FieldValue::Choice(r.selected),
             FormFieldKind::Chooser { value, .. } => FieldValue::Text(value.clone()),
@@ -138,6 +158,7 @@ impl FormField {
         match &self.kind {
             FormFieldKind::Input(i) => Some(i.id),
             FormFieldKind::Select(s) => Some(s.id),
+            FormFieldKind::List { list, .. } => Some(list.id),
             FormFieldKind::Check(c) => Some(c.id),
             FormFieldKind::Radio(r) => Some(r.id),
             FormFieldKind::Chooser { button, .. } => Some(button.id),
@@ -149,6 +170,7 @@ impl FormField {
         match &self.kind {
             FormFieldKind::Input(i) => i.id == id,
             FormFieldKind::Select(s) => s.contains_id(id),
+            FormFieldKind::List { list, .. } => list.id == id,
             FormFieldKind::Check(c) => c.id == id,
             FormFieldKind::Radio(r) => {
                 r.id == id || (0..r.options.len()).any(|i| r.option_id(i) == id)
@@ -170,6 +192,10 @@ impl FormField {
                 i.set_value(&text);
                 typed.is_some_and(|typed| typed == text)
             }
+            FormFieldKind::List { list, .. } => {
+                list.scroll.release();
+                false
+            }
             FormFieldKind::Select(s) => {
                 s.close();
                 let _ = s.on_release(Position::ORIGIN);
@@ -183,6 +209,7 @@ impl FormField {
         let disabled = match &self.kind {
             FormFieldKind::Input(i) => i.disabled,
             FormFieldKind::Select(s) => s.disabled,
+            FormFieldKind::List { list, .. } => !list.has_rows(list.items.len()),
             FormFieldKind::Check(c) => c.disabled,
             FormFieldKind::Radio(r) => r.disabled,
             FormFieldKind::Chooser { button, .. } => button.disabled,
@@ -197,10 +224,80 @@ impl FormField {
         match &mut self.kind {
             FormFieldKind::Input(i) => i.area = Rect::ZERO,
             FormFieldKind::Select(s) => s.area = Rect::ZERO,
+            FormFieldKind::List { list, .. } => list.area = Rect::ZERO,
             FormFieldKind::Check(c) => c.area = Rect::ZERO,
             FormFieldKind::Radio(r) => r.areas.clear(),
             FormFieldKind::Chooser { button, .. } => button.area = Rect::ZERO,
             FormFieldKind::Note(_) => {}
+        }
+    }
+}
+
+struct FieldLayout {
+    index: usize,
+    top: usize,
+    height: usize,
+    wrapped: Option<Vec<(String, Tone)>>,
+}
+
+struct FormLayout {
+    fields: Vec<FieldLayout>,
+    height: usize,
+}
+
+impl FormLayout {
+    fn measure(fields: &[FormField], note_width: usize, available: usize) -> Self {
+        let mut measured = Vec::with_capacity(fields.len());
+        let mut fixed = 0;
+        let mut lists = 0;
+        for (index, field) in fields.iter().enumerate().filter(|(_, f)| f.visible) {
+            let mut wrapped = None;
+            let height = match &field.kind {
+                FormFieldKind::Input(_) => usize::from(TextInput::HEIGHT),
+                FormFieldKind::Select(_) => usize::from(Select::HEIGHT),
+                FormFieldKind::List { rows, .. } => usize::from(*rows),
+                FormFieldKind::Check(_) => 1,
+                FormFieldKind::Radio(r) => r.options.len() + 1,
+                FormFieldKind::Chooser { detail, .. } => 2 + usize::from(detail.is_some()),
+                FormFieldKind::Note(lines) if !field.wrap => lines.len(),
+                FormFieldKind::Note(lines) => {
+                    let rows: Vec<_> = lines
+                        .iter()
+                        .flat_map(|(text, tone)| {
+                            termrock_text::cells::wrap(text, note_width)
+                                .into_iter()
+                                .map(|row| (row, *tone))
+                        })
+                        .collect();
+                    let height = rows.len();
+                    wrapped = Some(rows);
+                    height
+                }
+            };
+            if matches!(field.kind, FormFieldKind::List { .. }) {
+                lists += 1;
+            } else {
+                fixed += height;
+            }
+            measured.push(FieldLayout {
+                index,
+                top: 0,
+                height,
+                wrapped,
+            });
+        }
+        let list_rows = (available.saturating_sub(fixed + measured.len()) / lists.max(1)).max(1);
+        let mut height = 0;
+        for field in &mut measured {
+            field.top = height;
+            if matches!(fields[field.index].kind, FormFieldKind::List { .. }) {
+                field.height = field.height.min(list_rows);
+            }
+            height += field.height + 1;
+        }
+        Self {
+            fields: measured,
+            height,
         }
     }
 }
@@ -210,7 +307,50 @@ impl HasHints for FormDialog {
         if self.is_editing() {
             return termrock_controls::keyhint::EDIT_FIELD.to_vec();
         }
+        if let Some(select) = self
+            .fields
+            .iter()
+            .filter(|field| field.visible)
+            .find_map(|field| match &field.kind {
+                FormFieldKind::Select(select) if cx.focus == Some(select.id) => Some(select),
+                _ => None,
+            })
+        {
+            return if select.open {
+                vec![
+                    Hint::new("↑↓", "Choose"),
+                    Hint::new("Enter", "Select"),
+                    Hint::new("Esc", "Close options"),
+                ]
+            } else {
+                vec![
+                    Hint::new("Tab", "Next field"),
+                    Hint::new("Enter", "Open options"),
+                    Hint::new("Esc", self.cancel.label.clone()),
+                ]
+            };
+        }
+        if let Some(list) = self.focused_list(cx.focus) {
+            let mut hints = vec![Hint::new("↑↓", "Browse"), Hint::new("PgUp/PgDn", "Scroll")];
+            if self.save.can_activate()
+                && list.has_rows(list.items.len())
+                && list
+                    .items
+                    .get(list.cursor)
+                    .is_some_and(|row| !row.disabled && !row.control.is_fixed())
+            {
+                hints.push(self.save.hint());
+            }
+            hints.extend([
+                Hint::new("Tab", "Actions"),
+                Hint::new("Esc", self.cancel.label.clone()),
+            ]);
+            return hints;
+        }
         let mut v = vec![Hint::new("Tab", "Next field")];
+        if self.scroll.overflows() {
+            v.push(Hint::new("PgUp/PgDn", "Scroll"));
+        }
         let button = self
             .actions
             .iter()
@@ -394,7 +534,7 @@ impl FormDialog {
             .iter()
             .filter(|f| f.visible)
             .find_map(FormField::tab_stop)
-            .unwrap_or(self.save.id);
+            .unwrap_or_else(|| self.default_button_focus());
         focus.focus(next);
     }
 
@@ -462,12 +602,33 @@ impl FormDialog {
             .collect()
     }
 
+    fn focused_list(&self, focus: Option<WidgetId>) -> Option<&ListBox> {
+        self.fields
+            .iter()
+            .filter(|field| field.visible)
+            .find_map(|field| match &field.kind {
+                FormFieldKind::List { list, .. } if focus == Some(list.id) => Some(list.as_ref()),
+                _ => None,
+            })
+    }
+
     pub fn initial_focus(&self) -> WidgetId {
         self.fields
             .iter()
             .filter(|f| f.visible)
-            .find_map(|f| f.focus_id())
-            .unwrap_or(self.save.id)
+            .find_map(FormField::tab_stop)
+            .unwrap_or_else(|| self.default_button_focus())
+    }
+
+    fn default_button_focus(&self) -> WidgetId {
+        if self.save.can_activate() {
+            return self.save.id;
+        }
+        self.actions
+            .iter()
+            .map(|(_, button)| button)
+            .find(|button| button.can_activate())
+            .map_or(self.cancel.id, |button| button.id)
     }
 
     pub fn is_editing(&self) -> bool {
@@ -532,6 +693,19 @@ impl FormDialog {
                 _ => {}
             }
         }
+        if !editing && !open && self.focused_list(cur).is_none() && self.scroll.overflows() {
+            match key.code {
+                KeyCode::PageUp => {
+                    self.scroll.page_up();
+                    return Outcome::Changed;
+                }
+                KeyCode::PageDown => {
+                    self.scroll.page_down();
+                    return Outcome::Changed;
+                }
+                _ => {}
+            }
+        }
         for f in self.fields.iter_mut() {
             if !f.visible {
                 continue;
@@ -563,6 +737,31 @@ impl FormDialog {
                     }
                     if o.consumed() {
                         return o;
+                    }
+                }
+                FormFieldKind::List { list, .. } if cur == Some(list.id) => {
+                    if !list.has_rows(list.items.len()) {
+                        return Outcome::Consumed;
+                    }
+                    if key.is(KeyCode::Enter) {
+                        if !self.save.can_activate() {
+                            self.save.refuse();
+                            return Outcome::Consumed;
+                        }
+                        let outcome = list.activate(list.cursor);
+                        if outcome == Outcome::Changed {
+                            self.submit(focus);
+                        }
+                        return outcome;
+                    }
+                    let before = list.cursor;
+                    let outcome = list.on_key(key);
+                    if list.cursor != before {
+                        self.dirty = true;
+                        self.events.push(FormAction::Changed(name));
+                    }
+                    if outcome.consumed() {
+                        return outcome;
                     }
                 }
                 FormFieldKind::Select(s) if cur == Some(s.id) => {
@@ -759,6 +958,23 @@ impl FormDialog {
                     focus.focus(id);
                     return i.on_click_count(pos, count.max(1));
                 }
+                FormFieldKind::List { list, .. } => {
+                    if list.area.contains(pos)
+                        && let Some(index) = list
+                            .scroll
+                            .visible_range()
+                            .find(|index| list.row_id(*index) == id)
+                    {
+                        focus.focus(list.id);
+                        let before = list.cursor;
+                        let outcome = list.on_click_count(index, count);
+                        if list.cursor != before {
+                            self.dirty = true;
+                            self.events.push(FormAction::Changed(name));
+                        }
+                        return outcome;
+                    }
+                }
                 FormFieldKind::Select(s) if s.contains_id(id) => {
                     focus.focus(s.id);
                     let (o, ev) = s.on_click(id);
@@ -868,14 +1084,6 @@ impl FormDialog {
         Outcome::Consumed
     }
 
-    fn content_height(&self) -> u16 {
-        let mut h = 0u16;
-        for f in self.fields.iter().filter(|f| f.visible) {
-            h += f.height() + 1;
-        }
-        h
-    }
-
     pub fn nav(mut self, nav: NavKeys) -> Self {
         self.nav = nav;
         self
@@ -888,17 +1096,25 @@ impl FormDialog {
         let old = std::mem::replace(&mut self.strings, s);
         Strings::follow(&mut self.cancel.label, old.cancel, s.cancel);
         Strings::follow(&mut self.save.label, old.save, s.save);
-        let content = self.content_height();
+        let frame = termrock_overlays::modal::Frame::new(self.width, 1);
+        let inner_width = frame.inner_width(screen);
+        let note_width = inner_width.saturating_sub(2);
         let err = u16::from(self.error.is_some());
         let mut widths: Vec<u16> = self.actions.iter().map(|(_, b)| b.width()).collect();
         widths.push(self.cancel.width());
         widths.push(self.save.width());
-        let footer_rows = row_lines(
-            termrock_overlays::modal::Frame::new(self.width, 0).inner_width(screen),
-            &widths,
-            1,
+        let footer_rows = row_lines(inner_width, &widths, 1);
+        let maximum_inner = termrock_overlays::modal::Frame::new(self.width, u16::MAX)
+            .area(screen)
+            .inner(frame.margin)
+            .height;
+        let reserved = 2 + usize::from(footer_rows) + usize::from(err);
+        let layout = FormLayout::measure(
+            &self.fields,
+            usize::from(note_width),
+            usize::from(maximum_inner).saturating_sub(reserved),
         );
-        let h = (2 + 2 + content + err + 1).saturating_add(footer_rows);
+        let h = terminal_extent(3 + reserved + layout.height);
         let (area, inner) = termrock_overlays::modal::Frame::new(self.width, h)
             .title(&self.title)
             .meta(self.meta.as_deref())
@@ -909,75 +1125,73 @@ impl FormDialog {
         let bg = t.surface_elevated;
         let footer_h = footer_rows.min(inner.height);
         let footer = Rect::new(inner.x, inner.bottom() - footer_h, inner.width, footer_h);
-        let body_h = inner.height.saturating_sub(2 + err + footer_rows);
-        self.scroll.set_content(content as usize);
+        let body_h = inner.height.saturating_sub(terminal_extent(reserved));
+        self.scroll.set_content(layout.height);
         self.scroll.set_viewport(body_h as usize);
 
         let cur = ctx.interaction.focus;
         let moved = cur != self.kept;
         self.kept = cur;
-        let mut y_off = 0u16;
-        for f in self.fields.iter().filter(|f| f.visible) {
-            if moved && f.focus_id().is_some() && f.focus_id() == cur {
-                let top = y_off as usize;
-                let bottom = (y_off + f.height()) as usize;
-                if top < self.scroll.offset {
-                    self.scroll.scroll_to(top);
-                } else if bottom > self.scroll.offset + body_h as usize {
-                    self.scroll
-                        .scroll_to(bottom.saturating_sub(body_h as usize));
-                }
+        if moved
+            && let Some(focused) = cur
+            && let Some(field) = layout
+                .fields
+                .iter()
+                .find(|f| self.fields[f.index].focus_id() == Some(focused))
+        {
+            let bottom = field.top + field.height;
+            if field.top < self.scroll.offset {
+                self.scroll.scroll_to(field.top);
+            } else if bottom > self.scroll.offset + usize::from(body_h) {
+                self.scroll
+                    .scroll_to(bottom.saturating_sub(usize::from(body_h)));
             }
-            y_off += f.height() + 1;
         }
-        if let Some(name) = self.reveal.take() {
-            let mut top = 0usize;
-            for f in self.fields.iter().filter(|f| f.visible) {
-                let bottom = top + f.height() as usize + 1;
-                if f.name == name {
-                    if top < self.scroll.offset {
-                        self.scroll.scroll_to(top);
-                    } else if bottom > self.scroll.offset + body_h as usize {
-                        self.scroll
-                            .scroll_to(bottom.saturating_sub(body_h as usize).min(top));
-                    }
-                    break;
-                }
-                top = bottom;
+        if let Some(name) = self.reveal.take()
+            && let Some(field) = layout
+                .fields
+                .iter()
+                .find(|f| self.fields[f.index].name == name)
+        {
+            let bottom = field.top + field.height + 1;
+            if field.top < self.scroll.offset {
+                self.scroll.scroll_to(field.top);
+            } else if bottom > self.scroll.offset + usize::from(body_h) {
+                self.scroll
+                    .scroll_to(bottom.saturating_sub(usize::from(body_h)).min(field.top));
             }
         }
         let body = Rect::new(inner.x, inner.y, inner.width, body_h);
-        let mut y: i32 = body.y as i32 - self.scroll.offset as i32;
-        let mut open_select: Option<usize> = None;
-        for (fi, f) in self.fields.iter_mut().enumerate() {
-            if !f.visible {
-                continue;
-            }
+        let viewport = self.scroll.offset..self.scroll.offset + usize::from(body.height);
+        let mut open_select = None;
+        for field in &layout.fields {
+            let f = &mut self.fields[field.index];
             f.clear_geometry();
-            let fh = f.height() as i32;
-            let whole = y >= body.y as i32 && y < body.bottom() as i32;
             if body_h > 0
-                && !whole
+                && !viewport.contains(&field.top)
                 && let Some(id) = f.tab_stop()
             {
                 ctx.focus_stop(id);
             }
-            if y + fh > body.y as i32 && y < body.bottom() as i32 {
-                let yy = y.max(body.y as i32) as u16;
-                let clip_top = (body.y as i32 - y).max(0) as u16;
-                let avail = (body.bottom() as i32 - y.max(body.y as i32)).max(0) as u16;
+            let first = field.top.max(viewport.start);
+            let end = (field.top + field.height).min(viewport.end);
+            if first < end && body.width > 0 {
+                let clip_top = first - field.top;
                 let r = Rect::new(
-                    inner.x - 1,
-                    yy,
-                    inner.width + 1,
-                    avail.min(fh as u16 - clip_top),
+                    inner.x.saturating_sub(1),
+                    body.y + terminal_extent(first - viewport.start),
+                    inner.width.saturating_add(1),
+                    terminal_extent(end - first),
                 );
-                if clip_top == 0 && !r.is_empty() {
+                if (clip_top == 0 || matches!(&f.kind, FormFieldKind::Note(_))) && !r.is_empty() {
                     match &mut f.kind {
                         FormFieldKind::Input(i) => i.render(r, buf, ctx, bg),
+                        FormFieldKind::List { list, .. } => {
+                            list.render(r, buf, ctx, bg);
+                        }
                         FormFieldKind::Select(s) => {
                             if s.open {
-                                open_select = Some(fi);
+                                open_select = Some((field.index, r));
                             } else {
                                 s.render(r, buf, ctx, bg);
                             }
@@ -991,10 +1205,16 @@ impl FormDialog {
                             button,
                         } => {
                             let focused = ctx.interaction.focused(button.id);
-                            buf.set_string(r.x + 2, r.y, label.as_str(), t.label(focused).bg(bg));
+                            buf.set_stringn(
+                                r.x.saturating_add(2),
+                                r.y,
+                                label,
+                                usize::from(r.width.saturating_sub(2)),
+                                t.label(focused).bg(bg),
+                            );
                             if r.height >= 2 {
-                                let bw = button.width();
-                                let vw = r.width.saturating_sub(bw + 4) as usize;
+                                let bw = button.width().min(r.width.saturating_sub(1));
+                                let vw = r.width.saturating_sub(bw.saturating_add(4)) as usize;
                                 buf.set_string(
                                     r.x + 2,
                                     r.y + 1,
@@ -1020,29 +1240,26 @@ impl FormDialog {
                             }
                         }
                         FormFieldKind::Note(lines) => {
-                            for (i, (l, tone)) in lines.iter().enumerate() {
-                                if (i as u16) < r.height {
-                                    buf.set_string(
-                                        r.x + 2,
-                                        r.y + i as u16,
-                                        truncate(l, r.width.saturating_sub(3) as usize),
-                                        Style::new().fg(t.tone(*tone)).bg(bg),
-                                    );
-                                }
+                            let rows = field.wrapped.as_deref().unwrap_or(lines);
+                            for (i, (line, tone)) in rows
+                                [clip_top..clip_top + usize::from(r.height)]
+                                .iter()
+                                .enumerate()
+                            {
+                                buf.set_string(
+                                    r.x.saturating_add(2),
+                                    r.y + terminal_extent(i),
+                                    truncate(line, usize::from(note_width)),
+                                    Style::new().fg(t.tone(*tone)).bg(bg),
+                                );
                             }
                         }
                     }
                 }
             }
-            y += fh + 1;
         }
         if self.scroll.overflows() {
-            let rows = Rect::new(
-                area.x,
-                body.y,
-                (area.right() - 1).saturating_sub(area.x),
-                body.height,
-            );
+            let rows = Rect::new(area.x, body.y, area.width.saturating_sub(1), body.height);
             self.scroll
                 .draw_with_fade(rows, buf, ctx, self.id, true, &[]);
         }
@@ -1078,6 +1295,7 @@ impl FormDialog {
             match &f.kind {
                 FormFieldKind::Input(i) => ctx.hits.register(i.id, i.area),
                 FormFieldKind::Select(s) => ctx.hits.register(s.id, s.area),
+                FormFieldKind::List { .. } => {}
                 FormFieldKind::Check(c) => ctx.hits.register(c.id, c.area),
                 FormFieldKind::Radio(r) => {
                     for (i, a) in r.areas.iter().enumerate() {
@@ -1095,28 +1313,14 @@ impl FormDialog {
         ctx.hits.register(self.cancel.id, self.cancel.area);
         ctx.hits.register(self.save.id, self.save.area);
 
-        if let Some(fi) = open_select {
-            let mut y: i32 = body.y as i32 - self.scroll.offset as i32;
-            for (i, f) in self.fields.iter_mut().enumerate() {
-                if !f.visible {
-                    continue;
-                }
-                if i == fi
-                    && let FormFieldKind::Select(s) = &mut f.kind
-                {
-                    let r = Rect::new(
-                        inner.x - 1,
-                        y.max(body.y as i32) as u16,
-                        inner.width + 1,
-                        Select::HEIGHT,
-                    );
-                    s.render(r, buf, ctx, bg);
-                    ctx.hits.register(s.id, s.area);
-                    for k in 0..s.options.len() {
-                        ctx.hits.raise(s.option_id(k));
-                    }
-                }
-                y += f.height() as i32 + 1;
+        if let Some((index, mut area)) = open_select
+            && let FormFieldKind::Select(s) = &mut self.fields[index].kind
+        {
+            area.height = Select::HEIGHT;
+            s.render(area, buf, ctx, bg);
+            ctx.hits.register(s.id, s.area);
+            for k in 0..s.options.len() {
+                ctx.hits.raise(s.option_id(k));
             }
         }
     }
@@ -1141,6 +1345,20 @@ impl FormDialog {
         self.resolve_hidden_focus(focus);
         for f in self.fields.iter_mut().filter(|f| f.visible) {
             match &mut f.kind {
+                FormFieldKind::List { list, .. } => {
+                    let before = list.cursor;
+                    let Some(response) = list.route(ev) else {
+                        continue;
+                    };
+                    if ev.is(Phase::Click) {
+                        focus.focus(list.id);
+                    }
+                    if list.cursor != before {
+                        self.dirty = true;
+                        self.events.push(FormAction::Changed(f.name.clone()));
+                    }
+                    return response;
+                }
                 FormFieldKind::Select(s) => {
                     let Some(r) = s.route(ev) else {
                         continue;

@@ -1542,7 +1542,7 @@ fn hide_host_mid_edit(name: &str) -> crate::support::App {
     let idle = app.settle();
     see(
         &idle,
-        &["Driver", "Tab Next field", "Enter Save"],
+        &["Driver", "Tab Next field", "Enter Open options"],
         &["Host", "EDIT", "Enter Apply"],
     );
     app
@@ -1556,7 +1556,12 @@ fn reveal_host(app: &crate::support::App) {
     let shown = app.settle();
     see(
         &shown,
-        &["Host", "edited-host", "Tab Next field", "Enter Save"],
+        &[
+            "Host",
+            "edited-host",
+            "Tab Next field",
+            "Enter Open options",
+        ],
         &["EDIT", "Enter Apply"],
     );
 }

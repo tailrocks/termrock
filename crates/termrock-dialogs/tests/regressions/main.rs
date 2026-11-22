@@ -5,3 +5,4 @@
 //! generated CI workflows (see `docs/ci.md`).
 
 mod file_source;
+mod form_note_layout;

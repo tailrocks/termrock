@@ -28,6 +28,7 @@ use termrock::widgets::help::HelpOverlay;
 use termrock::widgets::icon_button::IconButton;
 use termrock::widgets::info_dialog::{InfoCmd, InfoDialog, InfoResult};
 use termrock::widgets::input::TextInput;
+use termrock::widgets::list::{ListBox, ListItem, SelectMode};
 use termrock::widgets::option_list::Item;
 use termrock::widgets::panel::Panel;
 use termrock::widgets::picker::{Picker, PickerAction};
@@ -172,6 +173,26 @@ impl DialogKindsPage {
         .dismiss(self.dismiss(Dismiss::ESCAPE))
         .close_button(self.close_button())
         .button_row(self.button_row());
+        if self.opts.on("dialogkinds.inline_list") {
+            f.fields.push(FormField::note("wrapped_note", vec![("This optional example wraps its explanatory text and keeps every inline list row reachable with the keyboard.".into(), Tone::Secondary)]).wrap(true));
+            f.fields.push(FormField::list(
+                "replicas",
+                ListBox::new(
+                    FORM.sub("replicas"),
+                    [
+                        "eu-west-1 · primary",
+                        "us-east-1 · replica",
+                        "ap-south-1 · replica",
+                        "eu-central-1 · standby",
+                    ]
+                    .iter()
+                    .map(|label| ListItem::new(label))
+                    .collect(),
+                    SelectMode::Single,
+                ),
+                3,
+            ));
+        }
         if self.opts.on("dialogkinds.form_meta") {
             f = f.meta("production");
         }
@@ -411,6 +432,7 @@ impl DialogKindsPage {
                 match &x.kind {
                     K::Input(_) => "Input",
                     K::Select(_) => "Select",
+                    K::List { .. } => "List",
                     K::Check(_) => "Check",
                     K::Radio(_) => "Radio",
                     K::Chooser { .. } => "Chooser",

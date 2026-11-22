@@ -1,0 +1,75 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Library/Caches/mbx/targets/v1/7fba11bdf509c6f21773a76e7321681c0ebefa91d85bedcf37fb89e874691dff/debug/jackin-preview",
+  "binary_sha256": "298476a43be15048ecf0c1a733791927083661843f7965f1caf55b2608059a9c",
+  "fixture_args": [
+    "--scenario",
+    "returning"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "762d91112585b8c89d771965b22d38cc5962d0d5ae9f4110d9b2c535fb475f39",
+  "expect_baseline": "56f36a76b8ba16acfafba6923676cf46de3a10ef8a547d6f920c746d604235da",
+  "precondition": "",
+  "session": null,
+  "expected_test_id": "pre_refactor/j03_environments/j03_environments_env_120x40",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/jackin-usage/pre_refactor_j03_environments_j03_environments_env_120x40.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/jackin-usage/pre_refactor_j03_environments_j03_environments_env_120x40.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/jackin-usage/superseded/pre_refactor/j03_environments/j03_environments_env_120x40.tui.pb",
+  "test_id": "pre_refactor/j03_environments/j03_environments_env_120x40",
+  "acceptance": {
+    "expected_baseline_sha256": "56f36a76b8ba16acfafba6923676cf46de3a10ef8a547d6f920c746d604235da",
+    "accepted_baseline_sha256": "762d91112585b8c89d771965b22d38cc5962d0d5ae9f4110d9b2c535fb475f39",
+    "candidate_sha256": "762d91112585b8c89d771965b22d38cc5962d0d5ae9f4110d9b2c535fb475f39",
+    "transaction_receipt": "docs/testing/acceptance-receipts/jackin-usage/pre_refactor_j03_environments_j03_environments_env_120x40.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "56f36a76b8ba16acfafba6923676cf46de3a10ef8a547d6f920c746d604235da"
+  },
+  "candidate": {
+    "sha256": "762d91112585b8c89d771965b22d38cc5962d0d5ae9f4110d9b2c535fb475f39",
+    "path": "crates/termrock-functional/tests/functional/baselines/pre_refactor/j03_environments/j03_environments_env_120x40.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/jackin-usage/superseded/pre_refactor/j03_environments/j03_environments_env_120x40.tui.pb",
+    "superseded_baseline_sha256": "56f36a76b8ba16acfafba6923676cf46de3a10ef8a547d6f920c746d604235da"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "crates/termrock-functional/tests/functional/baselines/pre_refactor/j03_environments/j03_environments_env_120x40.tui.pb",
+    "candidate_sha256": "762d91112585b8c89d771965b22d38cc5962d0d5ae9f4110d9b2c535fb475f39",
+    "binary_path": "/Users/donbeave/Library/Caches/mbx/targets/v1/7fba11bdf509c6f21773a76e7321681c0ebefa91d85bedcf37fb89e874691dff/debug/jackin-preview",
+    "binary_sha256": "298476a43be15048ecf0c1a733791927083661843f7965f1caf55b2608059a9c",
+    "note": "Focused selectors explain Enter and overflowing forms show their page scrolling keys."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/j03_environments/j03_environments_env_120x40",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/termrock/target/functional/j03-environments-env-15029-1795326217349504000-0/check-artifacts/pre_refactor/j03_environments/j03_environments_env_120x40/762d91112585b8c89d771965b22d38cc5962d0d5ae9f4110d9b2c535fb475f39/sample.tui.pb"
+    },
+    "candidate_sha256": "762d91112585b8c89d771965b22d38cc5962d0d5ae9f4110d9b2c535fb475f39",
+    "baseline_sha256": "762d91112585b8c89d771965b22d38cc5962d0d5ae9f4110d9b2c535fb475f39",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/termrock/crates/termrock-functional/tests/functional/baselines/pre_refactor/j03_environments/j03_environments_env_120x40.tui.pb"
+    },
+    "error_code": null
+  }
+}

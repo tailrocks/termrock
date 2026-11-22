@@ -693,6 +693,26 @@ impl App {
     }
 
     fn dispatch_msg(&mut self, m: &Msg) -> Outcome {
+        if let Msg::RequestRefresh { force } = m {
+            let requested = if *force {
+                self.world.refresh_now();
+                true
+            } else {
+                self.world.refresh()
+            };
+            return if requested {
+                Outcome::Changed
+            } else {
+                Outcome::Ignored
+            };
+        }
+        if let Msg::UsageUpdated { alerts } = m
+            && !alerts.is_empty()
+        {
+            self.shell
+                .status
+                .set_at(alerts.join(" · "), Tone::Warning, self.world.clock.now());
+        }
         if let Msg::PaneWake { instance, pane } = m {
             let roster = self.world.epochs().roster;
             let changed = self.world.wake_pane(instance, *pane);
@@ -2030,6 +2050,11 @@ impl App {
             Go::Usage { select } => {
                 self.show_tab(TAB_USAGE);
                 self.router.usage_mut().select(select);
+                self.enter_route();
+            }
+            Go::AllUsage => {
+                self.show_tab(TAB_USAGE);
+                self.router.usage_mut().select_all();
                 self.enter_route();
             }
             Go::Roles { select } => {
