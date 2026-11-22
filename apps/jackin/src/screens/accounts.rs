@@ -1,4 +1,5 @@
 pub(super) mod connections;
+mod inventory;
 
 use crate::domain::vocabulary::Vocabulary;
 use crate::screens::Jackin;
@@ -50,6 +51,29 @@ use crate::domain::agent::{Provider, UsageSurface};
 use crate::domain::onepassword::OpReference;
 use crate::domain::usage::{Freshness, OverallSummary, QuotaStatus, QuotaWindow, WindowUnit};
 use crate::world::{Msg, World, job};
+
+fn usage_provider(provider: &str) -> &str {
+    if provider == "codex" {
+        return "ChatGPT / Codex";
+    }
+    crate::usage_connections::PRODUCTS
+        .iter()
+        .find(|(id, _)| *id == provider)
+        .map_or(provider, |(_, label)| *label)
+}
+
+fn usage_product(surface: UsageSurface) -> &'static str {
+    match surface {
+        UsageSurface::Codex => "codex",
+        UsageSurface::Claude => "claude",
+        UsageSurface::Grok => "grok",
+        UsageSurface::Kimi => "kimi",
+        UsageSurface::Zai => "zai",
+        UsageSurface::Minimax => "minimax",
+        UsageSurface::OpenCode => "opencode",
+        _ => "claude",
+    }
+}
 use junie_tui::ui::context::ContextAnchor;
 use junie_tui::ui::text::plural;
 use junie_tui::ui::text::thousands;
@@ -65,6 +89,9 @@ pub const MENU: WidgetId = WidgetId::of("accounts.menu");
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Sel {
     Overview,
+    ExecutionAccounts,
+    UsageAccounts,
+    UsageAccount(String),
     Provider(UsageSurface),
     Account(AccountId),
     Add,
@@ -179,6 +206,7 @@ enum Pick {
 
 pub struct AccountsScreen {
     connections: connections::Connections,
+    inventory: inventory::Inventory,
     pub selected: Sel,
     folded: HashSet<UsageSurface>,
     pub filter: Option<String>,
@@ -228,6 +256,7 @@ impl AccountsScreen {
         Self {
             selected: Sel::Overview,
             connections: connections::Connections::default(),
+            inventory: inventory::Inventory::default(),
             folded: HashSet::new(),
             filter: None,
             rows: vec![],
@@ -274,6 +303,60 @@ impl AccountsScreen {
             .as_ref()
             .map(|f| f.to_lowercase())
             .filter(|f| !f.is_empty());
+        if w.backend.usage_connections().is_some() {
+            rows.push(Row {
+                sel: Sel::UsageAccounts,
+                depth: 0,
+                star: false,
+                label: "Usage accounts".into(),
+                health: None,
+                meta: self.inventory.row_status(),
+                meta_tone: Tone::Muted,
+                faint: false,
+                expandable: false,
+                expanded: false,
+            });
+            for entry in self.inventory.entries.iter().filter(|entry| {
+                q.as_ref().is_none_or(|query| {
+                    entry.label.to_lowercase().contains(query)
+                        || usage_provider(&entry.provider)
+                            .to_lowercase()
+                            .contains(query)
+                        || entry
+                            .details
+                            .iter()
+                            .any(|detail| detail.to_lowercase().contains(query))
+                })
+            }) {
+                rows.push(Row {
+                    sel: Sel::UsageAccount(entry.id.clone()),
+                    depth: 1,
+                    star: false,
+                    label: entry.label.clone(),
+                    health: None,
+                    meta: usage_provider(&entry.provider).into(),
+                    meta_tone: Tone::Secondary,
+                    faint: false,
+                    expandable: false,
+                    expanded: false,
+                });
+            }
+        }
+        if w.backend.usage_connections().is_some() {
+            rows.push(Row {
+                sel: Sel::ExecutionAccounts,
+                depth: 0,
+                star: false,
+                label: "Execution accounts".into(),
+                health: None,
+                meta: w.accounts.accounts.len().to_string(),
+                meta_tone: Tone::Muted,
+                faint: false,
+                expandable: false,
+                expanded: false,
+            });
+        }
+
         for surface in UsageSurface::ALL {
             let accounts: Vec<&Account> = w
                 .accounts
@@ -413,7 +496,11 @@ impl AccountsScreen {
                 sel: Sel::Add,
                 depth: 0,
                 star: false,
-                label: "+ Add account…".into(),
+                label: if w.backend.usage_connections().is_some() {
+                    "+ Add execution account…".into()
+                } else {
+                    "+ Add account…".into()
+                },
                 health: None,
                 meta: String::new(),
                 meta_tone: Tone::Muted,
@@ -463,6 +550,20 @@ impl AccountsScreen {
     }
 
     fn refresh_scope(&mut self, w: &mut World, cx: &mut Cx) {
+        match &self.selected {
+            Sel::UsageAccount(id) => {
+                if let Some(entry) = self.inventory.entries.iter().find(|entry| &entry.id == id) {
+                    self.connections.refresh(entry.clone(), w, cx);
+                }
+                return;
+            }
+            Sel::UsageAccounts => {
+                self.inventory.load(w);
+                cx.status("Refreshing usage account list");
+                return;
+            }
+            _ => {}
+        }
         let ids: Vec<AccountId> = match &self.selected {
             Sel::Account(id) => vec![id.clone()],
             Sel::Provider(s) => w
@@ -1412,13 +1513,36 @@ impl AccountsScreen {
                 mk("refresh", "Refresh provider", ButtonKind::Secondary),
                 mk("add", "Add account…", ButtonKind::Secondary),
             ],
-            Sel::Overview => vec![
-                mk("refresh", "Refresh all", ButtonKind::Secondary),
+            Sel::Overview | Sel::ExecutionAccounts => vec![
+                mk(
+                    "refresh",
+                    if w.backend.usage_connections().is_some() {
+                        "Refresh execution"
+                    } else {
+                        "Refresh all"
+                    },
+                    ButtonKind::Secondary,
+                ),
                 mk("add", "Add account…", ButtonKind::Secondary),
+            ],
+            Sel::UsageAccounts => vec![mk(
+                "list_usage",
+                "View usage accounts…",
+                ButtonKind::Primary,
+            )],
+            Sel::UsageAccount(_) => vec![
+                mk("view_usage", "View usage…", ButtonKind::Primary),
+                mk("refresh_usage", "Refresh usage", ButtonKind::Secondary),
             ],
             Sel::Add => vec![mk("add", "Add account…", ButtonKind::Primary)],
         };
         if w.backend.usage_connections().is_some() {
+            self.actions.retain(|button| {
+                (button.id != INSPECTOR.sub("add") || matches!(self.selected, Sel::Add))
+                    && button.id != INSPECTOR.sub("list_usage")
+            });
+            self.actions
+                .push(mk("all_usage", "All usage", ButtonKind::Secondary));
             self.actions.push(mk(
                 "connect_usage",
                 "Add usage account…",
@@ -1445,8 +1569,17 @@ impl AccountsScreen {
             ("default", Some(id)) => self.set_default(&id, w, cx),
             ("toggle", Some(id)) => self.toggle_enabled(&id, w, cx),
             ("remove", Some(id)) => self.remove(&id, w, cx),
-            ("add", _) => self.open_add(w, cx),
-            ("connect_usage", _) => self.connections.add(w, cx),
+            ("add", _) => self.open_form(None, w, cx),
+            ("connect_usage", _) => self.open_add(w, cx),
+            ("all_usage", _) => cx.go(Go::AllUsage),
+            ("refresh_usage", _) => self.refresh_scope(w, cx),
+            ("view_usage", _) => {
+                if let Sel::UsageAccount(id) = &self.selected
+                    && let Some(entry) = self.inventory.entries.iter().find(|entry| &entry.id == id)
+                {
+                    self.connections.show(entry.clone(), w, cx);
+                }
+            }
             ("list_usage", _) => self.connections.list(w, cx),
             _ => return Outcome::Consumed,
         }
@@ -1455,7 +1588,21 @@ impl AccountsScreen {
 
     fn open_add(&mut self, w: &mut World, cx: &mut Cx) {
         if w.backend.usage_connections().is_some() {
-            self.connections.add(w, cx);
+            let provider = match &self.selected {
+                Sel::Provider(surface) => Some(usage_product(*surface)),
+                Sel::Account(id) => w
+                    .accounts
+                    .get(id)
+                    .map(|account| usage_product(account.surface)),
+                Sel::UsageAccount(id) => self
+                    .inventory
+                    .entries
+                    .iter()
+                    .find(|entry| &entry.id == id)
+                    .map(|entry| entry.provider.as_str()),
+                _ => None,
+            };
+            self.connections.add(w, cx, provider);
         } else {
             self.open_form(None, w, cx);
         }
@@ -1541,7 +1688,14 @@ impl AccountsScreen {
                     ],
                 )
             }
-            Sel::Overview => (
+            Sel::UsageAccounts | Sel::UsageAccount(_) => (
+                "Usage accounts".into(),
+                vec![
+                    (item("All usage", "m"), "all_usage"),
+                    (item("Add usage account…", "n"), "connect_usage"),
+                ],
+            ),
+            Sel::Overview | Sel::ExecutionAccounts => (
                 "Overview".into(),
                 vec![
                     (item("Refresh all", "r"), "refresh"),
@@ -1595,17 +1749,26 @@ impl AccountsScreen {
         let focused = ctx.interaction.focused(TREE);
         let summary = OverallSummary::compute(&w.accounts.accounts);
         let pos = scrollbar::position_label(&self.scroll);
-        let mut meta = format!("{}", summary.counts.accounts);
-        if summary.counts.warnings > 0 {
+        let managed = w.backend.usage_connections().is_some();
+        let mut meta = if managed {
+            format!(
+                "{} · {} execution",
+                self.inventory.count_caption(),
+                summary.counts.accounts
+            )
+        } else {
+            format!("{}", summary.counts.accounts)
+        };
+        if !managed && summary.counts.warnings > 0 {
             meta.push_str(&format!(" · {} ▲", summary.counts.warnings));
         }
-        if summary.counts.exhausted + summary.counts.failed > 0 {
+        if !managed && summary.counts.exhausted + summary.counts.failed > 0 {
             meta.push_str(&format!(
                 " · {} !",
                 summary.counts.exhausted + summary.counts.failed
             ));
         }
-        if !pos.is_empty() {
+        if !managed && !pos.is_empty() {
             meta.push_str(&format!(" · {pos}"));
         }
         let title = match &self.filter {
@@ -1734,11 +1897,40 @@ impl AccountsScreen {
 
     fn inspector_lines(&self, w: &World, width_: u16) -> (String, String, Vec<Line>) {
         let mut lines: Vec<Line> = vec![];
+        let managed = w.backend.usage_connections().is_some();
         match &self.selected {
-            Sel::Overview => {
+            Sel::UsageAccounts => {
+                lines.push(Line::Text(self.inventory.status(), Tone::Secondary));
+                for entry in &self.inventory.entries {
+                    lines.push(Line::Heading(entry.label.clone(), usage_provider(&entry.provider).into()));
+                    lines.extend(entry.details.iter().cloned().map(|line| Line::Text(line, Tone::Normal)));
+                }
+                lines.push(Line::Text("Select an account to inspect its usage. Execution bindings are listed separately below.".into(), Tone::Muted));
+                ("Usage accounts".into(), self.inventory.status(), lines)
+            }
+            Sel::UsageAccount(id) => {
+                if let Some(entry) = self.inventory.entries.iter().find(|entry| &entry.id == id) {
+                    lines.push(Line::Prop("Provider".into(), usage_provider(&entry.provider).into(), Tone::Normal));
+                    lines.extend(entry.details.iter().cloned().map(|line| Line::Text(line, Tone::Normal)));
+                    (entry.label.clone(), "usage account".into(), lines)
+                } else {
+                    ("Usage account".into(), String::new(), lines)
+                }
+            }
+            Sel::Overview | Sel::ExecutionAccounts => {
+                if managed && matches!(self.selected, Sel::Overview) {
+                    lines.push(Line::Heading("Usage accounts".into(), self.inventory.status()));
+                    for entry in &self.inventory.entries {
+                        lines.push(Line::Text(format!("{} · {}", entry.label, usage_provider(&entry.provider)), Tone::Normal));
+                    }
+                }
+                if managed && w.accounts.accounts.is_empty() {
+                    lines.push(Line::Text("No execution accounts configured.".into(), Tone::Secondary));
+                    return (if matches!(self.selected, Sel::ExecutionAccounts) { "Execution accounts".into() } else { "Overview".into() }, format!("{} · 0 execution", self.inventory.count_caption()), lines);
+                }
                 let s = OverallSummary::compute(&w.accounts.accounts);
-                lines.push(Line::PropSpans("Health".into(), super::health_spans(&s)));
-                lines.push(Line::Prop("Registry".into(), s.counts_line(), Tone::Normal));
+                lines.push(Line::PropSpans(if managed { "Execution health".into() } else { "Health".into() }, super::health_spans(&s)));
+                lines.push(Line::Prop(if managed { "Execution registry".into() } else { "Registry".into() }, s.counts_line(), Tone::Normal));
                 let registered = w.accounts.accounts.iter().filter(|a| a.origin == AccountOrigin::Registered).count();
                 lines.push(Line::Prop(
                     "Sources".into(),
@@ -1753,9 +1945,9 @@ impl AccountsScreen {
                     Tone::Normal,
                 ));
                 lines.push(Line::Blank);
-                lines.push(Line::Heading("Comparable windows".into(), "identical provider, window and unit only".into()));
+                lines.push(Line::Heading(if managed { "Comparable execution windows".into() } else { "Comparable windows".into() }, "identical provider, window and unit only".into()));
                 if s.comparable.is_empty() {
-                    lines.push(Line::Text("Nothing comparable: no provider has two accounts with the same window".into(), Tone::Muted));
+                    lines.push(Line::Text(if managed { "No execution accounts share a comparable provider window.".into() } else { "Nothing comparable: no provider has two accounts with the same window".into() }, Tone::Muted));
                 }
                 for c in &s.comparable {
                     let mut text = format!("{} · {}   {} · {}–{}% remaining", c.surface.label(), c.label, plural(c.accounts, "account", "accounts"), c.min_remaining_pct, c.max_remaining_pct);
@@ -1769,14 +1961,14 @@ impl AccountsScreen {
                 }
                 if !s.not_comparable.is_empty() {
                     lines.push(Line::Blank);
-                    lines.push(Line::Heading("Not comparable".into(), String::new()));
+                    lines.push(Line::Heading(if managed { "Not comparable execution accounts".into() } else { "Not comparable".into() }, String::new()));
                     let names: Vec<String> = s.not_comparable.iter().map(|n| format!("{} ({})", n.surface.label(), n.reason)).collect();
                     for l in junie_tui::ui::text::wrap(&names.join(" · "), width_ as usize) {
                         lines.push(Line::Text(l, Tone::Muted));
                     }
                 }
                 lines.push(Line::Blank);
-                lines.push(Line::Heading("Warnings".into(), String::new()));
+                lines.push(Line::Heading(if managed { "Execution warnings".into() } else { "Warnings".into() }, String::new()));
                 let mut any = false;
                 for a in w.accounts.sorted() {
                     if !a.enabled {
@@ -1827,12 +2019,12 @@ impl AccountsScreen {
                 let unresolved: Vec<&Account> = w.accounts.accounts.iter().filter(|a| a.enabled && a.identity.subject.is_none()).collect();
                 if !unresolved.is_empty() {
                     lines.push(Line::Blank);
-                    lines.push(Line::Heading("Unresolved identity".into(), String::new()));
+                    lines.push(Line::Heading(if managed { "Execution identity".into() } else { "Unresolved identity".into() }, String::new()));
                     for a in unresolved {
                         lines.push(Line::Text(format!("{} · {} · {} — not an authenticated account", a.title(), a.source.origin_label().to_lowercase(), a.confidence.label()), Tone::Muted));
                     }
                 }
-                ("Overview".into(), format!("{} · {}", plural(w.accounts.accounts.len(), "account", "accounts"), plural(s.counts.providers, "provider", "providers")), lines)
+                (if matches!(self.selected, Sel::ExecutionAccounts) { "Execution accounts".into() } else { "Overview".into() }, if managed { format!("{} · {} execution", self.inventory.count_caption(), w.accounts.accounts.len()) } else { format!("{} · {}", plural(w.accounts.accounts.len(), "account", "accounts"), plural(s.counts.providers, "provider", "providers")) }, lines)
             }
             Sel::Provider(surface) => {
                 let accounts: Vec<&Account> = w.accounts.sorted().into_iter().filter(|a| a.surface == *surface).collect();
@@ -1856,7 +2048,7 @@ impl AccountsScreen {
                 if *surface == UsageSurface::Unsupported {
                     lines.push(Line::Text("Unsupported is the registry's explicit sentinel: a capability with no provider adapter. It is never synthesized as zero usage.".into(), Tone::Muted));
                 } else if accounts.is_empty() {
-                    lines.push(Line::Text("No accounts for this provider".into(), Tone::Muted));
+                    lines.push(Line::Text(if managed { "No execution accounts for this provider. Usage identities are listed in Usage accounts.".into() } else { "No accounts for this provider".into() }, Tone::Muted));
                 }
                 for a in accounts {
                     lines.push(Line::Heading(a.display_name.clone(), account_meta(a, w).0));
@@ -1868,7 +2060,7 @@ impl AccountsScreen {
                         }
                     }
                 }
-                (surface.surface_name().into(), format!("provider · {}", plural(w.accounts.by_provider(p.unwrap_or(Provider::Anthropic)).count(), "account", "accounts")), lines)
+                (surface.surface_name().into(), format!("provider · {}", if managed { plural(w.accounts.by_provider(p.unwrap_or(Provider::Anthropic)).count(), "execution account", "execution accounts") } else { plural(w.accounts.by_provider(p.unwrap_or(Provider::Anthropic)).count(), "account", "accounts") }), lines)
             }
             Sel::Account(id) => {
                 let Some(a) = w.accounts.get(id) else {
@@ -1958,7 +2150,7 @@ impl AccountsScreen {
                 if a.origin == AccountOrigin::Discovered {
                     lines.push(Line::Text("read-only: discovered on host · refresh only".into(), Tone::Muted));
                 }
-                (a.title(), format!("account · {}", a.status_word()), lines)
+                (a.title(), format!("{} · {}", if managed { "execution account" } else { "account" }, a.status_word()), lines)
             }
             Sel::Add => (
                 "Add account".into(),
@@ -2411,6 +2603,7 @@ impl Page<Jackin> for AccountsScreen {
     fn enter(&mut self, w: &mut World, cx: &mut Cx) {
         if let Some(service) = w.backend.usage_connections() {
             service.accounts_opened();
+            self.inventory.load(w);
         }
         self.build_rows(w);
         self.md.close_drawer(cx.focus);
@@ -2438,7 +2631,22 @@ impl Page<Jackin> for AccountsScreen {
 
     fn on_msg(&mut self, msg: &Msg, w: &mut World, cx: &mut Cx) -> Outcome {
         match msg {
-            Msg::UsageConnection { ticket, update } => self.connections.update(*ticket, update, cx),
+            Msg::UsageConnection { ticket, update } => {
+                if self.inventory.update(*ticket, update) {
+                    self.build_rows(w);
+                    return Outcome::Changed;
+                }
+                if self.connections.owns(*ticket) {
+                    match update {
+                        crate::usage_connections::UsageUpdate::Accounts(entries) => {
+                            self.inventory.replace(entries)
+                        }
+                        crate::usage_connections::UsageUpdate::Saved(_) => self.inventory.load(w),
+                        _ => {}
+                    }
+                }
+                self.connections.update(*ticket, update, cx)
+            }
             Msg::AccountsSaved {
                 ticket,
                 added,
@@ -2557,7 +2765,7 @@ impl Page<Jackin> for AccountsScreen {
         if action_focus.is_none() {
             match key.code {
                 KeyCode::Char('n') if key.plain() && w.backend.usage_connections().is_some() => {
-                    self.connections.add(w, cx);
+                    self.open_add(w, cx);
                     return Outcome::Changed;
                 }
                 KeyCode::Char('N') if w.backend.usage_connections().is_some() => {
@@ -2706,7 +2914,11 @@ impl Page<Jackin> for AccountsScreen {
                 }
                 KeyCode::Enter => {
                     match self.selected.clone() {
-                        Sel::Add => self.open_add(w, cx),
+                        Sel::Add => self.open_form(None, w, cx),
+                        Sel::UsageAccounts => self.connections.list(w, cx),
+                        Sel::UsageAccount(_) => {
+                            return self.fire("view_usage", w, cx);
+                        }
                         Sel::Provider(s) => {
                             if !self.folded.remove(&s) {
                                 self.folded.insert(s);
@@ -3000,7 +3212,10 @@ impl Page<Jackin> for AccountsScreen {
         }
         let right = l.detail;
         self.draw_inspector(right, buf, ctx, w, false);
-        if w.accounts.accounts.is_empty() && matches!(self.selected, Sel::Overview) {
+        if w.accounts.accounts.is_empty()
+            && w.backend.usage_connections().is_none()
+            && matches!(self.selected, Sel::Overview)
+        {
             let e = EmptyState::new("No accounts registered").hint("a adds one · 1Password is the default credential source · discovered sources appear after a refresh");
             let inner = Rect::new(
                 right.x + 2,
@@ -3061,9 +3276,24 @@ impl Page<Jackin> for AccountsScreen {
                 v.push(hint("Space", "Fold"));
                 v.push(hint("r", "Refresh provider"));
             }
-            Sel::Overview => {
+            Sel::Overview | Sel::ExecutionAccounts => {
                 v.push(hint("Enter", "Details"));
-                v.push(hint("r", "Refresh all"));
+                v.push(hint(
+                    "r",
+                    if w.backend.usage_connections().is_some() {
+                        "Refresh execution"
+                    } else {
+                        "Refresh all"
+                    },
+                ));
+            }
+            Sel::UsageAccounts => {
+                v.push(hint("Enter", "Usage accounts"));
+                v.push(hint("r", "Refresh list"));
+            }
+            Sel::UsageAccount(_) => {
+                v.push(hint("Enter", "View usage"));
+                v.push(hint("r", "Refresh usage"));
             }
             Sel::Add => v.push(hint("Enter", "Add account…")),
         }
@@ -3088,6 +3318,21 @@ impl Page<Jackin> for AccountsScreen {
     fn crumb(&self, w: &World) -> String {
         match &self.selected {
             Sel::Overview => "Accounts › Overview".into(),
+            Sel::ExecutionAccounts => "Accounts › Execution accounts".into(),
+            Sel::UsageAccounts => "Accounts › Usage accounts".into(),
+            Sel::UsageAccount(id) => self
+                .inventory
+                .entries
+                .iter()
+                .find(|entry| &entry.id == id)
+                .map(|entry| {
+                    format!(
+                        "Accounts › {} › {}",
+                        usage_provider(&entry.provider),
+                        entry.label
+                    )
+                })
+                .unwrap_or_else(|| "Accounts › Usage accounts".into()),
             Sel::Provider(s) => format!("Accounts › {}", s.surface_name()),
             Sel::Account(id) => match w.accounts.get(id) {
                 Some(a) => format!(

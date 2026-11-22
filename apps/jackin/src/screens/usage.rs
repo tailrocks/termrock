@@ -120,6 +120,7 @@ type DetailLine = (String, Tone, Option<(u8, QuotaTone)>);
 pub struct UsageScreen {
     board: board::Board,
     pub selected: Option<AccountId>,
+    all_usage: bool,
     rows: Vec<Row>,
     scroll: ScrollState,
     detail_scroll: ScrollState,
@@ -131,6 +132,12 @@ pub struct UsageScreen {
 impl UsageScreen {
     pub fn select(&mut self, id: Option<AccountId>) {
         self.selected = id;
+        self.all_usage = false;
+    }
+
+    pub fn select_all(&mut self) {
+        self.selected = None;
+        self.all_usage = true;
     }
 
     fn build_rows(&mut self, w: &World) {
@@ -785,9 +792,11 @@ impl Page<Jackin> for UsageScreen {
         cx.focus.focus(LIST);
         if self.selected.is_none()
             && let Some(service) = w.backend.usage_connections()
-            && (w.accounts.accounts.is_empty() || service.has_connected_accounts())
+            && (self.all_usage
+                || w.accounts.accounts.is_empty()
+                || service.has_connected_accounts())
         {
-            self.board.open(w, cx, None);
+            self.board.open(w, cx, self.all_usage.then_some(false));
         }
     }
 

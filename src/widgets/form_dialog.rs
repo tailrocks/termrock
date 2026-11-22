@@ -11,6 +11,7 @@ use crate::widgets::button::{Button, row_layout_right};
 use crate::widgets::choice::{Checkbox, RadioGroup};
 use crate::widgets::input::{InputAction, TextInput};
 use crate::widgets::keyhint::Hint;
+use crate::widgets::list::ListBox;
 use crate::widgets::scrollbar;
 use crate::widgets::select::Select;
 use ratatui::buffer::Buffer;
@@ -30,6 +31,10 @@ pub type FormValues = Vec<(String, FieldValue)>;
 pub enum FormFieldKind {
     Input(TextInput),
     Select(Select),
+    List {
+        list: ListBox,
+        rows: u16,
+    },
     Check(Checkbox),
     Radio(RadioGroup),
 
@@ -47,6 +52,7 @@ pub struct FormField {
     pub name: String,
     pub kind: FormFieldKind,
     pub visible: bool,
+    pub wrap: bool,
 }
 
 impl FormField {
@@ -55,6 +61,7 @@ impl FormField {
             name: name.into(),
             kind: FormFieldKind::Input(input),
             visible: true,
+            wrap: false,
         }
     }
     pub fn select(name: &str, select: Select) -> Self {
@@ -62,6 +69,7 @@ impl FormField {
             name: name.into(),
             kind: FormFieldKind::Select(select),
             visible: true,
+            wrap: false,
         }
     }
     pub fn check(name: &str, c: Checkbox) -> Self {
@@ -69,6 +77,7 @@ impl FormField {
             name: name.into(),
             kind: FormFieldKind::Check(c),
             visible: true,
+            wrap: false,
         }
     }
     pub fn radio(name: &str, r: RadioGroup) -> Self {
@@ -76,6 +85,7 @@ impl FormField {
             name: name.into(),
             kind: FormFieldKind::Radio(r),
             visible: true,
+            wrap: false,
         }
     }
     pub fn chooser(name: &str, id: WidgetId, label: &str, value: &str, button: &str) -> Self {
@@ -88,6 +98,7 @@ impl FormField {
                 button: Button::secondary(id, button),
             },
             visible: true,
+            wrap: false,
         }
     }
     pub fn note(name: &str, lines: Vec<(String, Tone)>) -> Self {
@@ -95,21 +106,41 @@ impl FormField {
             name: name.into(),
             kind: FormFieldKind::Note(lines),
             visible: true,
+            wrap: false,
         }
     }
+    pub fn list(name: &str, list: ListBox, rows: u16) -> Self {
+        Self {
+            name: name.into(),
+            kind: FormFieldKind::List { list, rows },
+            visible: true,
+            wrap: false,
+        }
+    }
+
+    pub fn wrap(mut self, on: bool) -> Self {
+        self.wrap = on;
+        self
+    }
+
     pub fn hidden(mut self) -> Self {
         self.visible = false;
         self
     }
 
-    fn height(&self) -> u16 {
+    fn height(&self, note_width: u16, list_rows: u16) -> u16 {
         match &self.kind {
             FormFieldKind::Input(_) => TextInput::HEIGHT,
             FormFieldKind::Select(_) => Select::HEIGHT,
+            FormFieldKind::List { rows, .. } => (*rows).min(list_rows),
             FormFieldKind::Check(_) => 1,
             FormFieldKind::Radio(r) => r.height(),
             FormFieldKind::Chooser { detail, .. } => 2 + u16::from(detail.is_some()),
-            FormFieldKind::Note(l) => l.len() as u16,
+            FormFieldKind::Note(lines) if !self.wrap => lines.len() as u16,
+            FormFieldKind::Note(lines) => lines
+                .iter()
+                .map(|(line, _)| crate::ui::text::wrap(line, note_width as usize).len() as u16)
+                .sum(),
         }
     }
 
@@ -117,6 +148,7 @@ impl FormField {
         match &self.kind {
             FormFieldKind::Input(i) => FieldValue::Text(i.text().to_owned()),
             FormFieldKind::Select(s) => FieldValue::Choice(s.selected),
+            FormFieldKind::List { list, .. } => FieldValue::Choice(list.cursor),
             FormFieldKind::Check(c) => FieldValue::Bool(c.checked),
             FormFieldKind::Radio(r) => FieldValue::Choice(r.selected),
             FormFieldKind::Chooser { value, .. } => FieldValue::Text(value.clone()),
@@ -128,6 +160,7 @@ impl FormField {
         match &self.kind {
             FormFieldKind::Input(i) => Some(i.id),
             FormFieldKind::Select(s) => Some(s.id),
+            FormFieldKind::List { list, .. } => Some(list.id),
             FormFieldKind::Check(c) => Some(c.id),
             FormFieldKind::Radio(r) => Some(r.id),
             FormFieldKind::Chooser { button, .. } => Some(button.id),
@@ -139,6 +172,7 @@ impl FormField {
         let disabled = match &self.kind {
             FormFieldKind::Input(i) => i.disabled,
             FormFieldKind::Select(s) => s.disabled,
+            FormFieldKind::List { list, .. } => list.items.is_empty(),
             FormFieldKind::Check(c) => c.disabled,
             FormFieldKind::Radio(r) => r.disabled,
             FormFieldKind::Chooser { button, .. } => button.disabled,
@@ -153,7 +187,36 @@ impl HasHints for FormDialog {
         if self.is_editing() {
             return crate::widgets::keyhint::EDIT_FIELD.to_vec();
         }
+        if let Some(select) = self
+            .fields
+            .iter()
+            .filter(|field| field.visible)
+            .find_map(|field| match &field.kind {
+                FormFieldKind::Select(select) if cx.focus == Some(select.id) => Some(select),
+                _ => None,
+            })
+        {
+            return if select.open {
+                vec![
+                    Hint::new("↑↓", "Choose"),
+                    Hint::new("Enter", "Select"),
+                    Hint::new("Esc", "Close options"),
+                ]
+            } else {
+                vec![
+                    Hint::new("Tab", "Next field"),
+                    Hint::new("Enter", "Open options"),
+                    Hint::new("Esc", self.cancel.label.clone()),
+                ]
+            };
+        }
+        if self.fields.iter().any(|field| matches!(&field.kind, FormFieldKind::List { list, .. } if cx.focus == Some(list.id))) {
+            return vec![Hint::new("↑↓", "Browse"), Hint::new("PgUp/PgDn", "Scroll"), self.save.hint(), Hint::new("Tab", "Actions"), Hint::new("Esc", self.cancel.label.clone())];
+        }
         let mut v = vec![Hint::new("Tab", "Next field")];
+        if self.scroll.overflows() {
+            v.push(Hint::new("PgUp/PgDn", "Scroll"));
+        }
         let button = self
             .actions
             .iter()
@@ -417,6 +480,17 @@ impl FormDialog {
                 _ => {}
             }
         }
+        if key.is(KeyCode::Enter) && self.fields.iter().any(|field| matches!(&field.kind, FormFieldKind::List { list, .. } if cur == Some(list.id))) {
+            self.submit(focus);
+            return Outcome::Changed;
+        }
+        if !editing && !open && !self.fields.iter().any(|field| matches!(&field.kind, FormFieldKind::List { list, .. } if cur == Some(list.id))) {
+            match key.code {
+                KeyCode::PageUp => { self.scroll.page_up(); return Outcome::Changed; },
+                KeyCode::PageDown => { self.scroll.page_down(); return Outcome::Changed; },
+                _ => {}
+            }
+        }
         for f in self.fields.iter_mut() {
             if !f.visible {
                 continue;
@@ -448,6 +522,17 @@ impl FormDialog {
                     }
                     if o.consumed() {
                         return o;
+                    }
+                }
+                FormFieldKind::List { list, .. } if cur == Some(list.id) => {
+                    let before = list.cursor;
+                    let outcome = list.on_key(key);
+                    if list.cursor != before {
+                        self.dirty = true;
+                        self.events.push(FormAction::Changed(name));
+                    }
+                    if outcome.consumed() {
+                        return outcome;
                     }
                 }
                 FormFieldKind::Select(s) if cur == Some(s.id) => {
@@ -631,6 +716,17 @@ impl FormDialog {
                     focus.focus(id);
                     return i.on_click_count(pos, count.max(1));
                 }
+                FormFieldKind::List { list, .. } => {
+                    if let Some(index) =
+                        (0..list.items.len()).find(|index| list.row_id(*index) == id)
+                    {
+                        focus.focus(list.id);
+                        let outcome = list.on_click_count(index, count);
+                        self.dirty = true;
+                        self.events.push(FormAction::Changed(name));
+                        return outcome;
+                    }
+                }
                 FormFieldKind::Select(s) if s.contains_id(id) => {
                     focus.focus(s.id);
                     let (o, ev) = s.on_click(id);
@@ -731,10 +827,10 @@ impl FormDialog {
         Outcome::Consumed
     }
 
-    fn content_height(&self) -> u16 {
+    fn content_height(&self, note_width: u16, list_rows: u16) -> u16 {
         let mut h = 0u16;
         for f in self.fields.iter().filter(|f| f.visible) {
-            h += f.height() + 1;
+            h += f.height(note_width, list_rows) + 1;
         }
         h
     }
@@ -750,10 +846,43 @@ impl FormDialog {
         let old = std::mem::replace(&mut self.strings, s);
         Strings::follow(&mut self.cancel.label, old.cancel, s.cancel);
         Strings::follow(&mut self.save.label, old.save, s.save);
-        let content = self.content_height();
+        let frame = crate::ui::modal::Frame::new(self.width, 1);
+        let inner_width = frame.area(screen).inner(frame.margin).width;
+        let note_width = inner_width.saturating_sub(2);
         let err = u16::from(self.error.is_some());
+        let mut widths: Vec<u16> = self
+            .actions
+            .iter()
+            .map(|(_, button)| button.width())
+            .collect();
+        widths.push(self.cancel.width());
+        widths.push(self.save.width());
+        let action_rows = row_layout_right(Rect::new(0, 0, inner_width, 1), &widths, 1)
+            .iter()
+            .map(|rect| rect.y + 1)
+            .max()
+            .unwrap_or(1);
+        let maximum_inner = crate::ui::modal::Frame::new(self.width, u16::MAX)
+            .area(screen)
+            .inner(frame.margin)
+            .height;
+        let lists = self
+            .fields
+            .iter()
+            .filter(|field| field.visible && matches!(field.kind, FormFieldKind::List { .. }))
+            .count() as u16;
+        let other_rows: u16 = self
+            .fields
+            .iter()
+            .filter(|field| field.visible && !matches!(field.kind, FormFieldKind::List { .. }))
+            .map(|field| field.height(note_width, u16::MAX) + 1)
+            .sum();
+        let list_rows = (maximum_inner.saturating_sub(2 + action_rows + err + other_rows + lists)
+            / lists.max(1))
+        .max(1);
+        let content = self.content_height(note_width, list_rows);
         let h = 2 + 2 + content + err + 2;
-        let (area, inner) = crate::ui::modal::Frame::new(self.width, h)
+        let (area, inner) = crate::ui::modal::Frame::new(self.width, h + action_rows - 1)
             .title(&self.title)
             .meta(self.meta.as_deref())
             .overlay(&*self)
@@ -761,7 +890,7 @@ impl FormDialog {
         self.area = area;
         let t = ctx.theme;
         let bg = t.surface_elevated;
-        let body_h = inner.height.saturating_sub(3 + err);
+        let body_h = inner.height.saturating_sub(2 + action_rows + err);
         self.scroll.set_content(content as usize);
         self.scroll.set_viewport(body_h as usize);
 
@@ -772,7 +901,7 @@ impl FormDialog {
         for f in self.fields.iter().filter(|f| f.visible) {
             if moved && f.focus_id().is_some() && f.focus_id() == cur {
                 let top = y_off as usize;
-                let bottom = (y_off + f.height()) as usize;
+                let bottom = (y_off + f.height(note_width, list_rows)) as usize;
                 if top < self.scroll.offset {
                     self.scroll.scroll_to(top);
                 } else if bottom > self.scroll.offset + body_h as usize {
@@ -780,12 +909,12 @@ impl FormDialog {
                         .scroll_to(bottom.saturating_sub(body_h as usize));
                 }
             }
-            y_off += f.height() + 1;
+            y_off += f.height(note_width, list_rows) + 1;
         }
         if let Some(name) = self.reveal.take() {
             let mut top = 0usize;
             for f in self.fields.iter().filter(|f| f.visible) {
-                let bottom = top + f.height() as usize + 1;
+                let bottom = top + f.height(note_width, list_rows) as usize + 1;
                 if f.name == name {
                     if top < self.scroll.offset {
                         self.scroll.scroll_to(top);
@@ -805,7 +934,7 @@ impl FormDialog {
             if !f.visible {
                 continue;
             }
-            let fh = f.height() as i32;
+            let fh = f.height(note_width, list_rows) as i32;
             let whole = y >= body.y as i32 && y < body.bottom() as i32;
             if !whole && let Some(id) = f.tab_stop() {
                 ctx.focus_stop(id);
@@ -820,9 +949,12 @@ impl FormDialog {
                     inner.width + 1,
                     avail.min(fh as u16 - clip_top),
                 );
-                if clip_top == 0 && !r.is_empty() {
+                if (clip_top == 0 || matches!(&f.kind, FormFieldKind::Note(_))) && !r.is_empty() {
                     match &mut f.kind {
                         FormFieldKind::Input(i) => i.render(r, buf, ctx, bg),
+                        FormFieldKind::List { list, .. } => {
+                            list.render(r, buf, ctx, bg);
+                        }
                         FormFieldKind::Select(s) => {
                             if s.open {
                                 open_select = Some(fi);
@@ -868,15 +1000,31 @@ impl FormDialog {
                             }
                         }
                         FormFieldKind::Note(lines) => {
-                            for (i, (l, tone)) in lines.iter().enumerate() {
-                                if (i as u16) < r.height {
-                                    buf.set_string(
-                                        r.x + 2,
-                                        r.y + i as u16,
-                                        truncate(l, r.width.saturating_sub(3) as usize),
-                                        Style::new().fg(t.tone(*tone)).bg(bg),
-                                    );
-                                }
+                            let wrapped: Vec<(String, Tone)> = lines
+                                .iter()
+                                .flat_map(|(line, tone)| {
+                                    let text = if f.wrap {
+                                        crate::ui::text::wrap(line, note_width as usize)
+                                    } else {
+                                        vec![line.clone()]
+                                    };
+                                    text.into_iter()
+                                        .map(|line| (line, *tone))
+                                        .collect::<Vec<_>>()
+                                })
+                                .collect();
+                            for (i, (line, tone)) in wrapped
+                                .iter()
+                                .skip(clip_top as usize)
+                                .take(r.height as usize)
+                                .enumerate()
+                            {
+                                buf.set_string(
+                                    r.x + 2,
+                                    r.y + i as u16,
+                                    truncate(line, note_width as usize),
+                                    Style::new().fg(t.tone(*tone)).bg(bg),
+                                );
                             }
                         }
                     }
@@ -895,7 +1043,7 @@ impl FormDialog {
                 .draw_with_fade(rows, buf, ctx, self.id, true, &[]);
         }
         if let Some(e) = &self.error {
-            let ey = inner.bottom().saturating_sub(2);
+            let ey = inner.bottom().saturating_sub(action_rows + 1);
             buf.set_string(
                 inner.x,
                 ey,
@@ -909,10 +1057,7 @@ impl FormDialog {
                 t.error_fg().bg(bg).add_modifier(Modifier::BOLD),
             );
         }
-        let ay = inner.bottom().saturating_sub(1);
-        let mut widths: Vec<u16> = self.actions.iter().map(|(_, b)| b.width()).collect();
-        widths.push(self.cancel.width());
-        widths.push(self.save.width());
+        let ay = inner.bottom().saturating_sub(action_rows);
         let rects = row_layout_right(Rect::new(inner.x, ay, inner.width, 1), &widths, 1);
         let n = self.actions.len();
         for (i, (_, b)) in self.actions.iter_mut().enumerate() {
@@ -928,6 +1073,7 @@ impl FormDialog {
             match &f.kind {
                 FormFieldKind::Input(i) => ctx.hits.register(i.id, i.area),
                 FormFieldKind::Select(s) => ctx.hits.register(s.id, s.area),
+                FormFieldKind::List { .. } => {}
                 FormFieldKind::Check(c) => ctx.hits.register(c.id, c.area),
                 FormFieldKind::Radio(r) => {
                     for (i, a) in r.areas.iter().enumerate() {
@@ -966,7 +1112,7 @@ impl FormDialog {
                         ctx.hits.raise(s.option_id(k));
                     }
                 }
-                y += f.height() as i32 + 1;
+                y += f.height(note_width, list_rows) as i32 + 1;
             }
         }
     }
@@ -989,6 +1135,17 @@ impl FormDialog {
         use crate::core::response::Response;
         for f in self.fields.iter_mut() {
             match &mut f.kind {
+                FormFieldKind::List { list, .. } => {
+                    let Some(response) = list.route(ev) else {
+                        continue;
+                    };
+                    if ev.is(Phase::Click) {
+                        focus.focus(list.id);
+                    }
+                    self.dirty = true;
+                    self.events.push(FormAction::Changed(f.name.clone()));
+                    return response;
+                }
                 FormFieldKind::Select(s) => {
                     let Some(mut r) = s.route(ev) else {
                         continue;

@@ -485,6 +485,7 @@ impl ListBox {
         self.core.reveal.begin(ctx);
         self.core.scroll.set_content(self.items.len());
         self.core.scroll.set_viewport(area.height as usize);
+        self.core.scroll.follow(self.core.cursor);
         let n = self.items.len();
 
         if self.core.is_focus_stop(n, focused) {

@@ -1934,6 +1934,11 @@ impl App {
                 self.router.usage_mut().select(select);
                 self.enter_route();
             }
+            Go::AllUsage => {
+                self.show_tab(TAB_USAGE);
+                self.router.usage_mut().select_all();
+                self.enter_route();
+            }
             Go::Roles { select } => {
                 if let Some(roles) = self.router.roles_mut() {
                     roles.select(select);

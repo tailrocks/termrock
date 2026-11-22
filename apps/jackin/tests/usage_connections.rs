@@ -219,6 +219,7 @@ fn dashboard_keyboard_hides_restores_and_persists_settings() {
         empty: false,
         alerts: vec![],
         rows: vec![BoardMetric {
+            member_preferences: Vec::new(),
             account: Some("owned".into()),
             members: vec![],
             provider: "zai".into(),
@@ -337,3 +338,8 @@ fn dashboard_keyboard_hides_restores_and_persists_settings() {
         ))
     ));
 }
+
+#[path = "usage_connections/flows.rs"]
+mod flows;
+#[path = "usage_connections/management.rs"]
+mod management;

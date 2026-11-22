@@ -109,6 +109,7 @@ pub enum Go {
     Usage {
         select: Option<AccountId>,
     },
+    AllUsage,
     Roles {
         select: Option<RoleName>,
     },

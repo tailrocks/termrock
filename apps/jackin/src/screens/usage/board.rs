@@ -1,4 +1,5 @@
 use crate::backend::{PlainKey, Ticket};
+use crate::screens::modals::FieldKindW;
 use crate::screens::modals::{FieldValue, FormDialog, FormField, FormValues};
 use crate::screens::{Cx, LayerTag, ModalResult};
 use crate::usage_connections::{
@@ -8,6 +9,7 @@ use crate::world::World;
 use junie_tui::core::{event::Outcome, id::WidgetId};
 use junie_tui::theme::Tone;
 use junie_tui::widgets::input::TextInput;
+use junie_tui::widgets::list::{ListBox, ListItem, SelectMode};
 use junie_tui::widgets::{button::Button, choice::Checkbox, select::Select};
 
 const ID: WidgetId = WidgetId::of("usage.connected_board");
@@ -21,6 +23,7 @@ pub(super) struct Board {
     priority: bool,
     data: Option<UsageBoard>,
     view: View,
+    row: usize,
     undo: Option<BoardEdit>,
 }
 #[derive(Default)]
@@ -55,6 +58,7 @@ fn note(lines: Vec<String>) -> FormField {
         "text",
         lines.into_iter().map(|s| (s, Tone::Muted)).collect(),
     )
+    .wrap(true)
 }
 
 impl Board {
@@ -64,6 +68,7 @@ impl Board {
         self.priority = priority.unwrap_or(true);
         self.ticket = Some(w.next_ticket());
         self.data = None;
+        self.row = 0;
         self.view = View::Loading;
         cx.open(self.form(), LayerTag::new("usage_board"));
         self.request(
@@ -106,11 +111,31 @@ impl Board {
         }
     }
 
-    fn redraw(&self, cx: &mut Cx) {
-        let form = self.form();
-        cx.focus.focus(form.initial_focus());
+    fn redraw(&self, cx: &mut Cx, preserve: bool) {
+        let mut form = self.form();
+        if !preserve {
+            cx.focus.focus(form.initial_focus());
+        }
         cx.with_top::<FormDialog>(move |current| {
             if current.id == ID {
+                if preserve {
+                    form.scroll = current.scroll.clone();
+                    for field in &mut form.fields {
+                        if let FieldKindW::List { list, .. } = &mut field.kind
+                            && let Some(old) =
+                                current.fields.iter().find(|old| old.name == field.name)
+                            && let FieldKindW::List { list: old, .. } = &old.kind
+                        {
+                            let label = old.items.get(old.cursor).map(|item| &item.label);
+                            list.cursor = label
+                                .and_then(|label| {
+                                    list.items.iter().position(|item| &item.label == label)
+                                })
+                                .unwrap_or(old.cursor.min(list.items.len().saturating_sub(1)));
+                            list.core.scroll = old.core.scroll.clone();
+                        }
+                    }
+                }
                 *current = form;
             }
         });
@@ -119,9 +144,20 @@ impl Board {
     fn form(&self) -> FormDialog {
         let mut actions = vec![];
         let mut fields = vec![];
+        if matches!(self.view, View::Loading | View::Error(_)) {
+            actions.push((
+                "switch",
+                if self.priority {
+                    "All Usage"
+                } else {
+                    "Priority"
+                },
+            ));
+        }
         let mut save = "Details";
         let title = match self.view {
             View::Settings => "Usage settings",
+            View::Proxy => "Network proxy",
             _ if self.priority => "Priority",
             _ => "All Usage",
         };
@@ -135,35 +171,74 @@ impl Board {
                 save = "Loading…";
             }
             (Some(data), View::Rows) => {
-                let mut lines = vec![(data.summary.clone(), Tone::Normal)];
-                let mut group = String::new();
-                for row in &data.rows {
-                    if group != row.group {
-                        group = row.group.clone();
-                        lines.push((group.clone(), Tone::Normal));
-                    }
-                    let mut line = format!("{} · {}", row.title, row.value);
-                    if let Some((amount, pace)) = row.bar {
-                        let bar: String = (0..10)
-                            .map(|i| {
-                                if pace.map(|p| (p / 10).min(9)) == Some(i) {
-                                    '│'
-                                } else if i * 10 < amount {
-                                    '█'
-                                } else {
-                                    '░'
-                                }
-                            })
-                            .collect();
-                        line.push_str(&format!("  {bar}"));
-                    }
-                    if let Some(reset) = &row.reset {
-                        line.push_str(&format!(" · {reset}"));
-                    }
-                    lines.push((line, row.severity));
+                let remaining = data
+                    .settings
+                    .flags
+                    .iter()
+                    .find(|(id, _, _)| *id == "remaining")
+                    .is_none_or(|(_, _, enabled)| *enabled);
+                let mut lines = vec![];
+                if data.rows.iter().any(|row| {
+                    row.value.contains('%')
+                        && !["remaining", "used", "left"]
+                            .iter()
+                            .any(|word| row.value.contains(word))
+                }) {
+                    lines.push((
+                        if remaining {
+                            "Percentages show remaining limits"
+                        } else {
+                            "Percentages show used limits"
+                        }
+                        .into(),
+                        Tone::Secondary,
+                    ));
                 }
-                lines.extend(data.notices.iter().cloned().map(|s| (s, Tone::Muted)));
-                fields.push(FormField::note("text", lines));
+                if data
+                    .rows
+                    .iter()
+                    .any(|row| row.bar.is_some_and(|(_, pace)| pace.is_some()))
+                {
+                    lines.push(("│ expected pace".into(), Tone::Muted));
+                }
+                if !matches!(data.summary.as_str(), "Priority" | "All Usage") {
+                    lines.push((data.summary.clone(), Tone::Normal));
+                }
+                lines.extend(data.notices.iter().cloned().map(|text| (text, Tone::Muted)));
+                fields.push(FormField::note("text", lines).wrap(true));
+                if !data.rows.is_empty() {
+                    let items = data
+                        .rows
+                        .iter()
+                        .map(|row| {
+                            let mut value = row.value.clone();
+                            if let Some((amount, pace)) = row.bar {
+                                let bar: String = (0..5)
+                                    .map(|index| {
+                                        if pace.map(|pace| (pace / 20).min(4)) == Some(index) {
+                                            '│'
+                                        } else if index * 20 < amount {
+                                            '█'
+                                        } else {
+                                            '░'
+                                        }
+                                    })
+                                    .collect();
+                                value.push_str(&format!(" {bar}"));
+                            }
+                            ListItem::new(&format!("{} · {}", row.group, row.title))
+                                .meta(&value)
+                                .meta_tone(row.severity)
+                        })
+                        .collect();
+                    let mut list = ListBox::new(ID.sub("row"), items, SelectMode::Single);
+                    list.cursor = self.row.min(data.rows.len().saturating_sub(1));
+                    fields.push(FormField::list(
+                        "row",
+                        list,
+                        data.rows.len().clamp(3, 32) as u16,
+                    ));
+                }
                 if data.empty {
                     actions.push(("add", "Add account…"));
                 }
@@ -175,33 +250,58 @@ impl Board {
                     ));
                     actions.push(("fix", "Fix…"));
                 }
-                if !data.rows.is_empty() {
-                    let labels: Vec<_> = data.rows.iter().map(|r| r.title.as_str()).collect();
-                    fields.push(FormField::select(
-                        "row",
-                        Select::new(ID.sub("row"), "Metric", &labels, 0),
-                    ));
-                }
-                actions.extend([
-                    (
+                if self.priority && data.rows.is_empty() {
+                    save = "All Usage";
+                } else {
+                    actions.push((
                         "switch",
                         if self.priority {
                             "All Usage"
                         } else {
                             "Priority"
                         },
-                    ),
+                    ));
+                }
+                actions.extend([
                     ("settings", "Settings…"),
                     ("reload", "Refresh all"),
                     ("share", "Copy report"),
                 ]);
                 if self.undo.is_some() {
-                    actions.push(("undo", "Undo hide"));
+                    actions.push((
+                        "undo",
+                        if matches!(self.undo, Some(BoardEdit::Unified { .. })) {
+                            "Undo change"
+                        } else {
+                            "Undo hide"
+                        },
+                    ));
                 }
             }
             (Some(data), View::Details(i)) => {
                 if let Some(row) = data.rows.get(*i) {
                     let mut lines = vec![row.group.clone(), row.title.clone(), row.value.clone()];
+                    if let Some(reset) = &row.reset {
+                        lines.push(reset.clone());
+                    }
+                    if let Some((amount, pace)) = row.bar {
+                        let bar: String = (0..10)
+                            .map(|index| {
+                                if pace.map(|pace| (pace / 10).min(9)) == Some(index) {
+                                    '│'
+                                } else if index * 10 < amount {
+                                    '█'
+                                } else {
+                                    '░'
+                                }
+                            })
+                            .collect();
+                        lines.push(if pace.is_some() {
+                            format!("{bar} · │ expected pace")
+                        } else {
+                            bar
+                        });
+                    }
                     lines.extend(row.details.clone());
                     fields.push(note(lines));
                     save = "Back";
@@ -214,9 +314,15 @@ impl Board {
                             .collect();
                         fields.push(FormField::select(
                             "member",
-                            Select::new(ID.sub("member"), "Account", &labels, 0),
+                            Select::new(ID.sub("member_choice"), "Account", &labels, 0),
                         ));
                         actions.push(("member", "Inspect account"));
+                    }
+                    if row.account.is_none() && !row.member_preferences.is_empty() {
+                        actions.extend([
+                            ("pin", if row.pinned { "Unpin" } else { "Pin" }),
+                            ("hide", "Hide"),
+                        ]);
                     }
                     if row.account.is_some() {
                         actions.extend([
@@ -319,7 +425,7 @@ impl Board {
             .keep_open_on_save();
         form.save.label = save.into();
         form.save.disabled = matches!(&self.view, View::Loading)
-            || matches!((&self.view,&self.data),(View::Rows,Some(d)) if d.rows.is_empty());
+            || matches!((&self.view,&self.data),(View::Rows,Some(d)) if d.rows.is_empty() && !self.priority);
         for (key, label) in actions {
             form = form.action(key, Button::secondary(ID.sub(key), label));
         }
@@ -330,6 +436,7 @@ impl Board {
         if self.ticket != Some(ticket) || !matches!(self.view, View::Loading | View::Rows) {
             return Outcome::Ignored;
         }
+        let preserve = matches!(self.view, View::Rows);
         match update {
             UsageUpdate::Board(data) => {
                 self.priority = data.priority;
@@ -343,7 +450,7 @@ impl Board {
             _ => return Outcome::Ignored,
         }
         if !self.managing_account {
-            self.redraw(cx);
+            self.redraw(cx, preserve);
         }
         Outcome::Changed
     }
@@ -365,7 +472,7 @@ impl Board {
         let action = match (key.as_str(), row) {
             ("add", _) => {
                 self.managing_account = true;
-                self.account.add(w, cx);
+                self.account.add(w, cx, None);
                 return Outcome::Changed;
             }
             ("fix", _) => {
@@ -410,6 +517,10 @@ impl Board {
             }
             ("switch", _) => {
                 self.priority = !self.priority;
+                self.row = 0;
+                self.ticket = Some(w.next_ticket());
+                self.data = None;
+                self.view = View::Loading;
                 Some(BoardEdit::Read)
             }
             ("reload", _) => Some(BoardEdit::Refresh(None)),
@@ -421,6 +532,12 @@ impl Board {
                 None
             }
             ("undo", _) => self.undo.take(),
+            (key @ ("pin" | "hide"), Some(row)) if row.account.is_none() => {
+                row.unified_edit(key == "hide").map(|(edit, undo)| {
+                    self.undo = Some(undo);
+                    edit
+                })
+            }
             (
                 "pin",
                 Some(BoardMetric {
@@ -483,8 +600,19 @@ impl Board {
                         None
                     }
                 }),
+                View::Rows
+                    if self.priority
+                        && self.data.as_ref().is_some_and(|data| data.rows.is_empty()) =>
+                {
+                    self.priority = false;
+                    self.ticket = Some(w.next_ticket());
+                    self.data = None;
+                    self.view = View::Loading;
+                    Some(BoardEdit::Read)
+                }
                 View::Rows => {
-                    self.view = View::Details(choose(&values, "row"));
+                    self.row = choose(&values, "row");
+                    self.view = View::Details(self.row);
                     None
                 }
                 View::Member(i, _) => {
@@ -520,7 +648,7 @@ impl Board {
             self.view = View::Loading;
             self.request(w, edit);
         }
-        self.redraw(cx);
+        self.redraw(cx, false);
         Outcome::Changed
     }
 }

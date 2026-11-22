@@ -145,7 +145,15 @@ pub trait UsageConnections: Send + Sync {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MetricPreference {
+    pub account: String,
+    pub hidden: bool,
+    pub pinned: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BoardMetric {
+    pub member_preferences: Vec<MetricPreference>,
     pub account: Option<String>,
     pub members: Vec<UsageEntry>,
     pub provider: String,
@@ -158,6 +166,32 @@ pub struct BoardMetric {
     pub reset: Option<String>,
     pub details: Vec<String>,
     pub pinned: bool,
+}
+
+impl BoardMetric {
+    pub fn unified_edit(&self, hide: bool) -> Option<(BoardEdit, BoardEdit)> {
+        if self.account.is_some() || self.member_preferences.is_empty() {
+            return None;
+        }
+        let changes: Vec<_> = self
+            .member_preferences
+            .iter()
+            .map(|state| MetricPreference {
+                account: state.account.clone(),
+                hidden: hide || state.hidden,
+                pinned: !hide && !self.pinned && !state.hidden,
+            })
+            .collect();
+        let edit = |before, after| BoardEdit::Unified {
+            metric: self.metric.clone(),
+            before,
+            after,
+        };
+        Some((
+            edit(self.member_preferences.clone(), changes.clone()),
+            edit(changes, self.member_preferences.clone()),
+        ))
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -203,6 +237,11 @@ pub enum BoardEdit {
         metric: String,
         hidden: bool,
         restore_pin: bool,
+    },
+    Unified {
+        metric: String,
+        before: Vec<MetricPreference>,
+        after: Vec<MetricPreference>,
     },
     Move {
         scope: OrderingScope,

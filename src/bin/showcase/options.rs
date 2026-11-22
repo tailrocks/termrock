@@ -1169,6 +1169,7 @@ pub static DIALOG_KINDS: &[Opt] = &[
         "Choice buttons",
         &["two", "three"],
     ),
+    Opt::new("dialogkinds.inline_list", "Inline list field", OFF_ON),
 ];
 
 pub static POPUPS_TOOLTIPS: &[Opt] = &[
