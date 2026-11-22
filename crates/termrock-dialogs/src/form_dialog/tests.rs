@@ -630,3 +630,123 @@ fn form_hidden_layer_paste_has_one_focused_owner() {
     );
     rig.untouched();
 }
+
+#[test]
+fn list_field_respects_save_and_row_refusals_and_only_reports_value_changes() {
+    use termrock_collections::list::{ListItem, SelectMode};
+    let id = FORM.sub("list");
+    let list = ListBox::new(
+        id,
+        vec![
+            ListItem::new("Locked").disabled(true),
+            ListItem::new("Available"),
+        ],
+        SelectMode::Single,
+    );
+    let second = list.row_id(1);
+    let mut rig = Rig::with(FormDialog::new(
+        FORM,
+        "Accounts",
+        vec![FormField::list("accounts", list, 2)],
+    ));
+    rig.key(id, KeyCode::Enter);
+    rig.untouched();
+    rig.click(second);
+    assert_eq!(rig.form.choice("accounts"), 1);
+    assert_eq!(
+        rig.form.events,
+        vec![FormAction::Changed("accounts".into())]
+    );
+    rig.form.events.clear();
+    rig.form.dirty = false;
+    rig.click(second);
+    rig.untouched();
+    rig.form.save.disabled = true;
+    rig.key(id, KeyCode::Enter);
+    rig.untouched();
+    rig.form.save.disabled = false;
+    rig.key(id, KeyCode::Enter);
+    assert!(
+        rig.form
+            .events
+            .iter()
+            .any(|e| matches!(e, FormAction::Save | FormAction::Action(_)))
+    );
+}
+
+#[test]
+fn a_hidden_list_drops_its_hints_and_ignores_stale_row_clicks() {
+    use termrock_collections::list::{ListItem, SelectMode};
+    let id = FORM.sub("accounts");
+    let list = ListBox::new(
+        id,
+        vec![ListItem::new("One"), ListItem::new("Two")],
+        SelectMode::Single,
+    );
+    let row = list.row_id(1);
+    let next = FORM.sub("next");
+    let mut rig = Rig::with(FormDialog::new(
+        FORM,
+        "Accounts",
+        vec![
+            FormField::list("accounts", list, 2),
+            FormField::check("next", Checkbox::new(next, "Next", false)),
+        ],
+    ));
+    rig.form.set_visible("accounts", false);
+    assert_eq!(rig.form.initial_focus(), next);
+    assert!(
+        !HasHints::hints(&rig.form, &HintCx::current(Some(id)))
+            .iter()
+            .any(|hint| hint.action == "Browse")
+    );
+    rig.click_direct(row);
+    assert_eq!(rig.form.choice("accounts"), 0);
+    rig.untouched();
+}
+
+#[test]
+fn pointer_events_on_a_list_only_dirty_the_form_when_its_value_changes() {
+    use termrock_collections::list::{ListItem, SelectMode};
+    use termrock_core::intent::Phase;
+    use termrock_core::pointer::PointerEvent;
+    let id = FORM.sub("accounts");
+    let list = ListBox::new(
+        id,
+        vec![ListItem::new("One"), ListItem::new("Two")],
+        SelectMode::Single,
+    );
+    let first = list.row_id(0);
+    let second = list.row_id(1);
+    let mut rig = Rig::with(FormDialog::new(
+        FORM,
+        "Accounts",
+        vec![FormField::list("accounts", list, 2)],
+    ));
+    for row in [first, second] {
+        let bounds = rig
+            .hits
+            .regions()
+            .iter()
+            .find(|hit| hit.id == row)
+            .expect("visible row hit")
+            .area;
+        let event = PointerEvent::new(
+            &rig.hits,
+            Phase::Click,
+            row,
+            Position::new(bounds.x, bounds.y),
+            1,
+            KeyModifiers::NONE,
+        );
+        assert!(rig.form.pointer_in(&event, &mut rig.focus).is_consumed());
+        if row == first {
+            rig.untouched();
+        }
+    }
+    assert!(rig.form.dirty);
+    assert_eq!(
+        rig.form.events,
+        vec![FormAction::Changed("accounts".into())]
+    );
+}

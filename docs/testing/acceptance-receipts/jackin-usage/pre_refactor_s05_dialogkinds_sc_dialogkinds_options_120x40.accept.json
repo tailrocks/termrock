@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s05_dialogkinds/sc_dialogkinds_options_120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/termrock/target/functional/s05-sections-74859-1795326026197801000-0/check-artifacts/pre_refactor/s05_dialogkinds/sc_dialogkinds_options_120x40/7ac27afd1d38a7bf83134612bddfcaff94d1a892ef4fbd2ca4ea5dd9feae4184/sample.tui.pb"
+  },
+  "candidate_sha256": "7ac27afd1d38a7bf83134612bddfcaff94d1a892ef4fbd2ca4ea5dd9feae4184",
+  "baseline_sha256": "7ac27afd1d38a7bf83134612bddfcaff94d1a892ef4fbd2ca4ea5dd9feae4184",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/termrock/crates/termrock-functional/tests/functional/baselines/pre_refactor/s05_dialogkinds/sc_dialogkinds_options_120x40.tui.pb"
+  },
+  "error_code": null
+}

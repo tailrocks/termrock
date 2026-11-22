@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/j03_environments/j03_environments_env_narrow",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/termrock/target/functional/j03-environments-env-34203-1795326263642793000-0/check-artifacts/pre_refactor/j03_environments/j03_environments_env_narrow/e4ad9a4aecb324bdbdc19ae890e8d5d3985560818775f977c7ef89e38e8dfac8/sample.tui.pb"
+  },
+  "candidate_sha256": "e4ad9a4aecb324bdbdc19ae890e8d5d3985560818775f977c7ef89e38e8dfac8",
+  "baseline_sha256": "e4ad9a4aecb324bdbdc19ae890e8d5d3985560818775f977c7ef89e38e8dfac8",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/termrock/crates/termrock-functional/tests/functional/baselines/pre_refactor/j03_environments/j03_environments_env_narrow.tui.pb"
+  },
+  "error_code": null
+}

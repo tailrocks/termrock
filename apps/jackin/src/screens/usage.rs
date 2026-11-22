@@ -1,3 +1,4 @@
+mod board;
 use crate::screens::Jackin;
 use termrock::core::event::{Key, Outcome};
 use termrock::core::hit::Axis;
@@ -117,7 +118,9 @@ type DetailLine = (String, Tone, Option<(u8, QuotaTone)>);
 
 #[derive(Default)]
 pub struct UsageScreen {
+    board: board::Board,
     pub selected: Option<AccountId>,
+    all_usage: bool,
     rows: Vec<Row>,
     scroll: ScrollState,
     detail_scroll: ScrollState,
@@ -130,6 +133,12 @@ pub struct UsageScreen {
 impl UsageScreen {
     pub fn select(&mut self, id: Option<AccountId>) {
         self.selected = id;
+        self.all_usage = false;
+    }
+
+    pub fn select_all(&mut self) {
+        self.selected = None;
+        self.all_usage = true;
     }
 
     fn build_rows(&mut self, w: &World) {
@@ -768,6 +777,14 @@ impl Page<Jackin> for UsageScreen {
         self.build_rows(w);
         self.show_detail = false;
         cx.focus.focus(LIST);
+        if self.selected.is_none()
+            && let Some(service) = w.backend.usage_connections()
+            && (self.all_usage
+                || w.accounts.accounts.is_empty()
+                || service.has_connected_accounts())
+        {
+            self.board.open(w, cx, self.all_usage.then_some(false));
+        }
     }
 
     fn primary_focus(&self) -> Option<WidgetId> {
@@ -782,6 +799,7 @@ impl Page<Jackin> for UsageScreen {
     }
 
     fn on_tick(&mut self, w: &mut World, _cx: &mut Cx) -> Outcome {
+        self.board.tick(w);
         self.build_rows(w);
         if self.refreshing && !self.animating(w) {
             self.refreshing = false;
@@ -798,6 +816,13 @@ impl Page<Jackin> for UsageScreen {
     }
 
     fn on_key(&mut self, key: &Key, w: &mut World, cx: &mut Cx) -> Outcome {
+        if key.plain()
+            && w.backend.usage_connections().is_some()
+            && matches!(key.code, KeyCode::Char('p' | 'a'))
+        {
+            self.board.open(w, cx, Some(key.code == KeyCode::Char('p')));
+            return Outcome::Changed;
+        }
         self.build_rows(w);
         let in_detail = cx.focus.is(DETAIL);
         match key.code {
@@ -866,7 +891,43 @@ impl Page<Jackin> for UsageScreen {
         }
     }
 
-    fn on_msg(&mut self, msg: &Msg, _w: &mut World, _cx: &mut Cx) -> Outcome {
+    fn on_layer_result(
+        &mut self,
+        tag: &super::LayerTag,
+        result: super::ModalResult,
+        w: &mut World,
+        cx: &mut Cx,
+    ) -> Outcome {
+        if tag.kind == "usage_connection" {
+            if matches!(
+                result,
+                super::ModalResult::Form(None) | super::ModalResult::Cancelled
+            ) {
+                self.board.account_closed(w);
+            }
+            return self.board.account.result(result, w, cx);
+        }
+        if tag.kind == "usage_board" {
+            self.board.result(result, w, cx)
+        } else {
+            Outcome::Ignored
+        }
+    }
+
+    fn on_msg(&mut self, msg: &Msg, w: &mut World, cx: &mut Cx) -> Outcome {
+        if let Msg::UsageUpdated { .. } = msg {
+            self.board.refreshed(w);
+            return Outcome::Changed;
+        }
+        if let Msg::UsageConnection { ticket, update } = msg {
+            let result = self.board.receive(*ticket, update, cx);
+            return if result == Outcome::Ignored {
+                self.board.account.update(*ticket, update, cx)
+            } else {
+                result
+            };
+        }
+
         if let Msg::AccountRefreshed { .. } = msg {
             return Outcome::Changed;
         }
@@ -889,13 +950,24 @@ impl Page<Jackin> for UsageScreen {
             format!("broker · {}", w.clock.ago(w.last_refresh_secs))
         };
         let focused_any = ctx.interaction.focused(LIST) || ctx.interaction.focused(DETAIL);
-        let inner = Panel::framed(Some("Usage · read-only"))
+        let connected = w.backend.usage_connections().is_some();
+        let title = if connected {
+            "Usage"
+        } else {
+            "Usage · read-only"
+        };
+        let inner = Panel::framed(Some(title))
             .focused(focused_any)
             .meta(&meta)
             .render(area, buf, t);
         if w.accounts.accounts.is_empty() {
-            let e = EmptyState::new("No providers configured.")
-                .hint("r refreshes · m opens Accounts to add one");
+            let e = if connected {
+                EmptyState::new("Connected account usage")
+                    .hint("p opens Priority · a opens All Usage · m opens Accounts")
+            } else {
+                EmptyState::new("No providers configured.")
+                    .hint("r refreshes · m opens Accounts to add one")
+            };
             empty::render(inner, buf, t, &e, t.canvas);
             ctx.control(LIST, Rect::new(inner.x, inner.y, 1, 1), false);
             return;
@@ -922,7 +994,17 @@ impl Page<Jackin> for UsageScreen {
         self.draw_detail(detail, buf, ctx, w);
     }
 
-    fn hints(&self, focus: Option<WidgetId>, _w: &World) -> Vec<Hint> {
+    fn hints(&self, focus: Option<WidgetId>, w: &World) -> Vec<Hint> {
+        if w.backend.usage_connections().is_some() {
+            return vec![
+                hint("p", "Priority"),
+                hint("a", "All Usage"),
+                hint("↑↓", "Move"),
+                hint("Enter", "Details"),
+                hint("m", "Accounts"),
+                hint("Esc", "Back"),
+            ];
+        }
         if focus == Some(DETAIL) {
             return vec![
                 hint("↑↓", "Scroll"),
@@ -948,7 +1030,18 @@ impl Page<Jackin> for UsageScreen {
     }
 }
 
-impl Screen for UsageScreen {}
+impl Screen for UsageScreen {
+    fn form_changed(
+        &mut self,
+        tag: &super::LayerTag,
+        form: &mut super::modals::FormDialog,
+        _w: &World,
+    ) {
+        if tag.kind == "usage_connection" {
+            self.board.account.form_changed(form);
+        }
+    }
+}
 
 impl UsageScreen {
     fn click(&mut self, id: WidgetId, w: &mut World, cx: &mut Cx) -> Outcome {

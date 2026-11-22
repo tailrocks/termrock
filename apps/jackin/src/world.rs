@@ -178,6 +178,18 @@ impl From<&GithubRepo> for RepoRef {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Msg {
+    /// Asks the app to start an owned roster refresh. A forced request replaces
+    /// an older observation, while a periodic request coalesces with it.
+    RequestRefresh {
+        force: bool,
+    },
+    UsageUpdated {
+        alerts: Vec<String>,
+    },
+    UsageConnection {
+        ticket: Ticket,
+        update: crate::usage_connections::UsageUpdate,
+    },
     WorkspaceSaved {
         id: Option<WorkspaceId>,
         result: Result<SaveSuccess, SaveFailure>,
@@ -326,13 +338,16 @@ impl Msg {
             | Msg::Restored { .. }
             | Msg::RoleTrusted { .. }
             | Msg::RoleRemoved { .. }
+            | Msg::RequestRefresh { .. }
             | Msg::Refreshed { .. }
             | Msg::AccountRefreshed { .. }
             | Msg::FolderProbed { .. }
             | Msg::OpLoaded { .. }
             | Msg::Takeover { .. }
             | Msg::LaunchCancelled { .. }
-            | Msg::PaneWake { .. } => None,
+            | Msg::PaneWake { .. }
+            | Msg::UsageConnection { .. }
+            | Msg::UsageUpdated { .. } => None,
         }
     }
 }

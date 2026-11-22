@@ -23,3 +23,7 @@ mod smoke;
 mod status_priority;
 mod tiny_terminals;
 mod work_budgets;
+
+mod usage_connections;
+
+mod remote_refresh;
