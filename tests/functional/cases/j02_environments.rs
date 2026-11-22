@@ -533,7 +533,10 @@ fn submit_form(app: &App) {
     app.key("tab");
     app.key("right");
     let save_focused = app.wait_screen("save focused", |screen| {
-        text(screen).contains("Enter Save") && text(screen).contains(CANCEL)
+        (0..screen.rows()).any(|row| {
+            let line = row_text(screen, row);
+            line.contains(CANCEL) && line.contains("▎Save")
+        })
     });
     assert!(
         text(&save_focused).contains(CONFIRM),

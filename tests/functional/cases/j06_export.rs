@@ -230,6 +230,9 @@ fn path_dialog(screen: &TerminalSnapshot, cols: u32, rows: u32) -> bool {
     let visible = text(screen);
     screen.cols() == cols
         && screen.rows() == rows
+        && find_all(screen, "Codex (Primary)")
+            .iter()
+            .any(|point| u32::from(point.x) == cols / 2 + 3)
         && visible.contains(PATH)
         && visible.contains(TITLE)
         && visible.contains(HELP)
