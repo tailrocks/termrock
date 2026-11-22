@@ -3,7 +3,7 @@ pub(super) mod connections;
 use crate::domain::vocabulary::Vocabulary;
 use crate::screens::Jackin;
 use junie_tui::shell::Page;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::hit::Axis;
@@ -189,6 +189,7 @@ pub struct AccountsScreen {
 
     md: MasterDetail,
     actions: Vec<Button>,
+    action_commands: HashMap<WidgetId, &'static str>,
     form: Option<FormCtx>,
     forms_opened: usize,
     pending_remove: Option<AccountId>,
@@ -239,6 +240,7 @@ impl AccountsScreen {
                 .collapse_below(100)
                 .summary_rows(6),
             actions: vec![],
+            action_commands: HashMap::new(),
             form: None,
             forms_opened: 0,
             pending_remove: None,
@@ -1370,7 +1372,12 @@ impl AccountsScreen {
     }
 
     fn rebuild_actions(&mut self, w: &World) {
-        let mk = |n: &str, l: &str, k: ButtonKind| Button::new(INSPECTOR.sub(n), l, k);
+        self.action_commands.clear();
+        let mut mk = |name: &'static str, label: &str, kind: ButtonKind| {
+            let id = INSPECTOR.sub(name);
+            self.action_commands.insert(id, name);
+            Button::new(id, label, kind)
+        };
         self.actions = match &self.selected {
             Sel::Account(id) => match w.accounts.get(id) {
                 Some(a) if a.mutations_allowed() => {
@@ -2761,14 +2768,8 @@ impl Page<Jackin> for AccountsScreen {
         if let Some(i) = action_focus {
             let (o, fired) = self.actions[i].on_key(key);
             if fired {
-                let id = self.actions[i].id;
-                for n in [
-                    "refresh", "validate", "edit", "default", "toggle", "remove", "add",
-                ] {
-                    if INSPECTOR.sub(n) == id {
-                        return self.fire(n, w, cx);
-                    }
-                }
+                let command = self.action_commands[&self.actions[i].id];
+                return self.fire(command, w, cx);
             }
             if o.consumed() {
                 return o;
@@ -3206,13 +3207,8 @@ impl AccountsScreen {
             if self.actions[i].id == id {
                 cx.focus.focus(id);
                 if self.actions[i].on_click() {
-                    for n in [
-                        "refresh", "validate", "edit", "default", "toggle", "remove", "add",
-                    ] {
-                        if INSPECTOR.sub(n) == id {
-                            return self.fire(n, w, cx);
-                        }
-                    }
+                    let command = self.action_commands[&id];
+                    return self.fire(command, w, cx);
                 }
                 return Outcome::Changed;
             }

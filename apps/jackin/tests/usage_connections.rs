@@ -1,7 +1,7 @@
 #![cfg(feature = "demo")]
 mod common;
 
-use common::{app_with, press, screen, screen_at};
+use common::{app_with, click_text, press, screen, screen_at};
 use jackin_console::backend::{Backend, Completion, Effect, Ticket};
 use jackin_console::domain::launch::LaunchContent;
 use jackin_console::fixtures::{Scenario, world_for};
@@ -59,6 +59,67 @@ fn activate(app: &mut jackin_console::app::App, root: &str, target: &str) {
         press(app, "tab");
     }
     panic!("{target} unreachable by keyboard");
+}
+
+fn accounts_with_usage() -> (jackin_console::app::App, Arc<Boundary>) {
+    let scenario = Scenario::AccountsMixed;
+    let mut world = world_for(scenario);
+    let backend = Arc::new(Boundary {
+        pending: Mutex::default(),
+        sim: SimBackend::shared(),
+    });
+    world.backend = backend.clone();
+    let mut app = app_with(scenario, world);
+    app.go(Go::Accounts { select: None });
+    screen(&mut app);
+    (app, backend)
+}
+
+fn connection_form_is_open(app: &mut jackin_console::app::App) {
+    let shown = screen(app);
+    assert!(
+        shown.contains("Continue") && shown.contains("CLIProxyAPI hubs…"),
+        "{shown}"
+    );
+}
+
+fn usage_list_is_requested(app: &mut jackin_console::app::App, backend: &Boundary) {
+    let (ticket, action) = backend.pending.lock().unwrap().pop().expect("list request");
+    assert_eq!(action, UsageAction::List);
+    app.deliver(&Msg::UsageConnection {
+        ticket,
+        update: UsageUpdate::Accounts(vec![]),
+    });
+    let shown = screen(app);
+    assert!(shown.contains("No usage accounts connected."), "{shown}");
+}
+
+#[test]
+fn keyboard_add_usage_footer_opens_connection_form() {
+    let (mut app, _) = accounts_with_usage();
+    activate(&mut app, "accounts.inspector", "connect_usage");
+    connection_form_is_open(&mut app);
+}
+
+#[test]
+fn click_add_usage_footer_opens_connection_form() {
+    let (mut app, _) = accounts_with_usage();
+    click_text(&mut app, "Add usage account…");
+    connection_form_is_open(&mut app);
+}
+
+#[test]
+fn keyboard_usage_accounts_footer_requests_list() {
+    let (mut app, backend) = accounts_with_usage();
+    activate(&mut app, "accounts.inspector", "list_usage");
+    usage_list_is_requested(&mut app, &backend);
+}
+
+#[test]
+fn click_usage_accounts_footer_requests_list() {
+    let (mut app, backend) = accounts_with_usage();
+    click_text(&mut app, "Usage accounts…");
+    usage_list_is_requested(&mut app, &backend);
 }
 
 #[test]
