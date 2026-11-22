@@ -24,6 +24,9 @@ impl std::fmt::Debug for Boundary {
     }
 }
 impl UsageConnections for Boundary {
+    fn has_connected_accounts(&self) -> bool {
+        true
+    }
     fn request(&self, t: Ticket, action: UsageAction) {
         self.pending.lock().unwrap().push((t, action));
     }

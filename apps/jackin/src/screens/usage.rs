@@ -783,7 +783,10 @@ impl Page<Jackin> for UsageScreen {
         self.build_rows(w);
         self.show_detail = false;
         cx.focus.focus(LIST);
-        if self.selected.is_none() && w.backend.usage_connections().is_some() {
+        if self.selected.is_none()
+            && let Some(service) = w.backend.usage_connections()
+            && (w.accounts.accounts.is_empty() || service.has_connected_accounts())
+        {
             self.board.open(w, cx, None);
         }
     }

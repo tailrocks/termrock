@@ -140,6 +140,7 @@ impl fmt::Debug for UsageUpdate {
 
 pub trait UsageConnections: Send + Sync {
     fn accounts_opened(&self) {}
+    fn has_connected_accounts(&self) -> bool;
     fn request(&self, ticket: Ticket, action: UsageAction);
 }
 
