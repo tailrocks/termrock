@@ -8,6 +8,7 @@ fn sample_account(hub: Option<&str>) -> UsageEntry {
         id: "second-account".into(),
         label: "Second workspace".into(),
         provider: "kimi".into(),
+        summary: Box::default(),
         details: vec!["Weekly 42%".into()],
         resets: vec![],
         hub: hub.map(str::to_owned),

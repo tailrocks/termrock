@@ -162,6 +162,7 @@ fn keyboard_connection_shows_usage_and_ignores_a_cancelled_reply() {
         id: "42".into(),
         label: "Work".into(),
         provider: "zai".into(),
+        summary: Box::default(),
         details: vec!["Session · 12% used".into()],
         resets: vec![],
         hub: None,
@@ -225,11 +226,15 @@ fn dashboard_keyboard_hides_restores_and_persists_settings() {
             provider: "zai".into(),
             metric: "session".into(),
             title: "Work quota".into(),
+            label: "Session".into(),
+            bounded: true,
             value: "0% remaining".into(),
+            exact_value: String::new(),
             group: "Pinned".into(),
             bar: Some((0, None)),
             severity: termrock::theme::Tone::Warning,
             reset: None,
+            inspector: vec![],
             details: vec!["Last good response".into()],
             pinned: true,
         }],
@@ -273,6 +278,7 @@ fn dashboard_keyboard_hides_restores_and_persists_settings() {
     ));
     let rows = std::mem::take(&mut data.rows);
     send(&mut app, &data);
+    activate(&mut app, ROOT, "more");
     activate(&mut app, ROOT, "undo");
     assert!(matches!(
         pending(),
@@ -294,6 +300,7 @@ fn dashboard_keyboard_hides_restores_and_persists_settings() {
         id: "failed".into(),
         provider: "claude".into(),
         label: "Fix target".into(),
+        summary: Box::default(),
         details: vec!["Sign in again required".into()],
         resets: vec![],
         hub: None,
@@ -301,6 +308,7 @@ fn dashboard_keyboard_hides_restores_and_persists_settings() {
         device_login: false,
     });
     send(&mut app, &data);
+    activate(&mut app, ROOT, "more");
     activate(&mut app, ROOT, "fix");
     assert!(screen(&mut app).contains("Sign in again required"));
     let focus = app.shell.focus.current();
@@ -320,6 +328,7 @@ fn dashboard_keyboard_hides_restores_and_persists_settings() {
     ));
     send(&mut app, &data);
     assert!(screen(&mut app).contains("0% remaining"));
+    activate(&mut app, ROOT, "save");
     data.attention.clear();
     data.empty = true;
     data.rows.clear();
@@ -339,15 +348,15 @@ fn dashboard_keyboard_hides_restores_and_persists_settings() {
         ))
     ));
     send(&mut app, &data);
+    activate(&mut app, ROOT, "more");
     activate(&mut app, ROOT, "settings");
     press(&mut app, "space");
     activate(&mut app, ROOT, "save");
     assert!(
         matches!(pending(),Some((_,UsageAction::Board{edit:BoardEdit::Settings(s),..})) if !s.flags[0].2)
     );
-    press(&mut app, "esc");
     send(&mut app, &data);
-    assert!(!screen(&mut app).contains("Two hours to reset"));
+    assert!(screen(&mut app).contains("Two hours to reset"));
     press(&mut app, "a");
     assert!(matches!(
         pending(),

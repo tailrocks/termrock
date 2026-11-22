@@ -1960,19 +1960,38 @@ impl AccountsScreen {
         let managed = w.backend.usage_connections().is_some();
         match &self.selected {
             Sel::UsageAccounts => {
-                lines.push(Line::Text(self.inventory.status(), Tone::Secondary));
+                let mut providers = std::collections::BTreeMap::new();
                 for entry in &self.inventory.entries {
-                    lines.push(Line::Heading(entry.label.clone(), usage_provider(&entry.provider).into()));
-                    lines.extend(entry.details.iter().cloned().map(|line| Line::Text(line, Tone::Normal)));
+                    let provider = if entry.provider == "antigravity" {
+                        "Antigravity"
+                    } else {
+                        usage_provider(&entry.provider)
+                    };
+                    *providers.entry(provider).or_insert(0) += 1;
                 }
-                lines.push(Line::Text("Select an account to inspect its usage. Execution bindings are listed separately below.".into(), Tone::Muted));
-                ("Usage accounts".into(), self.inventory.status(), lines)
+                lines.push(Line::Text(self.inventory.status(), Tone::Secondary));
+                if !providers.is_empty() {
+                    lines.push(Line::Blank);
+                    lines.push(Line::Heading("Connected providers".into(), String::new()));
+                    for (provider, count) in providers {
+                        lines.push(Line::Prop(
+                            provider.into(),
+                            plural(count, "account", "accounts"),
+                            Tone::Normal,
+                        ));
+                    }
+                }
+                ("Usage accounts".into(), String::new(), lines)
             }
             Sel::UsageAccount(id) => {
                 if let Some(entry) = self.inventory.entry(id) {
-                    lines.push(Line::Prop("Provider".into(), usage_provider(&entry.provider).into(), Tone::Normal));
-                    lines.extend(entry.details.iter().cloned().map(|line| Line::Text(line, Tone::Normal)));
-                    (entry.label.clone(), "usage account".into(), lines)
+                    lines.push(Line::Heading("Quota overview".into(), String::new()));
+                    if entry.summary.is_empty() {
+                        lines.push(Line::Text("Open account usage for the available readings.".into(), Tone::Muted));
+                    } else {
+                        lines.extend(entry.summary.iter().cloned().map(|line| Line::Text(line, Tone::Normal)));
+                    }
+                    (entry.label.clone(), usage_provider(&entry.provider).into(), lines)
                 } else {
                     ("Usage account".into(), String::new(), lines)
                 }
@@ -1980,9 +1999,8 @@ impl AccountsScreen {
             Sel::Overview | Sel::ExecutionAccounts => {
                 if managed && matches!(self.selected, Sel::Overview) {
                     lines.push(Line::Heading("Usage accounts".into(), self.inventory.status()));
-                    for entry in &self.inventory.entries {
-                        lines.push(Line::Text(format!("{} · {}", entry.label, usage_provider(&entry.provider)), Tone::Normal));
-                    }
+                    lines.push(Line::Text("Select Usage accounts to browse connected identities.".into(), Tone::Muted));
+                    lines.push(Line::Blank);
                 }
                 if managed && w.accounts.accounts.is_empty() {
                     lines.push(Line::Text("No execution accounts configured.".into(), Tone::Secondary));
@@ -2330,7 +2348,12 @@ impl AccountsScreen {
             let y = body.y + k as u16;
             match &rendered[i] {
                 Line::Prop(label, value, tone) => {
-                    buf.set_string(body.x, y, label, t.muted().bg(bg));
+                    buf.set_string(
+                        body.x,
+                        y,
+                        truncate(label, label_w.saturating_sub(1).min(body.width) as usize),
+                        t.muted().bg(bg),
+                    );
                     buf.set_string(
                         body.x + label_w,
                         y,
@@ -2350,7 +2373,12 @@ impl AccountsScreen {
                     );
                 }
                 Line::PropSpans(label, spans) => {
-                    buf.set_string(body.x, y, label, t.muted().bg(bg));
+                    buf.set_string(
+                        body.x,
+                        y,
+                        truncate(label, label_w.saturating_sub(1).min(body.width) as usize),
+                        t.muted().bg(bg),
+                    );
                     render_spans(
                         buf,
                         body.x + label_w,

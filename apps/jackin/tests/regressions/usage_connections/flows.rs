@@ -174,6 +174,7 @@ fn entry(provider: &str, label: &str) -> UsageEntry {
         id: format!("fixture-{provider}"),
         provider: provider.into(),
         label: label.into(),
+        summary: Box::default(),
         details: vec!["Session · 65% remaining · resets in 58m".into()],
         resets: vec![],
         hub: None,
@@ -378,11 +379,15 @@ fn board(rows: usize) -> UsageBoard {
                 provider: "codex".into(),
                 metric: format!("session-{index}"),
                 title: format!("Fixture account {index:02} · Session"),
+                label: "Session".into(),
+                bounded: true,
                 value: format!("{}% remaining", 65 + index),
+                exact_value: String::new(),
                 group: "ChatGPT / Codex".into(),
                 bar: None,
                 severity: termrock::theme::Tone::Normal,
                 reset: Some("resets in 58m".into()),
+                inspector: vec![],
                 details: vec![format!("Detail marker {index:02}")],
                 pinned: false,
             })
@@ -671,6 +676,7 @@ fn all_usage_first_and_last_readings_are_visible_and_refresh_preserves_focus() {
         flow.board_action("save");
         assert!(flow.shown().contains("95% remaining"), "{}", flow.shown());
         flow.capture("last-reading-back");
+        flow.focus(WidgetId::of("usage.connected_board").sub("row"));
         flow.key(KeyCode::Home);
         assert!(flow.shown().contains("65% remaining"), "{}", flow.shown());
         flow.board_action("reload");
@@ -991,7 +997,7 @@ fn empty_priority_offers_all_usage_and_stale_scope_replies_do_not_steal_it() {
             UsageUpdate::Board(Box::new(priority.clone())),
         );
         flow.capture("empty-priority");
-        flow.board_action("save");
+        flow.board_action("switch");
         let (all_ticket, action) = flow.next();
         assert!(matches!(
             action,
@@ -1061,5 +1067,133 @@ fn usage_row_refresh_shortcut_never_refreshes_execution_bindings() {
         flow.key(KeyCode::Char('r'));
         assert!(matches!(flow.next().1, UsageAction::Refresh(id) if id == "fixture-codex"));
         assert_eq!(flow.app.world.accounts, execution);
+    }
+}
+
+#[test]
+fn all_usage_compares_limits_per_account_and_preserves_the_selected_identity() {
+    for size in [(140, 40), (80, 24)] {
+        let mut flow = Flow::new(size);
+        flow.app.go(Go::AllUsage);
+        flow.shown();
+        let (ticket, _) = flow.next();
+        let mut data = board(5);
+        let accounts = ["Personal", "Team", "Offline"]
+            .map(|label| {
+                let mut account = entry("codex", label);
+                account.id = label.into();
+                account
+            })
+            .to_vec();
+        let mut duplicate = entry("claude", "Personal");
+        duplicate.id = "claude-personal".into();
+        data.providers = vec![
+            BoardProvider {
+                id: "codex".into(),
+                name: "ChatGPT".into(),
+                accounts,
+                unavailable_reason: None,
+            },
+            BoardProvider {
+                id: "claude".into(),
+                name: "Claude".into(),
+                accounts: vec![duplicate],
+                unavailable_reason: None,
+            },
+        ];
+        for (row, label) in data
+            .rows
+            .iter_mut()
+            .zip(["Personal", "Personal", "Team", "Team"])
+        {
+            row.account = Some(label.into());
+            row.title = format!("{label} · {}", row.label);
+        }
+        data.rows[0].bounded = false;
+        data.rows[0].label = "Last 30 days".into();
+        data.rows[0].value = "71 tokens".into();
+        data.rows[1].metric = "session".into();
+        data.rows[2].label = "Weekly".into();
+        data.rows[2].value = ">99% remaining".into();
+        data.rows[3].metric = "session".into();
+        data.rows[3].value = "<1% remaining".into();
+        data.rows[3].exact_value = "0.42% remaining".into();
+        data.rows[3].bar = Some((1, Some(40)));
+        data.rows[3].severity = termrock::theme::Tone::Error;
+        data.rows[4].account = Some("claude-personal".into());
+        data.rows[4].provider = "claude".into();
+        data.rows[4].title = "Personal · Session".into();
+        data.rows[4].value = "31% remaining".into();
+        flow.deliver(ticket, UsageUpdate::Board(Box::new(data.clone())));
+        let shown = flow.shown();
+        for (label, value) in [
+            ("ChatGPT · Personal · Session", "66% remaining"),
+            ("Claude · Personal · Session", "31% remaining"),
+            ("Team · Session", "<1% remaining"),
+            ("Offline", "No visible readings"),
+        ] {
+            assert!(
+                shown
+                    .lines()
+                    .any(|line| line.contains(label) && line.contains(value)),
+                "{shown}"
+            );
+        }
+        flow.capture("account-compare");
+        flow.key(KeyCode::Down);
+        let shown = flow.shown();
+        assert!(
+            shown.contains(">99% remaining") && shown.contains("│ pace"),
+            "{shown}"
+        );
+        flow.capture("account-preview");
+        flow.key(KeyCode::Enter);
+        flow.focus(WidgetId::of("usage.connected_board").sub("readings"));
+        flow.key(KeyCode::Enter);
+        let shown = flow.shown();
+        assert!(
+            shown.contains("Detail marker 03") && shown.contains("0.42% remaining"),
+            "{shown}"
+        );
+        flow.capture("account-metric-detail");
+        flow.key(KeyCode::Esc);
+        assert_eq!(
+            flow.app.shell.focus.current(),
+            Some(WidgetId::of("usage.connected_board").sub("row"))
+        );
+        data.rows.rotate_left(2);
+        flow.deliver(ticket, UsageUpdate::Board(Box::new(data)));
+        assert!(
+            flow.shown()
+                .lines()
+                .any(|line| line.contains("▎") && line.contains("Team · Session"))
+        );
+    }
+}
+
+#[test]
+fn usage_account_shows_current_limits_before_full_history() {
+    for size in [(140, 40), (80, 24)] {
+        let mut flow = Flow::new(size);
+        flow.app.go(Go::Accounts { select: None });
+        let (ticket, _) = flow.next();
+        let mut account = entry("codex", "Fixture team");
+        account.summary = Box::new(["Weekly quota · 25% remaining".into()]);
+        account.details = vec!["Fixture full usage history".into()];
+        flow.deliver(ticket, UsageUpdate::Accounts(vec![account]));
+        assert!(!flow.shown().contains("Fixture full usage history"));
+        flow.click("Fixture team");
+        flow.key(KeyCode::Enter);
+        let shown = flow.shown();
+        assert!(
+            shown.contains("25% remaining") && !shown.contains("Fixture full usage history"),
+            "{shown}"
+        );
+        flow.capture("usage-account-summary");
+        flow.action("save");
+        assert!(flow.shown().contains("Fixture full usage history"));
+        flow.capture("usage-account-history");
+        flow.action("save");
+        assert!(!flow.shown().contains("Fixture full usage history"));
     }
 }
