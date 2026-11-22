@@ -15,6 +15,9 @@ const ID: WidgetId = WidgetId::of("usage.connected_board");
 #[derive(Default)]
 pub(super) struct Board {
     ticket: Option<Ticket>,
+    next_tick: i64,
+    managing_account: bool,
+    pub(super) account: super::super::accounts::connections::Connections,
     priority: bool,
     data: Option<UsageBoard>,
     view: View,
@@ -55,17 +58,38 @@ fn note(lines: Vec<String>) -> FormField {
 }
 
 impl Board {
-    pub(super) fn open(&mut self, w: &mut World, cx: &mut Cx, priority: bool) {
-        self.priority = priority;
+    pub(super) fn open(&mut self, w: &mut World, cx: &mut Cx, priority: Option<bool>) {
+        self.next_tick = w.now_ms().saturating_add(30_000);
+        self.managing_account = false;
+        self.priority = priority.unwrap_or(true);
         self.ticket = Some(w.next_ticket());
         self.data = None;
         self.view = View::Loading;
         cx.open(self.form(), LayerTag::new("usage_board"));
-        self.request(w, BoardEdit::Read);
+        self.request(
+            w,
+            if priority.is_none() {
+                BoardEdit::DefaultTab
+            } else {
+                BoardEdit::Read
+            },
+        );
+    }
+
+    pub(super) fn tick(&mut self, w: &World) {
+        if w.now_ms() >= self.next_tick {
+            self.next_tick = w.now_ms().saturating_add(30_000);
+            self.refreshed(w);
+        }
+    }
+
+    pub(super) fn account_closed(&mut self, w: &World) {
+        self.managing_account = false;
+        self.refreshed(w);
     }
 
     pub(super) fn refreshed(&self, w: &World) {
-        if matches!(self.view, View::Rows) && self.ticket.is_some() {
+        if !self.managing_account && matches!(self.view, View::Rows) && self.ticket.is_some() {
             self.request(w, BoardEdit::Read);
         }
     }
@@ -111,17 +135,46 @@ impl Board {
                 save = "Loading…";
             }
             (Some(data), View::Rows) => {
-                let mut lines = vec![data.summary.clone()];
+                let mut lines = vec![(data.summary.clone(), Tone::Normal)];
                 let mut group = String::new();
                 for row in &data.rows {
                     if group != row.group {
                         group = row.group.clone();
-                        lines.push(group.clone());
+                        lines.push((group.clone(), Tone::Normal));
                     }
-                    lines.push(format!("{} · {}", row.title, row.value));
+                    let mut line = format!("{} · {}", row.title, row.value);
+                    if let Some((amount, pace)) = row.bar {
+                        let bar: String = (0..10)
+                            .map(|i| {
+                                if pace.map(|p| (p / 10).min(9)) == Some(i) {
+                                    '│'
+                                } else if i * 10 < amount {
+                                    '█'
+                                } else {
+                                    '░'
+                                }
+                            })
+                            .collect();
+                        line.push_str(&format!("  {bar}"));
+                    }
+                    if let Some(reset) = &row.reset {
+                        line.push_str(&format!(" · {reset}"));
+                    }
+                    lines.push((line, row.severity));
                 }
-                lines.extend(data.notices.iter().cloned());
-                fields.push(note(lines));
+                lines.extend(data.notices.iter().cloned().map(|s| (s, Tone::Muted)));
+                fields.push(FormField::note("text", lines));
+                if data.empty {
+                    actions.push(("add", "Add account…"));
+                }
+                if !data.attention.is_empty() {
+                    let labels: Vec<_> = data.attention.iter().map(|a| a.label.as_str()).collect();
+                    fields.push(FormField::select(
+                        "attention",
+                        Select::new(ID.sub("attention"), "Needs attention", &labels, 0),
+                    ));
+                    actions.push(("fix", "Fix…"));
+                }
                 if !data.rows.is_empty() {
                     let labels: Vec<_> = data.rows.iter().map(|r| r.title.as_str()).collect();
                     fields.push(FormField::select(
@@ -274,21 +327,24 @@ impl Board {
     }
 
     pub(super) fn receive(&mut self, ticket: Ticket, update: &UsageUpdate, cx: &mut Cx) -> Outcome {
-        if self.ticket != Some(ticket) {
+        if self.ticket != Some(ticket) || !matches!(self.view, View::Loading | View::Rows) {
             return Outcome::Ignored;
         }
         match update {
             UsageUpdate::Board(data) => {
+                self.priority = data.priority;
                 for alert in &data.alerts {
                     cx.status(alert.clone());
                 }
-                self.data = Some(data.clone());
+                self.data = Some(data.as_ref().clone());
                 self.view = View::Rows;
             }
             UsageUpdate::Failed(error) => self.view = View::Error(error.clone()),
             _ => return Outcome::Ignored,
         }
-        self.redraw(cx);
+        if !self.managing_account {
+            self.redraw(cx);
+        }
         Outcome::Changed
     }
 
@@ -307,6 +363,22 @@ impl Board {
             None
         };
         let action = match (key.as_str(), row) {
+            ("add", _) => {
+                self.managing_account = true;
+                self.account.add(w, cx);
+                return Outcome::Changed;
+            }
+            ("fix", _) => {
+                if let Some(a) = self
+                    .data
+                    .as_ref()
+                    .and_then(|d| d.attention.get(choose(&values, "attention")))
+                {
+                    self.managing_account = true;
+                    self.account.show(a.clone(), w, cx);
+                }
+                return Outcome::Changed;
+            }
             ("share", _) => {
                 if let Some(data) = &self.data {
                     cx.copy_as(data.share.clone(), "redacted usage report");
@@ -444,6 +516,7 @@ impl Board {
             _ => None,
         };
         if let Some(edit) = action {
+            self.ticket = Some(w.next_ticket());
             self.view = View::Loading;
             self.request(w, edit);
         }

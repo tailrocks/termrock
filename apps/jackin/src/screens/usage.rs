@@ -783,6 +783,9 @@ impl Page<Jackin> for UsageScreen {
         self.build_rows(w);
         self.show_detail = false;
         cx.focus.focus(LIST);
+        if self.selected.is_none() && w.backend.usage_connections().is_some() {
+            self.board.open(w, cx, None);
+        }
     }
 
     fn primary_focus(&self) -> Option<WidgetId> {
@@ -797,6 +800,7 @@ impl Page<Jackin> for UsageScreen {
     }
 
     fn on_tick(&mut self, w: &mut World, _cx: &mut Cx) -> Outcome {
+        self.board.tick(w);
         self.build_rows(w);
         if self.refreshing && !self.animating(w) {
             self.refreshing = false;
@@ -815,7 +819,7 @@ impl Page<Jackin> for UsageScreen {
             && w.backend.usage_connections().is_some()
             && matches!(key.code, KeyCode::Char('p' | 'a'))
         {
-            self.board.open(w, cx, key.code == KeyCode::Char('p'));
+            self.board.open(w, cx, Some(key.code == KeyCode::Char('p')));
             return Outcome::Changed;
         }
         self.build_rows(w);
@@ -893,6 +897,15 @@ impl Page<Jackin> for UsageScreen {
         w: &mut World,
         cx: &mut Cx,
     ) -> Outcome {
+        if tag.kind == "usage_connection" {
+            if matches!(
+                result,
+                super::ModalResult::Form(None) | super::ModalResult::Cancelled
+            ) {
+                self.board.account_closed(w);
+            }
+            return self.board.account.result(result, w, cx);
+        }
         if tag.kind == "usage_board" {
             self.board.result(result, w, cx)
         } else {
@@ -906,7 +919,12 @@ impl Page<Jackin> for UsageScreen {
             return Outcome::Changed;
         }
         if let Msg::UsageConnection { ticket, update } = msg {
-            return self.board.receive(*ticket, update, cx);
+            let result = self.board.receive(*ticket, update, cx);
+            return if result == Outcome::Ignored {
+                self.board.account.update(*ticket, update, cx)
+            } else {
+                result
+            };
         }
 
         if let Msg::AccountRefreshed { .. } = msg {
@@ -1010,7 +1028,18 @@ impl Page<Jackin> for UsageScreen {
     }
 }
 
-impl Screen for UsageScreen {}
+impl Screen for UsageScreen {
+    fn form_changed(
+        &mut self,
+        tag: &super::LayerTag,
+        form: &mut super::modals::FormDialog,
+        _w: &World,
+    ) {
+        if tag.kind == "usage_connection" {
+            self.board.account.form_changed(form);
+        }
+    }
+}
 
 impl UsageScreen {
     fn click(&mut self, id: WidgetId, w: &mut World, cx: &mut Cx) -> Outcome {

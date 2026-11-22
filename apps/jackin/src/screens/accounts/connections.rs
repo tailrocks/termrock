@@ -10,7 +10,7 @@ const ID: WidgetId = WidgetId::of("accounts.usage_connection");
 const TAG: &str = "usage_connection";
 
 #[derive(Default)]
-pub(super) struct Connections {
+pub(in crate::screens) struct Connections {
     ticket: Option<Ticket>,
     step: Step,
     target: Option<UsageEntry>,
@@ -60,14 +60,21 @@ fn input(label: &str, masked: bool, required: bool) -> FormField {
 }
 
 impl Connections {
-    pub(super) fn add(&mut self, w: &mut World, cx: &mut Cx) {
+    pub(in crate::screens) fn add(&mut self, w: &mut World, cx: &mut Cx) {
         self.ticket = Some(w.next_ticket());
         self.target = None;
         self.step = Step::Choose;
         cx.open(self.form(), LayerTag::new(TAG));
     }
 
-    pub(super) fn list(&mut self, w: &mut World, cx: &mut Cx) {
+    pub(in crate::screens) fn show(&mut self, entry: UsageEntry, w: &mut World, cx: &mut Cx) {
+        self.ticket = Some(w.next_ticket());
+        self.target = None;
+        self.step = Step::Details(entry);
+        cx.open(self.form(), LayerTag::new(TAG));
+    }
+
+    pub(in crate::screens) fn list(&mut self, w: &mut World, cx: &mut Cx) {
         self.ticket = Some(w.next_ticket());
         self.target = None;
         self.step = Step::Busy;
@@ -91,7 +98,7 @@ impl Connections {
         });
     }
 
-    pub(super) fn form_changed(&self, form: &mut FormDialog) {
+    pub(in crate::screens) fn form_changed(&self, form: &mut FormDialog) {
         if !matches!(self.step, Step::Choose) {
             return;
         }
@@ -100,7 +107,7 @@ impl Connections {
             |row| row.provider.as_str(),
         );
         form.set_visible("mimo_region", product == "mimo");
-        form.set_visible("auth", product == "kimi");
+        form.set_visible("auth", matches!(product, "kimi" | "minimax"));
         form.set_visible("region", matches!(product, "kimi" | "minimax"));
     }
 
@@ -347,7 +354,12 @@ impl Connections {
         form
     }
 
-    pub(super) fn update(&mut self, ticket: Ticket, update: &UsageUpdate, cx: &mut Cx) -> Outcome {
+    pub(in crate::screens) fn update(
+        &mut self,
+        ticket: Ticket,
+        update: &UsageUpdate,
+        cx: &mut Cx,
+    ) -> Outcome {
         if Some(ticket) != self.ticket {
             return Outcome::Ignored;
         }
@@ -375,7 +387,12 @@ impl Connections {
         self.redraw(cx);
     }
 
-    pub(super) fn result(&mut self, result: ModalResult, w: &mut World, cx: &mut Cx) -> Outcome {
+    pub(in crate::screens) fn result(
+        &mut self,
+        result: ModalResult,
+        w: &mut World,
+        cx: &mut Cx,
+    ) -> Outcome {
         let (name, values) = match result {
             ModalResult::FormAction(name, values) => (name, values),
             ModalResult::Form(None) | ModalResult::Cancelled => {
@@ -490,7 +507,8 @@ impl Connections {
                     .map(|s| (*s).to_owned());
                 UsageAction::Begin(LoginChoice {
                     provider: provider.into(),
-                    device_login: (provider == "kimi").then(|| choice_of(&values, "auth") == 1),
+                    device_login: matches!(provider, "kimi" | "minimax")
+                        .then(|| choice_of(&values, "auth") == 1),
                     region,
                     replace: self.target.as_ref().map(|r| r.id.clone()),
                 })

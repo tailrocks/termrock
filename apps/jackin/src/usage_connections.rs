@@ -95,7 +95,7 @@ impl fmt::Debug for UsageAction {
 
 #[derive(Clone, PartialEq, Eq)]
 pub enum UsageUpdate {
-    Board(UsageBoard),
+    Board(Box<UsageBoard>),
     Accounts(Vec<UsageEntry>),
     Hubs(Vec<HubRow>),
     Key {
@@ -152,6 +152,9 @@ pub struct BoardMetric {
     pub title: String,
     pub value: String,
     pub group: String,
+    pub bar: Option<(u8, Option<u8>)>,
+    pub severity: junie_tui::theme::Tone,
+    pub reset: Option<String>,
     pub details: Vec<String>,
     pub pinned: bool,
 }
@@ -170,6 +173,8 @@ pub struct UsageBoard {
     pub priority: bool,
     pub summary: String,
     pub notices: Vec<String>,
+    pub attention: Vec<UsageEntry>,
+    pub empty: bool,
     pub alerts: Vec<String>,
     pub rows: Vec<BoardMetric>,
     pub share: String,
@@ -186,6 +191,7 @@ pub enum OrderingScope {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BoardEdit {
     Read,
+    DefaultTab,
     Refresh(Option<String>),
     Pin {
         account: String,

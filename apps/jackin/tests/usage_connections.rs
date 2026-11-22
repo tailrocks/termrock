@@ -138,19 +138,21 @@ fn dashboard_keyboard_hides_restores_and_persists_settings() {
     let mut app = app_with(scenario, world);
     app.go(Go::Usage { select: None });
     screen(&mut app);
-    press(&mut app, "p");
+
     let (ticket, action) = backend.pending.lock().unwrap().pop().unwrap();
     assert!(matches!(
         action,
         UsageAction::Board {
             priority: true,
-            edit: BoardEdit::Read
+            edit: BoardEdit::DefaultTab
         }
     ));
     let mut data = UsageBoard {
         priority: true,
         summary: "Two hours to reset".into(),
         notices: vec![],
+        attention: vec![],
+        empty: false,
         alerts: vec![],
         rows: vec![BoardMetric {
             account: Some("owned".into()),
@@ -160,6 +162,9 @@ fn dashboard_keyboard_hides_restores_and_persists_settings() {
             title: "Work quota".into(),
             value: "0% remaining".into(),
             group: "Pinned".into(),
+            bar: Some((0, None)),
+            severity: junie_tui::theme::Tone::Warning,
+            reset: None,
             details: vec!["Last good response".into()],
             pinned: true,
         }],
@@ -172,10 +177,16 @@ fn dashboard_keyboard_hides_restores_and_persists_settings() {
             proxy: false,
         },
     };
+    let active = std::cell::Cell::new(ticket);
+    let pending = || {
+        let (ticket, action) = backend.pending.lock().unwrap().pop()?;
+        active.set(ticket);
+        Some((ticket, action))
+    };
     let send = |app: &mut jackin_console::app::App, d: &UsageBoard| {
         app.deliver(&Msg::UsageConnection {
-            ticket,
-            update: UsageUpdate::Board(d.clone()),
+            ticket: active.get(),
+            update: UsageUpdate::Board(Box::new(d.clone())),
         })
     };
     send(&mut app, &data);
@@ -186,7 +197,7 @@ fn dashboard_keyboard_hides_restores_and_persists_settings() {
     assert!(screen(&mut app).contains("Last good response"));
     activate(&mut app, ROOT, "hide");
     assert!(matches!(
-        backend.pending.lock().unwrap().pop(),
+        pending(),
         Some((
             _,
             UsageAction::Board {
@@ -199,7 +210,7 @@ fn dashboard_keyboard_hides_restores_and_persists_settings() {
     send(&mut app, &data);
     activate(&mut app, ROOT, "undo");
     assert!(matches!(
-        backend.pending.lock().unwrap().pop(),
+        pending(),
         Some((
             _,
             UsageAction::Board {
@@ -214,18 +225,45 @@ fn dashboard_keyboard_hides_restores_and_persists_settings() {
     ));
     data.rows = rows;
     send(&mut app, &data);
+    data.attention.push(UsageEntry {
+        id: "failed".into(),
+        provider: "claude".into(),
+        label: "Fix target".into(),
+        details: vec!["Sign in again required".into()],
+        resets: vec![],
+        hub: None,
+        region: None,
+        device_login: false,
+    });
+    send(&mut app, &data);
+    activate(&mut app, ROOT, "fix");
+    assert!(screen(&mut app).contains("Sign in again required"));
+    let focus = app.shell.focus.current();
+    send(&mut app, &data);
+    assert_eq!(app.shell.focus.current(), focus);
+    press(&mut app, "esc");
+    send(&mut app, &data);
+    assert!(screen(&mut app).contains("0% remaining"));
+    data.attention.clear();
+    data.empty = true;
+    data.rows.clear();
+    send(&mut app, &data);
+    activate(&mut app, ROOT, "add");
+    assert!(screen(&mut app).contains("Add usage account"));
+    press(&mut app, "esc");
+    send(&mut app, &data);
     activate(&mut app, ROOT, "settings");
     press(&mut app, "space");
     activate(&mut app, ROOT, "save");
     assert!(
-        matches!(backend.pending.lock().unwrap().pop(),Some((_,UsageAction::Board{edit:BoardEdit::Settings(s),..})) if !s.flags[0].2)
+        matches!(pending(),Some((_,UsageAction::Board{edit:BoardEdit::Settings(s),..})) if !s.flags[0].2)
     );
     press(&mut app, "esc");
     send(&mut app, &data);
     assert!(!screen(&mut app).contains("Two hours to reset"));
     press(&mut app, "a");
     assert!(matches!(
-        backend.pending.lock().unwrap().pop(),
+        pending(),
         Some((
             _,
             UsageAction::Board {

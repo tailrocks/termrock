@@ -1,4 +1,4 @@
-mod connections;
+pub(super) mod connections;
 
 use crate::domain::vocabulary::Vocabulary;
 use crate::screens::Jackin;
