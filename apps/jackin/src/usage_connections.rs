@@ -22,6 +22,7 @@ pub struct UsageEntry {
     pub id: String,
     pub provider: String,
     pub label: String,
+    pub summary: Box<[String]>,
     pub details: Vec<String>,
     pub resets: Vec<ResetItem>,
     pub hub: Option<String>,
@@ -170,16 +171,25 @@ pub struct BoardMetric {
     pub provider: String,
     pub metric: String,
     pub title: String,
+    pub label: String,
+    /// Whether this reading has a finite quota.
+    pub bounded: bool,
     pub value: String,
+    pub exact_value: String,
     pub group: String,
     pub bar: Option<(u8, Option<u8>)>,
     pub severity: termrock::theme::Tone,
     pub reset: Option<String>,
+    pub inspector: Vec<String>,
     pub details: Vec<String>,
     pub pinned: bool,
 }
 
 impl BoardMetric {
+    pub(crate) fn bounded_bar(&self) -> Option<(u8, Option<u8>)> {
+        self.bar.filter(|_| self.bounded)
+    }
+
     pub fn unified_edit(&self, hide: bool) -> Option<(BoardEdit, BoardEdit)> {
         if self.account.is_some() || self.member_preferences.is_empty() {
             return None;

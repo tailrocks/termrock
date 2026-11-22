@@ -134,11 +134,13 @@ impl UsageScreen {
     pub fn select(&mut self, id: Option<AccountId>) {
         self.selected = id;
         self.all_usage = false;
+        self.board.deactivate();
     }
 
     pub fn select_all(&mut self) {
         self.selected = None;
         self.all_usage = true;
+        self.board.deactivate();
     }
 
     fn build_rows(&mut self, w: &World) {
@@ -785,10 +787,17 @@ impl Page<Jackin> for UsageScreen {
         {
             self.board.open(w, cx, self.all_usage.then_some(false));
         }
+        if !self.board.active() {
+            cx.focus.focus(LIST);
+        }
     }
 
     fn primary_focus(&self) -> Option<WidgetId> {
-        Some(LIST)
+        Some(if self.board.active() {
+            self.board.primary_focus()
+        } else {
+            LIST
+        })
     }
 
     fn animating(&self, w: &World) -> bool {
@@ -822,6 +831,19 @@ impl Page<Jackin> for UsageScreen {
         {
             self.board.open(w, cx, Some(key.code == KeyCode::Char('p')));
             return Outcome::Changed;
+        }
+        if self.board.active() {
+            return match key.code {
+                KeyCode::Char('m') if key.plain() => {
+                    cx.go(Go::Accounts { select: None });
+                    Outcome::Changed
+                }
+                KeyCode::Esc | KeyCode::Char('q') => {
+                    cx.go(Go::Manager);
+                    Outcome::Changed
+                }
+                _ => self.board.key(key, w, cx),
+            };
         }
         self.build_rows(w);
         let in_detail = cx.focus.is(DETAIL);
@@ -879,6 +901,9 @@ impl Page<Jackin> for UsageScreen {
     }
 
     fn pointer(&mut self, ev: &PointerEvent, w: &mut World, cx: &mut Cx) -> Outcome {
+        if self.board.active() {
+            return self.board.pointer(ev, w, cx);
+        }
         if let Some(o) = scrollbar::pointer(ev, LIST, &mut self.scroll, TrackClick::Jump)
             .or_else(|| scrollbar::pointer(ev, DETAIL, &mut self.detail_scroll, TrackClick::Jump))
         {
@@ -935,6 +960,10 @@ impl Page<Jackin> for UsageScreen {
     }
 
     fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx, w: &World) {
+        if self.board.active() {
+            self.board.render(area, buf, ctx);
+            return;
+        }
         self.build_rows(w);
         self.clock.painted(w);
         let t = ctx.theme;
@@ -995,12 +1024,13 @@ impl Page<Jackin> for UsageScreen {
     }
 
     fn hints(&self, focus: Option<WidgetId>, w: &World) -> Vec<Hint> {
-        if w.backend.usage_connections().is_some() {
+        if self.board.active() {
             return vec![
                 hint("p", "Priority"),
                 hint("a", "All Usage"),
                 hint("↑↓", "Move"),
-                hint("Enter", "Details"),
+                hint("Enter", "Open"),
+                hint("r", "Refresh"),
                 hint("m", "Accounts"),
                 hint("Esc", "Back"),
             ];
@@ -1013,13 +1043,17 @@ impl Page<Jackin> for UsageScreen {
                 hint("Esc", "Back to list"),
             ];
         }
-        vec![
+        let mut hints = vec![
             hint("↑↓", "Move"),
             hint("Enter", "Details"),
             hint("r", "Refresh"),
             hint("m", "Manage in Accounts"),
             hint("Esc", "Close"),
-        ]
+        ];
+        if w.backend.usage_connections().is_some() {
+            hints.insert(0, hint("a", "All Usage"));
+        }
+        hints
     }
 
     fn crumb(&self, w: &World) -> String {

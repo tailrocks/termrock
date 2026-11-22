@@ -1,3 +1,5 @@
+mod dashboard;
+
 use crate::backend::{PlainKey, Ticket};
 use crate::screens::modals::FieldKindW;
 use crate::screens::modals::{FieldValue, FormDialog, FormField, FormValues};
@@ -26,11 +28,14 @@ pub(super) struct Board {
     view: View,
     row: usize,
     undo: Option<BoardEdit>,
+    dashboard: dashboard::Dashboard,
+    details_back: Option<usize>,
 }
 #[derive(PartialEq, Eq)]
 enum RowKey {
     Metric(String, Option<String>, String),
     Id(String),
+    Account(String, String),
 }
 
 #[derive(Default)]
@@ -40,7 +45,10 @@ enum View {
     Rows,
     Providers(usize),
     Provider(usize),
+    Readings(usize),
     Details(usize),
+    Order(usize),
+    Actions,
     Member(usize, usize),
     Settings,
     Proxy,
@@ -80,7 +88,9 @@ impl Board {
         self.refresh_error = None;
         self.row = 0;
         self.view = View::Loading;
-        cx.open(self.form(), LayerTag::new("usage_board"));
+        self.dashboard.reset();
+        self.details_back = None;
+        cx.focus.focus(self.dashboard.primary());
         self.request(
             w,
             if priority.is_none() {
@@ -89,6 +99,100 @@ impl Board {
                 BoardEdit::Read
             },
         );
+    }
+
+    pub(super) fn primary_focus(&self) -> WidgetId {
+        self.dashboard.primary()
+    }
+
+    pub(super) fn active(&self) -> bool {
+        self.ticket.is_some()
+    }
+
+    pub(super) fn deactivate(&mut self) {
+        self.ticket = None;
+    }
+
+    pub(super) fn render(
+        &mut self,
+        area: ratatui::layout::Rect,
+        buf: &mut ratatui::buffer::Buffer,
+        ctx: &mut termrock::ui::ctx::RenderCtx,
+    ) {
+        use dashboard::Status;
+
+        let status = match &self.view {
+            View::Loading if self.data.is_some() => Status::Updating,
+            View::Loading => Status::Loading,
+            View::Error(error) => Status::Error(error),
+            _ => self
+                .refresh_error
+                .as_deref()
+                .map_or(Status::Ready, Status::Error),
+        };
+        self.dashboard
+            .render(area, buf, ctx, self.priority, self.data.as_ref(), status);
+    }
+
+    pub(super) fn key(
+        &mut self,
+        key: &termrock::core::event::Key,
+        w: &mut World,
+        cx: &mut Cx,
+    ) -> Outcome {
+        use ratatui::crossterm::event::KeyCode;
+
+        let action = match key.code {
+            KeyCode::Char('r') if key.plain() && self.data.is_some() => Some("reload"),
+            KeyCode::Enter if key.plain() && cx.focus.is(dashboard::ROWS) => Some("save"),
+            _ => None,
+        };
+        if let Some(action) = action {
+            return self.action(action, vec![], w, cx);
+        }
+        if let Some((action, button)) = self
+            .dashboard
+            .buttons
+            .iter_mut()
+            .find(|(_, button)| cx.focus.is(button.id))
+        {
+            let (outcome, activate) = button.on_key(key);
+            let action = *action;
+            return if activate {
+                self.action(action, vec![], w, cx)
+            } else {
+                outcome
+            };
+        }
+        if cx.focus.is(dashboard::ROWS) {
+            self.dashboard.list.on_key(key)
+        } else {
+            Outcome::Ignored
+        }
+    }
+
+    pub(super) fn pointer(
+        &mut self,
+        ev: &termrock::core::pointer::PointerEvent,
+        w: &mut World,
+        cx: &mut Cx,
+    ) -> Outcome {
+        use termrock::core::pointer::MouseTarget;
+
+        if let Some(action) = self.dashboard.button_pointer(ev) {
+            return self.action(action, vec![], w, cx);
+        }
+        if ev.owner() == dashboard::ROWS {
+            let response = self.dashboard.list.pointer(ev);
+            if ev.is(termrock::core::intent::Phase::Click) {
+                cx.focus.focus(dashboard::ROWS);
+                if ev.count() >= 2 && ev.index_of(termrock::core::id::Part::ROW).is_some() {
+                    return self.action("save", vec![], w, cx);
+                }
+            }
+            return response.outcome();
+        }
+        Outcome::Ignored
     }
 
     pub(super) fn tick(&mut self, w: &mut World) {
@@ -107,7 +211,7 @@ impl Board {
         if !self.managing_account
             && matches!(
                 self.view,
-                View::Rows | View::Providers(_) | View::Provider(_)
+                View::Rows | View::Actions | View::Providers(_) | View::Provider(_)
             )
             && self.ticket.is_some()
         {
@@ -141,7 +245,6 @@ impl Board {
             return vec![];
         };
         match &self.view {
-            View::Rows => data.rows.iter().map(Self::metric_key).collect(),
             View::Providers(_) => data
                 .providers
                 .iter()
@@ -189,17 +292,8 @@ impl Board {
     fn form(&self) -> FormDialog {
         let mut actions = vec![];
         let mut fields = vec![];
-        if matches!(self.view, View::Loading | View::Error(_)) {
-            actions.push((
-                "switch",
-                if self.priority {
-                    "All Usage"
-                } else {
-                    "Priority"
-                },
-            ));
-        }
         let mut save = "Details";
+        let reading_title;
         let title = match self.view {
             View::Providers(_) => "Usage providers",
             View::Provider(index) => self
@@ -207,95 +301,34 @@ impl Board {
                 .as_ref()
                 .and_then(|data| data.providers.get(index))
                 .map_or("Provider", |provider| provider.name.as_str()),
+            View::Actions => "Usage actions",
+            View::Readings(index) => {
+                reading_title = self
+                    .dashboard
+                    .entries
+                    .get(index)
+                    .map(|entry| format!("{} · {}", entry.label, entry.provider));
+                reading_title.as_deref().unwrap_or("Readings")
+            }
+            View::Details(index) => self
+                .data
+                .as_ref()
+                .and_then(|data| data.rows.get(index))
+                .map_or("Metric details", |row| row.title.as_str()),
+            View::Order(_) => "Reorder usage",
             View::Settings => "Usage settings",
             View::Proxy => "Network proxy",
             _ if self.priority => "Priority",
             _ => "All Usage",
         };
         match (&self.data, &self.view) {
-            (_, View::Error(e)) => {
-                fields.push(note(vec![e.clone()]));
-                save = "Retry";
-            }
-            (_, View::Loading) | (None, _) => {
-                fields.push(note(vec!["Loading usage…".into()]));
-                save = "Loading…";
-            }
-            (Some(data), View::Rows) => {
-                let remaining = data
-                    .settings
-                    .flags
-                    .iter()
-                    .find(|(id, _, _)| *id == "remaining")
-                    .is_none_or(|(_, _, enabled)| *enabled);
-                let mut lines = vec![];
-                if data.rows.iter().any(|row| {
-                    row.value.contains('%')
-                        && !["remaining", "used", "left"]
-                            .iter()
-                            .any(|word| row.value.contains(word))
-                }) {
-                    lines.push((
-                        if remaining {
-                            "Percentages show remaining limits"
-                        } else {
-                            "Percentages show used limits"
-                        }
-                        .into(),
-                        Tone::Secondary,
-                    ));
-                }
-                if data
-                    .rows
-                    .iter()
-                    .any(|row| row.bar.is_some_and(|(_, pace)| pace.is_some()))
-                {
-                    lines.push(("│ expected pace".into(), Tone::Muted));
-                }
+            (None, _) | (_, View::Loading | View::Error(_)) => {}
+            (Some(data), View::Actions) => {
+                let mut lines = data.notices.clone();
                 if !matches!(data.summary.as_str(), "Priority" | "All Usage") {
-                    lines.push((data.summary.clone(), Tone::Normal));
+                    lines.insert(0, data.summary.clone());
                 }
-                lines.extend(data.notices.iter().cloned().map(|text| (text, Tone::Muted)));
-                fields.push(FormField::note("text", lines).wrap(true));
-                if !data.rows.is_empty() {
-                    let items = data
-                        .rows
-                        .iter()
-                        .map(|row| {
-                            let mut value = row.value.clone();
-                            if let Some((amount, pace)) = row.bar {
-                                let bar: String = (0..5)
-                                    .map(|index| {
-                                        if pace.map(|pace| (pace / 20).min(4)) == Some(index) {
-                                            '│'
-                                        } else if index * 20 < amount {
-                                            '█'
-                                        } else {
-                                            '░'
-                                        }
-                                    })
-                                    .collect();
-                                value.push_str(&format!(" {bar}"));
-                            }
-                            ListItem::new(&format!("{} · {}", row.group, row.title))
-                                .meta(&value)
-                                .meta_tone(row.severity)
-                        })
-                        .collect();
-                    let mut list = ListBox::new(ID.sub("row"), items, SelectMode::Single);
-                    list.cursor = self.row.min(data.rows.len().saturating_sub(1));
-                    fields.push(FormField::list(
-                        "row",
-                        list,
-                        data.rows.len().clamp(3, 32) as u16,
-                    ));
-                }
-                if !data.providers.is_empty() {
-                    actions.push(("providers", "Providers…"));
-                }
-                if data.empty {
-                    actions.push(("add", "Add account…"));
-                }
+                fields.push(note(lines));
                 if !data.attention.is_empty() {
                     let labels: Vec<_> = data.attention.iter().map(|a| a.label.as_str()).collect();
                     fields.push(FormField::select(
@@ -304,34 +337,39 @@ impl Board {
                     ));
                     actions.push(("fix", "Fix…"));
                 }
-                if self.priority && data.rows.is_empty() {
-                    save = "All Usage";
-                } else {
-                    actions.push((
-                        "switch",
-                        if self.priority {
-                            "All Usage"
-                        } else {
-                            "Priority"
-                        },
-                    ));
-                }
-                actions.extend([
-                    ("settings", "Settings…"),
-                    ("reload", "Refresh all"),
-                    ("share", "Copy report"),
-                ]);
+                actions.extend([("settings", "Settings…"), ("share", "Copy report")]);
                 if self.undo.is_some() {
-                    actions.push((
-                        "undo",
-                        if matches!(self.undo, Some(BoardEdit::Unified { .. })) {
-                            "Undo change"
-                        } else {
-                            "Undo hide"
-                        },
+                    actions.push(("undo", "Undo change"));
+                }
+                save = "Back";
+            }
+            (Some(data), View::Readings(group)) => {
+                if let Some(entry) = self.dashboard.entries.get(*group) {
+                    let items = entry
+                        .indices
+                        .iter()
+                        .filter_map(|index| data.rows.get(*index))
+                        .map(|row| {
+                            ListItem::new(&row.label)
+                                .meta(&row.value)
+                                .meta_tone(row.severity)
+                        })
+                        .collect();
+                    let mut list = ListBox::new(ID.sub("readings"), items, SelectMode::Single);
+                    list.cursor = entry
+                        .indices
+                        .iter()
+                        .position(|&index| index == self.row)
+                        .unwrap_or(0);
+                    fields.push(FormField::list(
+                        "readings",
+                        list,
+                        entry.indices.len().clamp(1, 14) as u16,
                     ));
+                    save = "Details";
                 }
             }
+            (Some(_), View::Rows) => {}
             (Some(data), View::Providers(selected)) => {
                 let items = data
                     .providers
@@ -392,32 +430,36 @@ impl Board {
             }
             (Some(data), View::Details(i)) => {
                 if let Some(row) = data.rows.get(*i) {
-                    let mut lines = vec![row.group.clone(), row.title.clone(), row.value.clone()];
+                    let value = if row.exact_value.is_empty() {
+                        &row.value
+                    } else {
+                        &row.exact_value
+                    };
+                    let mut lines = vec![(value.clone(), row.severity)];
                     if let Some(reset) = &row.reset {
-                        lines.push(reset.clone());
+                        lines.push((reset.clone(), Tone::Secondary));
                     }
-                    if let Some((amount, pace)) = row.bar {
-                        let bar: String = (0..10)
-                            .map(|index| {
-                                if pace.map(|pace| (pace / 10).min(9)) == Some(index) {
-                                    '│'
-                                } else if index * 10 < amount {
-                                    '█'
-                                } else {
-                                    '░'
-                                }
+                    if let Some((amount, pace)) = row.bounded_bar() {
+                        let bar: String = dashboard::quota_bar(amount, pace, 10)
+                            .map(|segment| match segment {
+                                dashboard::BarSegment::Pace => '│',
+                                dashboard::BarSegment::Fill => '█',
+                                dashboard::BarSegment::Track => '░',
                             })
                             .collect();
-                        lines.push(if pace.is_some() {
+                        let bar = if pace.is_some() {
                             format!("{bar} · │ expected pace")
                         } else {
                             bar
-                        });
+                        };
+                        lines.push((bar, row.severity));
                     }
-                    lines.extend(row.details.clone());
-                    fields.push(note(lines));
+                    lines.extend(row.details.iter().cloned().map(|line| (line, Tone::Normal)));
+                    fields.push(FormField::note("reading", lines).wrap(true));
                     save = "Back";
-                    actions.push(("refresh_provider", "Refresh provider"));
+                    if row.provider != "antigravity" {
+                        actions.push(("refresh_provider", "Refresh provider"));
+                    }
                     if row.account.is_none() && !row.members.is_empty() {
                         let labels: Vec<_> = row
                             .members
@@ -440,19 +482,25 @@ impl Board {
                         actions.extend([
                             ("pin", if row.pinned { "Unpin" } else { "Pin" }),
                             ("hide", "Hide"),
-                            ("up", "Move up"),
-                            ("down", "Move down"),
+                            ("order", "Reorder…"),
                         ]);
-                        fields.push(FormField::select(
-                            "order",
-                            Select::new(
-                                ID.sub("order"),
-                                "Reorder",
-                                &["Metric", "Account", "Provider"],
-                                0,
-                            ),
-                        ));
                     }
+                }
+            }
+            (Some(data), View::Order(index)) => {
+                if let Some(row) = data.rows.get(*index) {
+                    fields.push(note(vec![row.title.clone()]));
+                    fields.push(FormField::select(
+                        "order",
+                        Select::new(
+                            ID.sub("scope"),
+                            "Move",
+                            &["Metric", "Account", "Provider"],
+                            0,
+                        ),
+                    ));
+                    actions.extend([("up", "Move up"), ("down", "Move down")]);
+                    save = "Back";
                 }
             }
             (Some(data), View::Member(row, member)) => {
@@ -533,12 +581,24 @@ impl Board {
             }
         }
         let mut form = FormDialog::new(ID, title, fields)
-            .width(86)
+            .width(74)
             .keep_open_on_save();
         form.save.label = save.into();
-        form.save.disabled = matches!(&self.view, View::Loading)
-            || matches!((&self.view,&self.data),(View::Rows,Some(d)) if d.rows.is_empty() && !self.priority);
-        if let Some(error) = &self.refresh_error {
+        if let (Some(data), View::Details(index)) = (&self.data, &self.view)
+            && let Some(row) = data.rows.get(*index)
+        {
+            form.meta = data
+                .providers
+                .iter()
+                .find(|provider| provider.id == row.provider)
+                .map(|provider| provider.name.clone());
+        }
+        if matches!(self.view, View::Actions | View::Readings(_)) {
+            form.cancel.label = "Close".into();
+        }
+        if self.retry_in_modal()
+            && let Some(error) = &self.refresh_error
+        {
             form.error = Some(error.clone());
             form.save.label = "Retry".into();
             form.save.disabled = false;
@@ -554,11 +614,17 @@ impl Board {
             || self.ticket != Some(ticket)
             || !matches!(
                 self.view,
-                View::Loading | View::Rows | View::Providers(_) | View::Provider(_)
+                View::Loading
+                    | View::Error(_)
+                    | View::Rows
+                    | View::Actions
+                    | View::Providers(_)
+                    | View::Provider(_)
             )
         {
             return Outcome::Ignored;
         }
+        let was_modal = self.modal();
         let previous_keys = match update {
             UsageUpdate::Board(data) => {
                 self.refresh_error = None;
@@ -584,9 +650,9 @@ impl Board {
                         self.view = View::Rows;
                         false
                     }
-                    View::Loading => {
+                    View::Loading | View::Error(_) => {
                         self.view = View::Rows;
-                        false
+                        self.data.is_some()
                     }
                     _ => true,
                 };
@@ -605,12 +671,18 @@ impl Board {
                         })
                         .unwrap_or(self.row.min(data.rows.len().saturating_sub(1)));
                 }
+                self.dashboard.replace(data);
                 self.data = Some(data.as_ref().clone());
                 preserve.then_some(keys)
             }
-            UsageUpdate::Failed(error) if !matches!(self.view, View::Loading) => {
+            UsageUpdate::Failed(error) if self.data.is_some() => {
+                if matches!(self.view, View::Loading) {
+                    self.view = View::Rows;
+                }
                 self.refresh_error = Some(error.clone());
-                cx.focus.focus(ID.sub("save"));
+                if self.retry_in_modal() {
+                    cx.focus.focus(ID.sub("save"));
+                }
                 Some(self.row_keys())
             }
             UsageUpdate::Failed(error) => {
@@ -619,34 +691,67 @@ impl Board {
             }
             _ => return Outcome::Ignored,
         };
-        self.redraw(cx, previous_keys);
+        if was_modal && self.modal() {
+            self.redraw(cx, previous_keys);
+        } else if was_modal {
+            cx.close();
+        } else if cx.focus.current().is_none_or(|id| {
+            let Some(data) = &self.data else {
+                return id == ID.sub("switch");
+            };
+            (id == ID.sub("switch") && previous_keys.is_none())
+                || (id == ID.sub("providers") && data.providers.is_empty())
+                || (id == ID.sub("add") && !data.empty)
+                || ([dashboard::ROWS, ID.sub("save")].contains(&id)
+                    && self.dashboard.entries.is_empty())
+        }) {
+            cx.focus.focus(self.dashboard.primary());
+        }
         Outcome::Changed
     }
 
     pub(super) fn result(&mut self, result: ModalResult, w: &mut World, cx: &mut Cx) -> Outcome {
-        let (key, values) = match result {
-            ModalResult::FormAction(k, v) => (k, v),
+        match result {
+            ModalResult::FormAction(key, values) => self.action(&key, values, w, cx),
             ModalResult::Form(None) | ModalResult::Cancelled => {
-                self.ticket = None;
-                return Outcome::Changed;
+                self.view = if self.data.is_some() {
+                    View::Rows
+                } else {
+                    View::Loading
+                };
+                self.details_back = None;
+                Outcome::Changed
             }
-            _ => return Outcome::Ignored,
-        };
-        if self.refresh_error.is_some() && key == "save" {
+            _ => Outcome::Ignored,
+        }
+    }
+
+    fn modal(&self) -> bool {
+        !matches!(self.view, View::Loading | View::Rows | View::Error(_))
+    }
+
+    fn retry_in_modal(&self) -> bool {
+        matches!(self.view, View::Providers(_) | View::Provider(_))
+    }
+
+    fn action(&mut self, key: &str, values: FormValues, w: &mut World, cx: &mut Cx) -> Outcome {
+        let was_modal = self.modal();
+        if matches!(self.view, View::Loading) && key != "switch" {
+            return Outcome::Consumed;
+        }
+        if self.refresh_error.is_some() && self.retry_in_modal() && key == "save" {
             self.ticket = Some(w.next_ticket());
             self.request(w, BoardEdit::Read);
             return Outcome::Changed;
         }
-        let row = if let (Some(data), View::Details(i)) = (&self.data, &self.view) {
+        let row = if let (Some(data), View::Details(i) | View::Order(i)) = (&self.data, &self.view)
+        {
             data.rows.get(*i)
         } else {
             None
         };
-        let action = match (key.as_str(), row) {
+        let action = match (key, row) {
             ("providers", _) => {
-                if matches!(self.view, View::Rows) {
-                    self.row = choose(&values, "row");
-                }
                 self.view = View::Providers(match self.view {
                     View::Provider(index) => index,
                     _ => 0,
@@ -703,6 +808,10 @@ impl Board {
                     hidden: false,
                     restore_pin: false,
                 }),
+            ("more", _) => {
+                self.view = View::Actions;
+                None
+            }
             ("settings", _) => {
                 self.view = View::Settings;
                 None
@@ -716,11 +825,20 @@ impl Board {
                 self.row = 0;
                 self.ticket = Some(w.next_ticket());
                 self.data = None;
+                self.dashboard.reset();
                 self.view = View::Loading;
                 Some(BoardEdit::Read)
             }
             ("reload", _) => Some(BoardEdit::Refresh(None)),
-            ("refresh_provider", Some(row)) => Some(BoardEdit::Refresh(Some(row.provider.clone()))),
+            ("refresh_provider", Some(row)) if row.provider != "antigravity" => {
+                Some(BoardEdit::Refresh(Some(row.provider.clone())))
+            }
+            ("order", _) => {
+                if let View::Details(index) = self.view {
+                    self.view = View::Order(index);
+                }
+                None
+            }
             ("member", _) => {
                 if let View::Details(i) = self.view {
                     self.view = View::Member(i, choose(&values, "member"));
@@ -803,12 +921,45 @@ impl Board {
                     self.priority = false;
                     self.ticket = Some(w.next_ticket());
                     self.data = None;
+                    self.dashboard.reset();
                     self.view = View::Loading;
                     Some(BoardEdit::Read)
                 }
                 View::Rows => {
-                    self.row = choose(&values, "row");
-                    self.view = View::Details(self.row);
+                    self.details_back = None;
+                    let group = self.dashboard.cursor();
+                    if let Some(entry) = self.dashboard.entries.get(group) {
+                        if entry.indices.is_empty() {
+                            if let Some(account) = &entry.account {
+                                self.managing_account = true;
+                                self.account.show(account.clone(), w, cx);
+                            }
+                            return Outcome::Changed;
+                        } else if entry.indices.len() == 1 {
+                            self.row = entry.indices[0];
+                            self.view = View::Details(self.row);
+                        } else {
+                            self.row = entry.ranked[0];
+                            self.view = View::Readings(group);
+                        }
+                    }
+                    None
+                }
+                View::Readings(group) => {
+                    if let Some(&index) = self
+                        .dashboard
+                        .entries
+                        .get(*group)
+                        .and_then(|entry| entry.indices.get(choose(&values, "readings")))
+                    {
+                        self.row = index;
+                        self.details_back = Some(*group);
+                        self.view = View::Details(index);
+                    }
+                    None
+                }
+                View::Actions => {
+                    self.view = View::Rows;
                     None
                 }
                 View::Providers(_) => {
@@ -841,8 +992,12 @@ impl Board {
                     self.view = View::Details(*i);
                     None
                 }
+                View::Order(index) => {
+                    self.view = View::Details(*index);
+                    None
+                }
                 View::Details(_) => {
-                    self.view = View::Rows;
+                    self.view = self.details_back.take().map_or(View::Rows, View::Readings);
                     None
                 }
                 View::Settings => {
@@ -865,13 +1020,18 @@ impl Board {
             },
             _ => None,
         };
-        self.refresh_error = None;
         if let Some(edit) = action {
+            self.refresh_error = None;
             self.ticket = Some(w.next_ticket());
             self.view = View::Loading;
             self.request(w, edit);
         }
-        self.redraw(cx, None);
+        match (was_modal, self.modal()) {
+            (true, true) => self.redraw(cx, None),
+            (true, false) => cx.close(),
+            (false, true) => cx.open(self.form(), LayerTag::new("usage_board")),
+            (false, false) => {}
+        }
         Outcome::Changed
     }
 }

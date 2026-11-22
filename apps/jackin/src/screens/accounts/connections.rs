@@ -34,11 +34,16 @@ enum Step {
     HubEdit(Option<HubRow>),
     HubRemove(HubRow),
     Details(UsageEntry),
+    FullDetails(UsageEntry),
     Resets(UsageEntry),
     Confirm(UsageEntry, usize),
     Rename(UsageEntry),
     Remove(UsageEntry),
     Error(String),
+}
+
+fn has_full_details(entry: &UsageEntry) -> bool {
+    !entry.summary.is_empty() && !entry.details.is_empty()
 }
 
 fn regions(provider: &str) -> &'static [&'static str] {
@@ -397,8 +402,27 @@ impl Connections {
                     entry.label,
                     super::usage_provider(&entry.provider)
                 )];
-                fields.extend(entry.details.iter().cloned());
-                ("Account usage", "All accounts", vec![note(fields)])
+                if entry.summary.is_empty() {
+                    fields.extend(entry.details.iter().cloned());
+                } else {
+                    fields.extend(entry.summary.iter().cloned());
+                }
+                let primary = if has_full_details(entry) {
+                    actions.push(("all_accounts", "All accounts"));
+                    "Full details"
+                } else {
+                    "All accounts"
+                };
+                ("Account usage", primary, vec![note(fields)])
+            }
+            Step::FullDetails(entry) => {
+                let mut lines = vec![format!(
+                    "{} · {}",
+                    entry.label,
+                    super::usage_provider(&entry.provider)
+                )];
+                lines.extend(entry.details.iter().cloned());
+                ("Account details", "Back", vec![note(lines)])
             }
             Step::Resets(row) => {
                 let names: Vec<_> = row.resets.iter().map(|r| r.description.as_str()).collect();
@@ -607,6 +631,7 @@ impl Connections {
                     self.pending(w, cx, UsageAction::SyncHub(h.id.clone()));
                 }
             }
+            "all_accounts" => self.pending(w, cx, UsageAction::List),
             "resets" => {
                 if let Step::Details(row) = &self.step {
                     self.step = Step::Resets(row.clone());
@@ -640,7 +665,9 @@ impl Connections {
             self.step = self.origin.take().unwrap_or(Step::Choose);
         } else {
             self.step = match &self.step {
-                Step::Remove(a) | Step::Rename(a) | Step::Resets(a) => Step::Details(a.clone()),
+                Step::Remove(a) | Step::Rename(a) | Step::Resets(a) | Step::FullDetails(a) => {
+                    Step::Details(a.clone())
+                }
                 Step::Confirm(a, _) => Step::Resets(a.clone()),
                 Step::HubRemove(h) | Step::HubEdit(Some(h)) => Step::Hub(h.clone()),
                 Step::Hub(_) | Step::HubEdit(None) => {
@@ -777,6 +804,16 @@ impl Connections {
             Step::HubRemove(h) => {
                 self.mirror = None;
                 UsageAction::RemoveHub(h.id.clone())
+            }
+            Step::FullDetails(entry) => {
+                self.step = Step::Details(entry.clone());
+                self.redraw(cx);
+                return;
+            }
+            Step::Details(entry) if has_full_details(entry) => {
+                self.step = Step::FullDetails(entry.clone());
+                self.redraw(cx);
+                return;
             }
             Step::Details(_) => UsageAction::List,
             Step::Resets(row) => {
