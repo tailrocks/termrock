@@ -619,7 +619,7 @@ impl AccountsScreen {
     fn refresh_scope(&mut self, w: &mut World, cx: &mut Cx) {
         match &self.selected {
             Sel::UsageAccount(id) => {
-                if let Some(entry) = self.inventory.entries.iter().find(|entry| &entry.id == id) {
+                if let Some(entry) = self.inventory.entry(id) {
                     self.connections.refresh(entry.clone(), w, cx);
                 }
                 return;
@@ -1579,10 +1579,17 @@ impl AccountsScreen {
                 "View usage accounts…",
                 ButtonKind::Primary,
             )],
-            Sel::UsageAccount(_) => vec![
-                mk("view_usage", "View usage…", ButtonKind::Primary),
-                mk("refresh_usage", "Refresh usage", ButtonKind::Secondary),
-            ],
+            Sel::UsageAccount(id) => {
+                let mut actions = vec![mk("view_usage", "View usage…", ButtonKind::Primary)];
+                if self
+                    .inventory
+                    .entry(id)
+                    .is_some_and(|row| row.supports_manual_refresh())
+                {
+                    actions.push(mk("refresh_usage", "Refresh usage", ButtonKind::Secondary));
+                }
+                actions
+            }
             Sel::Add => vec![mk("add", "Add account…", ButtonKind::Primary)],
         };
         if w.backend.usage_connections().is_some() {
@@ -1624,7 +1631,7 @@ impl AccountsScreen {
             ("refresh_usage", _) => self.refresh_scope(w, cx),
             ("view_usage", _) => {
                 if let Sel::UsageAccount(id) = &self.selected
-                    && let Some(entry) = self.inventory.entries.iter().find(|entry| &entry.id == id)
+                    && let Some(entry) = self.inventory.entry(id)
                 {
                     self.connections.show(entry.clone(), w, cx);
                 }
@@ -1962,7 +1969,7 @@ impl AccountsScreen {
                 ("Usage accounts".into(), self.inventory.status(), lines)
             }
             Sel::UsageAccount(id) => {
-                if let Some(entry) = self.inventory.entries.iter().find(|entry| &entry.id == id) {
+                if let Some(entry) = self.inventory.entry(id) {
                     lines.push(Line::Prop("Provider".into(), usage_provider(&entry.provider).into(), Tone::Normal));
                     lines.extend(entry.details.iter().cloned().map(|line| Line::Text(line, Tone::Normal)));
                     (entry.label.clone(), "usage account".into(), lines)
@@ -3335,9 +3342,15 @@ impl Page<Jackin> for AccountsScreen {
                 v.push(hint("Enter", "Usage accounts"));
                 v.push(hint("r", "Refresh list"));
             }
-            Sel::UsageAccount(_) => {
+            Sel::UsageAccount(id) => {
                 v.push(hint("Enter", "View usage"));
-                v.push(hint("r", "Refresh usage"));
+                if self
+                    .inventory
+                    .entry(id)
+                    .is_some_and(|row| row.supports_manual_refresh())
+                {
+                    v.push(hint("r", "Refresh usage"));
+                }
             }
             Sel::Add => v.push(hint("Enter", "Add account…")),
         }

@@ -50,6 +50,10 @@ impl Inventory {
         self.error = None;
     }
 
+    pub fn entry(&self, id: &str) -> Option<&UsageEntry> {
+        self.entries.iter().find(|entry| entry.id == id)
+    }
+
     pub fn count(&self) -> Option<usize> {
         self.loaded.then_some(self.entries.len())
     }
