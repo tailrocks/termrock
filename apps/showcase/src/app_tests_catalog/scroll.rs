@@ -1106,6 +1106,30 @@ fn reveal_tooltip() {
         text_of(&buf)
     );
 
+    let title = "A synthetic clipped title";
+    let meta = "27 remaining";
+    for x in [27, 45] {
+        let mut state = RevealState::new(Some(Reveal::default()));
+        let frame = |state: &mut RevealState| {
+            paint_with(
+                Rect::new(0, 0, 60, 8),
+                Interaction::default(),
+                |_, buf, ctx| {
+                    state.begin(ctx);
+                    reveal::occlude(Rect::new(x, 1, 12, 1));
+                    buf.set_string(x, 1, meta, ratatui::style::Style::default());
+                    state.cell(ctx, id, area, title, true);
+                },
+            )
+        };
+        frame(&mut state);
+        assert_eq!(state.on_key(&key(KeyCode::Right)), Some(Outcome::Changed));
+        let opened = text_of(&frame(&mut state));
+        assert!(opened.contains(title), "{opened}");
+        assert_eq!(opened.contains(meta), x == 45, "{opened}");
+        assert!(x == 45 || !opened.contains("remaining"), "{opened}");
+    }
+
     // A cell that fits has nothing to reveal.
     let mut fits = RevealState::new(Some(Reveal::default()));
     paint_with(screen, Interaction::default(), |_, _, ctx| {

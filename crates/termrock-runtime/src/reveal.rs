@@ -490,6 +490,7 @@ thread_local! {
 
     static OVERFLOWS: std::cell::RefCell<Vec<String>> =
         const { std::cell::RefCell::new(Vec::new()) };
+    static NEXT_CUT: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
 #[doc(hidden)]
@@ -652,11 +653,47 @@ pub fn advertise<T>(
 
 thread_local! {
 
-    static CUTS: std::cell::RefCell<Vec<(Rect, String)>> =
+    static CUTS: std::cell::RefCell<Vec<(usize, Tracked)>> =
         const { std::cell::RefCell::new(Vec::new()) };
 }
 
 const CUTS_MAX: usize = 64;
+
+enum Tracked {
+    Cut(Rect, String),
+    Atomic(Rect),
+}
+
+impl Tracked {
+    fn area(&self) -> Rect {
+        match self {
+            Self::Cut(area, _) | Self::Atomic(area) => *area,
+        }
+    }
+
+    fn at(self, area: Rect) -> Self {
+        match self {
+            Self::Cut(_, text) => Self::Cut(area, text),
+            Self::Atomic(_) => Self::Atomic(area),
+        }
+    }
+}
+
+fn registration() -> usize {
+    NEXT_CUT.with(|next| {
+        let sequence = next.get();
+        next.set(sequence + 1);
+        sequence
+    })
+}
+
+/// Registers visible content that a reveal must cover completely if intersected.
+/// Viewport clipping and scrolling follow the same lifecycle as truncated text.
+pub fn occlude(area: Rect) {
+    if !area.is_empty() {
+        CUTS.with(|q| q.borrow_mut().push((registration(), Tracked::Atomic(area))));
+    }
+}
 
 pub fn queue_cut(area: Rect, full: &str) {
     if !is_cut(area, full) {
@@ -664,9 +701,13 @@ pub fn queue_cut(area: Rect, full: &str) {
     }
     CUTS.with(|q| {
         let mut q = q.borrow_mut();
-        q.retain(|(a, _)| *a != area);
-        if q.len() < CUTS_MAX {
-            q.push((area, full.to_owned()));
+        q.retain(|(_, cut)| !matches!(cut, Tracked::Cut(at, _) if *at == area));
+        if q.iter()
+            .filter(|(_, cut)| matches!(cut, Tracked::Cut(..)))
+            .count()
+            < CUTS_MAX
+        {
+            q.push((registration(), Tracked::Cut(area, full.to_owned())));
         }
     });
 }
@@ -709,7 +750,7 @@ pub fn clamp(ctx: &mut RenderCtx, area: Rect, full: &str, focused: bool) -> Vec<
 
 #[doc(hidden)]
 pub fn cuts_len() -> usize {
-    CUTS.with(|q| q.borrow().len())
+    NEXT_CUT.with(std::cell::Cell::get)
 }
 
 #[doc(hidden)]
@@ -717,16 +758,23 @@ pub fn scroll_cuts_since(from: usize, content: Rect, window: Rect, to: Position)
     let (dx, dy) = (window.x.saturating_sub(to.x), window.y.saturating_sub(to.y));
     CUTS.with(|q| {
         let mut q = q.borrow_mut();
-        let from = from.min(q.len());
-        let tail: Vec<(Rect, String)> = q.drain(from..).collect();
-        for (area, full) in tail {
+        let tail = std::mem::take(&mut *q);
+        for (sequence, tracked) in tail {
+            if sequence < from {
+                q.push((sequence, tracked));
+                continue;
+            }
+            let area = tracked.area();
             if !area.intersects(content) {
-                q.push((area, full));
+                q.push((sequence, tracked));
                 continue;
             }
             let r = area.intersection(window);
             if !r.is_empty() {
-                q.push((Rect::new(r.x - dx, r.y - dy, r.width, r.height), full));
+                q.push((
+                    sequence,
+                    tracked.at(Rect::new(r.x - dx, r.y - dy, r.width, r.height)),
+                ));
             }
         }
     });
@@ -736,12 +784,15 @@ pub fn scroll_cuts_since(from: usize, content: Rect, window: Rect, to: Position)
 pub fn clip_cuts_since(from: usize, viewport: Rect) {
     CUTS.with(|q| {
         let mut q = q.borrow_mut();
-        let from = from.min(q.len());
-        let tail: Vec<(Rect, String)> = q.drain(from..).collect();
-        for (area, full) in tail {
-            let area = area.intersection(viewport);
+        let tail = std::mem::take(&mut *q);
+        for (sequence, tracked) in tail {
+            if sequence < from {
+                q.push((sequence, tracked));
+                continue;
+            }
+            let area = tracked.area().intersection(viewport);
             if !area.is_empty() {
-                q.push((area, full));
+                q.push((sequence, tracked.at(area)));
             }
         }
     });
@@ -749,6 +800,7 @@ pub fn clip_cuts_since(from: usize, viewport: Rect) {
 
 pub(crate) fn clear_cuts() {
     CUTS.with(|q| q.borrow_mut().clear());
+    NEXT_CUT.with(|next| next.set(0));
 }
 
 pub fn cut_id(area: Rect) -> WidgetId {
@@ -760,12 +812,17 @@ pub(crate) fn flush_cuts(ctx: &mut RenderCtx) {
     if ctx.inert {
         return;
     }
-    for (area, full) in cuts {
-        let id = cut_id(area);
-        if ctx.reveal.hover {
-            ctx.hits.register_hover(id, area);
+    for (_, tracked) in cuts {
+        match tracked {
+            Tracked::Cut(area, full) => {
+                let id = cut_id(area);
+                if ctx.reveal.hover {
+                    ctx.hits.register_hover(id, area);
+                }
+                truncated(ctx, None, id, area, &full);
+            }
+            Tracked::Atomic(area) => ctx.reveal_slot.occlusions.push(area),
         }
-        truncated(ctx, None, id, area, &full);
     }
 }
 
@@ -804,6 +861,7 @@ struct Tip {
 pub(crate) struct Slot {
     tip: Option<Tip>,
     queued: bool,
+    pub(crate) occlusions: Vec<Rect>,
 }
 
 #[derive(Debug)]
@@ -946,6 +1004,11 @@ fn draw(buf: &mut Buffer, ctx: &mut RenderCtx, tip: &Tip) {
         st = st.add_modifier(Modifier::REVERSED);
     }
     fill(buf, area, st);
+    for protected in &ctx.reveal_slot.occlusions {
+        if protected.intersects(area) {
+            fill(buf, protected.intersection(screen), st);
+        }
+    }
     let inner_w = area.width.saturating_sub(2) as usize;
     for (k, line) in lines.iter().take(area.height as usize).enumerate() {
         let style = if line.more { st.fg(t.text_muted) } else { st };
