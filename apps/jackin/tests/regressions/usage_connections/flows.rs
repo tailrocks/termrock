@@ -389,8 +389,8 @@ fn providers_show_multiple_accounts_disconnected_products_and_unavailable_quotas
             flow.shown();
             let (ticket, _) = flow.next();
             let mut data = board(0);
-            let personal = entry("codex", "Personal");
-            let mut work = entry("codex", "Work");
+            let personal = entry("codex", "Team");
+            let mut work = entry("codex", "Team");
             work.id = "fixture-codex-work".into();
             work.details = vec!["Weekly limit 83% remaining".into()];
             data.providers = vec![
@@ -413,7 +413,7 @@ fn providers_show_multiple_accounts_disconnected_products_and_unavailable_quotas
                     unavailable_reason: Some("Open Settings → Usage Limits in Gemini.".into()),
                 },
             ];
-            flow.deliver(ticket, UsageUpdate::Board(Box::new(data)));
+            flow.deliver(ticket, UsageUpdate::Board(Box::new(data.clone())));
             flow.board_action("providers");
             let list = flow.shown();
             for label in [
@@ -435,11 +435,15 @@ fn providers_show_multiple_accounts_disconnected_products_and_unavailable_quotas
                 0 => {
                     let shown = flow.shown();
                     assert!(
-                        shown.contains("Personal") && shown.contains("Work"),
+                        shown.contains("fixture-codex") && shown.contains("fixture-codex-work"),
                         "{shown}"
                     );
                     flow.focus(WidgetId::of("usage.connected_board").sub("provider_account"));
                     flow.key(KeyCode::Down);
+                    flow.deliver(ticket, UsageUpdate::Board(Box::new(data.clone())));
+                    data.providers[0].accounts[1].label = "Renamed team".into();
+                    data.providers[0].accounts.reverse();
+                    flow.deliver(ticket, UsageUpdate::Board(Box::new(data)));
                     flow.board_action("save");
                     let shown = flow.shown();
                     assert!(shown.contains("83% remaining"), "{shown}");

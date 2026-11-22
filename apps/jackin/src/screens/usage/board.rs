@@ -26,6 +26,12 @@ pub(super) struct Board {
     row: usize,
     undo: Option<BoardEdit>,
 }
+#[derive(PartialEq, Eq)]
+enum RowKey {
+    Metric(String, Option<String>, String),
+    Id(String),
+}
+
 #[derive(Default)]
 enum View {
     #[default]
@@ -119,14 +125,47 @@ impl Board {
         }
     }
 
-    fn redraw(&self, cx: &mut Cx, preserve: bool) {
+    fn row_keys(&self) -> Vec<RowKey> {
+        let Some(data) = &self.data else {
+            return vec![];
+        };
+        match &self.view {
+            View::Rows => data
+                .rows
+                .iter()
+                .map(|row| {
+                    RowKey::Metric(
+                        row.provider.clone(),
+                        row.account.clone(),
+                        row.metric.clone(),
+                    )
+                })
+                .collect(),
+            View::Providers(_) => data
+                .providers
+                .iter()
+                .map(|p| RowKey::Id(p.id.clone()))
+                .collect(),
+            View::Provider(index) => data
+                .providers
+                .get(*index)
+                .into_iter()
+                .flat_map(|p| &p.accounts)
+                .map(|a| RowKey::Id(a.id.clone()))
+                .collect(),
+            _ => vec![],
+        }
+    }
+
+    fn redraw(&self, cx: &mut Cx, previous_keys: Option<Vec<RowKey>>) {
         let mut form = self.form();
-        if !preserve {
+        let keys = previous_keys.map(|old| (old, self.row_keys()));
+        if keys.is_none() {
             cx.focus.focus(form.initial_focus());
         }
         cx.with_top::<FormDialog>(move |current| {
             if current.id == ID {
-                if preserve {
+                if let Some((old_keys, keys)) = keys {
                     form.scroll = current.scroll.clone();
                     for field in &mut form.fields {
                         if let FieldKindW::List { list, .. } = &mut field.kind
@@ -134,11 +173,9 @@ impl Board {
                                 current.fields.iter().find(|old| old.name == field.name)
                             && let FieldKindW::List { list: old, .. } = &old.kind
                         {
-                            let label = old.items.get(old.cursor).map(|item| &item.label);
-                            list.cursor = label
-                                .and_then(|label| {
-                                    list.items.iter().position(|item| &item.label == label)
-                                })
+                            list.cursor = old_keys
+                                .get(old.cursor)
+                                .and_then(|selected| keys.iter().position(|key| key == selected))
                                 .unwrap_or(old.cursor.min(list.items.len().saturating_sub(1)));
                             list.core.scroll = old.core.scroll.clone();
                         }
@@ -322,7 +359,16 @@ impl Board {
                         let items = provider
                             .accounts
                             .iter()
-                            .map(|account| ListItem::new(&account.label))
+                            .map(|account| {
+                                let item = ListItem::new(&account.label);
+                                if provider.accounts.iter().any(|other| {
+                                    other.id != account.id && other.label == account.label
+                                }) {
+                                    item.meta(&account.id)
+                                } else {
+                                    item
+                                }
+                            })
                             .collect();
                         fields.push(FormField::list(
                             "provider_account",
@@ -506,7 +552,7 @@ impl Board {
         {
             return Outcome::Ignored;
         }
-        let preserve = !matches!(self.view, View::Loading);
+        let previous_keys = (!matches!(self.view, View::Loading)).then(|| self.row_keys());
         match update {
             UsageUpdate::Board(data) => {
                 self.priority = data.priority;
@@ -514,7 +560,7 @@ impl Board {
                     cx.status(alert.clone());
                 }
                 self.data = Some(data.as_ref().clone());
-                if !preserve {
+                if previous_keys.is_none() {
                     self.view = View::Rows;
                 }
             }
@@ -522,7 +568,7 @@ impl Board {
             _ => return Outcome::Ignored,
         }
         if !self.managing_account {
-            self.redraw(cx, preserve);
+            self.redraw(cx, previous_keys);
         }
         Outcome::Changed
     }
@@ -766,7 +812,7 @@ impl Board {
             self.view = View::Loading;
             self.request(w, edit);
         }
-        self.redraw(cx, false);
+        self.redraw(cx, None);
         Outcome::Changed
     }
 }
