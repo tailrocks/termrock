@@ -596,7 +596,9 @@ impl Board {
         if matches!(self.view, View::Actions | View::Readings(_)) {
             form.cancel.label = "Close".into();
         }
-        if let Some(error) = &self.refresh_error {
+        if self.retry_in_modal()
+            && let Some(error) = &self.refresh_error
+        {
             form.error = Some(error.clone());
             form.save.label = "Retry".into();
             form.save.disabled = false;
@@ -673,9 +675,12 @@ impl Board {
                 self.data = Some(data.as_ref().clone());
                 preserve.then_some(keys)
             }
-            UsageUpdate::Failed(error) if !matches!(self.view, View::Loading) => {
+            UsageUpdate::Failed(error) if self.data.is_some() => {
+                if matches!(self.view, View::Loading) {
+                    self.view = View::Rows;
+                }
                 self.refresh_error = Some(error.clone());
-                if was_modal {
+                if self.retry_in_modal() {
                     cx.focus.focus(ID.sub("save"));
                 }
                 Some(self.row_keys())
@@ -725,12 +730,16 @@ impl Board {
         !matches!(self.view, View::Loading | View::Rows | View::Error(_))
     }
 
+    fn retry_in_modal(&self) -> bool {
+        matches!(self.view, View::Providers(_) | View::Provider(_))
+    }
+
     fn action(&mut self, key: &str, values: FormValues, w: &mut World, cx: &mut Cx) -> Outcome {
         let was_modal = self.modal();
         if matches!(self.view, View::Loading) && key != "switch" {
             return Outcome::Consumed;
         }
-        if self.refresh_error.is_some() && (key == "reload" || (was_modal && key == "save")) {
+        if self.refresh_error.is_some() && self.retry_in_modal() && key == "save" {
             self.ticket = Some(w.next_ticket());
             self.request(w, BoardEdit::Read);
             return Outcome::Changed;
@@ -1011,8 +1020,8 @@ impl Board {
             },
             _ => None,
         };
-        self.refresh_error = None;
         if let Some(edit) = action {
+            self.refresh_error = None;
             self.ticket = Some(w.next_ticket());
             self.view = View::Loading;
             self.request(w, edit);

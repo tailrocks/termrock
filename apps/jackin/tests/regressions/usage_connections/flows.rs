@@ -1197,3 +1197,32 @@ fn usage_account_shows_current_limits_before_full_history() {
         assert!(!flow.shown().contains("Fixture full usage history"));
     }
 }
+
+#[test]
+fn cached_usage_remains_browsable_after_refresh_failure() {
+    let mut flow = Flow::new((80, 24));
+    flow.app.go(Go::AllUsage);
+    let (ticket, _) = flow.next();
+    flow.deliver(ticket, UsageUpdate::Board(Box::new(board(1))));
+    flow.board_action("reload");
+    let (refresh, _) = flow.next();
+    flow.deliver(refresh, UsageUpdate::Failed("Refresh unavailable".into()));
+    assert!(flow.shown().contains("Refresh unavailable"));
+    flow.board_action("save");
+    assert!(
+        flow.shown().contains("Detail marker 00"),
+        "{}",
+        flow.shown()
+    );
+    flow.board_action("save");
+    assert!(flow.backend.pending.lock().unwrap().is_empty());
+    flow.board_action("reload");
+    assert!(matches!(
+        flow.next().1,
+        UsageAction::Board {
+            edit: BoardEdit::Refresh(None),
+            ..
+        }
+    ));
+}
+
