@@ -866,6 +866,18 @@ impl ListBox {
             }
             let label_w = text_w.saturating_sub(2);
             let (lw, meta_w) = Self::label_width(&item, text_w);
+            let meta = item
+                .meta
+                .filter(|_| meta_w > 0 && meta_w + 4 < label_w)
+                .map(|text| {
+                    let x = sp
+                        .content
+                        .right()
+                        .min(row.right().saturating_sub(1))
+                        .saturating_sub(meta_w as u16);
+                    (text, Rect::new(x, y, meta_w as u16, 1))
+                });
+            self.core.reveal.occlusion = meta.as_ref().map(|(_, area)| *area);
             if let Some(lines) = block {
                 for (k, line) in lines.iter().take(h as usize).enumerate() {
                     let ls = if line.more { st.fg(t.text_muted) } else { st };
@@ -876,15 +888,7 @@ impl ListBox {
                 let label = Rect::new(row.x + 3, y, lw as u16, 1);
                 rp.label(ctx, buf, &mut self.core.reveal, rid, label, item.label, st);
             }
-            if let Some(m) = item.meta
-                && meta_w > 0
-                && meta_w + 4 < label_w
-            {
-                let mx = sp
-                    .content
-                    .right()
-                    .min(row.right().saturating_sub(1))
-                    .saturating_sub(meta_w as u16);
+            if let Some((text, area)) = meta {
                 let ms = if s.disabled {
                     st
                 } else if item.meta_tone == Tone::Muted {
@@ -892,7 +896,7 @@ impl ListBox {
                 } else {
                     st.fg(t.tone_on(item.meta_tone, st.bg.unwrap_or(t.canvas)))
                 };
-                buf.set_string(mx, y, m, ms);
+                buf.set_string(area.x, area.y, text, ms);
             }
             ctx.register_part(self.id, PartRef::item(Part::ROW, hit_key), row);
             if self.mode == SelectMode::Multi {

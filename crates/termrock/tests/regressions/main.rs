@@ -31,6 +31,7 @@ mod keyed_collections;
 mod keyed_costs;
 mod layering;
 mod list_detail;
+mod list_reveal_meta;
 mod loading_label;
 mod module_paths;
 mod nav_list;

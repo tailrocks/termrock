@@ -140,6 +140,9 @@ pub struct RevealState {
 
     pub open: bool,
 
+    /// Adjacent content that an overlapping tooltip must cover as a whole.
+    pub occlusion: Option<Rect>,
+
     effective: Reveal,
 
     available: bool,
@@ -358,6 +361,7 @@ impl RevealState {
             max_rows: self.effective.max_rows,
             extent: Some(self.extent.clone()),
             pointer_only: false,
+            occlusion: self.occlusion,
         }
     }
 }
@@ -471,6 +475,7 @@ pub fn truncated(
                 max_rows: cfg.max_rows,
                 extent: Some(p.extent.clone()),
                 pointer_only: true,
+                occlusion: None,
             }
         });
         show(ctx, id, area, full, Source::Pointer, feed);
@@ -781,6 +786,7 @@ enum Source {
 
 #[derive(Debug, Clone, Default)]
 struct Feed {
+    occlusion: Option<Rect>,
     scroll: u16,
     max_rows: u16,
     extent: Option<SharedExtent>,
@@ -925,7 +931,25 @@ fn draw(buf: &mut Buffer, ctx: &mut RenderCtx, tip: &Tip) {
         tip.anchor.height,
     );
     let (area, lines) = layout(screen, anchor, tip.id, &tip.text, &tip.feed, t);
-    let area = area.intersection(screen);
+    let mut area = area.intersection(screen);
+    if let Some(occlusion) = tip.feed.occlusion {
+        let logical_screen = Rect::new(
+            screen.x.saturating_add(dx),
+            screen.y.saturating_add(dy),
+            screen.width,
+            screen.height,
+        );
+        let occlusion = occlusion.intersection(logical_screen);
+        let occlusion = Rect::new(
+            occlusion.x.saturating_sub(dx),
+            occlusion.y.saturating_sub(dy),
+            occlusion.width,
+            occlusion.height,
+        );
+        if area.intersects(occlusion) {
+            area = area.union(occlusion).intersection(screen);
+        }
+    }
     if area.is_empty() {
         return;
     }
