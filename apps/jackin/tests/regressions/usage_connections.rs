@@ -211,6 +211,7 @@ fn dashboard_keyboard_hides_restores_and_persists_settings() {
         }
     ));
     let mut data = UsageBoard {
+        providers: vec![],
         priority: true,
         summary: "Two hours to reset".into(),
         notices: vec![],

@@ -11,7 +11,7 @@ pub const PRODUCTS: [(&str, &str); 11] = [
     ("zai", "Z.ai"),
     ("minimax", "MiniMax"),
     ("mimo", "MiMo"),
-    ("gemini", "Gemini"),
+    ("gemini", "Gemini Code Assist"),
     ("opencode", "OpenCode"),
     ("openrouter", "OpenRouter"),
 ];
@@ -204,7 +204,27 @@ pub struct BoardSettings {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct BoardProvider {
+    pub id: String,
+    pub name: String,
+    pub accounts: Vec<UsageEntry>,
+    pub unavailable_reason: Option<String>,
+}
+
+impl BoardProvider {
+    pub fn status(&self) -> String {
+        match (self.unavailable_reason.is_some(), self.accounts.len()) {
+            (true, _) => "Quota unavailable".into(),
+            (false, 0) => "Not connected".into(),
+            (false, 1) => "1 account".into(),
+            (false, n) => format!("{n} accounts"),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UsageBoard {
+    pub providers: Vec<BoardProvider>,
     pub priority: bool,
     pub summary: String,
     pub notices: Vec<String>,

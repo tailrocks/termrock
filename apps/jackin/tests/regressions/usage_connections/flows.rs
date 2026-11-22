@@ -1,7 +1,7 @@
 use super::*;
 use jackin_console::app::App;
 use jackin_console::usage_connections::{
-    BoardEdit, BoardMetric, BoardSettings, PRODUCTS, UsageBoard,
+    BoardEdit, BoardMetric, BoardProvider, BoardSettings, PRODUCTS, UsageBoard,
 };
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
@@ -341,6 +341,7 @@ fn prompt_modes_mask_credentials_and_cancel_without_accepting_late_replies() {
 
 fn board(rows: usize) -> UsageBoard {
     UsageBoard {
+        providers: vec![],
         priority: false,
         summary: "All Usage".into(),
         notices: vec![],
@@ -376,6 +377,93 @@ fn board(rows: usize) -> UsageBoard {
             hidden: vec![],
             proxy: false,
         },
+    }
+}
+
+#[test]
+fn providers_show_multiple_accounts_disconnected_products_and_unavailable_quotas() {
+    for size in [(140, 40), (80, 24)] {
+        for selected in 0..3 {
+            let mut flow = Flow::new(size);
+            flow.app.go(Go::AllUsage);
+            flow.shown();
+            let (ticket, _) = flow.next();
+            let mut data = board(0);
+            let personal = entry("codex", "Personal");
+            let mut work = entry("codex", "Work");
+            work.id = "fixture-codex-work".into();
+            work.details = vec!["Weekly limit 83% remaining".into()];
+            data.providers = vec![
+                BoardProvider {
+                    id: "codex".into(),
+                    name: "ChatGPT / Codex".into(),
+                    accounts: vec![personal, work],
+                    unavailable_reason: None,
+                },
+                BoardProvider {
+                    id: "muse".into(),
+                    name: "Muse".into(),
+                    accounts: vec![],
+                    unavailable_reason: None,
+                },
+                BoardProvider {
+                    id: "google-ai-ultra".into(),
+                    name: "Google AI Ultra (Gemini)".into(),
+                    accounts: vec![],
+                    unavailable_reason: Some("Open Settings → Usage Limits in Gemini.".into()),
+                },
+            ];
+            flow.deliver(ticket, UsageUpdate::Board(Box::new(data)));
+            flow.board_action("providers");
+            let list = flow.shown();
+            for label in [
+                "ChatGPT / Codex",
+                "2 accounts",
+                "Muse",
+                "Not connected",
+                "Google AI Ultra",
+                "Quota unavailable",
+            ] {
+                assert!(list.contains(label), "{list}");
+            }
+            flow.focus(WidgetId::of("usage.connected_board").sub("providers_list"));
+            for _ in 0..selected {
+                flow.key(KeyCode::Down);
+            }
+            flow.board_action("save");
+            match selected {
+                0 => {
+                    let shown = flow.shown();
+                    assert!(
+                        shown.contains("Personal") && shown.contains("Work"),
+                        "{shown}"
+                    );
+                    flow.focus(WidgetId::of("usage.connected_board").sub("provider_account"));
+                    flow.key(KeyCode::Down);
+                    flow.board_action("save");
+                    let shown = flow.shown();
+                    assert!(shown.contains("83% remaining"), "{shown}");
+                }
+                1 => {
+                    assert!(flow.shown().contains("Add usage account"));
+                    flow.board_action("save");
+                    flow.action("save");
+                    assert!(
+                        matches!(flow.next().1, UsageAction::Begin(choice) if choice.provider == "muse")
+                    );
+                }
+                _ => {
+                    let shown = flow.shown();
+                    assert!(
+                        shown.contains("Open Settings") && !shown.contains("Add usage account"),
+                        "{shown}"
+                    );
+                    flow.board_action("save");
+                    assert!(flow.shown().contains("Usage providers"));
+                    assert!(flow.backend.pending.lock().unwrap().is_empty());
+                }
+            }
+        }
     }
 }
 

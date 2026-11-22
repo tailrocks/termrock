@@ -31,6 +31,8 @@ enum View {
     #[default]
     Loading,
     Rows,
+    Providers(usize),
+    Provider(usize),
     Details(usize),
     Member(usize, usize),
     Settings,
@@ -94,7 +96,13 @@ impl Board {
     }
 
     pub(super) fn refreshed(&self, w: &World) {
-        if !self.managing_account && matches!(self.view, View::Rows) && self.ticket.is_some() {
+        if !self.managing_account
+            && matches!(
+                self.view,
+                View::Rows | View::Providers(_) | View::Provider(_)
+            )
+            && self.ticket.is_some()
+        {
             self.request(w, BoardEdit::Read);
         }
     }
@@ -156,6 +164,12 @@ impl Board {
         }
         let mut save = "Details";
         let title = match self.view {
+            View::Providers(_) => "Usage providers",
+            View::Provider(index) => self
+                .data
+                .as_ref()
+                .and_then(|data| data.providers.get(index))
+                .map_or("Provider", |provider| provider.name.as_str()),
             View::Settings => "Usage settings",
             View::Proxy => "Network proxy",
             _ if self.priority => "Priority",
@@ -239,6 +253,9 @@ impl Board {
                         data.rows.len().clamp(3, 32) as u16,
                     ));
                 }
+                if !data.providers.is_empty() {
+                    actions.push(("providers", "Providers…"));
+                }
                 if data.empty {
                     actions.push(("add", "Add account…"));
                 }
@@ -276,6 +293,54 @@ impl Board {
                             "Undo hide"
                         },
                     ));
+                }
+            }
+            (Some(data), View::Providers(selected)) => {
+                let items = data
+                    .providers
+                    .iter()
+                    .map(|p| ListItem::new(&p.name).meta(&p.status()))
+                    .collect();
+                let mut list = ListBox::new(ID.sub("providers_list"), items, SelectMode::Single);
+                list.cursor = *selected;
+                fields.push(FormField::list(
+                    "providers_list",
+                    list,
+                    data.providers.len().clamp(1, 12) as u16,
+                ));
+                save = "View provider";
+                actions.push(("back", "Back"));
+            }
+            (Some(data), View::Provider(index)) => {
+                if let Some(provider) = data.providers.get(*index) {
+                    if let Some(reason) = &provider.unavailable_reason {
+                        fields.push(note(vec![reason.clone()]));
+                    } else if provider.accounts.is_empty() {
+                        fields.push(note(vec!["No usage accounts connected.".into()]));
+                    }
+                    if !provider.accounts.is_empty() {
+                        let items = provider
+                            .accounts
+                            .iter()
+                            .map(|account| ListItem::new(&account.label))
+                            .collect();
+                        fields.push(FormField::list(
+                            "provider_account",
+                            ListBox::new(ID.sub("provider_account"), items, SelectMode::Single),
+                            provider.accounts.len().clamp(1, 12) as u16,
+                        ));
+                        save = "View account";
+                    } else if provider.unavailable_reason.is_none() {
+                        save = "Add usage account…";
+                    } else {
+                        save = "Back";
+                    }
+                    if provider.unavailable_reason.is_none() && !provider.accounts.is_empty() {
+                        actions.push(("provider_add", "Add usage account…"));
+                    }
+                    if save != "Back" {
+                        actions.push(("providers", "Back"));
+                    }
                 }
             }
             (Some(data), View::Details(i)) => {
@@ -433,10 +498,15 @@ impl Board {
     }
 
     pub(super) fn receive(&mut self, ticket: Ticket, update: &UsageUpdate, cx: &mut Cx) -> Outcome {
-        if self.ticket != Some(ticket) || !matches!(self.view, View::Loading | View::Rows) {
+        if self.ticket != Some(ticket)
+            || !matches!(
+                self.view,
+                View::Loading | View::Rows | View::Providers(_) | View::Provider(_)
+            )
+        {
             return Outcome::Ignored;
         }
-        let preserve = matches!(self.view, View::Rows);
+        let preserve = !matches!(self.view, View::Loading);
         match update {
             UsageUpdate::Board(data) => {
                 self.priority = data.priority;
@@ -444,7 +514,9 @@ impl Board {
                     cx.status(alert.clone());
                 }
                 self.data = Some(data.as_ref().clone());
-                self.view = View::Rows;
+                if !preserve {
+                    self.view = View::Rows;
+                }
             }
             UsageUpdate::Failed(error) => self.view = View::Error(error.clone()),
             _ => return Outcome::Ignored,
@@ -470,6 +542,26 @@ impl Board {
             None
         };
         let action = match (key.as_str(), row) {
+            ("providers", _) => {
+                self.view = View::Providers(match self.view {
+                    View::Provider(index) => index,
+                    _ => 0,
+                });
+                None
+            }
+            ("provider_add", _) => {
+                if let View::Provider(index) = self.view
+                    && let Some(provider) = self
+                        .data
+                        .as_ref()
+                        .and_then(|data| data.providers.get(index))
+                    && provider.unavailable_reason.is_none()
+                {
+                    self.managing_account = true;
+                    self.account.add(w, cx, Some(&provider.id));
+                }
+                return Outcome::Changed;
+            }
             ("add", _) => {
                 self.managing_account = true;
                 self.account.add(w, cx, None);
@@ -613,6 +705,32 @@ impl Board {
                 View::Rows => {
                     self.row = choose(&values, "row");
                     self.view = View::Details(self.row);
+                    None
+                }
+                View::Providers(_) => {
+                    self.view = View::Provider(choose(&values, "providers_list"));
+                    None
+                }
+                View::Provider(index) => {
+                    if let Some(provider) = self
+                        .data
+                        .as_ref()
+                        .and_then(|data| data.providers.get(*index))
+                    {
+                        if let Some(account) =
+                            provider.accounts.get(choose(&values, "provider_account"))
+                        {
+                            self.managing_account = true;
+                            self.account.show(account.clone(), w, cx);
+                            return Outcome::Changed;
+                        }
+                        if provider.unavailable_reason.is_none() {
+                            self.managing_account = true;
+                            self.account.add(w, cx, Some(&provider.id));
+                            return Outcome::Changed;
+                        }
+                    }
+                    self.view = View::Providers(*index);
                     None
                 }
                 View::Member(i, _) => {
