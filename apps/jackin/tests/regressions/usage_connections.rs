@@ -307,6 +307,17 @@ fn dashboard_keyboard_hides_restores_and_persists_settings() {
     send(&mut app, &data);
     assert_eq!(app.shell.focus.current(), focus);
     press(&mut app, "esc");
+    assert!(matches!(pending(), Some((_, UsageAction::Cancel))));
+    assert!(matches!(
+        pending(),
+        Some((
+            _,
+            UsageAction::Board {
+                edit: BoardEdit::Read,
+                ..
+            }
+        ))
+    ));
     send(&mut app, &data);
     assert!(screen(&mut app).contains("0% remaining"));
     data.attention.clear();
@@ -316,6 +327,17 @@ fn dashboard_keyboard_hides_restores_and_persists_settings() {
     activate(&mut app, ROOT, "add");
     assert!(screen(&mut app).contains("Add usage account"));
     press(&mut app, "esc");
+    assert!(matches!(pending(), Some((_, UsageAction::Cancel))));
+    assert!(matches!(
+        pending(),
+        Some((
+            _,
+            UsageAction::Board {
+                edit: BoardEdit::Read,
+                ..
+            }
+        ))
+    ));
     send(&mut app, &data);
     activate(&mut app, ROOT, "settings");
     press(&mut app, "space");

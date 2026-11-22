@@ -523,6 +523,96 @@ fn refreshed_catalog_preserves_provider_scope_and_recovers_focus() {
 }
 
 #[test]
+fn catalog_round_trip_preserves_reading_and_reconciles_removed_actions() {
+    for size in [(140, 40), (80, 24)] {
+        let mut flow = Flow::new(size);
+        flow.app.go(Go::AllUsage);
+        flow.shown();
+        let (ticket, _) = flow.next();
+        let mut data = board(4);
+        data.providers = vec![BoardProvider {
+            id: "muse".into(),
+            name: "Muse".into(),
+            accounts: vec![],
+            unavailable_reason: None,
+        }];
+        flow.deliver(ticket, UsageUpdate::Board(Box::new(data.clone())));
+        flow.key(KeyCode::End);
+        flow.board_action("providers");
+        data.rows.rotate_left(1);
+        flow.deliver(ticket, UsageUpdate::Board(Box::new(data.clone())));
+        flow.board_action("back");
+        flow.board_action("save");
+        assert!(flow.shown().contains("Detail marker 03"));
+        flow.board_action("save");
+        flow.focus(WidgetId::of("usage.connected_board").sub("providers"));
+        data.providers.clear();
+        flow.deliver(ticket, UsageUpdate::Board(Box::new(data)));
+        assert_eq!(
+            flow.app.shell.focus.current(),
+            Some(WidgetId::of("usage.connected_board").sub("row"))
+        );
+        flow.board_action("save");
+        assert!(flow.shown().contains("Detail marker 03"));
+    }
+}
+
+#[test]
+fn provider_refresh_ignores_hidden_and_superseded_replies_and_retries_in_place() {
+    for size in [(140, 40), (80, 24)] {
+        let mut flow = Flow::new(size);
+        flow.app.go(Go::AllUsage);
+        flow.shown();
+        let (ticket, _) = flow.next();
+        let mut data = board(0);
+        let first = entry("muse", "Account A");
+        let mut second = entry("muse", "Account B");
+        second.id = "fixture-muse-b".into();
+        second.details = vec!["Second account remaining".into()];
+        data.providers = vec![BoardProvider {
+            id: "muse".into(),
+            name: "Muse".into(),
+            accounts: vec![first, second],
+            unavailable_reason: None,
+        }];
+        flow.deliver(ticket, UsageUpdate::Board(Box::new(data.clone())));
+        flow.board_action("providers");
+        flow.board_action("save");
+        flow.focus(WidgetId::of("usage.connected_board").sub("provider_account"));
+        flow.key(KeyCode::Down);
+        flow.board_action("save");
+        data.providers[0].accounts.reverse();
+        flow.deliver(ticket, UsageUpdate::Board(Box::new(data.clone())));
+        assert!(flow.shown().contains("Second account remaining"));
+        flow.key(KeyCode::Esc);
+        let (refresh, request) = flow.next();
+        assert!(matches!(request, UsageAction::Board { .. }));
+        assert_ne!(refresh, ticket);
+        assert!(matches!(flow.next().1, UsageAction::Cancel));
+        flow.deliver(refresh, UsageUpdate::Board(Box::new(data.clone())));
+        flow.deliver(ticket, UsageUpdate::Board(Box::new(board(0))));
+        flow.focus(WidgetId::of("usage.connected_board").sub("provider_add"));
+        data.providers[0].unavailable_reason = Some("Connections paused".into());
+        flow.deliver(refresh, UsageUpdate::Board(Box::new(data.clone())));
+        assert_eq!(
+            flow.app.shell.focus.current(),
+            Some(WidgetId::of("usage.connected_board").sub("provider_account"))
+        );
+        flow.deliver(refresh, UsageUpdate::Failed("Please retry".into()));
+        flow.key(KeyCode::Enter);
+        let (retry, action) = flow.next();
+        assert!(matches!(action, UsageAction::Board { .. }));
+        flow.deliver(retry, UsageUpdate::Board(Box::new(data)));
+        flow.board_action("save");
+        assert!(
+            flow.shown().contains("Second account remaining"),
+            "{}",
+            flow.shown()
+        );
+    }
+}
+
+#[test]
 fn all_usage_first_and_last_readings_are_visible_and_refresh_preserves_focus() {
     for size in [(140, 40), (80, 24)] {
         let mut flow = Flow::new(size);

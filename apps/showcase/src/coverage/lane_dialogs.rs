@@ -82,6 +82,7 @@ pub const PROOFS: &[CapabilityProof] = &[
     CapabilityProof { api: "widgets::form_dialog::FormDialog::field", route: PageId::DialogKinds, scenarios: &[ScenarioId::DialogsFormModel], feature: None },
     CapabilityProof { api: "widgets::form_dialog::FormDialog::field_mut", route: PageId::DialogKinds, scenarios: &[ScenarioId::DialogsFormModel], feature: None },
     CapabilityProof { api: "widgets::form_dialog::FormDialog::initial_focus", route: PageId::DialogKinds, scenarios: &[ScenarioId::DialogsFormModel], feature: None },
+    CapabilityProof { api: "widgets::form_dialog::FormDialog::restored_focus", route: PageId::DialogKinds, scenarios: &[ScenarioId::DialogsFormModel], feature: None },
     CapabilityProof { api: "widgets::form_dialog::FormDialog::is_editing", route: PageId::DialogKinds, scenarios: &[ScenarioId::DialogsFormModel], feature: None },
     CapabilityProof { api: "widgets::form_dialog::FormDialog::meta", route: PageId::DialogKinds, scenarios: &[ScenarioId::DialogsFormModel], feature: None },
     CapabilityProof { api: "widgets::form_dialog::FormDialog::new", route: PageId::DialogKinds, scenarios: &[ScenarioId::DialogsFormModel], feature: None },

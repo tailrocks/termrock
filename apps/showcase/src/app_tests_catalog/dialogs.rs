@@ -2060,6 +2060,7 @@ fn form_dialog_model() {
     assert_eq!(form.area, area_of(&shown.hits, modal::SURFACE));
 
     assert_eq!(form.initial_focus(), id.sub("name"));
+    assert_eq!(form.restored_focus(Some(id.sub("kind"))), id.sub("kind"));
     assert!(!form.is_editing());
     if let Some(FormFieldKind::Input(input)) = form.field_mut("name").map(|f| &mut f.kind) {
         input.begin_edit();
@@ -2070,6 +2071,7 @@ fn form_dialog_model() {
     );
     form.set_visible("name", false);
     assert!(!form.is_editing(), "a hidden input stops editing");
+    assert_eq!(form.restored_focus(Some(id.sub("name"))), id.sub("kind"));
     assert_eq!(
         form.initial_focus(),
         id.sub("kind"),

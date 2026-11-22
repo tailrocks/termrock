@@ -21,6 +21,7 @@ pub(super) struct Board {
     managing_account: bool,
     pub(super) account: super::super::accounts::connections::Connections,
     priority: bool,
+    refresh_error: Option<String>,
     data: Option<UsageBoard>,
     view: View,
     row: usize,
@@ -76,6 +77,7 @@ impl Board {
         self.priority = priority.unwrap_or(true);
         self.ticket = Some(w.next_ticket());
         self.data = None;
+        self.refresh_error = None;
         self.row = 0;
         self.view = View::Loading;
         cx.open(self.form(), LayerTag::new("usage_board"));
@@ -89,19 +91,19 @@ impl Board {
         );
     }
 
-    pub(super) fn tick(&mut self, w: &World) {
+    pub(super) fn tick(&mut self, w: &mut World) {
         if w.now_ms() >= self.next_tick {
             self.next_tick = w.now_ms().saturating_add(30_000);
             self.refreshed(w);
         }
     }
 
-    pub(super) fn account_closed(&mut self, w: &World) {
+    pub(super) fn account_closed(&mut self, w: &mut World) {
         self.managing_account = false;
         self.refreshed(w);
     }
 
-    pub(super) fn refreshed(&self, w: &World) {
+    pub(super) fn refreshed(&mut self, w: &mut World) {
         if !self.managing_account
             && matches!(
                 self.view,
@@ -109,6 +111,7 @@ impl Board {
             )
             && self.ticket.is_some()
         {
+            self.ticket = Some(w.next_ticket());
             self.request(w, BoardEdit::Read);
         }
     }
@@ -125,22 +128,20 @@ impl Board {
         }
     }
 
+    fn metric_key(row: &BoardMetric) -> RowKey {
+        RowKey::Metric(
+            row.provider.clone(),
+            row.account.clone(),
+            row.metric.clone(),
+        )
+    }
+
     fn row_keys(&self) -> Vec<RowKey> {
         let Some(data) = &self.data else {
             return vec![];
         };
         match &self.view {
-            View::Rows => data
-                .rows
-                .iter()
-                .map(|row| {
-                    RowKey::Metric(
-                        row.provider.clone(),
-                        row.account.clone(),
-                        row.metric.clone(),
-                    )
-                })
-                .collect(),
+            View::Rows => data.rows.iter().map(Self::metric_key).collect(),
             View::Providers(_) => data
                 .providers
                 .iter()
@@ -160,9 +161,8 @@ impl Board {
     fn redraw(&self, cx: &mut Cx, previous_keys: Option<Vec<RowKey>>) {
         let mut form = self.form();
         let keys = previous_keys.map(|old| (old, self.row_keys()));
-        if keys.is_none() {
-            cx.focus.focus(form.initial_focus());
-        }
+        let focus = keys.as_ref().and_then(|_| cx.focus.current());
+        cx.focus.focus(form.restored_focus(focus));
         cx.with_top::<FormDialog>(move |current| {
             if current.id == ID {
                 if let Some((old_keys, keys)) = keys {
@@ -339,7 +339,7 @@ impl Board {
                     .map(|p| ListItem::new(&p.name).meta(&p.status()))
                     .collect();
                 let mut list = ListBox::new(ID.sub("providers_list"), items, SelectMode::Single);
-                list.cursor = *selected;
+                list.cursor = (*selected).min(data.providers.len().saturating_sub(1));
                 fields.push(FormField::list(
                     "providers_list",
                     list,
@@ -538,6 +538,11 @@ impl Board {
         form.save.label = save.into();
         form.save.disabled = matches!(&self.view, View::Loading)
             || matches!((&self.view,&self.data),(View::Rows,Some(d)) if d.rows.is_empty() && !self.priority);
+        if let Some(error) = &self.refresh_error {
+            form.error = Some(error.clone());
+            form.save.label = "Retry".into();
+            form.save.disabled = false;
+        }
         for (key, label) in actions {
             form = form.action(key, Button::secondary(ID.sub(key), label));
         }
@@ -545,7 +550,8 @@ impl Board {
     }
 
     pub(super) fn receive(&mut self, ticket: Ticket, update: &UsageUpdate, cx: &mut Cx) -> Outcome {
-        if self.ticket != Some(ticket)
+        if self.managing_account
+            || self.ticket != Some(ticket)
             || !matches!(
                 self.view,
                 View::Loading | View::Rows | View::Providers(_) | View::Provider(_)
@@ -555,6 +561,7 @@ impl Board {
         }
         let previous_keys = match update {
             UsageUpdate::Board(data) => {
+                self.refresh_error = None;
                 let keys = self.row_keys();
                 let preserve = match self.view {
                     View::Provider(index) => {
@@ -563,9 +570,7 @@ impl Board {
                             .and_then(|p| data.providers.iter().position(|next| next.id == p.id));
                         if let Some(next) = next {
                             self.view = View::Provider(next);
-                            current.is_some_and(|p| {
-                                p.accounts.is_empty() == data.providers[next].accounts.is_empty()
-                            })
+                            true
                         } else {
                             self.view = if data.providers.is_empty() {
                                 View::Rows
@@ -589,8 +594,24 @@ impl Board {
                 for alert in &data.alerts {
                     cx.status(alert.clone());
                 }
+                if let Some(selected) = self.data.as_ref().and_then(|old| old.rows.get(self.row)) {
+                    self.row = data
+                        .rows
+                        .iter()
+                        .position(|row| {
+                            row.provider == selected.provider
+                                && row.account == selected.account
+                                && row.metric == selected.metric
+                        })
+                        .unwrap_or(self.row.min(data.rows.len().saturating_sub(1)));
+                }
                 self.data = Some(data.as_ref().clone());
                 preserve.then_some(keys)
+            }
+            UsageUpdate::Failed(error) if !matches!(self.view, View::Loading) => {
+                self.refresh_error = Some(error.clone());
+                cx.focus.focus(ID.sub("save"));
+                Some(self.row_keys())
             }
             UsageUpdate::Failed(error) => {
                 self.view = View::Error(error.clone());
@@ -598,9 +619,7 @@ impl Board {
             }
             _ => return Outcome::Ignored,
         };
-        if !self.managing_account {
-            self.redraw(cx, previous_keys);
-        }
+        self.redraw(cx, previous_keys);
         Outcome::Changed
     }
 
@@ -613,6 +632,11 @@ impl Board {
             }
             _ => return Outcome::Ignored,
         };
+        if self.refresh_error.is_some() && key == "save" {
+            self.ticket = Some(w.next_ticket());
+            self.request(w, BoardEdit::Read);
+            return Outcome::Changed;
+        }
         let row = if let (Some(data), View::Details(i)) = (&self.data, &self.view) {
             data.rows.get(*i)
         } else {
@@ -620,6 +644,9 @@ impl Board {
         };
         let action = match (key.as_str(), row) {
             ("providers", _) => {
+                if matches!(self.view, View::Rows) {
+                    self.row = choose(&values, "row");
+                }
                 self.view = View::Providers(match self.view {
                     View::Provider(index) => index,
                     _ => 0,
@@ -838,6 +865,7 @@ impl Board {
             },
             _ => None,
         };
+        self.refresh_error = None;
         if let Some(edit) = action {
             self.ticket = Some(w.next_ticket());
             self.view = View::Loading;
