@@ -2058,6 +2058,7 @@ pub static CAPABILITIES: &[Capability] = &[
     Capability::function("ui::reveal::RevealState::on_wheel"),
     Capability::function("ui::reveal::RevealState::inline"),
     Capability::function("ui::reveal::RevealState::cell"),
+    Capability::function("ui::reveal::occlude"),
     Capability::function("ui::reveal::truncated"),
     Capability::function("ui::reveal::hover_ready"),
     Capability::function("ui::reveal::hover_wait"),

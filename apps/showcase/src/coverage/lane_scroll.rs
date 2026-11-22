@@ -197,6 +197,7 @@ pub const PROOFS: &[CapabilityProof] = &[
     CapabilityProof { api: "ui::reveal::peek", route: PageId::PopupsTooltips, scenarios: &[ScenarioId::RevealHelpers], feature: None },
     CapabilityProof { api: "ui::reveal::queue_cut", route: PageId::PopupsTooltips, scenarios: &[ScenarioId::RevealHelpers], feature: None },
     CapabilityProof { api: "ui::reveal::truncated", route: PageId::PopupsTooltips, scenarios: &[ScenarioId::RevealHelpers], feature: None },
+    CapabilityProof { api: "ui::reveal::occlude", route: PageId::PopupsTooltips, scenarios: &[ScenarioId::RevealTooltip], feature: None },
     CapabilityProof { api: "ui::reveal::RevealState::cell", route: PageId::PopupsTooltips, scenarios: &[ScenarioId::RevealTooltip], feature: None },
     CapabilityProof { api: "ui::reveal::RevealState", route: PageId::PopupsTooltips, scenarios: &[ScenarioId::RevealInline, ScenarioId::RevealTooltip], feature: None },
     CapabilityProof { api: "ui::reveal::RevealState::available", route: PageId::PopupsTooltips, scenarios: &[ScenarioId::RevealInline, ScenarioId::RevealTooltip], feature: None },

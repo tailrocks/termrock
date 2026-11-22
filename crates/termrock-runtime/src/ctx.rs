@@ -440,6 +440,7 @@ impl<'a> RenderCtx<'a> {
         let area = area.intersection(buf.area);
         let before = buf.clone();
         let hits_from = self.hits.len();
+        let cuts_from = crate::reveal::cuts_len();
         let cursor = self.cursor;
         let out = draw(buf, self);
         let full = buf.area;
@@ -452,6 +453,7 @@ impl<'a> RenderCtx<'a> {
             }
         }
         self.hits.clip_since(hits_from, area);
+        crate::reveal::clip_cuts_since(cuts_from, area);
         if let Some(p) = self.cursor
             && self.cursor != cursor
             && !area.contains(p)
@@ -462,8 +464,11 @@ impl<'a> RenderCtx<'a> {
     }
 
     pub fn flush_overlays(&mut self, buf: &mut Buffer) {
-        crate::reveal::flush_cuts(self);
-        while !self.overlays.is_empty() {
+        loop {
+            crate::reveal::flush_cuts(self);
+            if self.overlays.is_empty() {
+                break;
+            }
             let queued = std::mem::take(&mut self.overlays);
             for (inert, draw) in queued {
                 let outer = std::mem::replace(&mut self.inert, inert);
@@ -479,6 +484,7 @@ impl<'a> RenderCtx<'a> {
 
     pub fn begin_modal(&mut self, buf: &mut Buffer) {
         self.flush_overlays(buf);
+        self.reveal_slot.occlusions.clear();
         self.hits.push_barrier();
         self.ring.push_barrier();
         self.inert = false;
@@ -501,6 +507,7 @@ impl<'a> RenderCtx<'a> {
 
     pub fn cover(&mut self, buf: &mut Buffer) {
         self.flush_overlays(buf);
+        self.reveal_slot.occlusions.clear();
         self.hits.push_barrier();
         self.ring.push_barrier();
     }

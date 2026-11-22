@@ -877,7 +877,6 @@ impl ListBox {
                         .saturating_sub(meta_w as u16);
                     (text, Rect::new(x, y, meta_w as u16, 1))
                 });
-            self.core.reveal.occlusion = meta.as_ref().map(|(_, area)| *area);
             if let Some(lines) = block {
                 for (k, line) in lines.iter().take(h as usize).enumerate() {
                     let ls = if line.more { st.fg(t.text_muted) } else { st };
@@ -889,6 +888,7 @@ impl ListBox {
                 rp.label(ctx, buf, &mut self.core.reveal, rid, label, item.label, st);
             }
             if let Some((text, area)) = meta {
+                termrock_runtime::reveal::occlude(area);
                 let ms = if s.disabled {
                     st
                 } else if item.meta_tone == Tone::Muted {

@@ -1110,13 +1110,13 @@ fn reveal_tooltip() {
     let meta = "27 remaining";
     for x in [27, 45] {
         let mut state = RevealState::new(Some(Reveal::default()));
-        state.occlusion = Some(Rect::new(x, 1, 12, 1));
         let frame = |state: &mut RevealState| {
             paint_with(
                 Rect::new(0, 0, 60, 8),
                 Interaction::default(),
                 |_, buf, ctx| {
                     state.begin(ctx);
+                    reveal::occlude(Rect::new(x, 1, 12, 1));
                     buf.set_string(x, 1, meta, ratatui::style::Style::default());
                     state.cell(ctx, id, area, title, true);
                 },
