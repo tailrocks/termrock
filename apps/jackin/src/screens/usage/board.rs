@@ -350,8 +350,8 @@ impl Board {
             }
             (Some(data), View::Provider(index)) => {
                 if let Some(provider) = data.providers.get(*index) {
-                    if let Some(reason) = &provider.unavailable_reason {
-                        fields.push(note(vec![reason.clone()]));
+                    if let Some(reason) = provider.connection_unavailable() {
+                        fields.push(note(vec![reason.to_owned()]));
                     } else if provider.accounts.is_empty() {
                         fields.push(note(vec!["No usage accounts connected.".into()]));
                     }
@@ -376,12 +376,13 @@ impl Board {
                             provider.accounts.len().clamp(1, 12) as u16,
                         ));
                         save = "View account";
-                    } else if provider.unavailable_reason.is_none() {
+                    } else if provider.connection_unavailable().is_none() {
                         save = "Add usage account…";
                     } else {
                         save = "Back";
                     }
-                    if provider.unavailable_reason.is_none() && !provider.accounts.is_empty() {
+                    if provider.connection_unavailable().is_none() && !provider.accounts.is_empty()
+                    {
                         actions.push(("provider_add", "Add usage account…"));
                     }
                     if save != "Back" {
@@ -552,21 +553,51 @@ impl Board {
         {
             return Outcome::Ignored;
         }
-        let previous_keys = (!matches!(self.view, View::Loading)).then(|| self.row_keys());
-        match update {
+        let previous_keys = match update {
             UsageUpdate::Board(data) => {
+                let keys = self.row_keys();
+                let preserve = match self.view {
+                    View::Provider(index) => {
+                        let current = self.data.as_ref().and_then(|old| old.providers.get(index));
+                        let next = current
+                            .and_then(|p| data.providers.iter().position(|next| next.id == p.id));
+                        if let Some(next) = next {
+                            self.view = View::Provider(next);
+                            current.is_some_and(|p| {
+                                p.accounts.is_empty() == data.providers[next].accounts.is_empty()
+                            })
+                        } else {
+                            self.view = if data.providers.is_empty() {
+                                View::Rows
+                            } else {
+                                View::Providers(index.min(data.providers.len() - 1))
+                            };
+                            false
+                        }
+                    }
+                    View::Providers(_) if data.providers.is_empty() => {
+                        self.view = View::Rows;
+                        false
+                    }
+                    View::Loading => {
+                        self.view = View::Rows;
+                        false
+                    }
+                    _ => true,
+                };
                 self.priority = data.priority;
                 for alert in &data.alerts {
                     cx.status(alert.clone());
                 }
                 self.data = Some(data.as_ref().clone());
-                if previous_keys.is_none() {
-                    self.view = View::Rows;
-                }
+                preserve.then_some(keys)
             }
-            UsageUpdate::Failed(error) => self.view = View::Error(error.clone()),
+            UsageUpdate::Failed(error) => {
+                self.view = View::Error(error.clone());
+                None
+            }
             _ => return Outcome::Ignored,
-        }
+        };
         if !self.managing_account {
             self.redraw(cx, previous_keys);
         }
@@ -601,7 +632,7 @@ impl Board {
                         .data
                         .as_ref()
                         .and_then(|data| data.providers.get(index))
-                    && provider.unavailable_reason.is_none()
+                    && provider.connection_unavailable().is_none()
                 {
                     self.managing_account = true;
                     self.account.add(w, cx, Some(&provider.id));
@@ -770,7 +801,7 @@ impl Board {
                             self.account.show(account.clone(), w, cx);
                             return Outcome::Changed;
                         }
-                        if provider.unavailable_reason.is_none() {
+                        if provider.connection_unavailable().is_none() {
                             self.managing_account = true;
                             self.account.add(w, cx, Some(&provider.id));
                             return Outcome::Changed;

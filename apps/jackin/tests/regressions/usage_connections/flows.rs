@@ -472,6 +472,57 @@ fn providers_show_multiple_accounts_disconnected_products_and_unavailable_quotas
 }
 
 #[test]
+fn refreshed_catalog_preserves_provider_scope_and_recovers_focus() {
+    for size in [(140, 40), (80, 24)] {
+        let mut flow = Flow::new(size);
+        flow.app.go(Go::AllUsage);
+        flow.shown();
+        let (ticket, _) = flow.next();
+        let mut data = board(0);
+        data.providers = vec![
+            BoardProvider {
+                id: "future-provider".into(),
+                name: "New product".into(),
+                accounts: vec![],
+                unavailable_reason: None,
+            },
+            BoardProvider {
+                id: "muse".into(),
+                name: "Muse".into(),
+                accounts: vec![],
+                unavailable_reason: None,
+            },
+        ];
+        flow.deliver(ticket, UsageUpdate::Board(Box::new(data.clone())));
+        flow.board_action("providers");
+        flow.board_action("save");
+        assert!(flow.shown().contains("New product"));
+        flow.key(KeyCode::Enter);
+        assert!(flow.shown().contains("Usage providers"), "{}", flow.shown());
+        flow.focus(WidgetId::of("usage.connected_board").sub("providers_list"));
+        flow.key(KeyCode::Down);
+        flow.board_action("save");
+        data.providers.reverse();
+        flow.deliver(ticket, UsageUpdate::Board(Box::new(data.clone())));
+        assert!(flow.shown().contains("Muse"), "{}", flow.shown());
+        data.providers.remove(0);
+        flow.deliver(ticket, UsageUpdate::Board(Box::new(data)));
+        assert!(flow.shown().contains("Usage providers"), "{}", flow.shown());
+        flow.focus(WidgetId::of("usage.connected_board").sub("providers_list"));
+        flow.deliver(ticket, UsageUpdate::Failed("Refresh interrupted".into()));
+        assert!(flow.shown().contains("Refresh interrupted"));
+        flow.key(KeyCode::Enter);
+        assert!(matches!(
+            flow.next().1,
+            UsageAction::Board {
+                edit: BoardEdit::Read,
+                ..
+            }
+        ));
+    }
+}
+
+#[test]
 fn all_usage_first_and_last_readings_are_visible_and_refresh_preserves_focus() {
     for size in [(140, 40), (80, 24)] {
         let mut flow = Flow::new(size);

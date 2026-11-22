@@ -212,12 +212,19 @@ pub struct BoardProvider {
 }
 
 impl BoardProvider {
+    pub fn connection_unavailable(&self) -> Option<&str> {
+        self.unavailable_reason.as_deref().or_else(|| {
+            (!PRODUCTS.iter().any(|(id, _)| *id == self.id))
+                .then_some("Adding an account for this provider is unavailable.")
+        })
+    }
+
     pub fn status(&self) -> String {
-        match (self.unavailable_reason.is_some(), self.accounts.len()) {
-            (true, _) => "Quota unavailable".into(),
-            (false, 0) => "Not connected".into(),
-            (false, 1) => "1 account".into(),
-            (false, n) => format!("{n} accounts"),
+        match (self.connection_unavailable(), self.accounts.len()) {
+            (Some(_), 0) => "Quota unavailable".into(),
+            (None, 0) => "Not connected".into(),
+            (_, 1) => "1 account".into(),
+            (_, n) => format!("{n} accounts"),
         }
     }
 }
