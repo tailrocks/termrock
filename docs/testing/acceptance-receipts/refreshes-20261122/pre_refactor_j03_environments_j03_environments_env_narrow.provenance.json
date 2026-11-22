@@ -1,0 +1,43 @@
+{
+  "schema": "tcb.baseline-refresh-provenance.v1",
+  "test_id": "pre_refactor/j03_environments/j03_environments_env_narrow",
+  "acceptance": {
+    "command": "tuiscotti accept --json",
+    "cli_path": "/Users/donbeave/.local/share/mise/installs/cargo-https-github-com-tailrocks-tuiscotti/rev-92ef2d9ee082b35f68e066c5129fedbf07675a80/bin/tuiscotti",
+    "cli_sha256": "4233b4a75a6483251614550441688ad0b0acdd213cb2c719319abf58bfeda356",
+    "cli_version": "tuiscotti 0.4.0",
+    "expected_baseline_sha256": "54ddf29201c13f8d24166371129fdd4013b5cccc3ece8ee0a8cb6b8b6731c8b7",
+    "candidate_sha256": "628e6b1852f65a5a87a15d8ea935492b0cb29193804ba6c95327db91f61b776f",
+    "accepted_baseline_sha256": "628e6b1852f65a5a87a15d8ea935492b0cb29193804ba6c95327db91f61b776f",
+    "transaction_receipt": "docs/testing/acceptance-receipts/refreshes-20261122/pre_refactor_j03_environments_j03_environments_env_narrow.accept.json"
+  },
+  "candidate": {
+    "path": "/Users/donbeave/Library/Caches/mbx/targets/v1/ff83d54b1561e0d107147622127da8fe80ff43e2705347e885bcb01517b568ab/functional/j03-environments-env-29841-1795323945986840000-0/check-artifacts/pre_refactor/j03_environments/j03_environments_env_narrow/628e6b1852f65a5a87a15d8ea935492b0cb29193804ba6c95327db91f61b776f/sample.tui.pb",
+    "sha256": "628e6b1852f65a5a87a15d8ea935492b0cb29193804ba6c95327db91f61b776f",
+    "producer_mode": "candidate",
+    "session": "/Users/donbeave/Library/Caches/mbx/targets/v1/ff83d54b1561e0d107147622127da8fe80ff43e2705347e885bcb01517b568ab/functional/j03-environments-env-29841-1795323945986840000-0/session.json",
+    "binary_sha256": "e2d52444f35272fc2b99c107826f9e436d7f70a39628cba5adb3cffa49b5d619",
+    "fixture_args": [
+      "--scenario",
+      "returning"
+    ],
+    "color": "truecolor",
+    "motion": "reduced"
+  },
+  "source_context": {
+    "git_head": "c29eeb37b2f750bef0d96196686e6e579d21d66e",
+    "implementation_commit": "c29eeb37b2f750bef0d96196686e6e579d21d66e",
+    "candidate_source_cargo_lock_sha256": "d1abe8b74eac36822b25a735e8cc28e2c8434103a8c87f662a9ebe2da5f593a7"
+  },
+  "previous_archive_path": "docs/testing/acceptance-receipts/refreshes-20261122/superseded/pre_refactor/j03_environments/j03_environments_env_narrow.tui.pb",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/refreshes-20261122/pre_refactor_j03_environments_j03_environments_env_narrow.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/refreshes-20261122/pre_refactor_j03_environments_j03_environments_env_narrow.provenance.json",
+  "selection": {
+    "policy": "Individually reviewed intentional selector/paging footer change; preserve historical visual oracle and nextest profiles.",
+    "changed_cell_total": 23,
+    "changed_rows": [
+      23
+    ],
+    "reason": "Reviewed narrow Scope-selector footer only: Enter Save becomes Enter Open options. Body/style/layout unchanged."
+  }
+}

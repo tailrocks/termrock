@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "functional/jackin_fixed_account_form_pending",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Library/Caches/mbx/targets/v1/ff83d54b1561e0d107147622127da8fe80ff43e2705347e885bcb01517b568ab/functional/jackin-fixed-account-pending-26714-1795323839642012000-0/check-artifacts/functional/jackin_fixed_account_form_pending/ad8c3831053dada167aa94bd2463f2335c496160d5abb8d1970ca2de48ee867f/sample.tui.pb"
+  },
+  "candidate_sha256": "ad8c3831053dada167aa94bd2463f2335c496160d5abb8d1970ca2de48ee867f",
+  "baseline_sha256": "ad8c3831053dada167aa94bd2463f2335c496160d5abb8d1970ca2de48ee867f",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-usage/apps/jackin/tests/functional/baselines/functional/jackin_fixed_account_form_pending.tui.pb"
+  },
+  "error_code": null
+}

@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s05_dialogkinds/sc_dialogkinds_options_120x40",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Library/Caches/mbx/targets/v1/ff83d54b1561e0d107147622127da8fe80ff43e2705347e885bcb01517b568ab/functional/s05-sections-16342-1795324983052497000-0/check-artifacts/pre_refactor/s05_dialogkinds/sc_dialogkinds_options_120x40/42bf1a35c84056599b6cc4da917c8196fc038f580a952f5f1235f4d5ce27066d/sample.tui.pb"
+  },
+  "candidate_sha256": "42bf1a35c84056599b6cc4da917c8196fc038f580a952f5f1235f4d5ce27066d",
+  "baseline_sha256": "42bf1a35c84056599b6cc4da917c8196fc038f580a952f5f1235f4d5ce27066d",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-usage/tests/functional/baselines/pre_refactor/s05_dialogkinds/sc_dialogkinds_options_120x40.tui.pb"
+  },
+  "error_code": null
+}

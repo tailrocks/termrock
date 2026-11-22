@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/j04_form/j04_form_form_narrow",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Library/Caches/mbx/targets/v1/ff83d54b1561e0d107147622127da8fe80ff43e2705347e885bcb01517b568ab/functional/j04-form-form-26786-1795323845299704000-0/check-artifacts/pre_refactor/j04_form/j04_form_form_narrow/6f9d11aba4706104b56b3f3098df940dd7c8d37d6d8c15d3a49076a63ec963c0/sample.tui.pb"
+  },
+  "candidate_sha256": "6f9d11aba4706104b56b3f3098df940dd7c8d37d6d8c15d3a49076a63ec963c0",
+  "baseline_sha256": "6f9d11aba4706104b56b3f3098df940dd7c8d37d6d8c15d3a49076a63ec963c0",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-usage/tests/functional/baselines/pre_refactor/j04_form/j04_form_form_narrow.tui.pb"
+  },
+  "error_code": null
+}

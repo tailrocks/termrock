@@ -1,0 +1,69 @@
+{
+  "schema": "tcb.baseline-refresh-provenance.v1",
+  "test_id": "pre_refactor/s05_dialogkinds/sc_dialogkinds_options_80x24",
+  "acceptance": {
+    "command": [
+      "/Users/donbeave/.local/share/mise/installs/cargo-https-github-com-tailrocks-tuiscotti/rev-92ef2d9ee082b35f68e066c5129fedbf07675a80/bin/tuiscotti",
+      "accept",
+      "--json",
+      "--candidate",
+      "/Users/donbeave/Library/Caches/mbx/targets/v1/ff83d54b1561e0d107147622127da8fe80ff43e2705347e885bcb01517b568ab/functional/s05-sections-69407-1795324893030724000-0/check-artifacts/pre_refactor/s05_dialogkinds/sc_dialogkinds_options_80x24/3d4723f34d3c910a12f9d85ea29973682a36bee95c01a467cf2cbab0692c0e83/sample.tui.pb",
+      "--candidate-sha256",
+      "3d4723f34d3c910a12f9d85ea29973682a36bee95c01a467cf2cbab0692c0e83",
+      "--expect-baseline",
+      "0cf8900531e54e30ef8aab9e8581e73c0dd45c5846b6409ec3e2ac5943740c24",
+      "--baselines",
+      "/Users/donbeave/Projects/tailrocks/terminal-components-usage/tests/functional/baselines"
+    ],
+    "cli_path": "/Users/donbeave/.local/share/mise/installs/cargo-https-github-com-tailrocks-tuiscotti/rev-92ef2d9ee082b35f68e066c5129fedbf07675a80/bin/tuiscotti",
+    "cli_sha256": "4233b4a75a6483251614550441688ad0b0acdd213cb2c719319abf58bfeda356",
+    "cli_version": "tuiscotti 0.4.0",
+    "expected_baseline_sha256": "0cf8900531e54e30ef8aab9e8581e73c0dd45c5846b6409ec3e2ac5943740c24",
+    "candidate_sha256": "3d4723f34d3c910a12f9d85ea29973682a36bee95c01a467cf2cbab0692c0e83",
+    "accepted_baseline_sha256": "3d4723f34d3c910a12f9d85ea29973682a36bee95c01a467cf2cbab0692c0e83",
+    "transaction_receipt": "docs/testing/acceptance-receipts/refreshes-20261122/pre_refactor_s05_dialogkinds_sc_dialogkinds_options_80x24.accept.json"
+  },
+  "candidate": {
+    "path": "/Users/donbeave/Library/Caches/mbx/targets/v1/ff83d54b1561e0d107147622127da8fe80ff43e2705347e885bcb01517b568ab/functional/s05-sections-69407-1795324893030724000-0/check-artifacts/pre_refactor/s05_dialogkinds/sc_dialogkinds_options_80x24/3d4723f34d3c910a12f9d85ea29973682a36bee95c01a467cf2cbab0692c0e83/sample.tui.pb",
+    "sha256": "3d4723f34d3c910a12f9d85ea29973682a36bee95c01a467cf2cbab0692c0e83",
+    "producer_mode": "candidate",
+    "session": "/Users/donbeave/Library/Caches/mbx/targets/v1/ff83d54b1561e0d107147622127da8fe80ff43e2705347e885bcb01517b568ab/functional/s05-sections-69407-1795324893030724000-0/session.json",
+    "binary_sha256": "73f32be86d197152e19abab9124764227fc1e90dd9e95aa5efed076d8488b04c",
+    "fixture_args": [
+      "--page",
+      "dialogkinds"
+    ],
+    "color": "truecolor",
+    "motion": "paused"
+  },
+  "source_context": {
+    "git_head": "c29eeb37b2f750bef0d96196686e6e579d21d66e",
+    "test_source_path": "tests/functional/cases/s05_dialogkinds.rs",
+    "candidate_source_cargo_lock_sha256": "d1abe8b74eac36822b25a735e8cc28e2c8434103a8c87f662a9ebe2da5f593a7"
+  },
+  "previous_archive_path": "docs/testing/acceptance-receipts/refreshes-20261122/superseded/pre_refactor/s05_dialogkinds/sc_dialogkinds_options_80x24.tui.pb",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/refreshes-20261122/pre_refactor_s05_dialogkinds_sc_dialogkinds_options_80x24.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/refreshes-20261122/pre_refactor_s05_dialogkinds_sc_dialogkinds_options_80x24.provenance.json",
+  "selection": {
+    "policy": "Review exact deterministic delta, never blanket accept or alter the frozen visual-baseline tag.",
+    "changed_cell_total": 1,
+    "changed_cells": [
+      {
+        "col": 79,
+        "row": 19,
+        "baseline_text": "\u2503",
+        "actual_text": "\u2506",
+        "fields": [
+          "text",
+          "fg"
+        ]
+      }
+    ],
+    "reason": "Adding the default-off Inline list field showcase option increases scrollable Options content. Its thumb is one cell shorter at 80x24. All controls, values and other cells are unchanged.",
+    "reviewed_renders": [
+      "/tmp/console_regressions/options-scroll-review/expected.png",
+      "/tmp/console_regressions/options-scroll-review/actual.png"
+    ],
+    "reproduction": "Both full functional run and isolated test produced the same single-cell delta."
+  }
+}
