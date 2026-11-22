@@ -439,7 +439,7 @@ impl Board {
                     if let Some(reset) = &row.reset {
                         lines.push((reset.clone(), Tone::Secondary));
                     }
-                    if let Some((amount, pace)) = row.bar {
+                    if let Some((amount, pace)) = row.bounded_bar() {
                         let bar: String = dashboard::quota_bar(amount, pace, 10)
                             .map(|segment| match segment {
                                 dashboard::BarSegment::Pace => '│',

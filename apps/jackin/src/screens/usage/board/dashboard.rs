@@ -429,10 +429,11 @@ fn line(area: Rect, i: u16, buf: &mut Buffer, value: &str, style: Style) {
 
 fn render_preview(entry: &Entry, data: &UsageBoard, area: Rect, buf: &mut Buffer, ctx: &RenderCtx) {
     let theme = ctx.theme;
-    let pace = entry
-        .ranked
-        .iter()
-        .any(|&index| data.rows[index].bar.is_some_and(|(_, pace)| pace.is_some()));
+    let pace = entry.ranked.iter().any(|&index| {
+        data.rows[index]
+            .bounded_bar()
+            .is_some_and(|(_, pace)| pace.is_some())
+    });
     let meta = if pace {
         format!("{} · │ pace", entry.provider)
     } else {
@@ -507,8 +508,7 @@ fn render_preview(entry: &Entry, data: &UsageBoard, area: Rect, buf: &mut Buffer
         line(label_area, 0, buf, label, label_style);
         line(value_area, 0, buf, value, value_style);
         if bar_width > 0
-            && data.rows[index].bounded
-            && let Some((amount, pace)) = data.rows[index].bar
+            && let Some((amount, pace)) = data.rows[index].bounded_bar()
         {
             let bar_x = value_area.x.saturating_sub(bar_width + 2);
             let glyphs = theme.glyphs;

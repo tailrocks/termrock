@@ -186,6 +186,10 @@ pub struct BoardMetric {
 }
 
 impl BoardMetric {
+    pub(crate) fn bounded_bar(&self) -> Option<(u8, Option<u8>)> {
+        self.bar.filter(|_| self.bounded)
+    }
+
     pub fn unified_edit(&self, hide: bool) -> Option<(BoardEdit, BoardEdit)> {
         if self.account.is_some() || self.member_preferences.is_empty() {
             return None;

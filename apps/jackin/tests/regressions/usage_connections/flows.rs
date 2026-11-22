@@ -1226,3 +1226,20 @@ fn cached_usage_remains_browsable_after_refresh_failure() {
     ));
 }
 
+#[test]
+fn usage_quota_gauges_require_a_bounded_reading() {
+    for bounded in [false, true] {
+        let mut flow = Flow::new((80, 24));
+        flow.app.go(Go::AllUsage);
+        let (ticket, _) = flow.next();
+        let mut data = board(1);
+        data.rows[0].bar = Some((55, Some(40)));
+        data.rows[0].bounded = bounded;
+        flow.deliver(ticket, UsageUpdate::Board(Box::new(data)));
+        let preview_pace = flow.shown().contains("│ pace");
+        flow.board_action("save");
+        let detail_pace = flow.shown().contains("expected pace");
+        assert_eq!((preview_pace, detail_pace), (bounded, bounded));
+    }
+}
+
