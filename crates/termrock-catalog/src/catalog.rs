@@ -2703,6 +2703,7 @@ pub static CAPABILITIES: &[Capability] = &[
     Capability::function("widgets::form_dialog::FormDialog::set_note"),
     Capability::function("widgets::form_dialog::FormDialog::values"),
     Capability::function("widgets::form_dialog::FormDialog::initial_focus"),
+    Capability::function("widgets::form_dialog::FormDialog::restored_focus"),
     Capability::function("widgets::form_dialog::FormDialog::is_editing"),
     Capability::function("widgets::form_dialog::FormDialog::on_key"),
     Capability::function("widgets::form_dialog::FormDialog::on_press"),

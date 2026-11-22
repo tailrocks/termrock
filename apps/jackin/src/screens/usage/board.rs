@@ -21,16 +21,25 @@ pub(super) struct Board {
     managing_account: bool,
     pub(super) account: super::super::accounts::connections::Connections,
     priority: bool,
+    refresh_error: Option<String>,
     data: Option<UsageBoard>,
     view: View,
     row: usize,
     undo: Option<BoardEdit>,
 }
+#[derive(PartialEq, Eq)]
+enum RowKey {
+    Metric(String, Option<String>, String),
+    Id(String),
+}
+
 #[derive(Default)]
 enum View {
     #[default]
     Loading,
     Rows,
+    Providers(usize),
+    Provider(usize),
     Details(usize),
     Member(usize, usize),
     Settings,
@@ -68,6 +77,7 @@ impl Board {
         self.priority = priority.unwrap_or(true);
         self.ticket = Some(w.next_ticket());
         self.data = None;
+        self.refresh_error = None;
         self.row = 0;
         self.view = View::Loading;
         cx.open(self.form(), LayerTag::new("usage_board"));
@@ -81,20 +91,27 @@ impl Board {
         );
     }
 
-    pub(super) fn tick(&mut self, w: &World) {
+    pub(super) fn tick(&mut self, w: &mut World) {
         if w.now_ms() >= self.next_tick {
             self.next_tick = w.now_ms().saturating_add(30_000);
             self.refreshed(w);
         }
     }
 
-    pub(super) fn account_closed(&mut self, w: &World) {
+    pub(super) fn account_closed(&mut self, w: &mut World) {
         self.managing_account = false;
         self.refreshed(w);
     }
 
-    pub(super) fn refreshed(&self, w: &World) {
-        if !self.managing_account && matches!(self.view, View::Rows) && self.ticket.is_some() {
+    pub(super) fn refreshed(&mut self, w: &mut World) {
+        if !self.managing_account
+            && matches!(
+                self.view,
+                View::Rows | View::Providers(_) | View::Provider(_)
+            )
+            && self.ticket.is_some()
+        {
+            self.ticket = Some(w.next_ticket());
             self.request(w, BoardEdit::Read);
         }
     }
@@ -111,14 +128,44 @@ impl Board {
         }
     }
 
-    fn redraw(&self, cx: &mut Cx, preserve: bool) {
-        let mut form = self.form();
-        if !preserve {
-            cx.focus.focus(form.initial_focus());
+    fn metric_key(row: &BoardMetric) -> RowKey {
+        RowKey::Metric(
+            row.provider.clone(),
+            row.account.clone(),
+            row.metric.clone(),
+        )
+    }
+
+    fn row_keys(&self) -> Vec<RowKey> {
+        let Some(data) = &self.data else {
+            return vec![];
+        };
+        match &self.view {
+            View::Rows => data.rows.iter().map(Self::metric_key).collect(),
+            View::Providers(_) => data
+                .providers
+                .iter()
+                .map(|p| RowKey::Id(p.id.clone()))
+                .collect(),
+            View::Provider(index) => data
+                .providers
+                .get(*index)
+                .into_iter()
+                .flat_map(|p| &p.accounts)
+                .map(|a| RowKey::Id(a.id.clone()))
+                .collect(),
+            _ => vec![],
         }
+    }
+
+    fn redraw(&self, cx: &mut Cx, previous_keys: Option<Vec<RowKey>>) {
+        let mut form = self.form();
+        let keys = previous_keys.map(|old| (old, self.row_keys()));
+        let focus = keys.as_ref().and_then(|_| cx.focus.current());
+        cx.focus.focus(form.restored_focus(focus));
         cx.with_top::<FormDialog>(move |current| {
             if current.id == ID {
-                if preserve {
+                if let Some((old_keys, keys)) = keys {
                     form.scroll = current.scroll.clone();
                     for field in &mut form.fields {
                         if let FieldKindW::List { list, .. } = &mut field.kind
@@ -126,11 +173,9 @@ impl Board {
                                 current.fields.iter().find(|old| old.name == field.name)
                             && let FieldKindW::List { list: old, .. } = &old.kind
                         {
-                            let label = old.items.get(old.cursor).map(|item| &item.label);
-                            list.cursor = label
-                                .and_then(|label| {
-                                    list.items.iter().position(|item| &item.label == label)
-                                })
+                            list.cursor = old_keys
+                                .get(old.cursor)
+                                .and_then(|selected| keys.iter().position(|key| key == selected))
                                 .unwrap_or(old.cursor.min(list.items.len().saturating_sub(1)));
                             list.core.scroll = old.core.scroll.clone();
                         }
@@ -156,6 +201,12 @@ impl Board {
         }
         let mut save = "Details";
         let title = match self.view {
+            View::Providers(_) => "Usage providers",
+            View::Provider(index) => self
+                .data
+                .as_ref()
+                .and_then(|data| data.providers.get(index))
+                .map_or("Provider", |provider| provider.name.as_str()),
             View::Settings => "Usage settings",
             View::Proxy => "Network proxy",
             _ if self.priority => "Priority",
@@ -239,6 +290,9 @@ impl Board {
                         data.rows.len().clamp(3, 32) as u16,
                     ));
                 }
+                if !data.providers.is_empty() {
+                    actions.push(("providers", "Providers…"));
+                }
                 if data.empty {
                     actions.push(("add", "Add account…"));
                 }
@@ -276,6 +330,64 @@ impl Board {
                             "Undo hide"
                         },
                     ));
+                }
+            }
+            (Some(data), View::Providers(selected)) => {
+                let items = data
+                    .providers
+                    .iter()
+                    .map(|p| ListItem::new(&p.name).meta(&p.status()))
+                    .collect();
+                let mut list = ListBox::new(ID.sub("providers_list"), items, SelectMode::Single);
+                list.cursor = (*selected).min(data.providers.len().saturating_sub(1));
+                fields.push(FormField::list(
+                    "providers_list",
+                    list,
+                    data.providers.len().clamp(1, 12) as u16,
+                ));
+                save = "View provider";
+                actions.push(("back", "Back"));
+            }
+            (Some(data), View::Provider(index)) => {
+                if let Some(provider) = data.providers.get(*index) {
+                    if let Some(reason) = provider.connection_unavailable() {
+                        fields.push(note(vec![reason.to_owned()]));
+                    } else if provider.accounts.is_empty() {
+                        fields.push(note(vec!["No usage accounts connected.".into()]));
+                    }
+                    if !provider.accounts.is_empty() {
+                        let items = provider
+                            .accounts
+                            .iter()
+                            .map(|account| {
+                                let item = ListItem::new(&account.label);
+                                if provider.accounts.iter().any(|other| {
+                                    other.id != account.id && other.label == account.label
+                                }) {
+                                    item.meta(&account.id)
+                                } else {
+                                    item
+                                }
+                            })
+                            .collect();
+                        fields.push(FormField::list(
+                            "provider_account",
+                            ListBox::new(ID.sub("provider_account"), items, SelectMode::Single),
+                            provider.accounts.len().clamp(1, 12) as u16,
+                        ));
+                        save = "View account";
+                    } else if provider.connection_unavailable().is_none() {
+                        save = "Add usage account…";
+                    } else {
+                        save = "Back";
+                    }
+                    if provider.connection_unavailable().is_none() && !provider.accounts.is_empty()
+                    {
+                        actions.push(("provider_add", "Add usage account…"));
+                    }
+                    if save != "Back" {
+                        actions.push(("providers", "Back"));
+                    }
                 }
             }
             (Some(data), View::Details(i)) => {
@@ -426,6 +538,11 @@ impl Board {
         form.save.label = save.into();
         form.save.disabled = matches!(&self.view, View::Loading)
             || matches!((&self.view,&self.data),(View::Rows,Some(d)) if d.rows.is_empty() && !self.priority);
+        if let Some(error) = &self.refresh_error {
+            form.error = Some(error.clone());
+            form.save.label = "Retry".into();
+            form.save.disabled = false;
+        }
         for (key, label) in actions {
             form = form.action(key, Button::secondary(ID.sub(key), label));
         }
@@ -433,25 +550,76 @@ impl Board {
     }
 
     pub(super) fn receive(&mut self, ticket: Ticket, update: &UsageUpdate, cx: &mut Cx) -> Outcome {
-        if self.ticket != Some(ticket) || !matches!(self.view, View::Loading | View::Rows) {
+        if self.managing_account
+            || self.ticket != Some(ticket)
+            || !matches!(
+                self.view,
+                View::Loading | View::Rows | View::Providers(_) | View::Provider(_)
+            )
+        {
             return Outcome::Ignored;
         }
-        let preserve = matches!(self.view, View::Rows);
-        match update {
+        let previous_keys = match update {
             UsageUpdate::Board(data) => {
+                self.refresh_error = None;
+                let keys = self.row_keys();
+                let preserve = match self.view {
+                    View::Provider(index) => {
+                        let current = self.data.as_ref().and_then(|old| old.providers.get(index));
+                        let next = current
+                            .and_then(|p| data.providers.iter().position(|next| next.id == p.id));
+                        if let Some(next) = next {
+                            self.view = View::Provider(next);
+                            true
+                        } else {
+                            self.view = if data.providers.is_empty() {
+                                View::Rows
+                            } else {
+                                View::Providers(index.min(data.providers.len() - 1))
+                            };
+                            false
+                        }
+                    }
+                    View::Providers(_) if data.providers.is_empty() => {
+                        self.view = View::Rows;
+                        false
+                    }
+                    View::Loading => {
+                        self.view = View::Rows;
+                        false
+                    }
+                    _ => true,
+                };
                 self.priority = data.priority;
                 for alert in &data.alerts {
                     cx.status(alert.clone());
                 }
+                if let Some(selected) = self.data.as_ref().and_then(|old| old.rows.get(self.row)) {
+                    self.row = data
+                        .rows
+                        .iter()
+                        .position(|row| {
+                            row.provider == selected.provider
+                                && row.account == selected.account
+                                && row.metric == selected.metric
+                        })
+                        .unwrap_or(self.row.min(data.rows.len().saturating_sub(1)));
+                }
                 self.data = Some(data.as_ref().clone());
-                self.view = View::Rows;
+                preserve.then_some(keys)
             }
-            UsageUpdate::Failed(error) => self.view = View::Error(error.clone()),
+            UsageUpdate::Failed(error) if !matches!(self.view, View::Loading) => {
+                self.refresh_error = Some(error.clone());
+                cx.focus.focus(ID.sub("save"));
+                Some(self.row_keys())
+            }
+            UsageUpdate::Failed(error) => {
+                self.view = View::Error(error.clone());
+                None
+            }
             _ => return Outcome::Ignored,
-        }
-        if !self.managing_account {
-            self.redraw(cx, preserve);
-        }
+        };
+        self.redraw(cx, previous_keys);
         Outcome::Changed
     }
 
@@ -464,12 +632,40 @@ impl Board {
             }
             _ => return Outcome::Ignored,
         };
+        if self.refresh_error.is_some() && key == "save" {
+            self.ticket = Some(w.next_ticket());
+            self.request(w, BoardEdit::Read);
+            return Outcome::Changed;
+        }
         let row = if let (Some(data), View::Details(i)) = (&self.data, &self.view) {
             data.rows.get(*i)
         } else {
             None
         };
         let action = match (key.as_str(), row) {
+            ("providers", _) => {
+                if matches!(self.view, View::Rows) {
+                    self.row = choose(&values, "row");
+                }
+                self.view = View::Providers(match self.view {
+                    View::Provider(index) => index,
+                    _ => 0,
+                });
+                None
+            }
+            ("provider_add", _) => {
+                if let View::Provider(index) = self.view
+                    && let Some(provider) = self
+                        .data
+                        .as_ref()
+                        .and_then(|data| data.providers.get(index))
+                    && provider.connection_unavailable().is_none()
+                {
+                    self.managing_account = true;
+                    self.account.add(w, cx, Some(&provider.id));
+                }
+                return Outcome::Changed;
+            }
             ("add", _) => {
                 self.managing_account = true;
                 self.account.add(w, cx, None);
@@ -615,6 +811,32 @@ impl Board {
                     self.view = View::Details(self.row);
                     None
                 }
+                View::Providers(_) => {
+                    self.view = View::Provider(choose(&values, "providers_list"));
+                    None
+                }
+                View::Provider(index) => {
+                    if let Some(provider) = self
+                        .data
+                        .as_ref()
+                        .and_then(|data| data.providers.get(*index))
+                    {
+                        if let Some(account) =
+                            provider.accounts.get(choose(&values, "provider_account"))
+                        {
+                            self.managing_account = true;
+                            self.account.show(account.clone(), w, cx);
+                            return Outcome::Changed;
+                        }
+                        if provider.connection_unavailable().is_none() {
+                            self.managing_account = true;
+                            self.account.add(w, cx, Some(&provider.id));
+                            return Outcome::Changed;
+                        }
+                    }
+                    self.view = View::Providers(*index);
+                    None
+                }
                 View::Member(i, _) => {
                     self.view = View::Details(*i);
                     None
@@ -643,12 +865,13 @@ impl Board {
             },
             _ => None,
         };
+        self.refresh_error = None;
         if let Some(edit) = action {
             self.ticket = Some(w.next_ticket());
             self.view = View::Loading;
             self.request(w, edit);
         }
-        self.redraw(cx, false);
+        self.redraw(cx, None);
         Outcome::Changed
     }
 }

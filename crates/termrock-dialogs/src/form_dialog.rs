@@ -612,6 +612,22 @@ impl FormDialog {
             })
     }
 
+    /// Retains keyboard focus when a rebuilt form still offers the control.
+    pub fn restored_focus(&self, previous: Option<WidgetId>) -> WidgetId {
+        previous
+            .filter(|id| {
+                self.fields
+                    .iter()
+                    .any(|f| f.visible && f.tab_stop() == Some(*id))
+                    || [&self.save, &self.cancel]
+                        .into_iter()
+                        .chain(self.actions.iter().map(|(_, button)| button))
+                        .any(|button| button.id == *id && button.can_activate())
+                    || self.close_button.id == *id
+            })
+            .unwrap_or_else(|| self.initial_focus())
+    }
+
     pub fn initial_focus(&self) -> WidgetId {
         self.fields
             .iter()

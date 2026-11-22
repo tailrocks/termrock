@@ -134,6 +134,7 @@ impl Connections {
             || PRODUCTS.get(form.choice("provider")).map_or("", |x| x.0),
             |row| row.provider.as_str(),
         );
+        form.set_visible("google_plan", product == "gemini");
         form.set_visible("mimo_region", product == "mimo");
         form.set_visible("auth", matches!(product, "kimi" | "minimax"));
         form.set_visible("region", matches!(product, "kimi" | "minimax"));
@@ -161,6 +162,14 @@ impl Connections {
                 if let Some(target) = &self.target {
                     fields = vec![note(vec![format!("Sign in again to {}", target.label)])];
                 }
+                fields.push(
+                    FormField::note(
+                        "google_plan",
+                        vec![("Code Assist requires an eligible Google Cloud project. For a personal Google AI Ultra subscription, open All Usage → Providers.".into(), Tone::Secondary)],
+                    )
+                    .wrap(true)
+                    .hidden(),
+                );
                 let saved = self.target.as_ref();
                 let region = self.choice.as_ref().map_or_else(
                     || saved.and_then(|a| a.region.as_deref()),

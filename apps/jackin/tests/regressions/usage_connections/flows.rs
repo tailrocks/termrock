@@ -1,7 +1,7 @@
 use super::*;
 use jackin_console::app::App;
 use jackin_console::usage_connections::{
-    BoardEdit, BoardMetric, BoardSettings, PRODUCTS, UsageBoard,
+    BoardEdit, BoardMetric, BoardProvider, BoardSettings, PRODUCTS, UsageBoard,
 };
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
@@ -341,6 +341,7 @@ fn prompt_modes_mask_credentials_and_cancel_without_accepting_late_replies() {
 
 fn board(rows: usize) -> UsageBoard {
     UsageBoard {
+        providers: vec![],
         priority: false,
         summary: "All Usage".into(),
         notices: vec![],
@@ -376,6 +377,238 @@ fn board(rows: usize) -> UsageBoard {
             hidden: vec![],
             proxy: false,
         },
+    }
+}
+
+#[test]
+fn providers_show_multiple_accounts_disconnected_products_and_unavailable_quotas() {
+    for size in [(140, 40), (80, 24)] {
+        for selected in 0..3 {
+            let mut flow = Flow::new(size);
+            flow.app.go(Go::AllUsage);
+            flow.shown();
+            let (ticket, _) = flow.next();
+            let mut data = board(0);
+            let personal = entry("codex", "Team");
+            let mut work = entry("codex", "Team");
+            work.id = "fixture-codex-work".into();
+            work.details = vec!["Weekly limit 83% remaining".into()];
+            data.providers = vec![
+                BoardProvider {
+                    id: "codex".into(),
+                    name: "ChatGPT / Codex".into(),
+                    accounts: vec![personal, work],
+                    unavailable_reason: None,
+                },
+                BoardProvider {
+                    id: "muse".into(),
+                    name: "Muse".into(),
+                    accounts: vec![],
+                    unavailable_reason: None,
+                },
+                BoardProvider {
+                    id: "google-ai-ultra".into(),
+                    name: "Google AI Ultra (Gemini)".into(),
+                    accounts: vec![],
+                    unavailable_reason: Some("Open Settings → Usage Limits in Gemini.".into()),
+                },
+            ];
+            flow.deliver(ticket, UsageUpdate::Board(Box::new(data.clone())));
+            flow.board_action("providers");
+            let list = flow.shown();
+            for label in [
+                "ChatGPT / Codex",
+                "2 accounts",
+                "Muse",
+                "Not connected",
+                "Google AI Ultra",
+                "Quota unavailable",
+            ] {
+                assert!(list.contains(label), "{list}");
+            }
+            flow.focus(WidgetId::of("usage.connected_board").sub("providers_list"));
+            for _ in 0..selected {
+                flow.key(KeyCode::Down);
+            }
+            flow.board_action("save");
+            match selected {
+                0 => {
+                    let shown = flow.shown();
+                    assert!(
+                        shown.contains("fixture-codex") && shown.contains("fixture-codex-work"),
+                        "{shown}"
+                    );
+                    flow.focus(WidgetId::of("usage.connected_board").sub("provider_account"));
+                    flow.key(KeyCode::Down);
+                    flow.deliver(ticket, UsageUpdate::Board(Box::new(data.clone())));
+                    data.providers[0].accounts[1].label = "Renamed team".into();
+                    data.providers[0].accounts.reverse();
+                    flow.deliver(ticket, UsageUpdate::Board(Box::new(data)));
+                    flow.board_action("save");
+                    let shown = flow.shown();
+                    assert!(shown.contains("83% remaining"), "{shown}");
+                }
+                1 => {
+                    assert!(flow.shown().contains("Add usage account"));
+                    flow.board_action("save");
+                    flow.action("save");
+                    assert!(
+                        matches!(flow.next().1, UsageAction::Begin(choice) if choice.provider == "muse")
+                    );
+                }
+                _ => {
+                    let shown = flow.shown();
+                    assert!(
+                        shown.contains("Open Settings") && !shown.contains("Add usage account"),
+                        "{shown}"
+                    );
+                    flow.board_action("save");
+                    assert!(flow.shown().contains("Usage providers"));
+                    assert!(flow.backend.pending.lock().unwrap().is_empty());
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn refreshed_catalog_preserves_provider_scope_and_recovers_focus() {
+    for size in [(140, 40), (80, 24)] {
+        let mut flow = Flow::new(size);
+        flow.app.go(Go::AllUsage);
+        flow.shown();
+        let (ticket, _) = flow.next();
+        let mut data = board(0);
+        data.providers = vec![
+            BoardProvider {
+                id: "future-provider".into(),
+                name: "New product".into(),
+                accounts: vec![],
+                unavailable_reason: None,
+            },
+            BoardProvider {
+                id: "muse".into(),
+                name: "Muse".into(),
+                accounts: vec![],
+                unavailable_reason: None,
+            },
+        ];
+        flow.deliver(ticket, UsageUpdate::Board(Box::new(data.clone())));
+        flow.board_action("providers");
+        flow.board_action("save");
+        assert!(flow.shown().contains("New product"));
+        flow.key(KeyCode::Enter);
+        assert!(flow.shown().contains("Usage providers"), "{}", flow.shown());
+        flow.focus(WidgetId::of("usage.connected_board").sub("providers_list"));
+        flow.key(KeyCode::Down);
+        flow.board_action("save");
+        data.providers.reverse();
+        flow.deliver(ticket, UsageUpdate::Board(Box::new(data.clone())));
+        assert!(flow.shown().contains("Muse"), "{}", flow.shown());
+        data.providers.remove(0);
+        flow.deliver(ticket, UsageUpdate::Board(Box::new(data)));
+        assert!(flow.shown().contains("Usage providers"), "{}", flow.shown());
+        flow.focus(WidgetId::of("usage.connected_board").sub("providers_list"));
+        flow.deliver(ticket, UsageUpdate::Failed("Refresh interrupted".into()));
+        assert!(flow.shown().contains("Refresh interrupted"));
+        flow.key(KeyCode::Enter);
+        assert!(matches!(
+            flow.next().1,
+            UsageAction::Board {
+                edit: BoardEdit::Read,
+                ..
+            }
+        ));
+    }
+}
+
+#[test]
+fn catalog_round_trip_preserves_reading_and_reconciles_removed_actions() {
+    for size in [(140, 40), (80, 24)] {
+        let mut flow = Flow::new(size);
+        flow.app.go(Go::AllUsage);
+        flow.shown();
+        let (ticket, _) = flow.next();
+        let mut data = board(4);
+        data.providers = vec![BoardProvider {
+            id: "muse".into(),
+            name: "Muse".into(),
+            accounts: vec![],
+            unavailable_reason: None,
+        }];
+        flow.deliver(ticket, UsageUpdate::Board(Box::new(data.clone())));
+        flow.key(KeyCode::End);
+        flow.board_action("providers");
+        data.rows.rotate_left(1);
+        flow.deliver(ticket, UsageUpdate::Board(Box::new(data.clone())));
+        flow.board_action("back");
+        flow.board_action("save");
+        assert!(flow.shown().contains("Detail marker 03"));
+        flow.board_action("save");
+        flow.focus(WidgetId::of("usage.connected_board").sub("providers"));
+        data.providers.clear();
+        flow.deliver(ticket, UsageUpdate::Board(Box::new(data)));
+        assert_eq!(
+            flow.app.shell.focus.current(),
+            Some(WidgetId::of("usage.connected_board").sub("row"))
+        );
+        flow.board_action("save");
+        assert!(flow.shown().contains("Detail marker 03"));
+    }
+}
+
+#[test]
+fn provider_refresh_ignores_hidden_and_superseded_replies_and_retries_in_place() {
+    for size in [(140, 40), (80, 24)] {
+        let mut flow = Flow::new(size);
+        flow.app.go(Go::AllUsage);
+        flow.shown();
+        let (ticket, _) = flow.next();
+        let mut data = board(0);
+        let first = entry("muse", "Account A");
+        let mut second = entry("muse", "Account B");
+        second.id = "fixture-muse-b".into();
+        second.details = vec!["Second account remaining".into()];
+        data.providers = vec![BoardProvider {
+            id: "muse".into(),
+            name: "Muse".into(),
+            accounts: vec![first, second],
+            unavailable_reason: None,
+        }];
+        flow.deliver(ticket, UsageUpdate::Board(Box::new(data.clone())));
+        flow.board_action("providers");
+        flow.board_action("save");
+        flow.focus(WidgetId::of("usage.connected_board").sub("provider_account"));
+        flow.key(KeyCode::Down);
+        flow.board_action("save");
+        data.providers[0].accounts.reverse();
+        flow.deliver(ticket, UsageUpdate::Board(Box::new(data.clone())));
+        assert!(flow.shown().contains("Second account remaining"));
+        flow.key(KeyCode::Esc);
+        let (refresh, request) = flow.next();
+        assert!(matches!(request, UsageAction::Board { .. }));
+        assert_ne!(refresh, ticket);
+        assert!(matches!(flow.next().1, UsageAction::Cancel));
+        flow.deliver(refresh, UsageUpdate::Board(Box::new(data.clone())));
+        flow.deliver(ticket, UsageUpdate::Board(Box::new(board(0))));
+        flow.focus(WidgetId::of("usage.connected_board").sub("provider_add"));
+        data.providers[0].unavailable_reason = Some("Connections paused".into());
+        flow.deliver(refresh, UsageUpdate::Board(Box::new(data.clone())));
+        assert_eq!(
+            flow.app.shell.focus.current(),
+            Some(WidgetId::of("usage.connected_board").sub("provider_account"))
+        );
+        flow.deliver(refresh, UsageUpdate::Failed("Please retry".into()));
+        flow.key(KeyCode::Enter);
+        let (retry, action) = flow.next();
+        assert!(matches!(action, UsageAction::Board { .. }));
+        flow.deliver(retry, UsageUpdate::Board(Box::new(data)));
+        flow.board_action("save");
+        assert!(
+            flow.shown().contains("Second account remaining"),
+            "{}",
+            flow.shown()
+        );
     }
 }
 
