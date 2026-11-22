@@ -372,9 +372,10 @@ impl AccountsScreen {
                             .to_lowercase()
                             .contains(query)
                         || entry
-                            .details
+                            .summary
                             .iter()
-                            .any(|detail| detail.to_lowercase().contains(query))
+                            .chain(&entry.details)
+                            .any(|line| line.to_lowercase().contains(query))
                 })
             }) {
                 rows.push(Row {

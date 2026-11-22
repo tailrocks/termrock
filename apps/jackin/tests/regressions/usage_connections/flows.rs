@@ -1243,3 +1243,26 @@ fn usage_quota_gauges_require_a_bounded_reading() {
     }
 }
 
+#[test]
+fn usage_account_filter_matches_overview_and_full_details() {
+    for query in ["current quota", "raw history"] {
+        let mut flow = Flow::new((140, 40));
+        flow.app.go(Go::Accounts { select: None });
+        let (ticket, _) = flow.next();
+        let mut matching = entry("codex", "Matching account");
+        matching.summary = Box::new(["Current quota".into()]);
+        matching.details = vec!["Raw history".into()];
+        let unrelated = entry("claude", "Unrelated account");
+        flow.deliver(ticket, UsageUpdate::Accounts(vec![matching, unrelated]));
+        flow.key(KeyCode::Char('/'));
+        for letter in query.chars() {
+            flow.key(KeyCode::Char(letter));
+        }
+        flow.key(KeyCode::Enter);
+        let shown = flow.shown();
+        assert!(
+            shown.contains("Matching account") && !shown.contains("Unrelated account"),
+            "{shown}"
+        );
+    }
+}
