@@ -7,7 +7,7 @@ shellcheck = "0.11.0"
 zizmor = "1.32.0"
 jactionlint = "2.6.0"
 gh = "2.105.0"
-hk = "2.13.0"
+hk = "2.14.0"
 # velnor-gen (tools release tag). velnor-gen refuses a tool that applies on the
 # runner OS without a prebuilt binary in mise.lock, and the release has no macOS
 # asset (velnor-new announced one for tools-v0.1.108 but 0.1.111 still has none), so Linux takes the release
