@@ -1268,3 +1268,73 @@ fn option_keymap_t() {
         );
     });
 }
+
+/// `panels.content` drives `replace_line`, `extend_lines`, `set_lines` and
+/// `clear` on the log panel; each value changes what the panel shows.
+#[test]
+fn option_log_content_edits_appends_replaces_and_clears() {
+    let edited = page("s07-content-edit", Some("panels.content=edited"), 120, 40);
+    let screen = edited.wait_text("Line edited in place");
+    see(
+        &screen,
+        &[LOG_META, "Line edited in place"],
+        &["Compiling proc-macro2"],
+    );
+    edited.finish();
+
+    let appended = page(
+        "s07-content-append",
+        Some("panels.content=appended"),
+        120,
+        40,
+    );
+    appended.wait_text("Titled card");
+    click_log(&appended);
+    appended.key("end");
+    let screen = appended.wait_text("Line appended 3");
+    see(
+        &screen,
+        &["Line appended 1", "Line appended 3", "of 63"],
+        &[],
+    );
+    appended.finish();
+
+    let replaced = page(
+        "s07-content-replace",
+        Some("panels.content=replaced"),
+        120,
+        40,
+    );
+    let screen = replaced.wait_text("Titled card");
+    see(&screen, &[LOG_LINE, "2.59s"], &[LOG_META, "2.96s"]);
+    replaced.finish();
+
+    let cleared = page("s07-content-clear", Some("panels.content=cleared"), 120, 40);
+    let screen = cleared.wait_text("Titled card");
+    see(
+        &screen,
+        &["Card · scrollable"],
+        &[LOG_LINE, "Resolving workspace"],
+    );
+    cleared.finish();
+}
+
+/// Selecting text in a panel reports the selection in source lines and bytes
+/// (`ScrollPanel::source_selection`) on the status line.
+#[test]
+fn selecting_panel_text_reports_the_source_selection() {
+    let app = open("s07-source-selection", 120, 40, PAGE_ARGS);
+    app.wait_text("Titled card");
+    click_log(&app);
+    app.wait_text("Home End");
+    flash_settle(&app);
+    app.key("ctrl+a");
+    let screen = app.wait_text("Log selection: line 1 byte 0 to line 60 byte");
+    see(&screen, &["of the source", LOG_LINE], &["Prose selection"]);
+    click_where(&app, PROSE, |hit| hit.x > 70 && hit.y > 7);
+    flash_settle(&app);
+    app.key("ctrl+a");
+    let screen = app.wait_text("Prose selection: line 1 byte 0 to line 7 byte");
+    see(&screen, &["of the source"], &["Log selection"]);
+    app.finish();
+}

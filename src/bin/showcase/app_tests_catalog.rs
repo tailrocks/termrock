@@ -17,13 +17,17 @@ use junie_tui::theme::{ColorLevel, Theme};
 use junie_tui::ui::ctx::{Interaction, RenderCtx};
 use junie_tui::ui::layout::Split;
 use junie_tui::ui::popup::{Dismiss, Placement};
+use junie_tui::widgets::chips::{Chip, ChipAction, ChipBar};
 use junie_tui::widgets::choice::Checkbox;
 use junie_tui::widgets::dialog::{Dialog, DialogResult};
 use junie_tui::widgets::edit::{EditField, Validator};
 use junie_tui::widgets::input::TextInput;
 use junie_tui::widgets::list_detail::{Action, Event, Frame, Line, ListDetail, ListRow};
 use junie_tui::widgets::option_list::Item;
+use junie_tui::widgets::panel::ScrollPanel;
 use junie_tui::widgets::picker::{Picker, PickerAction, PickerItemsError, VisibleKey};
+use junie_tui::widgets::tabs::{TabItem, Tabs};
+use junie_tui::widgets::toolbar::{ToolItem, Toolbar, ToolbarAction};
 use junie_tui::widgets::viewport_ops::ViewportOps;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
@@ -48,6 +52,10 @@ pub const CASES: &[ScenarioCase] = &[
     ScenarioCase { id: ScenarioId::FixedControlsPolicy, run: fixed_controls_policy },
     ScenarioCase { id: ScenarioId::FixedDialogsPolicy, run: fixed_dialogs_policy },
     ScenarioCase { id: ScenarioId::ListDetailNavigation, run: list_detail_navigation },
+    ScenarioCase { id: ScenarioId::ChipBarEditing, run: chip_bar_editing },
+    ScenarioCase { id: ScenarioId::ToolbarEditing, run: toolbar_editing },
+    ScenarioCase { id: ScenarioId::TabsEditing, run: tabs_editing },
+    ScenarioCase { id: ScenarioId::ScrollPanelContent, run: scroll_panel_content },
 ];
 
 fn key(code: KeyCode) -> Key {
@@ -405,6 +413,155 @@ fn list_detail_navigation() {
     list.open_detail(&mut focus);
     list.close_detail(&mut focus);
     let _ = Position::new(0, 0);
+}
+
+fn chip_bar_editing() {
+    let mut bar = ChipBar::new(WidgetId::of("scenario.chips"));
+    assert!(bar.chips().is_empty());
+    assert!(bar.set_chips(vec![Chip::new("alpha"), Chip::new("beta")]));
+    assert!(bar.insert_chip(2, Chip::new("gamma")));
+    assert!(!bar.insert_chip(9, Chip::new("past the end")));
+    assert!(bar.update_chip(1, |chip| chip.enabled = false));
+    assert!(!bar.update_chip(1, |chip| chip.enabled = false));
+    assert_eq!(
+        bar.remove_chip(0).map(|chip| chip.label),
+        Some("alpha".to_owned())
+    );
+    assert!(bar.remove_chip(9).is_none());
+    let labels: Vec<&str> = bar.chips().iter().map(|chip| chip.label.as_str()).collect();
+    assert_eq!(labels, ["beta", "gamma"]);
+    assert!(!bar.chips()[0].enabled);
+
+    assert_eq!(bar.lead(), None);
+    assert!(bar.set_lead(Some("match all".to_owned())));
+    assert_eq!(bar.lead(), Some("match all"));
+    assert_eq!(bar.add_label(), Some("+ Add filter"));
+    assert!(bar.set_add_label(Some("+ New".to_owned())));
+    assert!(!bar.set_add_label(Some("+ New".to_owned())));
+    let draw = |bar: &mut ChipBar| {
+        paint(Rect::new(0, 0, 70, 1), |area, buf, ctx| {
+            bar.render(area, buf, ctx, ctx.theme.canvas)
+        })
+    };
+    let text = text_of(&draw(&mut bar));
+    for shown in ["match all", "beta", "gamma", "+ New"] {
+        assert!(text.contains(shown), "{shown} is drawn:\n{text}");
+    }
+    assert!(!text.contains("+ Add filter"));
+    let (_, action) = bar.on_key(&key(KeyCode::Char('+')));
+    assert_eq!(action, Some(ChipAction::Add));
+
+    assert!(bar.set_add_label(None));
+    let text = text_of(&draw(&mut bar));
+    assert!(!text.contains("+ New"), "the add action is gone:\n{text}");
+    let (_, action) = bar.on_key(&key(KeyCode::Char('+')));
+    assert_eq!(action, None, "a bar without an add label cannot add");
+}
+
+fn toolbar_editing() {
+    let items = || {
+        vec![
+            ToolItem::new("Run"),
+            ToolItem::new("Stop").reason("No query is running"),
+        ]
+    };
+    let mut bar = Toolbar::new(WidgetId::of("scenario.toolbar"), items());
+    assert_eq!(bar.items().len(), 2);
+    assert!(bar.insert_item(1, ToolItem::new("Run all")));
+    assert!(!bar.insert_item(9, ToolItem::new("past the end")));
+    assert!(bar.update_item(2, |item| {
+        item.disabled = false;
+        item.reason = None;
+    }));
+    assert!(!bar.update_item(2, |item| item.disabled = false));
+    assert_eq!(
+        bar.remove_item(0).map(|item| item.label),
+        Some("Run".to_owned())
+    );
+    assert!(bar.remove_item(9).is_none());
+    let labels: Vec<&str> = bar.items().iter().map(|item| item.label.as_str()).collect();
+    assert_eq!(labels, ["Run all", "Stop"]);
+    assert!(!bar.items()[1].disabled, "Stop was enabled in place");
+
+    assert!(bar.set_items(items()));
+    assert!(
+        !bar.set_items(items()),
+        "an equal collection changes nothing"
+    );
+    let text = text_of(&paint(Rect::new(0, 0, 40, 1), |area, buf, ctx| {
+        bar.render(area, buf, ctx, ctx.theme.canvas)
+    }));
+    assert!(text.contains("Run") && text.contains("Stop"), "{text}");
+    let (_, action) = bar.on_key(&key(KeyCode::Enter));
+    assert_eq!(action, Some(ToolbarAction::Activated(0)));
+}
+
+fn tabs_editing() {
+    let mut tabs = Tabs::new(WidgetId::of("scenario.tabs"), &["one", "two"]);
+    tabs.push(TabItem::new("three").closable());
+    let labels = |tabs: &Tabs| -> Vec<String> {
+        tabs.items().iter().map(|item| item.label.clone()).collect()
+    };
+    assert_eq!(labels(&tabs), ["one", "two", "three"]);
+    tabs.set_active(2);
+    assert!(tabs.reorder(2, 0), "the last tab moves to the front");
+    assert!(!tabs.reorder(1, 1) && !tabs.reorder(0, 9));
+    assert_eq!(labels(&tabs), ["three", "one", "two"]);
+    assert_eq!(tabs.active, 0, "the active mark follows the moved tab");
+    assert!(tabs.update_item(1, |item| item.dirty = true));
+    assert!(!tabs.update_item(1, |item| item.dirty = true));
+    assert!(!tabs.update_item(9, |item| item.dirty = true));
+    assert!(tabs.items()[1].dirty);
+    let text = text_of(&paint(Rect::new(0, 0, 60, 3), |area, buf, ctx| {
+        tabs.render(area, buf, ctx, ctx.theme.canvas)
+    }));
+    let at = |label: &str| {
+        text.find(label)
+            .unwrap_or_else(|| panic!("{label}:\n{text}"))
+    };
+    assert!(at("three") < at("one") && at("one") < at("two"), "{text}");
+}
+
+fn scroll_panel_content() {
+    fn plain(theme: &Theme, _line: &str) -> ratatui::style::Style {
+        theme.secondary()
+    }
+    let source = |n: usize| (1..=n).map(|i| format!("line {i}")).collect::<Vec<_>>();
+    let mut panel = ScrollPanel::new(WidgetId::of("scenario.panel"), source(5));
+    let draw = |panel: &mut ScrollPanel| {
+        text_of(&paint(Rect::new(0, 0, 30, 8), |area, buf, ctx| {
+            panel.render(area, buf, ctx, ctx.theme.canvas, plain)
+        }))
+    };
+    assert!(draw(&mut panel).contains("line 5"));
+    assert_eq!(panel.lines().len(), 5);
+    assert_eq!(panel.replace_line(1, "edited".to_owned()), Ok(true));
+    assert_eq!(panel.replace_line(1, "edited".to_owned()), Ok(false));
+    assert_eq!(panel.replace_line(9, "x".to_owned()), Err(9));
+    assert!(panel.extend_lines(["appended".to_owned()]));
+    assert!(!panel.extend_lines(Vec::new()));
+    let text = draw(&mut panel);
+    assert!(
+        text.contains("edited") && text.contains("appended"),
+        "{text}"
+    );
+    assert!(!text.contains("line 2"), "the old text is gone:\n{text}");
+
+    panel.select_all();
+    assert_eq!(
+        panel.source_selection(),
+        Some(((0, 0), (5, "appended".len()))),
+        "the selection is in source lines, not wrapped rows"
+    );
+    assert!(panel.extend_lines(["more".to_owned()]));
+    assert!(panel.source_selection().is_some(), "an append keeps it");
+    assert!(panel.set_lines(source(2)));
+    assert_eq!(panel.source_selection(), None, "a replacement clears it");
+    assert_eq!(panel.lines(), ["line 1", "line 2"]);
+    assert!(panel.clear());
+    assert!(!panel.clear());
+    assert!(panel.lines().is_empty());
+    assert!(!draw(&mut panel).contains("line 1"));
 }
 
 #[test]

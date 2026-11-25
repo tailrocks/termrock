@@ -1615,3 +1615,73 @@ fn option_stress_filters_and_long_label() {
     );
     label.finish();
 }
+
+/// `chipsselects.add_label` renames the filter bar's add action or removes it
+/// (`ChipBar::set_add_label`). The option reads back from the Options control,
+/// the renamed action still adds a filter, and without a label no add action or
+/// `+` hotkey remains.
+#[test]
+fn option_filter_add_action() {
+    boundary_value(
+        "s02-chips-addlabel",
+        "chipsselects.add_label=short",
+        "opt.chipsselects.add_label",
+        "Filter add action",
+        "short",
+        MIXED_OFF,
+    );
+
+    let short = open(
+        "s02-chips-addshort",
+        120,
+        40,
+        &[
+            "--page",
+            "chipsselects",
+            "--opt",
+            "chipsselects.add_label=short",
+        ],
+    );
+    short.wait_text(PENDING);
+    // The bar is full at 120 columns, so the add action waits behind +N until
+    // a filter is removed.
+    click_close(&short, PENDING);
+    let before = short.wait_text("+ New");
+    expect(&before, &[TOTAL, "+ New"], &["+ Add filter"]);
+    click_main(&short, "+ New");
+    let added = short.wait_text("last action: added created_at > '2026-01-01'");
+    expect(&added, &["created_at > '2026-01-01'"], &["+ Add filter"]);
+    short.finish();
+
+    let none = open(
+        "s02-chips-addnone",
+        120,
+        40,
+        &[
+            "--page",
+            "chipsselects",
+            "--opt",
+            "chipsselects.add_label=none",
+        ],
+    );
+    let bare = none.wait_text(PENDING);
+    expect(
+        &bare,
+        &[PENDING, TOTAL, COUNTRY, NOTHING],
+        &["+ Add filter", "+ New", "last action: added"],
+    );
+    none.key("tab");
+    none.key("+");
+    let still = none.screen();
+    expect(
+        &still,
+        &[PENDING, NOTHING],
+        &["last action: added", "+ Add filter", "+ New"],
+    );
+    see(
+        &none,
+        "opt.chipsselects.add_label_none_playground",
+        "without an add label the bar shows only its chips and a plus key adds nothing",
+    );
+    none.finish();
+}

@@ -1,0 +1,79 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-296-target/debug/showcase",
+  "binary_sha256": "960e9a7bd3bbeafc74e4506490377087ea7e89b86d4d800be6b15aa636ca4c97",
+  "fixture_args": [
+    "--page",
+    "chipsselects",
+    "--opt",
+    "chipsselects.hover_moves_cursor=off",
+    "--opt",
+    "shell.focus_on=release"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "b21252761e4c97b226245bc79ba3f60be0e776bba26d32d836996480e45c8c99",
+  "expect_baseline": "a48f3b20388152acebb9dce25925738bee9091a695f18adee409f564133eb4a3",
+  "precondition": "Showcase Chips & selects page for #296: the Options tab gains a Filter add action row (default, short, none) that drives ChipBar::set_add_label. Captures change only by that row and its effects.",
+  "session": null,
+  "expected_test_id": "pre_refactor/s02_chipsselects/opt_chipsselects_hover_moves_cursor",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/chips-toolbars-tabs-panels-296-20261116/pre_refactor_s02_chipsselects_opt_chipsselects_hover_moves_cursor.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/chips-toolbars-tabs-panels-296-20261116/pre_refactor_s02_chipsselects_opt_chipsselects_hover_moves_cursor.provenance.json",
+  "previous_archive_path": "docs/testing/acceptance-receipts/chips-toolbars-tabs-panels-296-20261116/superseded/pre_refactor/s02_chipsselects/opt_chipsselects_hover_moves_cursor.tui.pb",
+  "test_id": "pre_refactor/s02_chipsselects/opt_chipsselects_hover_moves_cursor",
+  "acceptance": {
+    "expected_baseline_sha256": "a48f3b20388152acebb9dce25925738bee9091a695f18adee409f564133eb4a3",
+    "accepted_baseline_sha256": "b21252761e4c97b226245bc79ba3f60be0e776bba26d32d836996480e45c8c99",
+    "candidate_sha256": "b21252761e4c97b226245bc79ba3f60be0e776bba26d32d836996480e45c8c99",
+    "transaction_receipt": "docs/testing/acceptance-receipts/chips-toolbars-tabs-panels-296-20261116/pre_refactor_s02_chipsselects_opt_chipsselects_hover_moves_cursor.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "a48f3b20388152acebb9dce25925738bee9091a695f18adee409f564133eb4a3"
+  },
+  "candidate": {
+    "sha256": "b21252761e4c97b226245bc79ba3f60be0e776bba26d32d836996480e45c8c99",
+    "path": "tests/functional/baselines/pre_refactor/s02_chipsselects/opt_chipsselects_hover_moves_cursor.tui.pb"
+  },
+  "history": {
+    "superseded_baseline": "docs/testing/acceptance-receipts/chips-toolbars-tabs-panels-296-20261116/superseded/pre_refactor/s02_chipsselects/opt_chipsselects_hover_moves_cursor.tui.pb",
+    "superseded_baseline_sha256": "a48f3b20388152acebb9dce25925738bee9091a695f18adee409f564133eb4a3"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s02_chipsselects/opt_chipsselects_hover_moves_cursor.tui.pb",
+    "candidate_sha256": "b21252761e4c97b226245bc79ba3f60be0e776bba26d32d836996480e45c8c99",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-296-target/debug/showcase",
+    "binary_sha256": "960e9a7bd3bbeafc74e4506490377087ea7e89b86d4d800be6b15aa636ca4c97",
+    "note": "Live candidate capture of demo/296; the new option row shifts the options list."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s02_chipsselects/opt_chipsselects_hover_moves_cursor",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-296/target/functional/s02-chips-hover-28455-1794778541973849000-1/check-artifacts/pre_refactor/s02_chipsselects/opt_chipsselects_hover_moves_cursor/b21252761e4c97b226245bc79ba3f60be0e776bba26d32d836996480e45c8c99/sample.tui.pb"
+    },
+    "candidate_sha256": "b21252761e4c97b226245bc79ba3f60be0e776bba26d32d836996480e45c8c99",
+    "baseline_sha256": "b21252761e4c97b226245bc79ba3f60be0e776bba26d32d836996480e45c8c99",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-296/tests/functional/baselines/pre_refactor/s02_chipsselects/opt_chipsselects_hover_moves_cursor.tui.pb"
+    },
+    "error_code": null
+  }
+}
