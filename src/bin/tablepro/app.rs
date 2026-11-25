@@ -27,7 +27,7 @@ use junie_tui::ui::leave::{Leave, LeaveGuard, Resolved, Stakes};
 use junie_tui::widgets::button::Button;
 use junie_tui::widgets::dialog::{Dialog, DialogBody, DialogResult};
 use junie_tui::widgets::grid::{
-    CellValue, DataGrid, GridChangeSet, GridCommitError, GridCommitToken,
+    CellValue, DataGrid, GridChangeSet, GridCommitError, GridCommitFailure, GridCommitToken,
 };
 
 use junie_tui::widgets::input::TextInput;
@@ -41,12 +41,13 @@ use junie_tui::widgets::too_small::TooSmall;
 
 use crate::connections::ConnectionsScreen;
 use crate::context::{self, CtxMenu};
-use crate::db::{Catalog, Connection, Environment, SafeMode};
+use crate::db::{Catalog, ColType, Connection, Environment, SafeMode};
 use crate::filter_editor::{FilterDone, FilterEditor};
 use crate::model::{History, SwitchTarget, SwitcherIndex};
 use crate::pages::Tablepro;
 use crate::sql::{self, Decision};
-use crate::tabs::{Filter, FilterOp};
+use crate::store::{CommitContext, SessionStore, Source, StoreError, TableId};
+use crate::tabs::{Filter, FilterOp, TableTab};
 use crate::workbench::{SAVING_NOTICE, WorkTab, Workbench};
 use junie_tui::shell::Page;
 use junie_tui::widgets::document_workspace::{
@@ -80,8 +81,8 @@ mod connection_identity_tests;
 mod commit_owner_tests;
 
 #[cfg(test)]
-#[path = "workspace_tests.rs"]
-mod workspace_tests;
+#[path = "session_store_tests.rs"]
+mod session_store_tests;
 
 #[path = "table_transition.rs"]
 mod table_transition;
@@ -122,20 +123,30 @@ struct CommitRequest {
     table: String,
     connection_name: String,
     database: String,
+    /// The table's revision in the store when the reviewed rows were read.
+    expected_table_revision: u64,
+    /// The grid's columns in order, which the store checks against the table.
+    source_columns: Vec<(String, ColType)>,
+    /// The clock reading every `now()` of the save resolves to.
+    context: CommitContext,
     changes: GridChangeSet,
     sql: Vec<String>,
 }
 
-/// The workspace operation a submitted save runs under. An ordinary save is a
-/// task of its table's tab; a save that closes the tab is that tab's close-save,
-/// which locks it against edits until it completes, fails or is cancelled.
-#[derive(Debug, Clone, Copy)]
-enum SaveOperation {
-    Task(OperationToken),
-    CloseSave {
-        close: CloseToken,
-        operation: OperationToken,
-    },
+/// How a submitted save ended, once the store and the grid have both answered.
+enum CommitOutcome {
+    /// The save no longer has a target, or its lock is gone.
+    Ignored,
+    /// The tab no longer holds the reviewed table; its lock was released.
+    Moved,
+    /// The store refused. Nothing changed, and the draft is unlocked.
+    Refused(StoreError),
+    /// The grid does not accept the store's receipt. Nothing changed, and the
+    /// draft stays locked until the failure dialog is closed.
+    ReceiptRejected(GridCommitError),
+    /// The store accepted the save but the grid refused the acknowledgement.
+    Unacknowledged(String),
+    Saved,
 }
 
 /// The one save an app has at a time. Every variant holds the grid lock that
@@ -177,7 +188,7 @@ impl CommitState {
 }
 
 /// A review that passed every check, with the values its dialog needs.
-struct PreparedCommit {
+struct ReviewedCommit {
     request: CommitRequest,
     token: GridCommitToken,
     level: SafeMode,
@@ -339,7 +350,11 @@ impl App {
     /// looks the connection up again, so later edits cannot retarget it.
     fn open_workbench(&mut self, key: ItemKey, c: Connection) {
         self.invalidate_connection();
-        let mut wb = Workbench::new(c, Catalog::acme_prod());
+        let mut wb = Workbench::new(
+            c,
+            Catalog::acme_prod(),
+            SessionStore::new(self.connection_generation),
+        );
         wb.connection_key = Some(key);
         wb.new_query("");
 
@@ -582,8 +597,21 @@ impl App {
             if w.tick_explorer() {
                 out = Outcome::Changed;
             }
-            if w.running().is_some() {
-                out = Outcome::Changed;
+            let conn = w.connection.name.clone();
+            let db = w.catalog.database.clone();
+            let src = Source {
+                catalog: &w.catalog,
+                store: &w.store,
+            };
+            let mut entries = vec![];
+            for t in w.tabs.iter_mut() {
+                if let WorkTab::Query(q) = t {
+                    let was = q.is_running();
+                    entries.extend(q.tick(src, &conn, &db));
+                    if was && !q.is_running() {
+                        out = Outcome::Changed;
+                    }
+                }
             }
             let entries = w.tick_queries();
             if !entries.is_empty() {
@@ -1052,9 +1080,20 @@ impl App {
                 Outcome::Changed
             }
             Decision::Confirm { deliberate } => {
-                let table = w.catalog.find(None, stmt.target().unwrap_or(""));
-                let risk = sql::assess(&stmt, table);
-                w.pending_run = Some((tab, statements.clone(), all, explain));
+                let src = Source {
+                    catalog: &w.catalog,
+                    store: &w.store,
+                };
+                let live = src
+                    .catalog
+                    .find(None, stmt.target().unwrap_or(""))
+                    .map(|t| {
+                        let mut live = t.clone();
+                        live.row_count = src.row_count(t);
+                        live
+                    });
+                let risk = sql::assess(&stmt, live.as_ref());
+                w.pending_run = Some((tab_index, statements.clone(), all, explain));
                 let tier = sql::tier(&stmt);
                 let dangerous = sql::is_dangerous(&stmt);
                 let title = if dangerous {
@@ -1175,7 +1214,7 @@ impl App {
             );
             return None;
         }
-        let PreparedCommit {
+        let ReviewedCommit {
             request,
             token,
             level,
@@ -1195,7 +1234,7 @@ impl App {
 
     /// Resolves table `tab`'s draft into one owned request and locks the grid
     /// on it. It stops, with the draft untouched, at the first problem.
-    fn prepare_commit(&mut self, tab: Option<ItemKey>) -> Result<PreparedCommit, CommitRefusal> {
+    fn prepare_commit(&mut self, tab: Option<ItemKey>) -> Result<ReviewedCommit, CommitRefusal> {
         let Some(w) = self.workbench.as_mut() else {
             return Err(("Nothing to save".into(), None));
         };
@@ -1216,48 +1255,41 @@ impl App {
                 Some(StatusKind::Fail),
             ));
         };
-        if w.ws.save_locked(tab) {
-            return Err((SAVING_NOTICE.into(), Some(StatusKind::Warn)));
-        }
-        let reviewed = w.modify_table(tab, |t, _| -> Result<_, CommitRefusal> {
-            if let Err(e) = t.grid.finish_edit_session() {
-                return Err((
-                    format!("Fix the open cell first: {e}"),
-                    Some(StatusKind::Warn),
-                ));
-            }
-            let changes = t.grid.snapshot_changes();
-            if changes.is_empty() {
-                return Err(("No pending changes".into(), None));
-            }
-            if level == SafeMode::ReadOnly {
-                return Err((
-                    "Cannot save changes: TablePro's Safe Mode is set to read-only for this connection"
-                        .into(),
-                    Some(StatusKind::Warn),
-                ));
-            }
-            let sql = crate::model::preview_sql(&table, &t.columns, &changes).map_err(|e| {
-                (
-                    format!(
-                        "Cannot save: {} · changes kept pending",
-                        preview_error_text(&e, &t.grid)
-                    ),
-                    Some(StatusKind::Fail),
-                )
-            })?;
-            let token = t
-                .grid
-                .begin_submission(changes.clone())
-                .map_err(|e| (format!("Cannot save: {e}"), Some(StatusKind::Fail)))?;
-            Ok((changes, sql, token))
-        });
-        let (changes, sql, token) = match reviewed {
-            Some(Ok(review)) => review,
-            Some(Err(refusal)) => return Err(refusal),
-            None => return Err(("Nothing to save".into(), None)),
+        let context = w.store.commit_context();
+        let Some(WorkTab::Table(t)) = w.tab_mut(tab) else {
+            return Err(("Nothing to save".into(), None));
         };
-        Ok(PreparedCommit {
+        if let Err(e) = t.grid.finish_edit_session() {
+            return Err((
+                format!("Fix the open cell first: {e}"),
+                Some(StatusKind::Warn),
+            ));
+        }
+        let changes = t.grid.snapshot_changes();
+        if changes.is_empty() {
+            return Err(("No pending changes".into(), None));
+        }
+        if level == SafeMode::ReadOnly {
+            return Err((
+                "Cannot save changes: TablePro's Safe Mode is set to read-only for this connection"
+                    .into(),
+                Some(StatusKind::Warn),
+            ));
+        }
+        let sql = crate::model::preview_sql(&table, &t.columns, &changes).map_err(|e| {
+            (
+                format!(
+                    "Cannot save: {} · changes kept pending",
+                    preview_error_text(&e, &t.grid)
+                ),
+                Some(StatusKind::Fail),
+            )
+        })?;
+        let token = t
+            .grid
+            .begin_submission(changes.clone())
+            .map_err(|e| (format!("Cannot save: {e}"), Some(StatusKind::Fail)))?;
+        Ok(ReviewedCommit {
             request: CommitRequest {
                 connection_generation: self.connection_generation,
                 tab,
@@ -1265,6 +1297,9 @@ impl App {
                 table: name,
                 connection_name,
                 database,
+                expected_table_revision: t.table_revision(),
+                source_columns: t.columns.clone(),
+                context,
                 changes,
                 sql,
             },
@@ -1479,165 +1514,143 @@ impl App {
             .expect("connection generations exhausted");
     }
 
-    /// Applies the acknowledgement of a submitted save to the grid that
-    /// submitted it, found by its tab key under its connection generation and
-    /// by the workspace operation it ran under. A tab that no longer holds the
-    /// reviewed table releases its lock instead of keeping it for a save that
-    /// can never complete.
-    fn complete_commit(
-        &mut self,
-        request: CommitRequest,
-        token: GridCommitToken,
-        operation: SaveOperation,
-    ) {
+    /// Runs a submitted save against the session store and then acknowledges
+    /// it in the grid that submitted it, found by its tab key under its
+    /// connection generation. The store is checked completely, and the grid is
+    /// asked to accept the exact receipt, before anything is written. A tab that
+    /// no longer holds the reviewed table releases its lock instead of keeping
+    /// it for a save that can never complete.
+    fn complete_commit(&mut self, request: CommitRequest, token: GridCommitToken) {
         let continuation = self.take_save_continuation(token);
-        let _ = self.take_close_wait(token);
-        if request.connection_generation != self.connection_generation {
-            return;
-        }
-        let Some(w) = self.workbench.as_ref() else {
-            return;
-        };
-        let Some(held) = w.table(request.tab) else {
-            return;
-        };
-        if held.schema != request.schema || held.name != request.table {
-            self.cancel_save_operation(request.tab, operation);
-            let _ = self
-                .workbench
-                .as_mut()
-                .and_then(|w| w.modify_table(request.tab, |t, _| t.grid.cancel_submission(token)));
-            self.set_status_as(
+        let outcome = self.apply_commit(&request, token);
+        let table = format!("{}.{}", request.schema, request.table);
+        match outcome {
+            CommitOutcome::Ignored => {}
+            CommitOutcome::Moved => self.set_status_as(
                 StatusKind::Warn,
                 "The save no longer matches its tab · changes kept pending".into(),
-            );
-            return;
-        }
-        let receipt = request.changes.identity_receipt();
-        match operation {
-            SaveOperation::Task(op) => {
-                self.complete_task_save(request, token, op, receipt, continuation);
+            ),
+            CommitOutcome::Refused(error) => self.set_status_as(
+                StatusKind::Fail,
+                format!("Cannot save to {table}: {error} · changes kept pending"),
+            ),
+            CommitOutcome::ReceiptRejected(error) => {
+                self.commit_failed_receipt(request, token, error.to_string());
             }
-            SaveOperation::CloseSave {
-                close,
-                operation: op,
-            } => {
-                self.complete_close_save(request, token, close, op, receipt);
+            CommitOutcome::Unacknowledged(why) => {
+                self.mark_peers_saved(&request);
+                self.set_status_as(
+                    StatusKind::Fail,
+                    format!("{table} was saved but this view could not show it ({why}) · reload the table"),
+                );
             }
-        }
-    }
-
-    fn complete_task_save(
-        &mut self,
-        request: CommitRequest,
-        token: GridCommitToken,
-        operation: OperationToken,
-        receipt: junie_tui::widgets::grid::GridCommitReceipt,
-        continuation: Option<table_transition::TableTransition>,
-    ) {
-        let Some(w) = self.workbench.as_mut() else {
-            return;
-        };
-        let finished = w.ws.finish_operation(operation, |tab| match tab {
-            WorkTab::Table(t) => {
-                let result = t.grid.complete_submission(token, Ok(receipt));
-                (result, t.grid.submission_pending())
-            }
-            _ => (Err(GridCommitError::StaleToken), false),
-        });
-        let Ok(((result, pending), resp)) = finished else {
-            let _ = self
-                .workbench
-                .as_mut()
-                .and_then(|w| w.modify_table(request.tab, |t, _| t.grid.cancel_submission(token)));
-            return;
-        };
-        let _ = w.settle(resp);
-        match result {
-            Ok(()) => {
-                w.sync_strip();
-                let saved = self.commit_succeeded(&request);
+            CommitOutcome::Saved => {
+                let marked = self.mark_peers_saved(&request);
+                let mut saved = self.commit_succeeded(&request);
+                if marked > 0 {
+                    saved.push_str(&format!(
+                        " · {marked} other view{} of {table} changed and {} to be reloaded",
+                        if marked == 1 { "" } else { "s" },
+                        if marked == 1 { "needs" } else { "need" },
+                    ));
+                }
                 match continuation {
                     Some(transition) => self.finish_save_transition(&saved, &transition),
                     None => self.set_status_as(StatusKind::Ok, saved),
                 }
             }
-            Err(GridCommitError::StaleToken | GridCommitError::WrongOrigin) => {}
-            Err(error) if pending => {
-                self.commit_failed_receipt(request, token, error.to_string());
+        }
+    }
+
+    /// The store and grid half of [`Self::complete_commit`].
+    fn apply_commit(&mut self, request: &CommitRequest, token: GridCommitToken) -> CommitOutcome {
+        if request.connection_generation != self.connection_generation {
+            return CommitOutcome::Ignored;
+        }
+        let Some(Workbench {
+            catalog,
+            store,
+            tabs,
+            ..
+        }) = self.workbench.as_mut()
+        else {
+            return CommitOutcome::Ignored;
+        };
+        let Some(WorkTab::Table(t)) = tabs.iter_mut().find(|t| t.key() == request.tab) else {
+            return CommitOutcome::Ignored;
+        };
+        if t.schema != request.schema || t.name != request.table {
+            let _ = t.grid.cancel_submission(token);
+            return CommitOutcome::Moved;
+        }
+        let refuse = |t: &mut TableTab, error: StoreError| {
+            let failure = GridCommitFailure {
+                key: error.row(),
+                message: error.to_string(),
+            };
+            if let Err(GridCommitError::StaleToken | GridCommitError::WrongOrigin) =
+                t.grid.complete_submission(token, Err(failure))
+            {
+                return CommitOutcome::Ignored;
             }
-            Err(_) => {
-                self.set_status_as(
-                    StatusKind::Warn,
-                    "The save was cancelled · changes kept pending".into(),
+            if error.is_conflict() {
+                t.mark_source_changed();
+            }
+            CommitOutcome::Refused(error)
+        };
+        let Some(table) = catalog.find(Some(&request.schema), &request.table) else {
+            return refuse(t, StoreError::SchemaChanged);
+        };
+        let id = TableId::new(&request.database, &request.schema, &request.table);
+        let plan = match store.prepare_commit(
+            table,
+            &id,
+            request.expected_table_revision,
+            &request.source_columns,
+            &request.changes,
+            &request.context,
+        ) {
+            Ok(plan) => plan,
+            Err(error) => return refuse(t, error),
+        };
+        match t.grid.validate_submission_receipt(token, plan.receipt()) {
+            Ok(()) => {}
+            Err(GridCommitError::StaleToken | GridCommitError::WrongOrigin) => {
+                return CommitOutcome::Ignored;
+            }
+            Err(error) => return CommitOutcome::ReceiptRejected(error),
+        }
+        let receipt = match store.apply_prepared(plan) {
+            Ok(receipt) => receipt,
+            Err(error) => return refuse(t, error),
+        };
+        match t.grid.complete_submission(token, Ok(receipt)) {
+            Ok(()) => {
+                let (_, inserted, deleted) = request.changes.counts();
+                t.saved(
+                    store.revision(&id),
+                    store.row_count(&id, table),
+                    inserted,
+                    deleted,
                 );
+                CommitOutcome::Saved
+            }
+            Err(error) => {
+                let _ = t.grid.cancel_submission(token);
+                t.mark_source_changed();
+                CommitOutcome::Unacknowledged(error.to_string())
             }
         }
     }
 
-    /// Finishes the save that closes its tab. Every fallible check runs before
-    /// the workspace marks the table saved: the close pair, then the grid's
-    /// own receipt validation. A failure keeps the tab and its close prompt.
-    fn complete_close_save(
-        &mut self,
-        request: CommitRequest,
-        token: GridCommitToken,
-        close: CloseToken,
-        operation: OperationToken,
-        receipt: junie_tui::widgets::grid::GridCommitReceipt,
-    ) {
-        let Some(w) = self.workbench.as_mut() else {
-            return;
-        };
-        if w.ws.validate_close_save(close, operation).is_err() {
-            self.cancel_save_operation(request.tab, SaveOperation::CloseSave { close, operation });
-            let _ = self
-                .workbench
-                .as_mut()
-                .and_then(|w| w.modify_table(request.tab, |t, _| t.grid.cancel_submission(token)));
-            self.set_status_as(
-                StatusKind::Warn,
-                "The tab changed during the save · it stays open".into(),
-            );
-            return;
-        }
-        let valid = w
-            .table(request.tab)
-            .map(|t| t.grid.validate_submission_receipt(token, &receipt));
-        match valid {
-            Some(Ok(())) => {}
-            Some(Err(error)) => {
-                let _ = w.ws.fail_close_save(close, operation);
-                self.commit_failed_receipt(request, token, error.to_string());
-                return;
-            }
-            None => {
-                let _ = w.ws.fail_close_save(close, operation);
-                return;
-            }
-        }
-        let done = w.ws.complete_close_save(close, operation, |tab| {
-            if let WorkTab::Table(t) = tab {
-                let _ = t.grid.complete_submission(token, Ok(receipt));
-            }
-        });
-        let still_open = matches!(done, Err(WorkspaceError::StillDirty));
-        if let Ok(resp) = done {
-            let _ = w.settle(resp);
-        } else {
+    /// Tells every other view of the saved table that its rows are older than
+    /// the store, and returns how many table views kept a draft or an editor.
+    fn mark_peers_saved(&mut self, request: &CommitRequest) -> usize {
+        self.workbench.as_mut().map_or(0, |w| {
+            let marked = w.table_saved(request.tab, &request.schema, &request.table);
             w.sync_strip();
-        }
-        let focus = w.primary_focus().unwrap_or(crate::workbench::EXPLORER);
-        let saved = self.commit_succeeded(&request);
-        if still_open {
-            self.set_status_as(
-                StatusKind::Warn,
-                format!("{saved} · the table still has changes, so it stays open"),
-            );
-        } else {
-            self.shell.focus.focus(focus);
-            self.set_status_as(StatusKind::Ok, format!("{saved} · tab closed"));
-        }
+            marked
+        })
     }
 
     /// Records a finished save in the history and returns its status text.
