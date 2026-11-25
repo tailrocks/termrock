@@ -1055,3 +1055,58 @@ fn search_detail_standard_paint_places_selectable_cells() {
         );
     }
 }
+
+#[test]
+fn search_detail_chip_that_does_not_fit_is_not_selectable_or_runnable() {
+    const TIGHT: Rect = Rect::new(0, 0, 24, 14);
+    let mut search = new_search(SearchConfig::default());
+    let req = accept(&mut search, 1, mixed());
+    let source = source_for(&req, mixed());
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let mut buf = Buffer::empty(TIGHT);
+    let mut hits = HitRegistry::default();
+    let mut ring = FocusRing::default();
+    {
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        search
+            .render_source(TIGHT, &source, &detail_frame(&[]), &mut buf, &mut ctx)
+            .expect("source");
+    }
+    let painted: Vec<ItemKey> = [30, 31, 32]
+        .into_iter()
+        .filter(|&n| {
+            hits.regions()
+                .iter()
+                .any(|r| r.owner == ID && r.part.part == Part::CELL && r.part.item == Some(k(n)))
+        })
+        .map(k)
+        .collect();
+    assert!(
+        !painted.is_empty() && painted.len() < 3,
+        "premise: at this width some chips fit and some do not, painted {painted:?}"
+    );
+    let mut focus = Focus::default();
+    focus.focus(ID);
+    let mut activated = Vec::new();
+    let mut selected = Vec::new();
+    on_key(&mut search, &source, &mut focus, &key(KeyCode::Down));
+    for _ in 0..4 {
+        on_key(&mut search, &source, &mut focus, &key(KeyCode::Right));
+        if let Some(sel) = search.selected_key() {
+            selected.push(sel);
+        }
+        for action in on_key(&mut search, &source, &mut focus, &key(KeyCode::Enter)) {
+            if let SearchAction::Activate(item) = action {
+                activated.push(item);
+            }
+        }
+    }
+    for item in selected.iter().chain(activated.iter()) {
+        if [k(30), k(31), k(32)].contains(item) {
+            assert!(
+                painted.contains(item),
+                "{item:?} is selected or runs but is not painted"
+            );
+        }
+    }
+}

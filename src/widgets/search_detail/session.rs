@@ -134,9 +134,25 @@ impl SearchSession {
             .map(|accepted| accepted.text.as_str())
     }
 
-    /// Whether `key` is an enabled item or cell of the displayed results.
+    /// Whether `key` is an enabled item or cell of the displayed results and
+    /// the last paint placed it.
     pub fn is_selectable(&self, key: ItemKey) -> bool {
-        self.slot(key).is_some_and(|slot| slot.enabled)
+        self.slot(key).is_some_and(|slot| slot.selectable())
+    }
+
+    /// Records which cells of `row` the paint placed. A cell it left out is
+    /// skipped by navigation and cannot run until a later paint places it.
+    pub(super) fn place_cells(&mut self, row: usize, placed: &[usize]) {
+        let Some(accepted) = self.accepted.as_mut() else {
+            return;
+        };
+        let start = accepted.slots.partition_point(|s| s.row < row);
+        for slot in accepted.slots[start..]
+            .iter_mut()
+            .take_while(|s| s.row == row)
+        {
+            slot.placed = placed.contains(&slot.cell);
+        }
     }
 
     pub fn phase(&self) -> SearchPhase {
@@ -535,9 +551,17 @@ impl SearchSession {
 
     fn activate(&mut self) -> Reply {
         match self.state.cursor() {
-            Some(key) if self.is_interactive() => Response::emit(SearchAction::Activate(key)),
+            Some(key) if self.is_interactive() && self.is_placed(key) => {
+                Response::emit(SearchAction::Activate(key))
+            }
             _ => Response::consumed(),
         }
+    }
+
+    /// Whether the last paint placed `key`. An unplaced cell has no chip on
+    /// screen, so it must not run from a key or a click.
+    fn is_placed(&self, key: ItemKey) -> bool {
+        self.slot(key).is_none_or(|slot| slot.placed)
     }
 
     /// Emits a host-named detail action against the selected key, captured now
@@ -579,7 +603,10 @@ impl SearchSession {
     /// the press.
     pub fn release(&mut self, key: ItemKey, layout_generation: u64, count: u8) -> Reply {
         let again = std::mem::take(&mut self.press_was_selected);
-        if !self.state.release_press(key, layout_generation) || !self.is_interactive() {
+        if !self.state.release_press(key, layout_generation)
+            || !self.is_interactive()
+            || !self.is_placed(key)
+        {
             return Response::consumed();
         }
         let policy = self.slot(key).map_or(self.config.click, |slot| {

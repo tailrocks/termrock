@@ -1099,14 +1099,15 @@ fn option_rows_grouped_headings_are_never_selected() {
     );
     app.key("tab");
     app.key("tab");
+    app.key("tab");
     app.key("home");
     app.key("enter");
-    let first = app.wait_text("Ran ");
-    see(&first, &["Ran "], &["Ran git", "Ran cargo"]);
+    let first = app.wait_text("Ran Pull");
+    see(&first, &["Ran Pull"], &["Ran Upgrade Homebrew"]);
     app.key("end");
     app.key("enter");
-    let last = app.settle();
-    see(&last, &["Ran "], &["Ran git", "Ran cargo", "Ran docker"]);
+    let last = app.wait_text("Ran Test");
+    see(&last, &["Ran Test"], &["Ran Pull"]);
     app.finish();
 }
 

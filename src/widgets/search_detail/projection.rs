@@ -8,6 +8,9 @@ use crate::core::selection::ClickPolicy;
 use std::collections::HashSet;
 
 /// One selectable item or cell. Slots are sorted by `row`, then `cell`.
+///
+/// `placed` is false for a cell the last paint of its row left out. Such a
+/// cell is skipped by navigation and cannot run until a paint places it.
 #[derive(Clone, Copy, Debug)]
 pub(super) struct Slot {
     pub key: ItemKey,
@@ -15,7 +18,15 @@ pub(super) struct Slot {
     pub cell: usize,
     pub enabled: bool,
     pub in_cells: bool,
+    pub placed: bool,
     pub policy: Option<ClickPolicy>,
+}
+
+impl Slot {
+    /// Whether navigation may land on this slot.
+    pub(super) fn selectable(&self) -> bool {
+        self.enabled && self.placed
+    }
 }
 
 /// Checks every row against its kind and lists the selectable keys. Nothing
@@ -61,6 +72,7 @@ pub(super) fn build<S: SearchSource + ?Sized>(source: &S) -> Result<Vec<Slot>, S
                     cell: 0,
                     enabled: source.enabled(row),
                     in_cells: false,
+                    placed: true,
                     policy: source.cell_click_policy(row, 0),
                 });
             }
@@ -75,6 +87,7 @@ pub(super) fn build<S: SearchSource + ?Sized>(source: &S) -> Result<Vec<Slot>, S
                         cell,
                         enabled: row_enabled && source.cell_enabled(row, cell),
                         in_cells: true,
+                        placed: true,
                         policy: source.cell_click_policy(row, cell),
                     });
                 }
@@ -97,7 +110,7 @@ impl<S: SearchSource + ?Sized> RowSource for Selectable<'_, S> {
     }
 
     fn enabled(&self, i: usize) -> bool {
-        self.slots[i].enabled
+        self.slots[i].selectable()
     }
 
     fn label(&self, i: usize) -> &str {
@@ -147,7 +160,7 @@ fn row_end(slots: &[Slot], row: usize) -> usize {
 /// The enabled slot of `slots[start..end]` nearest to `column`, lower first.
 fn pick(slots: &[Slot], start: usize, end: usize, column: usize) -> Option<usize> {
     (start..end)
-        .filter(|&i| slots[i].enabled)
+        .filter(|&i| slots[i].selectable())
         .min_by_key(|&i| (slots[i].cell.abs_diff(column), slots[i].cell))
 }
 
@@ -205,11 +218,11 @@ pub(super) fn target(
         Move::End => scan_backward(slots, slots.len(), column),
         Move::Left => {
             let start = row_start(slots, row);
-            (start..at).rev().find(|&i| slots[i].enabled)
+            (start..at).rev().find(|&i| slots[i].selectable())
         }
         Move::Right => {
             let end = row_end(slots, row);
-            (at + 1..end).find(|&i| slots[i].enabled)
+            (at + 1..end).find(|&i| slots[i].selectable())
         }
     }
 }
