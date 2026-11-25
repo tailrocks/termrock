@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s01_statushints/opt_statushints_too_small_min",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/fix-347/target/functional/statushints-too-small-89602-1794844823337827000-9/check-artifacts/pre_refactor/s01_statushints/opt_statushints_too_small_min/54514ef19c9556de541f6531dcc87a8126623ed05d34d4b61e6f3e724968ecea/sample.tui.pb"
+  },
+  "candidate_sha256": "54514ef19c9556de541f6531dcc87a8126623ed05d34d4b61e6f3e724968ecea",
+  "baseline_sha256": "54514ef19c9556de541f6531dcc87a8126623ed05d34d4b61e6f3e724968ecea",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/fix-347/tests/functional/baselines/pre_refactor/s01_statushints/opt_statushints_too_small_min.tui.pb"
+  },
+  "error_code": null
+}

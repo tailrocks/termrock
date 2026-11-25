@@ -80,6 +80,11 @@ fn wheel_to(app: &App, anchor: &str, needle: &str) -> TerminalSnapshot {
             }
         }
         app.wheel(point, true, 3);
+        // Let the page take this step before the screen is read again. Steps
+        // sent back to back were still queued when the needle came into view,
+        // so the page went on scrolling and the capture depended on how far
+        // behind the app was.
+        app.settle();
     }
     app.wait_text(needle)
 }
