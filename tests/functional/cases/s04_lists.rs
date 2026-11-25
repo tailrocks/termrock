@@ -261,6 +261,8 @@ fn see_option_defaults(screen: &TerminalSnapshot) {
     assert_select(screen, "Key map", "default", &["custom"]);
     assert_select(screen, "Empty", "text", &["state"]);
     assert_select(screen, "Content", "ready", &["loading", "error"]);
+    assert_toggle(screen, "Keyed store", "off");
+    assert_select(screen, "Store fault", "none", &["positional"]);
 }
 
 fn opt_args(pair: &str) -> [&str; 4] {
@@ -1288,4 +1290,223 @@ fn option_content_error() {
         &args,
     );
     app.finish();
+}
+
+fn to_keyed_card(app: &App) -> TerminalSnapshot {
+    app.wait_text(CHOSEN_RUST);
+    click_tab(app, "Playground");
+    page_until(app, "reconcile:");
+    app.wait_text("Keyed store")
+}
+
+fn keyed_row(app: &App, label: &str) -> Point {
+    let screen = app.screen();
+    let mut hits: Vec<_> = find_all(&screen, label)
+        .into_iter()
+        .filter(|hit| hit.x > 24)
+        .collect();
+    hits.sort_by_key(|hit| (hit.y, hit.x));
+    *hits
+        .first()
+        .unwrap_or_else(|| panic!("row {label:?} missing\n{}", text(&screen)))
+}
+
+fn keyed_args(fault: Option<&str>) -> Vec<String> {
+    let mut args = vec!["--page", "lists", "--opt", "lists.store=on"]
+        .into_iter()
+        .map(str::to_string)
+        .collect::<Vec<_>>();
+    if let Some(fault) = fault {
+        args.extend(["--opt".to_string(), format!("lists.fault={fault}")]);
+    }
+    args
+}
+
+fn open_keyed(name: &str, fault: Option<&str>) -> App {
+    let args = keyed_args(fault);
+    let args: Vec<&str> = args.iter().map(String::as_str).collect();
+    open(name, 120, 44, &args)
+}
+
+#[test]
+fn option_keyed_store_follows_keys_and_answers_with_actions() {
+    let app = open_keyed("s04-keyed", None);
+    let start = to_keyed_card(&app);
+    see(
+        &start,
+        &[
+            "Keyed store",
+            "6 rows",
+            "store: 6 rows · data 1 view 1 · list in sync · inspector in sync",
+            "list: 0 of 6 shown checked: none",
+            "reconcile: data change · view change · cursor move",
+            "response: Ignored · None · no actions",
+            "src/api/billing.rs",
+            "Cargo.lock",
+        ],
+        &["rejected:", "Source rejected"],
+    );
+
+    click_first(&app, "src/api/billing.rs", |hit| hit.x > 24);
+    let clicked = app.settle();
+    see(
+        &clicked,
+        &[
+            "list: 1 of 6 shown checked: src/api/billing.rs",
+            "response: Consumed · Paint · 2 actions",
+            "actions: SelectionChanged | release on src/api/billing.rs: same row, accepted",
+        ],
+        &[],
+    );
+
+    let screen = press_text(&app, "i", "inserted src/new_1.rs at 1");
+    see(
+        &screen,
+        &[
+            "store: 7 rows · data 2 view 2",
+            "response: Consumed · Paint · one action",
+            "reconcile: data change · view change · no cursor move",
+            "src/new_1.rs",
+        ],
+        &[],
+    );
+    let screen = press_text(&app, "m", "src/api/billing.rs marked");
+    see(&screen, &["marked rows [2]"], &[]);
+    let screen = press_text(&app, "o", "src/api/billing.rs expanded");
+    see(&screen, &["expanded: src/api/billing.rs (revision 2)"], &[]);
+    let screen = press_text(&app, "e", "editing src/api/billing.rs · r commits");
+    see(&screen, &["marked: src/api/billing.rs"], &[]);
+    let screen = press_text(&app, "i", "the edit was cancelled");
+    see(
+        &screen,
+        &[
+            "inserted src/new_2.rs at 2",
+            "store: 8 rows",
+            "view change · no cursor move · edit cancel",
+        ],
+        &["editing src/api/billing.rs · r commits"],
+    );
+    press(&app, "e");
+    let screen = press_text(&app, "r", "committed the edit of src/api/billing.rs");
+    see(
+        &screen,
+        &[
+            "renamed 1",
+            "reconcile: data change · no view change · no cursor move · no edit cancel",
+        ],
+        &[],
+    );
+    let screen = press_text(&app, "u", "moved src/api/billing.rs to");
+    see(
+        &screen,
+        &["reconcile: no data change · view change · no cursor move"],
+        &[],
+    );
+    let screen = press_text(&app, "f", "refresh found nothing new: stamp kept");
+    see(&screen, &["store: 8 rows"], &[]);
+    let screen = press_text(&app, "d", "push refused: DuplicateAuthoritative");
+    see(&screen, &["store: 8 rows"], &[]);
+    let screen = press_text(&app, "x", "removed src/api/billing.rs");
+    see(&screen, &["store: 7 rows", "  7 rows"], &["8 rows"]);
+    let screen = press_text(&app, "v", "reversed all rows, same instance");
+    see(&screen, &["store: 7 rows"], &[]);
+    shot(
+        &app,
+        "opt.lists.store",
+        "the keyed store after insert, mark, edit, rename, move, remove and reverse",
+        &[],
+    );
+    app.finish();
+}
+
+fn press_text(app: &App, key: &str, needle: &str) -> TerminalSnapshot {
+    app.key(key);
+    app.wait_text(needle)
+}
+
+#[test]
+fn option_keyed_store_drops_a_press_the_data_moved_under() {
+    let app = open_keyed("s04-keyed-press", None);
+    to_keyed_card(&app);
+    click_first(&app, "src/api/billing.rs", |hit| hit.x > 24);
+    app.settle();
+    let target = keyed_row(&app, "tests/checkout.rs");
+    app.down(target);
+    app.wait_text("press on tests/checkout.rs: captured");
+    let moved = press_text(&app, "i", "the press was dropped");
+    see(
+        &moved,
+        &[
+            "inserted src/new_1.rs at 1",
+            "view change · no cursor move · no edit cancel · press cancel",
+        ],
+        &[],
+    );
+    app.up(target);
+    let released = app.wait_text("release on tests/checkout.rs: no press held");
+    see(
+        &released,
+        &["Keyed store"],
+        &["list: 1 of 7 shown checked: tests/checkout.rs"],
+    );
+    let again = keyed_row(&app, "src/api/auth.rs");
+    app.down(again);
+    app.wait_text("press on src/api/auth.rs: captured");
+    app.up(again);
+    let pressed = app.wait_text("release on src/api/auth.rs: same row, accepted");
+    see(
+        &pressed,
+        &["list: 1 of 7 shown checked: src/api/auth.rs"],
+        &[],
+    );
+    shot(
+        &app,
+        "opt.lists.store_press",
+        "a press is dropped when the data moves under it and accepted when it does not",
+        &[],
+    );
+    app.finish();
+}
+
+#[test]
+fn option_keyed_store_rejects_a_source_that_breaks_the_contract() {
+    for (fault, message) in [
+        ("positional", "PositionalKey at 0 (authoritative set)"),
+        (
+            "duplicate",
+            "DuplicateAuthoritative: two records share a key",
+        ),
+        (
+            "visible duplicate",
+            "DuplicateVisible: a key is shown twice",
+        ),
+        (
+            "unknown row",
+            "UnknownVisible: a shown key is not in the store",
+        ),
+    ] {
+        let app = open_keyed("s04-keyed-fault", Some(fault));
+        app.wait_text(CHOSEN_RUST);
+        click_tab(&app, "Playground");
+        page_until(&app, "reconcile:");
+        let screen = app.wait_text("Source rejected");
+        see(
+            &screen,
+            &[
+                &format!("rejected: {message}"),
+                "Source rejected",
+                "Keyed store",
+            ],
+            &["src/api/billing.rs"],
+        );
+        if fault == "positional" || fault == "unknown row" {
+            shot(
+                &app,
+                &format!("opt.lists.fault_{}", fault.replace(' ', "_")),
+                "the keyed list names the contract a source broke and keeps its state",
+                &[],
+            );
+        }
+        app.finish();
+    }
 }

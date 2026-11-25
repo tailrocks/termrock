@@ -1,0 +1,73 @@
+{
+  "source_sha": "fffe002e936d3621f22f9132144066a1374d5d74",
+  "lockfile_sha256": "924da8b2cf72e2ed3151abff9c399fc9591e33b840f7002cbbe63cdfa4848091",
+  "toolchain": {
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "1.99.1 (5f94df478 2026-08-27)",
+    "nextest": "0.9.148",
+    "tuiscotti_cli": "0.4.0",
+    "tuiscotti_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+    "tuiscotti_tui_test": "0.2.1",
+    "mise": "2026.10.25",
+    "velnor_actions": "0.1.70",
+    "host": "aarch64-apple-darwin"
+  },
+  "binary_path": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-301-target/debug/showcase",
+  "binary_sha256": "90721b7dcbbe372b88c1dd91e8db620ec38b2f0ebb868734ffe0230be7d7619b",
+  "fixture_args": [
+    "--page",
+    "lists",
+    "--opt",
+    "lists.store=on"
+  ],
+  "env": {},
+  "comparator_rev": "92ef2d9ee082b35f68e066c5129fedbf07675a80",
+  "candidate_sha256": "1d227d52c2e880e779933921f2c403f5bffc86e8826dcf78eefb21d947ed29d2",
+  "expect_baseline": "missing",
+  "precondition": "New capture for #301: a press dropped because the data moved under it, then a press accepted on the same row.",
+  "session": null,
+  "expected_test_id": "pre_refactor/s04_lists/opt_lists_store_press",
+  "acceptance_receipt_path": "docs/testing/acceptance-receipts/keyed-responses-demos-301-20261116/pre_refactor_s04_lists_opt_lists_store_press.accept.json",
+  "provenance_path": "docs/testing/acceptance-receipts/keyed-responses-demos-301-20261116/pre_refactor_s04_lists_opt_lists_store_press.provenance.json",
+  "previous_archive_path": null,
+  "test_id": "pre_refactor/s04_lists/opt_lists_store_press",
+  "acceptance": {
+    "expected_baseline_sha256": "missing",
+    "accepted_baseline_sha256": "1d227d52c2e880e779933921f2c403f5bffc86e8826dcf78eefb21d947ed29d2",
+    "candidate_sha256": "1d227d52c2e880e779933921f2c403f5bffc86e8826dcf78eefb21d947ed29d2",
+    "transaction_receipt": "docs/testing/acceptance-receipts/keyed-responses-demos-301-20261116/pre_refactor_s04_lists_opt_lists_store_press.accept.json"
+  },
+  "previous_baseline": {
+    "sha256": "missing"
+  },
+  "candidate": {
+    "sha256": "1d227d52c2e880e779933921f2c403f5bffc86e8826dcf78eefb21d947ed29d2",
+    "path": "tests/functional/baselines/pre_refactor/s04_lists/opt_lists_store_press.tui.pb"
+  },
+  "capture": {
+    "mode": "candidate",
+    "candidate_path": "tests/functional/baselines/pre_refactor/s04_lists/opt_lists_store_press.tui.pb",
+    "candidate_sha256": "1d227d52c2e880e779933921f2c403f5bffc86e8826dcf78eefb21d947ed29d2",
+    "binary_path": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-301-target/debug/showcase",
+    "binary_sha256": "90721b7dcbbe372b88c1dd91e8db620ec38b2f0ebb868734ffe0230be7d7619b",
+    "note": "Live candidate capture of demo/301 (Showcase demos for the keyed collection and response APIs)."
+  },
+  "cli_receipt": {
+    "schema": "tuiscotti.cli.v1",
+    "command": "accept",
+    "status": "pass",
+    "test_id": "pre_refactor/s04_lists/opt_lists_store_press",
+    "reason": null,
+    "candidate_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-301/target/functional/s04-keyed-press-70442-1794779752138571000-0/check-artifacts/pre_refactor/s04_lists/opt_lists_store_press/1d227d52c2e880e779933921f2c403f5bffc86e8826dcf78eefb21d947ed29d2/sample.tui.pb"
+    },
+    "candidate_sha256": "1d227d52c2e880e779933921f2c403f5bffc86e8826dcf78eefb21d947ed29d2",
+    "baseline_sha256": "1d227d52c2e880e779933921f2c403f5bffc86e8826dcf78eefb21d947ed29d2",
+    "output_path": {
+      "encoding": "utf8",
+      "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-301/tests/functional/baselines/pre_refactor/s04_lists/opt_lists_store_press.tui.pb"
+    },
+    "error_code": null
+  }
+}

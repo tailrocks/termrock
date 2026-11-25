@@ -1,0 +1,18 @@
+{
+  "schema": "tuiscotti.cli.v1",
+  "command": "accept",
+  "status": "pass",
+  "test_id": "pre_refactor/s04_lists/opt_lists_fault_unknown_row",
+  "reason": null,
+  "candidate_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-301/target/functional/s04-keyed-fault-75311-1794779796489235000-3/check-artifacts/pre_refactor/s04_lists/opt_lists_fault_unknown_row/8a8023da4ad1dd07d4192b58d34735cc54b9601cda5f1432ea3c933e54daf70e/sample.tui.pb"
+  },
+  "candidate_sha256": "8a8023da4ad1dd07d4192b58d34735cc54b9601cda5f1432ea3c933e54daf70e",
+  "baseline_sha256": "8a8023da4ad1dd07d4192b58d34735cc54b9601cda5f1432ea3c933e54daf70e",
+  "output_path": {
+    "encoding": "utf8",
+    "value": "/Users/donbeave/Projects/tailrocks/terminal-components-baseline/tcb-lanes/demo-301/tests/functional/baselines/pre_refactor/s04_lists/opt_lists_fault_unknown_row.tui.pb"
+  },
+  "error_code": null
+}

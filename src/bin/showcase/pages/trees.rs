@@ -3,6 +3,7 @@ use ratatui::layout::Rect;
 
 use crate::app::PageId;
 use crate::options::page_options;
+use crate::pages::keyed_tree::{KeyedConnections, TreeFault};
 use crate::pages::row_menu::{MENU_HINTS, OPEN_HINT, RowMenu, plain};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
@@ -74,6 +75,7 @@ pub struct TreesPage {
     template: Template,
     tree: TreeView,
     conns: TreeView,
+    keyed: KeyedConnections,
 
     loading: Option<(Vec<usize>, u8)>,
 
@@ -98,6 +100,7 @@ impl TreesPage {
             template: Template::new(ID, states_grid()),
             tree: TreeView::new(PROJECT, crate::data::project_tree()),
             conns: TreeView::new(CONNECTIONS, connections()),
+            keyed: KeyedConnections::new(CONNECTIONS),
             loading: None,
             last: "—".into(),
             menu: RowMenu::default(),
@@ -183,6 +186,12 @@ impl TreesPage {
             _ => None,
         };
         self.conns = keep(&self.conns, conns);
+        self.keyed
+            .set_fault(TreeFault::from_value(self.opt("trees.source")));
+    }
+
+    fn keyed_on(&self) -> bool {
+        self.opt("trees.source") != "nodes"
     }
 
     fn tree_mut(&mut self, id: WidgetId) -> Option<&mut TreeView> {
@@ -232,7 +241,7 @@ impl TreesPage {
             hint_key(&t.keymap, TreeCmd::ExpandAll).unwrap_or("none"),
             hint_key(&t.keymap, TreeCmd::CollapseAll).unwrap_or("none"),
         );
-        vec![
+        let mut lines = vec![
             format!(
                 "branch_activate {:?} · click {:?} · indent {} · divider {} · alt_click_recursive {} · reserve_right {} · show_meta {}",
                 t.branch_activate,
@@ -259,7 +268,15 @@ impl TreesPage {
                 "last TreeAction: {}   (TreeAction::Expand on a lazy node · TreeAction::Activate on a leaf, or a branch per branch_activate)",
                 self.last
             ),
-        ]
+        ];
+        if self.keyed_on() {
+            lines.push(format!(
+                "connections source: {} · last TreeAction: {}",
+                self.keyed.status(),
+                self.keyed.last
+            ));
+        }
+        lines
     }
 
     fn row_items(&self, i: usize) -> Vec<(RowAction, MenuItem)> {
@@ -414,7 +431,10 @@ impl TreesPage {
 
         let top = r.y + r.height.min(SELECTION_H) + 1;
         if top + 4 < r.bottom() {
-            let meta = if self.loading.is_some() {
+            let keyed_meta = self.keyed.meta();
+            let meta = if self.keyed_on() {
+                keyed_meta.as_str()
+            } else if self.loading.is_some() {
                 "loading…"
             } else {
                 "→ loads a database"
@@ -430,7 +450,11 @@ impl TreesPage {
                 (card.bottom().saturating_sub(top)).max(self.conns_h()),
             );
             let inner = panel.render(card, buf, t);
-            self.conns.render(inner, buf, ctx, bg);
+            if self.keyed_on() {
+                self.keyed.render(inner, buf, ctx, bg);
+            } else {
+                self.conns.render(inner, buf, ctx, bg);
+            }
         }
 
         for (y, l) in (area.y + self.top_h() + 1..).zip(self.readout_lines(area.width)) {
@@ -568,6 +592,9 @@ impl Page for TreesPage {
                 let Some(id) = cx.focus.current() else {
                     return Outcome::Ignored;
                 };
+                if id == CONNECTIONS && self.keyed_on() {
+                    return self.keyed.on_key(key, cx);
+                }
                 let Some(t) = self.tree_mut(id) else {
                     return Outcome::Ignored;
                 };
@@ -585,6 +612,14 @@ impl Page for TreesPage {
                 Outcome::Changed
             }
             PageEvent::Pointer(ev) => {
+                if self.keyed_on()
+                    && let Some(out) = self.keyed.on_pointer(ev, cx)
+                {
+                    if ev.is(Phase::Click) {
+                        cx.focus.focus(CONNECTIONS);
+                    }
+                    return out;
+                }
                 for tid in [PROJECT, CONNECTIONS] {
                     let Some(t) = self.tree_mut(tid) else {
                         continue;
@@ -614,7 +649,9 @@ impl Page for TreesPage {
             return h;
         }
 
-        let t = if focus == Some(self.conns.id) {
+        let t = if focus == Some(self.conns.id) && self.keyed_on() {
+            &self.keyed.view
+        } else if focus == Some(self.conns.id) {
             &self.conns
         } else {
             &self.tree

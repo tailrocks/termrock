@@ -1365,3 +1365,66 @@ fn option_filter_keeps_ancestor_of_matching_leaf() {
     shot(&app, "opt.trees.filter");
     app.finish();
 }
+
+#[test]
+fn option_source_keyed_shows_the_connections_from_a_keyed_store() {
+    let app = option_screen("s04-keyed-source", "trees.source=keyed");
+    let screen = app.wait_text("7 nodes · keyed");
+    see(
+        &screen,
+        &[
+            "production",
+            "orders-db",
+            "billing-db",
+            "replica-eu",
+            "staging",
+            "archive",
+            "connections source: accepted: 7 nodes, every child reachable once",
+        ],
+        &["Source rejected", "lag 4.2 s lag"],
+    );
+    let billing = find_all(&screen, "billing-db")
+        .into_iter()
+        .find(|hit| hit.x > 24)
+        .expect("billing-db row");
+    app.click(billing);
+    app.settle();
+    app.key("enter");
+    let opened = app.wait_text("Opened billing-db");
+    see(
+        &opened,
+        &["last TreeAction: Activate(billing-db)"],
+        &["Source rejected"],
+    );
+    confirm_control(&app, |screen| {
+        assert_select(screen, "Connections source", "keyed", &["nodes", "cycle"]);
+    });
+    shot(&app, "opt.trees.source_keyed");
+    app.finish();
+}
+
+#[test]
+fn option_source_rejects_a_dangling_child_and_a_cycle() {
+    for (value, message) in [
+        (
+            "missing node",
+            "rejected: MissingNode: a node lists a child the store does not hold",
+        ),
+        (
+            "cycle",
+            "rejected: Cycle: a node sits under its own descendant",
+        ),
+    ] {
+        let app = option_screen("s04-keyed-fault", &format!("trees.source={value}"));
+        let screen = app.wait_text("Source rejected");
+        see(
+            &screen,
+            &[message, "the tree keeps its state", "Project"],
+            &["billing-db", "replica-eu"],
+        );
+        if value == "cycle" {
+            shot(&app, "opt.trees.source_cycle");
+        }
+        app.finish();
+    }
+}

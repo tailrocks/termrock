@@ -321,21 +321,52 @@ impl TextUtilitiesPage {
             let panel = Panel::card(Some("TextBuffer · the model under every text control"));
             let bg = panel.bg(t);
             let inner = panel.render(Rect::new(right.x, y, right.width, 8), buf, t);
-            let list = [
-                Prop::new("text", b.text().replace('\n', " ⏎ ")),
-                Prop::new(
-                    "selection",
-                    format!(
-                        "{:?} \"{}\"",
-                        b.selection(),
-                        b.selected_text().unwrap_or("")
+            let list = if self.opt("textutilities.buffer") == "geometry" {
+                Self::geometry_facts(&mut b)
+            } else {
+                vec![
+                    Prop::new("text", b.text().replace('\n', " ⏎ ")),
+                    Prop::new(
+                        "selection",
+                        format!(
+                            "{:?} \"{}\"",
+                            b.selection(),
+                            b.selected_text().unwrap_or("")
+                        ),
                     ),
-                ),
-                Prop::new("cursor_pos", format!("{pos:?}")),
-                Prop::new("selection_lines", format!("{:?}", b.selection_lines())),
-            ];
+                    Prop::new("cursor_pos", format!("{pos:?}")),
+                    Prop::new("selection_lines", format!("{:?}", b.selection_lines())),
+                ]
+            };
             props::render(inner, buf, t, &list, bg);
         }
+    }
+}
+
+impl TextUtilitiesPage {
+    /// What the buffer knows about its lines: where each one sits in the text,
+    /// how wide the widest is, where an offset falls and whether an edit moved
+    /// the revision a view caches against.
+    fn geometry_facts(b: &mut TextBuffer) -> Vec<Prop> {
+        let offset = b.text().find("users").unwrap_or(0);
+        let range = b.line_range(b.position_at(offset).line);
+        let shown = range.as_ref().map_or(String::new(), |r| {
+            format!("{}..{} {}", r.start, r.end, &b.text()[r.clone()])
+        });
+        let facts = vec![
+            Prop::new("position_at", {
+                let at = b.position_at(offset);
+                format!("{offset} → {}:{}", at.line, at.col)
+            }),
+            Prop::new("line_range", shown),
+            Prop::new("max_line_width", format!("{} cells", b.max_line_width())),
+        ];
+        let before = b.revision();
+        b.insert_at(0, "-- ");
+        let moved = b.revision() != before;
+        let mut facts = facts;
+        facts.push(Prop::new("revision", format!("edit moves it: {moved}")));
+        facts
     }
 }
 

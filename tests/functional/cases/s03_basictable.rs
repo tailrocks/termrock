@@ -920,3 +920,49 @@ fn option_selection_frame() {
     );
     app.finish();
 }
+
+#[test]
+fn option_malformed_names_the_kind_of_data_error() {
+    for (value, shows) in [
+        (
+            "short",
+            "Rows rejected · row 0 has 1 cells, expected 2 (shape, row 0)",
+        ),
+        (
+            "long",
+            "Rows rejected · row 0 has 3 cells, expected 2 (shape, row 0)",
+        ),
+        (
+            "no columns",
+            "Rows rejected · rows supplied for a schema with no columns (empty schema)",
+        ),
+        (
+            "missing row",
+            "Rows rejected · row 2 does not exist (missing row 2)",
+        ),
+    ] {
+        let opt = format!("basictable.malformed={value}");
+        let args = ["--page", "basictable", "--opt", opt.as_str()];
+        let app = open("s03-malformed", 120, 40, &args);
+        app.wait_text("#1042");
+        click_tab(&app, "Playground");
+        for _ in 0..8 {
+            if text(&app.screen()).contains("Rows rejected") {
+                break;
+            }
+            app.key("pagedown");
+            app.settle();
+        }
+        let screen = app.wait_text("Rows rejected");
+        see(&screen, &[shows, "Checks"], &["No checks have run yet"]);
+        if value == "missing row" {
+            shot(
+                &app,
+                "opt.basictable.malformed",
+                "the checks table shows why its rows were refused",
+                &args,
+            );
+        }
+        app.finish();
+    }
+}

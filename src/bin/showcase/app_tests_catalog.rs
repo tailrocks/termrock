@@ -6,12 +6,22 @@
 //! that every referenced scenario has exactly one case here. One line per
 //! case keeps a restack mechanical.
 
+use junie_tui::core::data::{DataError, ShapeError, validate_rectangular};
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::focus::{Focus, FocusRing};
 use junie_tui::core::hit::Axis;
 use junie_tui::core::hit::HitRegistry;
-use junie_tui::core::id::{ItemKey, WidgetId};
+use junie_tui::core::id::{ItemKey, Part, WidgetId};
+use junie_tui::core::intent::Phase;
+use junie_tui::core::keyed::{KeyedRecord, KeyedSourceError, KeyedState, KeyedVec, Reconcile};
+use junie_tui::core::list::{KeyedRowSource, RowSource, SourceStamp};
+use junie_tui::core::pointer::PointerEvent;
 use junie_tui::core::refusal::{Reason, clear_refusal, take_refusal};
+use junie_tui::core::response::{
+    Actions, ActionsIntoIter, ActionsIter, Flow, Invalidate, Response,
+};
+use junie_tui::core::selection::RowSelection;
+use junie_tui::core::text::TextBuffer;
 use junie_tui::terminal::{TerminalState, TerminalViewport};
 use junie_tui::theme::{ColorLevel, Theme};
 use junie_tui::ui::ctx::{Interaction, RenderCtx};
@@ -21,13 +31,16 @@ use junie_tui::widgets::choice::Checkbox;
 use junie_tui::widgets::dialog::{Dialog, DialogResult};
 use junie_tui::widgets::edit::{EditField, Validator};
 use junie_tui::widgets::input::TextInput;
+use junie_tui::widgets::list::{ListAction, ListBox, ListItem, SelectMode};
 use junie_tui::widgets::list_detail::{Action, Event, Frame, Line, ListDetail, ListRow};
 use junie_tui::widgets::option_list::Item;
 use junie_tui::widgets::picker::{Picker, PickerAction, PickerItemsError, VisibleKey};
+use junie_tui::widgets::table::{Cell, Column, DataTable};
+use junie_tui::widgets::tree::{KeyedTree, KeyedTreeNode, TreeNodeRef, TreeSource, TreeView};
 use junie_tui::widgets::viewport_ops::ViewportOps;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyModifiers};
-use ratatui::layout::{Position, Rect};
+use ratatui::layout::{Constraint, Position, Rect};
 
 use super::super::coverage::ScenarioId;
 
@@ -48,6 +61,12 @@ pub const CASES: &[ScenarioCase] = &[
     ScenarioCase { id: ScenarioId::FixedControlsPolicy, run: fixed_controls_policy },
     ScenarioCase { id: ScenarioId::FixedDialogsPolicy, run: fixed_dialogs_policy },
     ScenarioCase { id: ScenarioId::ListDetailNavigation, run: list_detail_navigation },
+    ScenarioCase { id: ScenarioId::KeyedStoreIdentity, run: keyed_store_identity },
+    ScenarioCase { id: ScenarioId::KeyedSourceRejection, run: keyed_source_rejection },
+    ScenarioCase { id: ScenarioId::KeyedPointerPress, run: keyed_pointer_press },
+    ScenarioCase { id: ScenarioId::ResponseBatching, run: response_batching },
+    ScenarioCase { id: ScenarioId::DataShapeErrors, run: data_shape_errors },
+    ScenarioCase { id: ScenarioId::TextBufferGeometry, run: text_buffer_geometry },
 ];
 
 fn key(code: KeyCode) -> Key {
@@ -405,6 +424,624 @@ fn list_detail_navigation() {
     list.open_detail(&mut focus);
     list.close_detail(&mut focus);
     let _ = Position::new(0, 0);
+}
+
+fn k(name: &str) -> ItemKey {
+    ItemKey::text(name)
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct Doc {
+    title: String,
+    locked: bool,
+}
+
+impl Doc {
+    fn new(title: &str, locked: bool) -> Self {
+        Self {
+            title: title.to_owned(),
+            locked,
+        }
+    }
+}
+
+impl KeyedRecord for Doc {
+    fn label(&self) -> &str {
+        &self.title
+    }
+
+    fn enabled(&self) -> bool {
+        !self.locked
+    }
+}
+
+fn keyed_store_identity() {
+    let (a, b, c) = (k("a"), k("b"), k("c"));
+    let mut store: KeyedVec<Doc> = KeyedVec::new();
+    assert!(store.is_empty());
+    assert_eq!(store.len(), 0);
+    store.push(a, Doc::new("alpha", false)).expect("a is new");
+    store.push(b, Doc::new("bravo", true)).expect("b is new");
+    store
+        .insert(0, c, Doc::new("charlie", false))
+        .expect("c is new");
+    assert_eq!(store.len(), 3);
+    assert_eq!(
+        store.iter().map(|(key, _)| key).collect::<Vec<_>>(),
+        vec![c, a, b],
+        "insert places a record before the position"
+    );
+    assert_eq!(store.key_at(1), Some(a));
+    assert_eq!(store.value_at(2).map(|d| d.title.as_str()), Some("bravo"));
+    assert_eq!(store.position(b), Some(2));
+    assert_eq!(store.get(c).map(|d| d.title.as_str()), Some("charlie"));
+    assert!(store.get(k("zzz")).is_none() && store.key_at(9).is_none());
+    assert_eq!(
+        store.push(a, Doc::new("again", false)),
+        Err(KeyedSourceError::DuplicateAuthoritative { key: a })
+    );
+    assert_eq!(
+        store.push(ItemKey::index(0), Doc::new("positional", false)),
+        Err(KeyedSourceError::PositionalKey {
+            index: 3,
+            authoritative: true
+        })
+    );
+    assert_eq!(store.len(), 3, "a refused record changes nothing");
+
+    let start: SourceStamp = store.stamp();
+    store
+        .update(a, |doc| doc.title.push('!'))
+        .expect("a is held");
+    let after_update = store.stamp();
+    assert_eq!(
+        (after_update.data, after_update.view),
+        (start.data + 1, start.view),
+        "an edit moves the data revision only"
+    );
+    assert!(store.move_to(a, 0) && !store.move_to(a, 0));
+    let after_move = store.stamp();
+    assert_eq!(
+        (after_move.data, after_move.view),
+        (after_update.data, after_update.view + 1),
+        "a move changes the view revision only"
+    );
+    let same: Vec<(ItemKey, Doc)> = store.iter().map(|(key, doc)| (key, doc.clone())).collect();
+    assert_eq!(store.replace_if_changed(same.clone()), Ok(false));
+    assert_eq!(store.stamp(), after_move, "equal rows keep the stamp");
+    let mut reversed = same;
+    reversed.reverse();
+    assert_eq!(store.replace_if_changed(reversed), Ok(true));
+    assert_eq!(
+        store.stamp().instance,
+        start.instance,
+        "a replace keeps the instance"
+    );
+    assert_eq!(store.key_at(0), Some(b));
+    let clone = store.clone();
+    assert_ne!(clone.stamp().instance, store.stamp().instance);
+    assert!(
+        KeyedVec::<Doc>::try_from_rows([(a, Doc::new("x", false)), (a, Doc::new("y", false))])
+            .is_err()
+    );
+    store
+        .replace([
+            (a, Doc::new("alpha", false)),
+            (b, Doc::new("bravo", true)),
+            (c, Doc::new("charlie", false)),
+        ])
+        .expect("distinct keys");
+
+    let mut state = KeyedState::new();
+    assert!(state.stamp().is_none());
+    let first: Reconcile = state.reconcile(&store).expect("a valid source");
+    assert!(first.data_changed && first.view_changed && first.cursor_changed);
+    assert_eq!(state.stamp(), Some(store.stamp()));
+    assert_eq!(state.reconcile(&store), Ok(Reconcile::default()));
+    assert_eq!(state.visible_len(), 3);
+    assert_eq!(state.visible_key(1), Some(b));
+    assert_eq!(state.visible_index(c), Some(2));
+    assert!(state.is_authoritative(a) && !state.is_authoritative(k("zzz")));
+    assert!(
+        state.is_enabled(a) && !state.is_enabled(b),
+        "a locked record is disabled"
+    );
+    assert_eq!(
+        state.cursor(),
+        Some(a),
+        "the cursor lands on the first enabled row"
+    );
+    assert!(!state.set_cursor(b) && state.set_cursor(c));
+    assert_eq!(state.cursor_view(), Some(2));
+    assert!(
+        state.adopt_cursor_view(0) && !state.adopt_cursor_view(1) && !state.adopt_cursor_view(9)
+    );
+    assert!(state.clear_cursor() && state.cursor().is_none());
+
+    assert!(
+        state.set_anchor(Some(a))
+            && !state.set_anchor(Some(a))
+            && !state.set_anchor(Some(k("zzz")))
+    );
+    assert_eq!((state.anchor(), state.anchor_view()), (Some(a), Some(0)));
+    assert!(
+        state.set_selected(a, true) && !state.set_selected(b, true),
+        "a disabled row is not newly selected"
+    );
+    assert!(state.replace_selection([a, c, k("zzz")]));
+    assert_eq!(
+        state.selected().collect::<Vec<_>>().len(),
+        state.selected_len()
+    );
+    assert_eq!(state.selected_len(), 2);
+    assert!(state.is_selected(c) && !state.is_selected(b));
+    assert_eq!(state.selected_view(), vec![0, 2]);
+    assert!(
+        state.adopt_selection_view([1, 2], Some(2)),
+        "a disabled view row is skipped"
+    );
+    assert_eq!(
+        (state.selected_view(), state.anchor_view()),
+        (vec![2], Some(2))
+    );
+
+    let before = state.expanded_revision();
+    assert!(
+        state.set_expanded(a, true)
+            && !state.set_expanded(a, true)
+            && !state.set_expanded(k("zzz"), true)
+    );
+    assert!(state.is_expanded(a));
+    assert_eq!(state.expanded().collect::<Vec<_>>(), vec![a]);
+    assert_eq!(state.expanded_revision(), before + 1);
+
+    assert!(!state.begin_edit(b), "a disabled row cannot be edited");
+    assert!(state.begin_edit(a) && !state.begin_edit(a));
+    assert_eq!(state.edit_key(), Some(a));
+    assert!(state.cancel_edit() && !state.cancel_edit());
+    assert!(state.begin_edit(a));
+    store
+        .update(c, |doc| doc.title.push('?'))
+        .expect("c is held");
+    let cancelled = state.reconcile(&store).expect("still valid");
+    assert!(
+        cancelled.edit_cancelled && state.edit_key().is_none(),
+        "any data change cancels an edit"
+    );
+    assert!(state.begin_edit(a));
+    store
+        .update(a, |doc| doc.title.push('#'))
+        .expect("a is held");
+    assert_eq!(
+        state.finish_edit(),
+        Some(a),
+        "a committed edit is finished before reconciling"
+    );
+    assert!(!state.reconcile(&store).expect("valid").edit_cancelled);
+
+    assert!(state.capture_press(a, 1) && !state.capture_press(b, 1));
+    assert_eq!(
+        state.pressed(),
+        Some(a),
+        "a refused capture keeps the held press"
+    );
+    assert!(state.capture_press(a, 1));
+    assert!(state.release_press(a, 1) && !state.release_press(a, 1));
+    assert!(state.capture_press(a, 1));
+    state.cancel_press();
+    assert_eq!(state.pressed(), None);
+    assert!(state.capture_press(a, 1));
+    assert!(!state.invalidate_layout(1) && state.invalidate_layout(2));
+    assert_eq!(state.pressed(), None, "a layout change drops the capture");
+    assert!(state.capture_press(a, 2));
+    store.move_to(a, 2);
+    let moved = state.reconcile(&store).expect("valid");
+    assert!(
+        moved.pointer_cancelled && moved.view_changed,
+        "a reorder drops the press"
+    );
+    assert!(!RowSource::enabled(&store, 0) && KeyedRowSource::source_len(&store) == 3);
+    assert_eq!(
+        KeyedRowSource::source_key(&store, 0),
+        store.key_at(0).expect("row 0")
+    );
+    assert_eq!(RowSource::label(&store, 0), "bravo");
+}
+
+struct Shown {
+    data: u64,
+    authoritative: Vec<ItemKey>,
+    visible: Vec<ItemKey>,
+}
+
+impl RowSource for Shown {
+    fn len(&self) -> usize {
+        self.visible.len()
+    }
+
+    fn label(&self, _: usize) -> &str {
+        "row"
+    }
+
+    fn key(&self, i: usize) -> ItemKey {
+        self.visible[i]
+    }
+}
+
+impl KeyedRowSource for Shown {
+    fn stamp(&self) -> SourceStamp {
+        SourceStamp {
+            instance: k("scenario.shown"),
+            data: self.data,
+            view: 1,
+        }
+    }
+
+    fn source_len(&self) -> usize {
+        self.authoritative.len()
+    }
+
+    fn source_key(&self, i: usize) -> ItemKey {
+        self.authoritative[i]
+    }
+}
+
+struct Graph {
+    roots: Vec<ItemKey>,
+    nodes: Vec<(ItemKey, Vec<ItemKey>)>,
+}
+
+impl TreeSource for Graph {
+    fn stamp(&self) -> SourceStamp {
+        SourceStamp {
+            instance: k("scenario.graph"),
+            data: 1,
+            view: 1,
+        }
+    }
+
+    fn root_count(&self) -> usize {
+        self.roots.len()
+    }
+
+    fn root_key(&self, index: usize) -> ItemKey {
+        self.roots[index]
+    }
+
+    fn node(&self, key: ItemKey) -> Option<TreeNodeRef<'_>> {
+        let (_, children) = self.nodes.iter().find(|(k, _)| *k == key)?;
+        Some(TreeNodeRef {
+            label: "node",
+            meta: None,
+            glyph: None,
+            glyph_tone: junie_tui::theme::Tone::Muted,
+            label_tone: None,
+            children,
+            lazy: false,
+            busy: false,
+            note: false,
+        })
+    }
+}
+
+fn keyed_source_rejection() {
+    let (a, b) = (k("a"), k("b"));
+    let good = Shown {
+        data: 1,
+        authoritative: vec![a, b],
+        visible: vec![a, b],
+    };
+    let mut state = KeyedState::new();
+    state.reconcile(&good).expect("a valid source");
+    let held = state.stamp();
+    // Each broken source keeps the instance and moves the data revision, so
+    // the state checks every key again; the error leaves the state untouched.
+    let mut reject = |authoritative: Vec<ItemKey>, visible: Vec<ItemKey>| {
+        let bad = Shown {
+            data: 2,
+            authoritative,
+            visible,
+        };
+        let error = state.reconcile(&bad).expect_err("a broken source");
+        assert_eq!(
+            state.stamp(),
+            held,
+            "a rejected source leaves state as it was"
+        );
+        error
+    };
+    assert_eq!(
+        reject(vec![ItemKey::index(0), b], vec![a, b]),
+        KeyedSourceError::PositionalKey {
+            index: 0,
+            authoritative: true
+        }
+    );
+    assert_eq!(
+        reject(vec![a, a], vec![a]),
+        KeyedSourceError::DuplicateAuthoritative { key: a }
+    );
+    assert_eq!(
+        reject(vec![a, b], vec![a, a]),
+        KeyedSourceError::DuplicateVisible { key: a }
+    );
+    assert_eq!(
+        reject(vec![a], vec![a, b]),
+        KeyedSourceError::UnknownVisible { key: b }
+    );
+
+    let (root, kid, ghost) = (k("root"), k("kid"), k("ghost"));
+    let mut view = TreeView::new(WidgetId::of("scenario.tree"), Vec::new());
+    let dangling = Graph {
+        roots: vec![root],
+        nodes: vec![(root, vec![kid, ghost]), (kid, vec![])],
+    };
+    assert_eq!(
+        view.expand_all_source(&dangling),
+        Err(KeyedSourceError::MissingNode { key: ghost })
+    );
+    let cyclic = Graph {
+        roots: vec![root],
+        nodes: vec![(root, vec![kid]), (kid, vec![root])],
+    };
+    assert_eq!(
+        view.expand_all_source(&cyclic),
+        Err(KeyedSourceError::Cycle { key: root })
+    );
+    let sound = Graph {
+        roots: vec![root],
+        nodes: vec![(root, vec![kid]), (kid, vec![])],
+    };
+    assert_eq!(view.expand_all_source(&sound), Ok(()));
+
+    let mut tree = KeyedTree::new();
+    assert_eq!(
+        tree.insert(Some(ghost), 0, kid, KeyedTreeNode::new("kid")),
+        Err(KeyedSourceError::MissingNode { key: ghost }),
+        "the store refuses a child of a node it does not hold"
+    );
+}
+
+fn keyed_pointer_press() {
+    let id = WidgetId::of("scenario.press");
+    let store = KeyedVec::try_from_rows([
+        (k("one"), ListItem::new("one")),
+        (k("two"), ListItem::new("two")),
+        (k("three"), ListItem::new("three")),
+    ])
+    .expect("distinct keys");
+    let mut list = ListBox::new(id, Vec::new(), SelectMode::Multi);
+    let area = Rect::new(0, 0, 30, 6);
+    let theme = Theme::for_level(ColorLevel::TrueColor);
+    let mut buf = Buffer::empty(area);
+    let mut hits = HitRegistry::default();
+    let mut ring = FocusRing::default();
+    {
+        let mut ctx = RenderCtx::new(&theme, Interaction::default(), &mut hits, &mut ring);
+        list.render_source(area, &store, &mut buf, &mut ctx, theme.canvas)
+            .expect("a valid store");
+    }
+    let row_at = |y: u16| {
+        let pos = Position::new(2, y);
+        let region = hits
+            .regions()
+            .iter()
+            .rev()
+            .find(|r| r.owner == id && r.part.part == Part::ROW && r.area.contains(pos))
+            .expect("a row region");
+        (region.id, pos)
+    };
+    let event = |phase: Phase, y: u16| {
+        let (region, pos) = row_at(y);
+        PointerEvent::new(&hits, phase, region, pos, 1, KeyModifiers::NONE)
+    };
+    let press = event(Phase::Press, 1);
+    assert_eq!(
+        press.key_of(Part::ROW),
+        Some(k("two")),
+        "the event names the record, not the row number"
+    );
+    assert_eq!(
+        press.key_of(Part::MARKER),
+        None,
+        "another part carries no key"
+    );
+    let held = list.on_pointer_source(&press, &store).expect("valid");
+    assert!(!held.is_consumed(), "a press only captures");
+    let clicked = list
+        .on_pointer_source(&event(Phase::Click, 1), &store)
+        .expect("valid");
+    assert!(
+        clicked
+            .actions()
+            .any(|a| *a == ListAction::SelectionChanged)
+    );
+    assert_eq!(list.keyed().selected().collect::<Vec<_>>(), vec![k("two")]);
+
+    let stray = list
+        .on_pointer_source(&event(Phase::Press, 0), &store)
+        .expect("valid");
+    assert!(!stray.has_actions());
+    let off = list
+        .on_pointer_source(&event(Phase::Click, 2), &store)
+        .expect("valid");
+    assert!(
+        off.is_consumed() && !off.has_actions(),
+        "a release on another row than the press is refused"
+    );
+    assert_eq!(list.keyed().selected().collect::<Vec<_>>(), vec![k("two")]);
+
+    let mut rows = RowSelection::default();
+    rows.replace([2, 0], Some(2));
+    assert_eq!(rows.iter().collect::<Vec<_>>().len(), 2);
+    assert_eq!(rows.anchor(), Some(2));
+    rows.replace([], None);
+    assert_eq!(rows.iter().count(), 0);
+}
+
+fn response_batching() {
+    let mut none: Actions<&str> = Actions::default();
+    assert!(matches!(none, Actions::None) && none.is_empty());
+    assert_eq!(none.len(), 0);
+    assert!(matches!(none.iter(), ActionsIter::Small(_)));
+    none.push("first");
+    assert!(matches!(none, Actions::One("first")));
+    assert!(matches!(none.iter(), ActionsIter::Small(_)));
+    none.push("second");
+    assert!(matches!(&none, Actions::Many(all) if all.len() == 2));
+    assert!(matches!(none.iter(), ActionsIter::Many(_)));
+    assert_eq!(
+        none.iter().len(),
+        2,
+        "the borrowed iterator knows its length"
+    );
+    let mut other = Actions::One("third");
+    none.append(other.clone());
+    other.push("fourth");
+    none.append(other);
+    assert_eq!(
+        none.iter().copied().collect::<Vec<_>>(),
+        vec!["first", "second", "third", "third", "fourth"]
+    );
+    assert!(matches!(none.clone().into_iter(), ActionsIntoIter::Many(_)));
+    assert!(matches!(
+        Actions::One(1).into_iter(),
+        ActionsIntoIter::Small(_)
+    ));
+    assert_eq!(Actions::One(1).into_iter().len(), 1);
+    assert_eq!(Actions::<u8>::None.into_iter().count(), 0);
+
+    let mut response: Response<&str> = Response::ignored();
+    assert!(!response.has_actions() && response.actions().count() == 0);
+    response.push_action("open");
+    assert_eq!(
+        (
+            response.flow(),
+            response.invalidate(),
+            response.has_actions()
+        ),
+        (Flow::Consumed, Invalidate::Paint, true)
+    );
+    let single = response.clone();
+    assert_eq!(
+        single.try_into_single(),
+        Ok((Outcome::Changed, Some("open")))
+    );
+    response.push_action("close");
+    assert_eq!(
+        response.clone().try_into_single().map(|_| ()),
+        Err(response.clone()),
+        "a batch of two comes back whole"
+    );
+    assert_eq!(
+        response.actions().copied().collect::<Vec<_>>(),
+        vec!["open", "close"]
+    );
+
+    let shown = response.clone().map_actions(|action| action.len());
+    assert_eq!(
+        shown.into_actions().iter().copied().collect::<Vec<_>>(),
+        vec![4, 5]
+    );
+    let mut seen = Vec::new();
+    let drained = response.clone().on_actions(|action| seen.push(action));
+    assert_eq!(seen, vec!["open", "close"]);
+    assert!(!drained.has_actions() && drained.outcome() == Outcome::Changed);
+
+    let mut taken = response.clone();
+    let batch = taken.take_actions();
+    assert!(matches!(batch, Actions::Many(_)) && !taken.has_actions());
+    let (flow, invalidate, actions) = response.clone().into_raw_parts();
+    assert_eq!(
+        (flow, invalidate, actions.len()),
+        (Flow::Consumed, Invalidate::Paint, 2)
+    );
+
+    let relayout = Response::<&str>::consumed().relayout();
+    let merged = response.merge(relayout).merge(Response::emit("last"));
+    assert_eq!(
+        merged.invalidate(),
+        Invalidate::Layout,
+        "the stronger invalidation wins"
+    );
+    assert_eq!(
+        merged.actions().copied().collect::<Vec<_>>(),
+        vec!["open", "close", "last"],
+        "actions keep their order"
+    );
+}
+
+fn data_shape_errors() {
+    let ragged = vec![vec!["a", "b"], vec!["c"], vec!["d", "e", "f"]];
+    let error = validate_rectangular(2, &ragged).expect_err("row 1 is short");
+    assert_eq!(
+        error,
+        DataError::Shape(ShapeError {
+            row: 1,
+            expected: 2,
+            actual: 1
+        })
+    );
+    assert_eq!(error.to_string(), "row 1 has 1 cells, expected 2");
+    assert_eq!(validate_rectangular(2, &ragged[..1]), Ok(()));
+    assert_eq!(
+        validate_rectangular(0, &[vec!["x"]]),
+        Err(DataError::EmptySchemaWithRows)
+    );
+
+    let mut table = DataTable::try_new(
+        WidgetId::of("scenario.table"),
+        vec![
+            Column::new("name", Constraint::Length(8)),
+            Column::new("state", Constraint::Length(8)),
+        ],
+        vec![vec![Cell::new("lint"), Cell::new("ok")]],
+    )
+    .expect("a rectangular table");
+    assert_eq!(
+        table.try_set_row(5, vec![Cell::new("x"), Cell::new("y")]),
+        Err(DataError::MissingRow(5))
+    );
+    assert_eq!(
+        table.try_set_row(0, vec![Cell::new("x")]),
+        Err(DataError::Shape(ShapeError {
+            row: 0,
+            expected: 2,
+            actual: 1
+        }))
+    );
+    assert_eq!(table.rows().len(), 1, "a refused row changes nothing");
+    assert!(matches!(
+        DataTable::try_new(
+            WidgetId::of("scenario.none"),
+            Vec::new(),
+            vec![vec![Cell::new("x")]]
+        ),
+        Err(DataError::EmptySchemaWithRows)
+    ));
+}
+
+fn text_buffer_geometry() {
+    let mut buffer = TextBuffer::multi("SELECT id, name\nFROM users\nWHERE active");
+    assert_eq!(buffer.line_range(0), Some(0..15));
+    assert_eq!(buffer.line_range(1), Some(16..26));
+    assert_eq!(
+        buffer.line_range(3),
+        None,
+        "past the last line there is no range"
+    );
+    assert_eq!(buffer.max_line_width(), 15);
+    let at = buffer.text().find("users").expect("users is in the text");
+    let pos = buffer.position_at(at);
+    assert_eq!((pos.line, pos.col), (1, 5));
+    let before = buffer.revision();
+    buffer.insert_at(0, "-- ");
+    assert_ne!(buffer.revision(), before, "an edit moves the revision");
+    assert_eq!(buffer.max_line_width(), 18);
+    assert_eq!(buffer.line_range(0), Some(0..18));
+    let after = buffer.revision();
+    buffer.insert_at(0, "");
+    assert_eq!(buffer.revision(), after, "an empty edit keeps the revision");
 }
 
 #[test]

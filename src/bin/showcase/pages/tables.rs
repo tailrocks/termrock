@@ -5,6 +5,7 @@ use crate::data::TaskStatus;
 use crate::pages::row_menu::{MENU_HINTS, OPEN_HINT, RowMenu, plain};
 use crate::pages::template::{Section, Template};
 use crate::pages::{Cx, Hint, Page, PageEvent};
+use junie_tui::core::data::{DataError, ShapeError, validate_rectangular};
 use junie_tui::core::event::Outcome;
 use junie_tui::core::id::WidgetId;
 use junie_tui::core::intent::Phase;
@@ -279,16 +280,44 @@ fn checks_table(malformed: usize) -> DataTable {
     )
     .expect("rectangular fixture")
     .empty_text("No checks have run yet");
-    if malformed > 0 {
-        let mut cells = vec![Cell::new("lint")];
-        if malformed == 2 {
-            cells.extend([Cell::new("ok"), Cell::new("extra")]);
-        }
-        if let Err(e) = table.try_set_rows(vec![cells]) {
-            table.empty_text = format!("Rows rejected · {e}");
-        }
+    if let Err(e) = feed_malformed(&mut table, malformed) {
+        table.empty_text = format!("Rows rejected · {e} ({})", kind_of(&e));
     }
     table
+}
+
+/// Offers the table rows a producer got wrong. Each call checks the rows with
+/// `validate_rectangular` first, the way a caller would before it commits, and
+/// the table then refuses them on its own as well.
+fn feed_malformed(table: &mut DataTable, malformed: usize) -> Result<(), DataError> {
+    let width = table.columns().len();
+    let ok = || vec![Cell::new("lint"), Cell::new("ok")];
+    match malformed {
+        1 | 2 => {
+            let mut cells = vec![Cell::new("lint")];
+            if malformed == 2 {
+                cells.extend([Cell::new("ok"), Cell::new("extra")]);
+            }
+            let rows = vec![cells];
+            validate_rectangular(width, &rows)?;
+            table.try_set_rows(rows)
+        }
+        3 => {
+            let rows = vec![ok()];
+            validate_rectangular(0, &rows)?;
+            DataTable::try_new(ID.sub("no-columns"), Vec::new(), rows).map(|_| ())
+        }
+        4 => table.try_set_row(2, ok()),
+        _ => Ok(()),
+    }
+}
+
+fn kind_of(error: &DataError) -> String {
+    match error {
+        DataError::Shape(ShapeError { row, .. }) => format!("shape, row {row}"),
+        DataError::EmptySchemaWithRows => "empty schema".to_owned(),
+        DataError::MissingRow(row) => format!("missing row {row}"),
+    }
 }
 
 pub fn route_table(
@@ -480,7 +509,7 @@ impl Page for TablesPage {
                 self.table = tasks_table(SELECTION_MODES[self.selection]);
             }
             "basictable.malformed" => {
-                self.malformed = value.min(2);
+                self.malformed = value.min(4);
                 self.empty = checks_table(self.malformed);
             }
             _ => {}
@@ -597,14 +626,30 @@ mod tests {
     fn issue42_short_and_long_rows_show_the_data_error() {
         let short = with_malformed(1);
         assert!(
-            short.contains("Rows rejected · row 0 has 1 cells, expected 2"),
+            short.contains("Rows rejected · row 0 has 1 cells, expected 2 (shape, row 0)"),
             "{short}"
         );
         let long = with_malformed(2);
         assert!(
-            long.contains("Rows rejected · row 0 has 3 cells, expected 2"),
+            long.contains("Rows rejected · row 0 has 3 cells, expected 2 (shape, row 0)"),
             "{long}"
         );
         assert!(!long.contains("No checks have run yet"));
+    }
+
+    #[test]
+    fn issue301_empty_schema_and_missing_row_show_the_data_error() {
+        let empty = with_malformed(3);
+        assert!(
+            empty.contains(
+                "Rows rejected · rows supplied for a schema with no columns (empty schema)"
+            ),
+            "{empty}"
+        );
+        let missing = with_malformed(4);
+        assert!(
+            missing.contains("Rows rejected · row 2 does not exist (missing row 2)"),
+            "{missing}"
+        );
     }
 }

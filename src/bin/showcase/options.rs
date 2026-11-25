@@ -896,7 +896,7 @@ static BASIC_TABLE: &[Opt] = &[
     Opt::new(
         "basictable.malformed",
         "Malformed input",
-        &["off", "short", "long"],
+        &["off", "short", "long", "no columns", "missing row"],
     ),
 ];
 
@@ -992,6 +992,11 @@ static TEXT_UTILITIES: &[Opt] = &[
         "Reveal",
         &["tooltip", "inline", "off"],
     ),
+    Opt::new(
+        "textutilities.buffer",
+        "Buffer facts",
+        &["model", "geometry"],
+    ),
 ];
 
 static BREADCRUMBS_RAILS: &[Opt] = &[
@@ -1059,6 +1064,19 @@ static LISTS: &[Opt] = &[
     Opt::new("lists.keymap", "Key map", &["default", "custom"]),
     Opt::new("lists.empty", "Empty", &["text", "state"]),
     Opt::new("lists.content", "Content", &["ready", "loading", "error"]),
+    Opt::new("lists.store", "Keyed store", OFF_ON),
+    Opt::new(
+        "lists.fault",
+        "Store fault",
+        &[
+            "none",
+            "positional",
+            "duplicate",
+            "visible duplicate",
+            "unknown row",
+        ],
+    )
+    .needs(&[("lists.store", "on")]),
 ];
 
 static TREES: &[Opt] = &[
@@ -1080,6 +1098,11 @@ static TREES: &[Opt] = &[
     Opt::new("trees.keymap", "Key map", &["default", "custom"]),
     Opt::new("trees.marker", "Selected marker", &["none", "chevron"]),
     Opt::new("trees.filter", "Filter connections", &["off", "orders"]),
+    Opt::new(
+        "trees.source",
+        "Connections source",
+        &["nodes", "keyed", "missing node", "cycle"],
+    ),
 ];
 
 static OVERVIEW: &[Opt] = &[
