@@ -3,6 +3,7 @@ use std::collections::VecDeque;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::KeyCode;
 use ratatui::layout::{Constraint, Rect};
+use ratatui::style::Style;
 
 use crate::app::PageId;
 use crate::options::{PageValues, page_options};
@@ -12,16 +13,17 @@ use crate::pages::{Cx, Hint, Page, PageEvent};
 use junie_tui::core::event::{Key, Outcome};
 use junie_tui::core::id::{ItemKey, WidgetId};
 use junie_tui::core::intent::Phase;
+use junie_tui::core::keymap::{Actions, KeyBinding};
 use junie_tui::core::list::{KeyedRowSource, RowSource, SourceStamp};
 use junie_tui::core::response::Response;
 use junie_tui::core::selection::ClickPolicy;
-use junie_tui::theme::{ButtonKind, Tone};
+use junie_tui::theme::{ButtonKind, CursorStyle, Tone};
 use junie_tui::ui::context::ContextAnchor;
-use junie_tui::ui::ctx::RenderCtx;
+use junie_tui::ui::ctx::{RenderCtx, fill};
 use junie_tui::ui::layer::LayerTag;
 use junie_tui::ui::layout::Split;
 use junie_tui::ui::specimen::{SpecimenState, StateGrid};
-use junie_tui::ui::text::fuzzy;
+use junie_tui::ui::text::{fuzzy, truncate, width};
 use junie_tui::widgets::empty::EmptyState;
 use junie_tui::widgets::info_dialog::InfoDialog;
 use junie_tui::widgets::input::TextInput;
@@ -31,8 +33,9 @@ use junie_tui::widgets::list_detail::{
 use junie_tui::widgets::menu::{ContextMenu, MenuItem};
 use junie_tui::widgets::props::Prop;
 use junie_tui::widgets::search_detail::{
-    MissingSelection, QueryPasteMode, QueryRequest, ResultRowKind, SearchAction, SearchConfig,
-    SearchDetail, SearchPhase, SearchSource,
+    MissingSelection, QueryPasteMode, QueryRequest, QueryView, ResultRowKind, RowPaint,
+    SearchAction, SearchCmd, SearchConfig, SearchDetail, SearchFocusMode, SearchPhase,
+    SearchSource, paint_query_default,
 };
 use junie_tui::widgets::table::{Cell, Column, DataTable};
 
@@ -615,6 +618,16 @@ impl FinderPage {
                     key,
                     name: PREVIEW_WHY,
                 } => self.open_why(key, cx),
+                SearchAction::DetailItem { key, index } => {
+                    if let Some(i) = action_of(key) {
+                        cx.status(format!("✓ Opened run {} of {}", index + 1, ACTIONS[i].name));
+                    }
+                }
+                SearchAction::QueryCommand {
+                    cmd,
+                    effective: false,
+                } => cx.status(format!("Nothing to {}", cmd.label().to_lowercase())),
+                SearchAction::SelectionChanged(None) => cx.status("Nothing is selectable"),
                 _ => {}
             }
         }
@@ -669,6 +682,32 @@ impl FinderPage {
         cx.open(d, LayerTag::new("why"));
     }
 
+    /// The run history under the preview, long enough to scroll. It is off by
+    /// default so the preview stays short; the Preview log option shows what
+    /// each scroll policy does with it.
+    fn log_lines(&self) -> Vec<Line> {
+        if self.opts.value("finder.preview_log") == "off" {
+            return Vec::new();
+        }
+        (1..=24)
+            .map(|n| Line::Item {
+                mark: None,
+                cols: [
+                    format!("run {n}"),
+                    if n % 7 == 0 { "failed" } else { "ok" }.to_owned(),
+                    format!("{n}h"),
+                ],
+                tone: Tone::Secondary,
+            })
+            .collect()
+    }
+
+    fn query_focused(&self, cx: &Cx) -> bool {
+        cx.focus.is(QUERY)
+            || (self.search.session().config().focus_mode == SearchFocusMode::Combined
+                && cx.focus.is(self.search.id()))
+    }
+
     fn status_line(&self) -> Option<String> {
         match self.search.phase() {
             SearchPhase::Failed => Some(format!(
@@ -686,7 +725,7 @@ impl FinderPage {
 
     fn render_playground(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx) {
         let selected = self.search.selected_key().and_then(action_of);
-        let (title, meta, lines, actions) = match selected.map(|i| &ACTIONS[i]) {
+        let (title, meta, mut lines, actions) = match selected.map(|i| &ACTIONS[i]) {
             Some(a) => (
                 a.name.to_owned(),
                 format!("{} · {}", a.group, SCOPES[a.scope].to_lowercase()),
@@ -724,7 +763,19 @@ impl FinderPage {
                 Vec::new(),
             ),
         };
-        let count = self.results.hits.to_string();
+        if selected.is_some() {
+            lines.extend(self.log_lines());
+        }
+        let combined = self.opts.value("finder.focus") == "combined";
+        let count = if combined {
+            format!(
+                "{} · {}",
+                self.results.hits,
+                SCOPES[self.scope].to_lowercase()
+            )
+        } else {
+            self.results.hits.to_string()
+        };
         let under = self.status_line();
         let frame = SourceFrame {
             title: "Results",
@@ -736,9 +787,21 @@ impl FinderPage {
             lines: &lines,
             actions: &actions,
         };
-        let _ = self
-            .search
-            .render_source(area, &self.results, &frame, buf, ctx);
+        let _ = if self.opts.value("finder.look") == "host" {
+            let scope = SCOPES[self.scope].to_lowercase();
+            self.search.render_source_with(
+                area,
+                &self.results,
+                &frame,
+                buf,
+                ctx,
+                paint_host_row,
+                |area, view, buf, ctx| paint_host_query(area, view, buf, ctx, &scope),
+            )
+        } else {
+            self.search
+                .render_source(area, &self.results, &frame, buf, ctx)
+        };
         self.menu.render(area, buf, ctx);
         let pending = self.search.emit_pending_context();
         for action in self.settle(pending).1 {
@@ -763,7 +826,7 @@ impl FinderPage {
     }
 
     fn key(&mut self, key: &Key, cx: &mut Cx) -> Outcome {
-        if cx.focus.is(QUERY) && key.alt() {
+        if self.query_focused(cx) && key.alt() {
             match key.code {
                 KeyCode::Up => {
                     self.set_scope(self.scope + 1);
@@ -800,12 +863,27 @@ fn new_search(opts: &PageValues) -> SearchDetail {
         "join" => QueryPasteMode::JoinLinesWithSpaceTrim,
         _ => QueryPasteMode::StripLineBreaks,
     };
-    let split_from = if opts.value("finder.preview") == "line" {
+    let preview = opts.value("finder.preview");
+    let split_from = if matches!(preview, "line" | "brief") {
         u16::MAX
     } else {
         SPLIT_FROM
     };
-    SearchDetail::new(
+    let focus = match opts.value("finder.focus") {
+        "combined" => SearchFocusMode::Combined,
+        _ => SearchFocusMode::Separate,
+    };
+    let mut keymap = SearchCmd::default_keymap();
+    if opts.value("finder.keys") == "emacs" {
+        keymap.push((KeyBinding::ctrl('n'), SearchCmd::Down));
+        keymap.push((KeyBinding::ctrl('p'), SearchCmd::Up));
+    }
+    let (reset_on_query, keep_on_same_key) = match opts.value("finder.preview_log") {
+        "top-query" => (true, true),
+        "top-result" => (false, false),
+        _ => (false, true),
+    };
+    let search = SearchDetail::new(
         RESULTS,
         TextInput::new(QUERY, "")
             .placeholder("Search actions, files and tasks")
@@ -819,9 +897,102 @@ fn new_search(opts: &PageValues) -> SearchDetail {
             .missing_selection(missing)
             .paste_mode(paste)
             .select_first_on_query(opts.on("finder.select_first"))
-            .navigate_while_loading(opts.on("finder.nav_loading")),
+            .navigate_while_loading(opts.on("finder.nav_loading"))
+            .focus_mode(focus)
+            .keymap(keymap)
+            .type_to_query_from_detail(opts.value("finder.type_back") == "return")
+            .reset_preview_on_query(reset_on_query)
+            .preserve_preview_on_same_key(keep_on_same_key),
     )
-    .collapse_below(split_from)
+    .collapse_below(split_from);
+    match preview {
+        "wide" => search.detail_share(50, 40, 70),
+        "brief" => search.summary_rows(4),
+        _ => search,
+    }
+}
+
+/// The host-painted result look: one compact line per item and chips for a
+/// cells row. The widget keeps layout, scroll, focus and hit regions; this
+/// only draws inside the rectangle it is given and reports the chips it drew.
+fn paint_host_row(mut row: RowPaint<'_, Results>, buf: &mut Buffer, ctx: &mut RenderCtx) {
+    let t = ctx.theme;
+    let bg = t.canvas;
+    let (rect, source) = (row.rect, row.source);
+    let data = &source.rows[row.row];
+    let room = usize::from(rect.width.saturating_sub(4));
+    match row.kind {
+        ResultRowKind::Heading => buf.set_string(
+            rect.x + 3,
+            rect.y,
+            data.label.to_uppercase(),
+            Style::default().fg(t.text_muted).bg(bg),
+        ),
+        ResultRowKind::Spacer => {}
+        ResultRowKind::Item | ResultRowKind::Cells => {
+            let mut state = ctx.state(row.hit);
+            state.selected = row.selected;
+            state.focused = row.focused && row.selected;
+            let cursor = t.cursor_row(state, bg, CursorStyle::Fill);
+            fill(buf, rect, cursor.style);
+            buf.set_string(rect.x, rect.y, cursor.gutter, cursor.gutter_style);
+            let ink = if row.stale {
+                t.text_muted
+            } else {
+                t.row_ink(&cursor, t.text_primary)
+            };
+            if row.kind == ResultRowKind::Item {
+                let line = format!("{} · {}", data.label, data.detail);
+                buf.set_string(
+                    rect.x + 3,
+                    rect.y,
+                    truncate(&line, room),
+                    cursor.style.fg(ink),
+                );
+                return;
+            }
+            let mut x = rect.x + 3;
+            for cell in 0..source.cell_count(row.row) {
+                let label = source.cell_label(row.row, cell);
+                let w = width(label) as u16 + 2;
+                if x + w > rect.right() {
+                    break;
+                }
+                let mut style = ctx.title_style(row.cell_hit(cell), cursor.style.bg.unwrap_or(bg));
+                if row.selected_cell == Some(cell) {
+                    buf.set_string(x, rect.y, "›", cursor.style.fg(ink));
+                    style = style.fg(ink);
+                }
+                buf.set_string(x + 1, rect.y, label, style);
+                row.place_cell(cell, Rect::new(x, rect.y, w, 1));
+                x += w + 1;
+            }
+        }
+    }
+}
+
+/// The query line of the host look: the shared default plus the scope, which a
+/// combined query has no field readout for.
+fn paint_host_query(
+    area: Rect,
+    view: QueryView<'_>,
+    buf: &mut Buffer,
+    ctx: &mut RenderCtx,
+    scope: &str,
+) {
+    let muted = ctx.theme.text_muted;
+    paint_query_default(area, view, buf, ctx);
+    let readout = format!(" scope ‹ {scope} › ");
+    let w = width(&readout) as u16;
+    if area.width > w + 16 {
+        let bg = buf[(area.x, area.y)].bg;
+        buf.set_string(
+            area.right() - w,
+            area.y,
+            readout,
+            Style::default().fg(muted).bg(bg),
+        );
+    }
 }
 
 fn states_grid() -> StateGrid {

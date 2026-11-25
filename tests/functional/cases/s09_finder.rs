@@ -1162,3 +1162,273 @@ fn option_results_loading_dims_and_blocks_actions() {
     );
     app.finish();
 }
+
+/// Whether the preview describes Pull and not Push.
+fn previewing_pull(screen: &TerminalSnapshot) -> bool {
+    let visible = text(screen);
+    visible.contains("git pull --ff-only") && !visible.contains("git push")
+}
+
+#[test]
+fn option_focus_combined_edits_and_navigates_with_one_owner() {
+    let app = open_with(
+        "s09-focus-combined",
+        &["finder.focus=combined", "finder.query=empty"],
+    );
+    let start = app.wait_text("Stash changes");
+    see(
+        &start,
+        &[PLACEHOLDER, "6 · here", "Pull", "Build"],
+        &["scope ‹ here ›", "Ran "],
+    );
+    // Two Tabs reach the one owner of query and results.
+    app.key("tab");
+    app.key("tab");
+    app.type_text("pu");
+    let typed = app.wait_text("3 · here");
+    see(
+        &typed,
+        &["pu", "Pull", "Push", "Pull with rebase", "git pull --ff-only"],
+        &["Stash changes", PLACEHOLDER, "Ran "],
+    );
+    app.key("down");
+    app.key("enter");
+    let ran = app.wait_text("Ran Push");
+    see(&ran, &["Ran Push", "pu"], &["Ran Pull"]);
+    app.key("alt+up");
+    let scoped = app.wait_text("4 · project");
+    see(&scoped, &["4 · project", "Compose up"], &["3 · here"]);
+    confirm_options(&app, "4 · project", |screen| {
+        assert_one(screen, "Focus owner", "combined", &["separate"]);
+    });
+    shot(&app, "opt.finder.focus");
+    app.finish();
+
+    let app = open_with("s09-focus-separate", &["finder.query=empty"]);
+    app.wait_text("Stash changes");
+    for _ in 0..3 {
+        app.key("tab");
+    }
+    app.type_text("pu");
+    let separate = app.settle();
+    assert!(
+        !flat(&separate).split_whitespace().any(|word| word == "pu"),
+        "typing in the results of the separate owners edited the query\n{}",
+        text(&separate)
+    );
+    app.finish();
+}
+
+#[test]
+fn option_look_host_paints_rows_chips_and_query() {
+    let app = open_with(
+        "s09-look-host",
+        &[
+            "finder.look=host",
+            "finder.rows=cells",
+            "finder.focus=combined",
+            "finder.query=empty",
+        ],
+    );
+    let screen = app.wait_text("Stash changes");
+    see(&screen, &["scope ‹ here ›", "6 · here"], &[]);
+    see(
+        &screen,
+        &["›Pull", "Push", "Stash changes", "Build", "Test"],
+        &["Ran ", "Pull · up to date"],
+    );
+    click_where(&app, "Build", |hit| hit.y > 9 && hit.x < 70);
+    let ran = app.wait_text("Ran Build");
+    see(&ran, &["Ran Build"], &["Ran Test", "Ran Pull"]);
+    confirm_options(&app, "Stash changes", |screen| {
+        assert_one(screen, "Result look", "host", &["standard"]);
+    });
+    shot(&app, "opt.finder.look");
+    app.finish();
+
+    let app = open_with("s09-look-host-items", &["finder.look=host"]);
+    let items = app.wait_text("Pull · up to date");
+    see(
+        &items,
+        &["Push · 2 commits ahead", "Pull with rebase · rewrites local commits"],
+        &["mutating  ", "Ran "],
+    );
+    app.finish();
+}
+
+#[test]
+fn option_keys_emacs_moves_the_selection_from_the_query() {
+    let app = open_with("s09-keys-emacs", &["finder.keys=emacs"]);
+    let start = app.wait_text("git pull --ff-only");
+    assert!(previewing_pull(&start), "premise\n{}", text(&start));
+    app.key("tab");
+    app.key("tab");
+    app.key("ctrl+n");
+    let down = app.wait_text("git push");
+    assert!(!previewing_pull(&down), "{}", text(&down));
+    app.key("ctrl+p");
+    let up = app.wait_text("git pull --ff-only");
+    assert!(previewing_pull(&up), "{}", text(&up));
+    app.key("ctrl+n");
+    app.key("enter");
+    app.wait_text("Ran Push");
+    confirm_options(&app, "git push", |screen| {
+        assert_one(screen, "Result keys", "emacs", &["default"]);
+    });
+    shot(&app, "opt.finder.keys");
+    app.finish();
+
+    let app = open_with("s09-keys-default", &[]);
+    app.wait_text("git pull --ff-only");
+    app.key("tab");
+    app.key("tab");
+    app.key("ctrl+n");
+    let same = app.settle();
+    assert!(
+        previewing_pull(&same),
+        "Ctrl+N moved the selection under the default keys\n{}",
+        text(&same)
+    );
+    app.finish();
+}
+
+#[test]
+fn option_type_back_returns_typing_from_the_preview_to_the_query() {
+    let app = open_with("s09-type-back", &["finder.type_back=return"]);
+    app.wait_text("git pull --ff-only");
+    for _ in 0..4 {
+        app.key("tab");
+    }
+    let preview = app.wait_text("Esc Back");
+    see(&preview, &["Scroll", "Actions"], &["Move"]);
+    app.type_text("s");
+    let query = app.wait_text("pus");
+    see(&query, &["pus", "Push", "2 commits ahead"], &["Esc Back"]);
+    confirm_options(&app, "pus", |screen| {
+        assert_one(screen, "Typing in preview", "return", &["ignore"]);
+    });
+    shot(&app, "opt.finder.type_back");
+    app.finish();
+
+    let app = open_with("s09-type-ignored", &[]);
+    app.wait_text("git pull --ff-only");
+    for _ in 0..4 {
+        app.key("tab");
+    }
+    app.wait_text("Esc Back");
+    app.type_text("s");
+    let ignored = app.settle();
+    see(&ignored, &["Esc Back"], &["pus"]);
+    app.finish();
+}
+
+fn scroll_preview(app: &App) {
+    let preview = Point { x: 100, y: 20 };
+    for _ in 0..6 {
+        app.wheel(preview, true, 3);
+    }
+}
+
+fn narrow_the_query(app: &App) {
+    click_where(app, "pu", |hit| hit.y == 8 && hit.x < 50);
+    flash_settle(app);
+    app.key("end");
+    app.type_text("l");
+    app.wait_text("pul");
+}
+
+#[test]
+fn option_preview_log_scroll_policy_on_query_and_result() {
+    for (name, policy, resets) in [
+        ("s09-log-keeps", "keeps", false),
+        ("s09-log-query", "top-query", true),
+        ("s09-log-result", "top-result", true),
+    ] {
+        let app = open_with(name, &[&format!("finder.preview_log={policy}")]);
+        let top = app.wait_text("run 1 ");
+        see(&top, &["Runs git pull", "run 1 ", "run 2 "], &[]);
+        scroll_preview(&app);
+        let scrolled = app.settle();
+        assert!(
+            !flat(&scrolled).contains("Runs git pull"),
+            "{policy}: the wheel did not scroll the log\n{}",
+            text(&scrolled)
+        );
+        narrow_the_query(&app);
+        let after = app.settle();
+        see(&after, &["pul", "Pull with rebase"], &[]);
+        assert_eq!(
+            flat(&after).contains("Runs git pull"),
+            resets,
+            "{policy}: the log is {} after a new query that keeps Pull selected\n{}",
+            if resets { "still scrolled" } else { "back at the top" },
+            text(&after)
+        );
+        if policy == "keeps" {
+            confirm_options(&app, "pul", |screen| {
+                assert_one(
+                    screen,
+                    "Preview log",
+                    "keeps",
+                    &["off", "top-query", "top-result"],
+                );
+            });
+            shot(&app, "opt.finder.preview_log");
+        }
+        app.finish();
+    }
+}
+
+#[test]
+fn option_preview_wide_and_brief_resize_the_preview() {
+    let app = open_with("s09-preview-wide", &["finder.preview=wide"]);
+    let wide = app.wait_text("git pull --ff-only");
+    let default = open_with("s09-preview-auto", &[]);
+    let auto = default.wait_text("git pull --ff-only");
+    let at = |screen: &TerminalSnapshot| find_all(screen, "Runs").first().map(|p| p.x);
+    assert!(
+        at(&wide) < at(&auto),
+        "the wide preview did not move left: {:?} against {:?}",
+        at(&wide),
+        at(&auto)
+    );
+    default.finish();
+    confirm_options(&app, "git pull --ff-only", |screen| {
+        assert_one(screen, "Preview", "wide", &["auto", "line", "brief"]);
+    });
+    shot(&app, "opt.finder.preview_wide");
+    app.finish();
+
+    let app = open_with("s09-preview-brief", &["finder.preview=brief"]);
+    let brief = app.wait_text("Runs git pull --ff-only");
+    see(&brief, &["Runs git pull --ff-only"], &["Host mbp", "Alternatives…"]);
+    let line = open_with("s09-preview-line", &["finder.preview=line"]);
+    let long = line.wait_text("Host mbp");
+    see(&long, &["Runs git pull --ff-only", "Host mbp"], &[]);
+    line.finish();
+    shot(&app, "opt.finder.preview_brief");
+    app.finish();
+}
+
+#[test]
+fn preview_items_open_a_run_and_a_failed_command_says_nothing_to_undo() {
+    let app = open_with("s09-detail-item", &["finder.preview_log=keeps"]);
+    app.wait_text("run 1 ");
+    for _ in 0..4 {
+        app.key("tab");
+    }
+    app.key("down");
+    app.key("enter");
+    let opened = app.wait_text("Opened run 2 of Pull");
+    see(&opened, &["Opened run 2 of Pull"], &["Ran "]);
+    app.finish();
+
+    let app = open_with("s09-nothing-to-undo", &["finder.query=empty"]);
+    app.wait_text("Stash changes");
+    app.key("tab");
+    app.key("tab");
+    app.key("ctrl+z");
+    let none = app.wait_text("Nothing to undo");
+    see(&none, &["Nothing to undo"], &["Ran "]);
+    app.finish();
+}

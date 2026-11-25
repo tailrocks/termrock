@@ -20,6 +20,9 @@ pub enum ScenarioId {
     FixedControlsPolicy,
     FixedDialogsPolicy,
     ListDetailNavigation,
+    SearchDetailQuery,
+    SearchDetailSelection,
+    SearchDetailPaint,
 }
 
 #[allow(dead_code)]

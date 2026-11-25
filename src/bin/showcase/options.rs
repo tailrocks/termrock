@@ -367,7 +367,7 @@ pub static FINDER: &[Opt] = &[
     Opt::new("finder.query", "Query", &["typed", "empty", "nomatch"]),
     Opt::new("finder.scope", "Scope", &["here", "project", "everywhere"]),
     Opt::new("finder.risk_column", "Risk column", OFF_ON).default(1),
-    Opt::new("finder.preview", "Preview", &["auto", "line"]),
+    Opt::new("finder.preview", "Preview", &["auto", "line", "wide", "brief"]),
     Opt::new("finder.rows", "Result rows", &["items", "grouped", "cells"]),
     Opt::new(
         "finder.results",
@@ -379,6 +379,15 @@ pub static FINDER: &[Opt] = &[
     Opt::new("finder.paste", "Paste newlines", &["strip", "join"]),
     Opt::new("finder.select_first", "First on new query", OFF_ON).default(1),
     Opt::new("finder.nav_loading", "Move while loading", OFF_ON),
+    Opt::new("finder.focus", "Focus owner", &["separate", "combined"]),
+    Opt::new("finder.look", "Result look", &["standard", "host"]),
+    Opt::new("finder.keys", "Result keys", &["default", "emacs"]),
+    Opt::new("finder.type_back", "Typing in preview", &["ignore", "return"]),
+    Opt::new(
+        "finder.preview_log",
+        "Preview log",
+        &["off", "keeps", "top-query", "top-result"],
+    ),
 ];
 
 pub static PANELS: &[Opt] = &[
