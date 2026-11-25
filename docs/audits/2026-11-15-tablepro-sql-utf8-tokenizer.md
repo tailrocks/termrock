@@ -2,7 +2,7 @@
 
 # TablePro SQL tokenizer made UTF-8 safe (2026-11-15)
 
-Source: issue #9. The tokenizer lives in `src/bin/tablepro/sql.rs`. Its consumers are `highlight_sql` and `segment_sql` in `src/bin/tablepro/tabs.rs`, `split_statements`, and the `Words` iterator.
+Source: issue #9. The tokenizer lives in `src/bin/tablepro/sql.rs`. Its consumers are `highlight_sql` and `segment_sql` in `src/bin/tablepro/tabs.rs`, `split_statements`, the `Words` iterator, and the completion path in `src/bin/tablepro/model.rs` (`context`, `tables_in_statement` and `statement_around`).
 
 ## Decision
 
@@ -14,7 +14,7 @@ The partition holds for every input. Tokens are non-empty, contiguous, cover the
 
 ## Unicode identifier policy
 
-An identifier starts with an alphabetic scalar or `_` and continues with alphanumeric scalars or `_`, by the `char` predicates. Whitespace uses `char::is_whitespace`, so a no-break space and an em space are whitespace. Digits stay ASCII only. Any other scalar becomes one punctuation token. That covers emoji, symbols, and a combining mark such as the `\u{301}` in `e\u{301}`, which is not alphanumeric on its own, so `e\u{301}` lexes as the identifier `e` and a punctuation token.
+An identifier starts with an alphabetic scalar or `_` and continues with alphanumeric scalars or `_`, by the `char` predicates. Whitespace uses `char::is_whitespace`, so a no-break space and an em space are whitespace, and `split_statements` trims segments by the same predicate, so a segment of only such characters is dropped instead of reaching the parser as an empty statement. Digits stay ASCII only. Any other scalar becomes one punctuation token. That covers emoji, symbols, and a combining mark such as the `\u{301}` in `e\u{301}`, which is not alphanumeric on its own, so `e\u{301}` lexes as the identifier `e` and a punctuation token.
 
 This is a lexical policy that keeps the tokenizer total. It is not SQL Unicode identifier support, normalization, or grapheme-aware editing. Keyword and literal recognition stays ASCII-case-insensitive on the whole identifier slice, so `SELECTé` is one identifier, not the keyword `SELECT` followed by `é`.
 

@@ -260,14 +260,13 @@ pub fn split_statements(src: &str) -> Vec<(usize, usize)> {
     out
 }
 
-fn trim_range(src: &str, mut a: usize, mut b: usize) -> (usize, usize) {
-    while a < b && src.as_bytes()[a].is_ascii_whitespace() {
-        a += 1;
-    }
-    while b > a && src.as_bytes()[b - 1].is_ascii_whitespace() {
-        b -= 1;
-    }
-    (a, b)
+/// Trims by `char::is_whitespace`, the same predicate `tokenize` uses, so a
+/// segment of only no-break spaces is empty instead of an "Empty statement".
+fn trim_range(src: &str, a: usize, b: usize) -> (usize, usize) {
+    let seg = &src[a..b];
+    let head = seg.trim_start();
+    let start = a + (seg.len() - head.len());
+    (start, start + head.trim_end().len())
 }
 
 /// A WHERE condition. `All` and `Any` are the only boolean connectives; each
@@ -569,7 +568,7 @@ impl<'a> Words<'a> {
         let t = self.toks.get(self.pos)?;
         if matches!(t.kind, TokKind::Ident | TokKind::Keyword | TokKind::Literal) {
             self.pos += 1;
-            Some(self.src[t.start..t.end].trim_matches('"').to_owned())
+            Some(identifier(&self.src[t.start..t.end]))
         } else {
             None
         }
@@ -721,6 +720,16 @@ pub fn parse(stmt: &str) -> Result<Statement, ParseError> {
     }
 }
 
+/// Strips the delimiters of a quoted identifier and undoes the doubled quotes
+/// inside it. An unterminated identifier loses only its opening quote, and an
+/// unquoted word is returned unchanged.
+fn identifier(tok: &str) -> String {
+    match tok.strip_prefix('"') {
+        Some(rest) => rest.strip_suffix('"').unwrap_or(rest).replace("\"\"", "\""),
+        None => tok.to_owned(),
+    }
+}
+
 /// Strips one pair of SQL quotes and undoes doubled apostrophes inside it.
 fn literal(tok: &str) -> String {
     match tok.strip_prefix('\'').and_then(|t| t.strip_suffix('\'')) {
@@ -770,7 +779,7 @@ fn parse_select(w: &mut Words) -> Result<Select, ParseError> {
         if w.accept("AS") {
             w.next();
         }
-        columns.push(tok.trim_matches('"').to_owned());
+        columns.push(identifier(&tok));
     }
     let (schema, table) = w
         .qualified()
@@ -1160,8 +1169,8 @@ impl Operand {
     fn compare(&self, v: &Value) -> std::cmp::Ordering {
         match (v, self.int, self.num) {
             (Value::Int(a), Some(b), _) => a.cmp(&b),
-            (Value::Int(a), None, Some(b)) => (*a as f64).total_cmp(&b),
-            (Value::Num(a), _, Some(b)) => a.total_cmp(&b),
+            (Value::Int(a), None, Some(b)) => num_cmp(*a as f64, b),
+            (Value::Num(a), _, Some(b)) => num_cmp(*a, b),
             _ => v.display().to_lowercase().cmp(&self.lower),
         }
     }
@@ -1342,17 +1351,67 @@ impl Test {
 
 /// SQL LIKE over characters: `%` matches any run, `_` one character, and a
 /// backslash makes the next pattern character literal.
+///
+/// Greedy matching with a single backtrack point, the latest `%`. Giving an
+/// earlier `%` more text never helps once a later one exists, so the work is
+/// bounded by pattern length times text length however many `%` there are.
 fn like_match(pat: &[char], s: &[char]) -> bool {
-    match pat.split_first() {
-        None => s.is_empty(),
-        Some(('%', rest)) => (0..=s.len()).any(|k| like_match(rest, &s[k..])),
-        Some(('_', rest)) => !s.is_empty() && like_match(rest, &s[1..]),
-        Some(('\\', rest)) => match rest.split_first() {
-            Some((c, after)) => s.first() == Some(c) && like_match(after, &s[1..]),
-            None => s.first() == Some(&'\\') && like_match(&[], &s[1..]),
-        },
-        Some((c, rest)) => s.first() == Some(c) && like_match(rest, &s[1..]),
+    enum Elem {
+        Any,
+        One,
+        Lit(char),
     }
+    let elem = |p: usize| match pat[p] {
+        '%' => (Elem::Any, 1),
+        '_' => (Elem::One, 1),
+        '\\' if p + 1 < pat.len() => (Elem::Lit(pat[p + 1]), 2),
+        c => (Elem::Lit(c), 1),
+    };
+    let (mut p, mut i) = (0, 0);
+    let mut resume: Option<(usize, usize)> = None;
+    while i < s.len() {
+        if p < pat.len() {
+            let (e, w) = elem(p);
+            match e {
+                Elem::Any => {
+                    resume = Some((p + w, i));
+                    p += w;
+                    continue;
+                }
+                Elem::One => {
+                    p += w;
+                    i += 1;
+                    continue;
+                }
+                Elem::Lit(c) if c == s[i] => {
+                    p += w;
+                    i += 1;
+                    continue;
+                }
+                Elem::Lit(_) => {}
+            }
+        }
+        let Some((after_any, at)) = resume else {
+            return false;
+        };
+        resume = Some((after_any, at + 1));
+        p = after_any;
+        i = at + 1;
+    }
+    while p < pat.len() {
+        let (e, w) = elem(p);
+        if !matches!(e, Elem::Any) {
+            return false;
+        }
+        p += w;
+    }
+    true
+}
+
+/// Orders numbers by value, so `-0.0` equals `0.0`. NaN, which has no value
+/// order, keeps its place from `total_cmp`.
+fn num_cmp(a: f64, b: f64) -> std::cmp::Ordering {
+    a.partial_cmp(&b).unwrap_or_else(|| a.total_cmp(&b))
 }
 
 pub fn cmp_values(a: &Value, b: &Value) -> std::cmp::Ordering {
@@ -1361,7 +1420,7 @@ pub fn cmp_values(a: &Value, b: &Value) -> std::cmp::Ordering {
         (Value::Null, _) => std::cmp::Ordering::Greater,
         (_, Value::Null) => std::cmp::Ordering::Less,
         _ => match (a.as_f64(), b.as_f64()) {
-            (Some(x), Some(y)) => x.total_cmp(&y),
+            (Some(x), Some(y)) => num_cmp(x, y),
             _ => a.display().to_lowercase().cmp(&b.display().to_lowercase()),
         },
     }
@@ -2126,6 +2185,105 @@ mod issue10_sql_tests {
     }
 
     #[test]
+    fn issue10_negative_zero_operand_equals_zero_rows() {
+        let cat = Catalog::acme_prod();
+        let table = orders(&cat);
+        for sql in [
+            "SELECT * FROM orders WHERE total_amount = '-0.0'",
+            "SELECT * FROM orders WHERE total_amount = '-0'",
+            "SELECT * FROM orders WHERE total_amount IN ('-0.0')",
+        ] {
+            let filter = parsed_filter(sql);
+            for zero in [Value::Num(0.0), Value::Num(-0.0), Value::Int(0)] {
+                assert!(
+                    admits(
+                        table,
+                        &filter,
+                        &row_with(table, "total_amount", zero.clone())
+                    ),
+                    "{sql} must admit {zero:?}"
+                );
+            }
+        }
+        let positive = parsed_filter("SELECT * FROM orders WHERE total_amount = '0.0'");
+        assert!(admits(
+            table,
+            &positive,
+            &row_with(table, "total_amount", Value::Num(-0.0))
+        ));
+        let ge = parsed_filter("SELECT * FROM orders WHERE total_amount >= '-0.0'");
+        assert!(admits(
+            table,
+            &ge,
+            &row_with(table, "total_amount", Value::Num(0.0))
+        ));
+        let gt = parsed_filter("SELECT * FROM orders WHERE total_amount > '-0.0'");
+        assert!(!admits(
+            table,
+            &gt,
+            &row_with(table, "total_amount", Value::Num(0.0))
+        ));
+        assert!(cmp_values(&Value::Num(-0.0), &Value::Num(0.0)).is_eq());
+    }
+
+    #[test]
+    fn issue10_like_with_many_percents_stays_polynomial() {
+        let pat: Vec<char> = "%a".repeat(30).chars().chain(['b']).collect();
+        let hay: Vec<char> = "a".repeat(60).chars().collect();
+        let started = std::time::Instant::now();
+        assert!(!like_match(&pat, &hay));
+        assert!(
+            started.elapsed() < std::time::Duration::from_secs(1),
+            "like_match took {:?}",
+            started.elapsed()
+        );
+    }
+
+    #[test]
+    fn issue10_like_match_semantics() {
+        let m = |p: &str, s: &str| {
+            let p: Vec<char> = p.chars().collect();
+            let s: Vec<char> = s.chars().collect();
+            like_match(&p, &s)
+        };
+        assert!(m("", ""));
+        assert!(!m("", "a"));
+        assert!(m("%", ""));
+        assert!(m("%%a%%", "xxaxx"));
+        assert!(m("a%b", "ab"));
+        assert!(m("a%b", "axxb"));
+        assert!(!m("a%b", "axxbc"));
+        assert!(m("a_c", "abc"));
+        assert!(!m("a_c", "ac"));
+        assert!(m("%a_%c", "xxabbc"));
+        assert!(m(r"a\%b", "a%b"));
+        assert!(!m(r"a\%b", "axb"));
+        assert!(m(r"a\_", "a_"));
+        assert!(m(r"a\\", r"a\"));
+        assert!(m(r"a\", r"a\"));
+        assert!(m("%é_", "xéy"));
+        assert!(m("%abc", "ababc"));
+        assert!(!m("%abc", "ababd"));
+    }
+
+    #[test]
+    fn issue10_quoted_identifier_unescapes_doubled_quotes() {
+        let col = |sql: &str| parsed_filter(sql);
+        assert_eq!(
+            col(r#"SELECT * FROM orders WHERE "Odd""name" IS NULL"#),
+            Expr::All(vec![leaf("Odd\"name", PredicateOp::IsNull)])
+        );
+        assert_eq!(
+            col(r#"SELECT * FROM orders WHERE "a""" IS NULL"#),
+            Expr::All(vec![leaf("a\"", PredicateOp::IsNull)])
+        );
+        assert_eq!(
+            col(r#"SELECT * FROM orders WHERE "plain" IS NULL"#),
+            Expr::All(vec![leaf("plain", PredicateOp::IsNull)])
+        );
+    }
+
+    #[test]
     fn issue10_sql_like_and_ui_contains_remain_distinct() {
         let cat = Catalog::acme_prod();
         let table = orders(&cat);
@@ -2444,6 +2602,17 @@ mod tests {
             .map(|(a, b)| &src[a..b])
             .collect();
         assert_eq!(texts, ["SELECT 'é;中'", "-- 💾\nSELECT \"名\""]);
+    }
+
+    #[test]
+    fn issue9_unicode_whitespace_only_segments_are_dropped() {
+        let src = "SELECT 1;\u{a0};\u{2003}\n; \u{a0}SELECT 2\u{a0};\u{a0}";
+        let texts: Vec<&str> = split_statements(src)
+            .into_iter()
+            .map(|(a, b)| &src[a..b])
+            .collect();
+        assert_eq!(texts, ["SELECT 1", "SELECT 2"]);
+        assert!(split_statements("\u{a0}").is_empty());
     }
 
     #[test]
