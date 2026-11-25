@@ -30,6 +30,8 @@ const CHIP_CONTAINS: &str = "name contains 'Labs'";
 const CHIP_RETAIL: &str = "name contains 'Retail'";
 const CHIP_NULL: &str = "name is NULL";
 const CHIP_BETWEEN: &str = "name between Lumen and Orbit";
+const CHIP_REGEX: &str = "name matches regex '^Northwind'";
+const CHIP_NOT_IN: &str = "name not in list 'Northwind Labs, Tessellate'";
 const MATCH_ALL: &str = "match all ▾";
 const MATCH_ANY: &str = "match any ▾";
 const EMPTY_ROWS: &str = "Loading rows…";
@@ -44,6 +46,18 @@ const LUMEN: &str = "Lumen Retail";
 const BLUEFIN: &str = "Bluefin Logistics";
 const MERIDIAN: &str = "Meridian Foods";
 const ORBIT: &str = "Orbit Studio";
+const ANY_ALLOWED: &[&str] = &[
+    NORTHWIND,
+    LUMEN,
+    "Halden & Co",
+    BLUEFIN,
+    ORBIT,
+    "Kestrel Health",
+    "Fjord Analytics",
+    JUNIPER,
+    MERIDIAN,
+];
+const ANY_SHOWN: &[&str] = &[NORTHWIND, JUNIPER];
 
 #[derive(Clone, Copy)]
 enum Rows {
@@ -872,6 +886,68 @@ fn tablepro_filters_change_the_visible_organizations() {
         !text(&reset).contains(MATCH_ALL),
         "a chip survived the last reset\n{}",
         text(&reset)
+    );
+    app.finish();
+}
+
+#[test]
+fn issue10_match_any_negative_regex_pty() {
+    let app = launch("t02-filters-issue10-any");
+    open_organizations(&app);
+    app.wait_screen("unfiltered organizations", |screen| {
+        org_rows(screen).len() > 10 && text(screen).contains(TESSELLATE)
+    });
+
+    let regex = Op {
+        downs: 17,
+        values: &["^Northwind"],
+        preview: "name ~ '^Northwind'",
+        chip: CHIP_REGEX,
+        rows: Rows::Kept {
+            allow: &[NORTHWIND],
+            show: &[NORTHWIND],
+        },
+    };
+    apply_filter(&app, &regex);
+    let northwind = app.wait_screen("regex keeps only Northwind", |screen| {
+        let rows = org_rows(screen);
+        !rows.is_empty() && rows.iter().all(|name| *name == NORTHWIND)
+    });
+    assert_kept(&northwind, &[NORTHWIND], &[NORTHWIND]);
+
+    focus_chips(&app);
+    app.key("+");
+    app.wait_text("WHERE ");
+    choose_op(&app, 15);
+    app.key("tab");
+    app.type_text("Northwind Labs, Tessellate");
+    app.wait_text("name NOT IN ('Northwind Labs', 'Tessellate')");
+    app.key("enter");
+    let all = app.wait_screen("match all keeps nothing", |screen| {
+        let visible = text(screen);
+        visible.contains(CHIP_REGEX)
+            && visible.contains(CHIP_NOT_IN)
+            && visible.contains(MATCH_ALL)
+            && !visible.contains("WHERE ")
+            && visible.contains(EMPTY_ROWS)
+    });
+    assert_empty(&all);
+
+    focus_chips(&app);
+    app.key("m");
+    let any = app.wait_screen("match any keeps the union", |screen| {
+        let visible = text(screen);
+        visible.contains(MATCH_ANY) && !visible.contains(MATCH_ALL) && !org_rows(screen).is_empty()
+    });
+    let visible = text(&any);
+    assert!(
+        visible.contains(CHIP_REGEX) && visible.contains(CHIP_NOT_IN),
+        "match any dropped a chip\n{visible}"
+    );
+    assert_kept(&any, ANY_ALLOWED, ANY_SHOWN);
+    assert!(
+        !org_rows(&any).contains(&TESSELLATE),
+        "match any admitted Tessellate\n{visible}"
     );
     app.finish();
 }
