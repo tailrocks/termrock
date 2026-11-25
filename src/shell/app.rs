@@ -431,7 +431,15 @@ pub fn handle<A: App + ?Sized>(app: &mut A, input: Input) -> Outcome {
     if request.is_none() {
         app.shell_mut().status.on_input(&input);
     }
+    if matches!(input, Input::Key(_) | Input::Mouse(_)) {
+        if let Ok(ms) = std::env::var("TCB_INPUT_DELAY_MS") {
+            std::thread::sleep(std::time::Duration::from_millis(ms.parse().unwrap_or(0)));
+        }
+    }
     if let Input::Resize(w, h) = input {
+        if let Ok(ms) = std::env::var("TCB_RESIZE_DELAY_MS") {
+            std::thread::sleep(std::time::Duration::from_millis(ms.parse().unwrap_or(0)));
+        }
         app.shell_mut().size = (w, h);
     }
     let logged = input.clone();

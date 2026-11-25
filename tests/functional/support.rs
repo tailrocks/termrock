@@ -602,9 +602,19 @@ impl App {
 
     pub fn resize(&self, cols: u16, rows: u16) {
         self.log(format!("resize {cols}x{rows}"));
+        let before = self.screen();
+        let wanted = (u32::from(cols), u32::from(rows));
+        let changed = (before.cols(), before.rows()) != wanted;
+        let frame = before.metadata().revision + 2;
         self.session
             .execute(Operation::Resize { cols, rows })
             .expect("resize PTY");
+        if !changed {
+            return;
+        }
+        self.wait_screen(&format!("frame drawn at {cols}x{rows}"), |screen| {
+            (screen.cols(), screen.rows()) == wanted && screen.metadata().revision >= frame
+        });
     }
 
     /// Wait for the child to exit. The wait ends on the exit itself, so only
@@ -704,6 +714,22 @@ impl App {
     }
 
     fn log(&self, message: String) {
+        if !message.starts_with("checkpoint") {
+            if let (Ok(at), Ok(ms)) = (
+                std::env::var("TCB_DELAY_AT"),
+                std::env::var("TCB_DELAY_MS"),
+            ) {
+                let n = self
+                    .actions
+                    .borrow()
+                    .iter()
+                    .filter(|a| !a.starts_with("checkpoint"))
+                    .count();
+                if at.parse::<usize>().ok() == Some(n) {
+                    std::thread::sleep(Duration::from_millis(ms.parse().unwrap_or(0)));
+                }
+            }
+        }
         self.actions.borrow_mut().push(message);
         self.persist_actions();
     }
@@ -1395,6 +1421,12 @@ fn effective_launch_env(launch: &Launch, home: &Path) -> BTreeMap<String, String
     }
     for (key, value) in &launch.env {
         environment.insert(key.clone(), value.clone());
+    }
+    if let Ok(ms) = std::env::var("TCB_RESIZE_DELAY_MS") {
+        environment.insert("TCB_RESIZE_DELAY_MS".to_string(), ms);
+    }
+    if let Ok(ms) = std::env::var("TCB_INPUT_DELAY_MS") {
+        environment.insert("TCB_INPUT_DELAY_MS".to_string(), ms);
     }
     environment
 }
