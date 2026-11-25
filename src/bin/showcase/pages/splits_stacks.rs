@@ -395,9 +395,9 @@ impl SplitsStacksPage {
     /// Esc drops the grab of the seam being dragged. The panes keep the size
     /// the drag reached: only the rest of the gesture is cancelled.
     fn cancel_drag(&mut self, cx: &mut Cx) -> Outcome {
-        let held = self.outer_seam.cancel_drag() | self.inner_seam.cancel_drag();
-        self.dropped = self.held.take();
-        if held {
+        let cancelled = self.outer_seam.cancel_drag() | self.inner_seam.cancel_drag();
+        if cancelled {
+            self.dropped = self.held.take();
             cx.status("Drag cancelled: the seam stays where it is");
         }
         Outcome::Changed

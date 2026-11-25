@@ -543,11 +543,11 @@ impl PickersPage {
                 "↑↓ Move · Enter Open · Alt+Enter New tab · Tab Scope · Esc Clear / Close"
             }
             Kind::Tabs => "↑↓ Move · Enter Switch · Delete Close tab · Esc Close",
-            Kind::Level => "↑↓ Move · Enter Set level · Esc Keep",
-            Kind::Commands => "↑↓ Move · Enter Run · Esc Close",
-            Kind::Remote => "↑↓ Move · Enter Check out · r Retry · Esc Close",
-            Kind::Multi => "Enter Confirm · Esc Close",
-            Kind::MultiSearch => "Type Filter · Enter Confirm · Esc Close",
+            Kind::Level => "↑↓ Move · Enter Set level · Alt+↑↓ Rows · Esc Keep",
+            Kind::Commands => "↑↓ Move · Enter Run · Alt+↑↓ Rows · Esc Close",
+            Kind::Remote => "↑↓ Move · Enter Check out · r Retry · Alt+↑↓ Rows · Esc Close",
+            Kind::Multi => "Enter Confirm · Alt+↑↓ Rows · Esc Close",
+            Kind::MultiSearch => "Type Filter · Enter Confirm · Alt+↑↓ Rows · Esc Close",
         });
         let mut p = self.style(p, anchor);
         self.live_rows = p.list().max_rows;
@@ -847,7 +847,7 @@ impl PickersPage {
         let n = lines.len() as u16;
         let [top, applied_h, _] = self.heights(area.width);
         let rows = crate::pages::layout::rows(area, &[top, 1, applied_h, 1, 0]);
-        let panel = Panel::card(Some("Open a picker")).meta(OPEN_META);
+        let panel = Panel::card(Some("Open a picker")).meta("Enter · click");
         let bg = panel.bg(t);
         let inner = panel.render(rows[0], buf, t);
         for (r, line) in lines.iter().enumerate() {
@@ -878,7 +878,6 @@ impl PickersPage {
 }
 
 const QUICK_NOTE: &str = "Quick: fuzzy as you type, Tab scope, Alt+Enter alternate · Tabs: live, Delete closes · Level: no search box · Commands: disabled rows say why · Remote: loads, r retries";
-const OPEN_META: &str = "Enter · click · Alt+↑↓ rows in an open picker";
 const APPLIED_META: &str = "read back from a built picker";
 
 fn states_grid() -> StateGrid {

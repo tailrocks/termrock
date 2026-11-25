@@ -1862,7 +1862,11 @@ fn alt_arrows_resize_the_open_picker_through_set_max_rows() {
     app.wait_text("Open quickly");
     click_button(&app, "Run command");
     let opened = app.wait_text("Reconnect");
-    see(&opened, &["Run query", "Reconnect"], &["Max rows"]);
+    see(
+        &opened,
+        &["Run query", "Reconnect", "Alt+↑↓ Rows"],
+        &["Max rows"],
+    );
     for _ in 0..9 {
         app.key("alt+up");
     }

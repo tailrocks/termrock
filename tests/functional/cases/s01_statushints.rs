@@ -939,6 +939,7 @@ fn status_posts_expire_and_error_stays() {
         footer(&warning)
     );
 
+    // Focus follows the screen order: Post error, Notice sync, Notice refresh, Run job.
     for _ in 0..4 {
         app.key("tab");
     }
