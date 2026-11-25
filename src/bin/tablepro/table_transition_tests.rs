@@ -293,6 +293,26 @@ fn issue12_clean_table_transitions_without_asking() {
 }
 
 #[test]
+fn issue12_clean_table_discard_reloads_without_asking() {
+    let mut app = connected();
+    let key = open(&mut app, "products", false);
+    let before = checkpoint(&mut app, key);
+    focus_grid(&mut app, key);
+
+    press(&mut app, KeyCode::Char('U'));
+
+    assert!(
+        app.transition_wait.is_none(),
+        "a clean table has no discard question"
+    );
+    assert_ne!(app.top_kind(), Some("dialog"), "no dialog is open");
+    let after = checkpoint(&mut app, key);
+    assert_eq!(after.view_revision, before.view_revision + 1, "the reload installed once");
+    assert_eq!(after.view, before.view, "the view stays");
+    assert_eq!(status(&app), "Changes discarded");
+}
+
+#[test]
 fn issue12_discard_prepares_before_mutating() {
     let mut app = connected();
     let key = open(&mut app, "products", false);
