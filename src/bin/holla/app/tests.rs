@@ -1,5 +1,5 @@
 use super::*;
-use crate::domain::activity::{ActivityState, Script};
+use crate::domain::activity::{ActivityState, Script, line};
 use crate::domain::context::ScopeTag;
 use crate::domain::effect::Effect;
 use crate::screens::finder::FinderPage;
@@ -1081,4 +1081,30 @@ fn finder_identity_moves_between_item_and_explore() {
 
     app.handle_input(key(KeyCode::Enter, KeyModifiers::NONE));
     assert_eq!(finder_group(&mut app), Some("Git"));
+}
+
+#[test]
+fn reopened_completed_activity_shows_its_retained_output() {
+    let mut app = app();
+    let ids = start_batch(
+        &mut app,
+        BatchMode::Sequential,
+        vec![member(
+            "first",
+            Script::ending(vec![line(1, "retained-output-7f3a")], 2, 0),
+        )],
+    );
+    app.open_activity_tab(&ids[0], true);
+    tick_until(&mut app, "first finishes", |app| {
+        state_of(app, &ids[0]).finished()
+    });
+    close_tab_of(&mut app, &ids[0]);
+    assert_eq!(activity_tabs(&app, &ids[0]), 0, "the tab is closed");
+
+    app.open_activity_tab(&ids[0], true);
+    let screen = drawn_text(&mut app);
+    assert!(
+        screen.contains("retained-output-7f3a"),
+        "the reopened tab syncs its viewport from the retained record:\n{screen}"
+    );
 }
