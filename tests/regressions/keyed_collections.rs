@@ -645,6 +645,90 @@ mod widgets {
         );
     }
 
+    fn nav_list() -> ListBox {
+        list(SelectMode::Single).click(junie_tui::core::selection::ClickPolicy::NAVIGATION)
+    }
+
+    fn click_at(list: &mut ListBox, src: &KeyedVec<ListItem>, at: Position) -> usize {
+        let f = draw_list(list, src);
+        let id = f.id_at(list.id, Part::ROW, at);
+        list.on_pointer_source(&f.event(Phase::Click, id, at), src)
+            .expect("valid")
+            .actions()
+            .count()
+    }
+
+    fn press_at(list: &mut ListBox, src: &KeyedVec<ListItem>, at: Position) {
+        let f = draw_list(list, src);
+        let id = f.id_at(list.id, Part::ROW, at);
+        let _ = list
+            .on_pointer_source(&f.event(Phase::Press, id, at), src)
+            .expect("valid");
+    }
+
+    #[test]
+    fn probe_reorder_between_press_and_click() {
+        let mut store = items(&[(1, "alpha"), (2, "bravo"), (3, "charlie")]);
+        let mut l = nav_list();
+        let at = Position::new(6, 0);
+        press_at(&mut l, &store, at);
+        store.move_to(k(1), 2);
+        let n = click_at(&mut l, &store, at);
+        assert_eq!(n, 0, "reorder");
+    }
+
+    #[test]
+    fn probe_leak_stale_lost_press_eats_one_pressless_click() {
+        let first = items(&[(1, "alpha"), (2, "bravo")]);
+        let mut l = nav_list();
+        let at = Position::new(6, 1);
+        press_at(&mut l, &first, at);
+        let second = items(&[(1, "one"), (2, "two")]);
+        let f = draw_list(&mut l, &second);
+        let id = f.id_at(l.id, Part::ROW, at);
+        let _ = l
+            .on_pointer_source(&f.event(Phase::Release, id, at), &second)
+            .expect("valid");
+        let n1 = click_at(&mut l, &second, at);
+        let n2 = click_at(&mut l, &second, at);
+        eprintln!("PROBE leak: first pressless click actions={n1}, second={n2}");
+        assert!(n2 > 0, "only one click is eaten");
+        assert_eq!(
+            n1, 0,
+            "documented leak: the stale flag eats the next pressless click"
+        );
+    }
+
+    #[test]
+    fn probe_new_press_clears_the_stale_flag() {
+        let first = items(&[(1, "alpha"), (2, "bravo")]);
+        let mut l = nav_list();
+        let at = Position::new(6, 1);
+        press_at(&mut l, &first, at);
+        let second = items(&[(1, "one"), (2, "two")]);
+        draw_list(&mut l, &second);
+        press_at(&mut l, &second, at);
+        assert!(click_at(&mut l, &second, at) > 0, "fresh press+click works");
+    }
+
+    #[test]
+    fn probe_lost_press_flag_survives_unrelated_frames() {
+        let first = items(&[(1, "alpha"), (2, "bravo")]);
+        let mut l = nav_list();
+        let at = Position::new(6, 1);
+        press_at(&mut l, &first, at);
+        let second = items(&[(1, "one"), (2, "two")]);
+        for _ in 0..3 {
+            draw_list(&mut l, &second);
+        }
+        assert_eq!(
+            click_at(&mut l, &second, at),
+            0,
+            "still consumed after many frames"
+        );
+        assert!(click_at(&mut l, &second, at) > 0);
+    }
+
     #[test]
     fn keyed_list_click_activates_the_clicked_key() {
         let store = items(&[(1, "alpha"), (2, "bravo")]);
@@ -1184,6 +1268,7 @@ mod trees {
         nodes: HashMap<ItemKey, (String, Vec<ItemKey>)>,
         roots: Vec<ItemKey>,
         data: u64,
+        notes: Vec<ItemKey>,
     }
 
     impl Raw {
@@ -1195,6 +1280,7 @@ mod trees {
                     .map(|(n, c)| (k(*n), (format!("n{n}"), c.iter().map(|x| k(*x)).collect())))
                     .collect(),
                 data: 1,
+                notes: vec![],
             }
         }
     }
@@ -1224,7 +1310,7 @@ mod trees {
                 children,
                 lazy: false,
                 busy: false,
-                note: false,
+                note: self.notes.contains(&key),
             })
         }
     }
@@ -1320,6 +1406,49 @@ mod trees {
             .expect("valid");
         assert!(out.actions().next().is_none());
         assert_eq!(view.keyed().pressed(), None);
+    }
+
+    #[test]
+    fn probe_tree_click_after_a_source_swap_is_consumed() {
+        let first = tree();
+        let mut view = TreeView::new(WidgetId::of("kt"), vec![]);
+        let frame = draw(&mut view, &first);
+        let at = Position::new(8, 3);
+        let id = frame.id_at(view.id, Part::ROW, at);
+        let _ = view
+            .on_pointer_source(&frame.event(Phase::Press, id, at), &first)
+            .expect("valid");
+        assert_eq!(view.keyed().pressed(), Some(k(2)));
+        let second = tree();
+        let after = draw(&mut view, &second);
+        let cursor = view.keyed().cursor();
+        let id = after.id_at(view.id, Part::ROW, at);
+        let _ = view
+            .on_pointer_source(&after.event(Phase::Click, id, at), &second)
+            .expect("valid");
+        assert_eq!(view.keyed().cursor(), cursor, "the old press moved nothing");
+        assert!(view.keyed().selected().next().is_none());
+    }
+
+    #[test]
+    fn probe_select_source_refuses_note_nodes_hidden_or_visible() {
+        let mut raw = Raw::new(&[1, 5], &[(1, &[2]), (2, &[]), (5, &[])]);
+        raw.notes = vec![k(2)];
+        let mut view = TreeView::new(WidgetId::of("kt"), vec![]);
+        draw(&mut view, &raw);
+        assert_eq!(view.select_source(k(5), &raw), Ok(true));
+        // visible note
+        assert_eq!(view.select_source(k(2), &raw), Ok(false), "visible note");
+        assert_eq!(view.keyed().selected().collect::<Vec<_>>(), vec![k(5)]);
+        // hidden note: collapse 1
+        assert_eq!(view.set_cursor_source(k(1), &raw), Ok(true));
+        let _ = view
+            .on_key_source(&key(KeyCode::Left), &raw)
+            .expect("valid");
+        draw(&mut view, &raw);
+        assert!(view.keyed().visible_index(k(2)).is_none());
+        assert_eq!(view.select_source(k(2), &raw), Ok(false), "hidden note");
+        assert_eq!(view.keyed().selected().collect::<Vec<_>>(), vec![k(5)]);
     }
 
     #[test]
