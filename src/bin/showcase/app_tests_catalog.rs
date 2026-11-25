@@ -18,6 +18,7 @@ use junie_tui::ui::ctx::{Interaction, RenderCtx};
 use junie_tui::ui::layout::Split;
 use junie_tui::ui::popup::{Dismiss, Placement};
 use junie_tui::widgets::choice::Checkbox;
+use junie_tui::widgets::completion::Completion;
 use junie_tui::widgets::dialog::{Dialog, DialogResult};
 use junie_tui::widgets::edit::{EditField, Validator};
 use junie_tui::widgets::input::TextInput;
@@ -48,6 +49,7 @@ pub const CASES: &[ScenarioCase] = &[
     ScenarioCase { id: ScenarioId::FixedControlsPolicy, run: fixed_controls_policy },
     ScenarioCase { id: ScenarioId::FixedDialogsPolicy, run: fixed_dialogs_policy },
     ScenarioCase { id: ScenarioId::ListDetailNavigation, run: list_detail_navigation },
+    ScenarioCase { id: ScenarioId::CompletionPopupSnapshot, run: completion_popup_snapshot },
 ];
 
 fn key(code: KeyCode) -> Key {
@@ -405,6 +407,80 @@ fn list_detail_navigation() {
     list.open_detail(&mut focus);
     list.close_detail(&mut focus);
     let _ = Position::new(0, 0);
+}
+
+fn completion_popup_snapshot() {
+    const ID: WidgetId = WidgetId::of("scenario.completion");
+    let labelled = |n: usize| -> Vec<Item> {
+        (0..n)
+            .map(|i| Item::new(format!("cand{i:02}")).key(ItemKey::index(i)))
+            .collect()
+    };
+    let mut completion = Completion::new(ID).max_rows(4);
+    completion.open(
+        vec![Item::new("blocked").disabled(true)],
+        Rect::new(2, 1, 1, 1),
+        0,
+    );
+    assert!(
+        !completion.has_eligible(),
+        "a disabled row cannot be accepted"
+    );
+    completion.set_items(labelled(10));
+    assert!(completion.has_eligible());
+    assert_eq!(completion.items().len(), 10, "set_items replaced the rows");
+
+    let area = Rect::new(0, 0, 60, 16);
+    let seen = std::cell::RefCell::new(Vec::new());
+    let buf = paint(area, |area, buf, ctx| {
+        completion.render(area, buf, ctx);
+        let inner = Rect::new(30, 8, 20, 4);
+        let snapshot = completion
+            .list
+            .snapshot(inner, completion.items(), |i| format!("row{i}"));
+        let rows = snapshot.rows();
+        assert_eq!(rows.len(), 4, "the snapshot holds only the visible rows");
+        assert!(rows.iter().all(|row| row.enabled && !row.checked));
+        assert_eq!(rows[0].payload, "row0");
+        assert!(!snapshot.more_above() && snapshot.more_below());
+        assert_eq!(snapshot.row_id(2), completion.row_id(2));
+        snapshot.paint_rows(inner, ctx.theme.canvas, buf, ctx, |row, _, buf, _| {
+            seen.borrow_mut().push(row.index);
+            buf.set_string(
+                inner.x,
+                inner.y + row.line,
+                &row.payload,
+                ratatui::style::Style::new(),
+            );
+        });
+    });
+    assert_eq!(*seen.borrow(), [0, 1, 2, 3]);
+    let text = text_of(&buf);
+    assert!(text.contains("cand00") && text.contains("row3"), "{text}");
+
+    for _ in 0..6 {
+        completion.on_key(&key(KeyCode::Down));
+    }
+    paint(area, |area, buf, ctx| {
+        completion.render(area, buf, ctx);
+        let inner = Rect::new(30, 8, 20, 4);
+        let snapshot = completion.list.snapshot(inner, completion.items(), |i| i);
+        assert!(
+            snapshot.more_above(),
+            "scrolling hides the first rows above"
+        );
+        assert!(snapshot.rows().iter().any(|row| row.index == 6));
+    });
+    assert_eq!(
+        completion.current().map(|item| item.label.as_str()),
+        Some("cand06")
+    );
+    completion.set_items(labelled(12));
+    assert_eq!(
+        completion.current().map(|item| item.label.as_str()),
+        Some("cand06"),
+        "set_items keeps the highlighted row; open would reset it"
+    );
 }
 
 #[test]

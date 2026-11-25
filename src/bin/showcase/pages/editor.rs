@@ -227,6 +227,8 @@ pub struct EditorPage {
     document: &'static str,
     editor: CodeEditor,
     completion: Completion,
+    /// Candidates the "paged" source holds back until Ctrl+L releases them.
+    queued: Vec<Item>,
     find: Button,
     run_button: Button,
     run_ticks: u8,
@@ -254,6 +256,7 @@ impl EditorPage {
             document: "sample",
             editor: CodeEditor::new(ID.sub("code"), SAMPLE),
             completion: Completion::new(ID.sub("complete")),
+            queued: Vec::new(),
             find: Button::secondary(ID.sub("find"), "Find").shortcut("/"),
             run_button: Button::secondary(ID.sub("run"), "Run block").shortcut("Ctrl+R"),
             run_ticks: 0,
@@ -322,6 +325,7 @@ impl EditorPage {
         e.set_diagnostics(self.editor.diagnostics().to_vec());
         self.editor = e;
 
+        self.queued.clear();
         let wide = o.value("codeeditor.completion_width") == "wide";
         self.completion = Completion::new(ID.sub("complete"))
             .max_rows(o.number("codeeditor.completion_rows").unwrap_or(8))
@@ -388,7 +392,12 @@ impl EditorPage {
             })
             .collect();
         ranked.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.label.cmp(&b.1.label)));
-        let items: Vec<Item> = ranked.into_iter().map(|r| r.1).collect();
+        let mut items: Vec<Item> = ranked.into_iter().map(|r| r.1).collect();
+        self.queued = if self.paged() && items.len() > PAGE {
+            items.split_off(PAGE)
+        } else {
+            Vec::new()
+        };
         let replace = word.len();
         let anchor = self
             .editor
@@ -400,6 +409,61 @@ impl EditorPage {
         } else {
             self.completion.open(items, anchor, replace);
         }
+    }
+
+    fn paged(&self) -> bool {
+        self.opts.value("codeeditor.completion_source") == "paged"
+    }
+
+    /// Appends the held-back candidates to the open popup. `set_items` keeps
+    /// the highlighted row and the scroll position, unlike `open`.
+    fn load_more(&mut self) -> bool {
+        if !self.completion.is_open() || self.queued.is_empty() {
+            return false;
+        }
+        let mut items = self.completion.items().to_vec();
+        items.append(&mut self.queued);
+        self.completion.set_items(items);
+        true
+    }
+
+    /// What the paged source reads back from the open popup: the eligibility
+    /// of its items and the rows its snapshot carries for the deferred paint.
+    fn popup_props(&self) -> Vec<Prop> {
+        let items = self.completion.items();
+        let rows = (items.len() as u16).min(self.completion.list.max_rows);
+        let snapshot = self
+            .completion
+            .list
+            .snapshot(Rect::new(0, 0, 1, rows), items, |i| i);
+        let shown = snapshot.rows();
+        let blocked = shown.iter().filter(|row| !row.enabled).count();
+        let first = shown.first().map_or(0, |row| row.index + 1);
+        let last = shown.last().map_or(0, |row| row.index + 1);
+        let more = match (snapshot.more_above(), snapshot.more_below()) {
+            (true, true) => " ↑↓",
+            (true, false) => " ↑",
+            (false, true) => " ↓",
+            (false, false) => "",
+        };
+        vec![
+            Prop::new(
+                "Eligible",
+                if self.completion.has_eligible() {
+                    "yes"
+                } else {
+                    "no"
+                },
+            ),
+            Prop::new(
+                "Popup rows",
+                format!(
+                    "{first}–{last} of {}{more} · {blocked} blocked · {} queued",
+                    items.len(),
+                    self.queued.len()
+                ),
+            ),
+        ]
     }
 
     fn accept(&mut self, i: usize) {
@@ -470,7 +534,7 @@ impl EditorPage {
                 f.matches.len()
             ),
         };
-        let props = vec![
+        let mut props = vec![
             Prop::new(
                 "Mode",
                 if self.editor.editing {
@@ -511,6 +575,9 @@ impl EditorPage {
             ),
             Prop::new("Find", find),
         ];
+        if self.paged() && self.completion.is_open() {
+            props.splice(7..7, self.popup_props());
+        }
         props
     }
 
@@ -561,6 +628,10 @@ impl EditorPage {
         let bg = panel.bg(t);
         let inner = panel.render(Rect::new(l.x, l.y, l.width, l.height.min(EDITOR_H)), buf, t);
         self.editor.render(inner, buf, ctx, bg);
+        if self.completion.is_open() {
+            let screen = *buf.area();
+            self.completion.render(screen, buf, ctx);
+        }
 
         let widths = [self.find.width(), self.run_button.width()];
         let rects =
@@ -610,11 +681,6 @@ impl EditorPage {
                 }
             }
         }
-
-        if self.completion.is_open() {
-            let screen = *buf.area();
-            self.completion.render(screen, buf, ctx);
-        }
     }
 }
 
@@ -648,6 +714,9 @@ fn states_grid() -> StateGrid {
 }
 
 const EDITOR_MIN: u16 = 40;
+
+/// Candidates the "paged" completion source opens with.
+const PAGE: usize = 10;
 
 const EDITOR_H: u16 = 26;
 
@@ -727,6 +796,9 @@ impl Page for EditorPage {
                 }
                 if !cx.focus.is(self.editor.id) {
                     return Outcome::Ignored;
+                }
+                if self.paged() && key.ctrl_char('l') && self.load_more() {
+                    return Outcome::Changed;
                 }
                 if self.completion.is_open() {
                     let (o, ev) = self.completion.on_key(key);
@@ -838,6 +910,9 @@ impl Page for EditorPage {
             let mut v = vec![("↑↓", "Move")];
             if self.completion.has_eligible() {
                 v.push(("Enter", "Accept"));
+            }
+            if self.paged() && !self.queued.is_empty() {
+                v.push(("Ctrl+L", "More"));
             }
             v.push(("Esc", "Close"));
             v

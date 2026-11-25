@@ -1827,6 +1827,11 @@ pub static CODE_EDITOR: &[Opt] = &[
         "International completions",
         OFF_ON,
     ),
+    Opt::new(
+        "codeeditor.completion_source",
+        "Completion source",
+        &["all", "paged"],
+    ),
 ];
 
 pub static DIFF: &[Opt] = &[

@@ -1729,6 +1729,69 @@ fn option_completion_nav_vim() {
     finish_option(&app, "opt.codeeditor.completion_nav");
 }
 
+/// The paged source opens with ten candidates and queues twelve. Ctrl+L
+/// appends them through `Completion::set_items`, which keeps the highlighted
+/// row; the State panel reads the eligibility and the popup snapshot back.
+#[test]
+fn option_completion_source_paged_loads_more_in_place() {
+    let app = page(
+        "s08-paged",
+        Some("codeeditor.completion_source=paged"),
+        120,
+        40,
+    );
+    app.wait_text(FETCH);
+    confirm_options(&app, "Completion source", |screen| {
+        assert_select(screen, "Completion source", "paged", &["all"]);
+    });
+    open_all_completions(&app);
+    let first = app.wait_text("Ctrl+L More");
+    see(
+        &first,
+        &[
+            "10 items",
+            "Eligible",
+            "1–8 of 10 ↓ · 0 blocked · 12 queued",
+            "Enter Accept",
+            "Ctrl+L More",
+        ],
+        &["22 items"],
+    );
+    assert!(
+        row_with(&first, "Eligible").contains("yes"),
+        "an enabled row is eligible\n{}",
+        text(&first)
+    );
+    app.key("down");
+    app.key("down");
+    app.key("ctrl+l");
+    let more = app.wait_text("22 items");
+    see(
+        &more,
+        &["1–8 of 22 ↓ · 0 blocked · 0 queued", "Enter Accept"],
+        &["Ctrl+L More", "10 items"],
+    );
+    flash_settle(&app);
+    let stayed = app.settle();
+    assert!(
+        text(&stayed).contains("22 items") && text(&stayed).contains("Enter Accept"),
+        "the popup stayed open after loading more\n{}",
+        text(&stayed)
+    );
+    finish_option(&app, "opt.codeeditor.completion_source");
+
+    let all = page("s08-all", None, 120, 40);
+    all.wait_text(FETCH);
+    open_all_completions(&all);
+    let screen = all.wait_text("22 items");
+    see(
+        &screen,
+        &["22 items", "Enter Accept"],
+        &["Ctrl+L More", "Popup rows", "Eligible"],
+    );
+    all.finish();
+}
+
 /// The test terminal keeps only the first scalars of a ZWJ or skin-tone
 /// sequence, so those labels are matched by their visible head.
 #[test]
