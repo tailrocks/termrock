@@ -177,6 +177,30 @@ impl From<&GithubRepo> for RepoRef {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LaunchLeft {
+    Ambiguous { sandboxes: Vec<String> },
+    Unconfirmed { sandbox: String },
+    Unread { sandbox: String },
+}
+
+impl LaunchLeft {
+    pub fn words(&self) -> String {
+        match self {
+            LaunchLeft::Ambiguous { sandboxes } => format!(
+                "Cancelled · several sandboxes match this launch: {} · check the fleet before launching again",
+                sandboxes.join(", ")
+            ),
+            LaunchLeft::Unconfirmed { sandbox } => format!(
+                "Cancelled · the gateway could not confirm whether sandbox {sandbox} exists · the fleet shows the current state"
+            ),
+            LaunchLeft::Unread { sandbox } => format!(
+                "Cancelled · sandbox {sandbox} was seen during this launch, but its details could not be read · the fleet shows the current state"
+            ),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Msg {
     /// Asks the app to start an owned roster refresh. A forced request replaces
     /// an older observation, while a periodic request coalesces with it.
@@ -267,10 +291,10 @@ pub enum Msg {
     LaunchCancelled {
         instance: Box<InstanceEntry>,
     },
-    /// What a cancelled launch could not settle: the backend could not say
-    /// whether the sandbox exists, or found several. `text` is the status line.
+    /// What a cancelled launch could not settle. The manager words it on its
+    /// status line.
     LaunchLeft {
-        text: String,
+        left: LaunchLeft,
     },
     RoleChecked {
         ticket: Ticket,
