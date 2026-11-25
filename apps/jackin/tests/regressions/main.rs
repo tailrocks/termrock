@@ -18,6 +18,7 @@ mod product_support;
 
 #[path = "../common/mod.rs"]
 mod common;
+mod launch_left;
 mod navigation_focus;
 mod smoke;
 mod status_priority;

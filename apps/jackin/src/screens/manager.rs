@@ -3098,6 +3098,7 @@ impl Page<Jackin> for ManagerScreen {
                 }
             }
             Msg::LaunchCancelled { .. } => {}
+            Msg::LaunchLeft { text } => cx.status(text.clone()),
             Msg::Refreshed { result, .. } => {
                 let asked = std::mem::take(&mut self.refresh_asked);
                 if let Err(error) = result {

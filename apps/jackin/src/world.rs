@@ -267,6 +267,11 @@ pub enum Msg {
     LaunchCancelled {
         instance: Box<InstanceEntry>,
     },
+    /// What a cancelled launch could not settle: the backend could not say
+    /// whether the sandbox exists, or found several. `text` is the status line.
+    LaunchLeft {
+        text: String,
+    },
     RoleChecked {
         ticket: Ticket,
         role: RoleName,
@@ -345,6 +350,7 @@ impl Msg {
             | Msg::OpLoaded { .. }
             | Msg::Takeover { .. }
             | Msg::LaunchCancelled { .. }
+            | Msg::LaunchLeft { .. }
             | Msg::PaneWake { .. }
             | Msg::UsageConnection { .. }
             | Msg::UsageUpdated { .. } => None,
