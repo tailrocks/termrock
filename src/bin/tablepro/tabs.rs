@@ -963,7 +963,7 @@ impl QueryTab {
         let editor = CodeEditor::new(id.sub("editor"), text)
             .highlighter(highlight_sql)
             .segmenter(segment_sql)
-            .placeholder("Type SQL. Ctrl+R runs the statement under the cursor.");
+            .placeholder("Type SQL. Ctrl+R runs the selection, or the statement under the cursor.");
         let mut result_tabs = Tabs::new(id.sub("result-tabs"), &[]);
         result_tabs.allow_new = false;
         Self {
@@ -1770,7 +1770,7 @@ impl QueryTab {
                 buf,
                 t,
                 &EmptyState::new("No results yet").hint(&format!(
-                    "Ctrl+R runs the statement under the cursor · {} runs all",
+                    "Ctrl+R runs the selection or the statement under the cursor · {} runs all",
                     crate::app::key_label(&crate::app::RUN_ALL)
                 )),
                 bg,
