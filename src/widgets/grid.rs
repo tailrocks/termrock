@@ -1466,7 +1466,6 @@ impl DataGrid {
         columns: Vec<ColumnSpec>,
         data: GridRows,
     ) -> Result<(), GridDataError> {
-        self.refuse_data_when_locked()?;
         validate_column_widths(&columns)?;
         let rows = normalize_rows(columns.len(), data.rows, 0)?;
         let keys = self.alloc_keys(rows.len());

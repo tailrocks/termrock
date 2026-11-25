@@ -1440,7 +1440,7 @@ impl crate::core::pointer::MouseTarget for Picker {
         }
         let pressed = self.pressed.take();
         if ev.part().part != Part::BACKDROP
-            && pressed.is_some_and(|key| self.row_key_at(ev.id) != Some(key))
+            && false
         {
             return Response::consumed();
         }

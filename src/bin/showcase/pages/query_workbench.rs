@@ -1318,7 +1318,7 @@ impl QueryWorkbenchPage {
             } else if self
                 .workspace
                 .view_mut(key)
-                .is_ok_and(|view| view.editor_claims(ev))
+                .is_ok_and(|_| true)
             {
                 self.workspace
                     .update(key, |doc| doc.editor.route(ev).map(|r| r.outcome()))

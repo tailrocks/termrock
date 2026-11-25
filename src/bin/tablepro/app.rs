@@ -1651,7 +1651,7 @@ impl App {
         };
         match operation {
             SaveOperation::Task(op) => {
-                if let Ok(((), resp)) = w.ws.end_operation(op, |_| ()) {
+                if let Ok(((), resp)) = w.ws.finish_operation(op, |_| ()) {
                     let _ = w.settle(resp);
                 }
             }
