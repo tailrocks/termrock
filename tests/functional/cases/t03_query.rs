@@ -312,8 +312,8 @@ fn route_lands_on_the_query_editor() {
 }
 
 #[test]
-fn classify_shows_the_safety_decision() {
-    let app = open("t03-query-classify");
+fn classify_silent_writes_and_dialogs() {
+    let app = open("t03-query-silent-writes");
     connect(&app);
     let connected = app.screen();
     header_token(&connected, "silent");
@@ -431,7 +431,13 @@ fn classify_shows_the_safety_decision() {
     put_sql(&app, "", "Type SQL");
     let empty = run_key(&app, "ctrl+r", "Nothing to run");
     see(&empty, &["Nothing to run", "Type SQL"], &[DANGER]);
+    app.finish();
+}
 
+#[test]
+fn classify_silent_drops_explain_and_mixed() {
+    let app = open("t03-query-silent-drops");
+    connect(&app);
     for (sql, marker, action, scope) in [
         (
             "DROP TABLE products",
@@ -501,6 +507,13 @@ fn classify_shows_the_safety_decision() {
         &[DANGER, WRITE_TITLE],
     );
 
+    finish_dirty(&app);
+}
+
+#[test]
+fn classify_alert_mode() {
+    let app = open("t03-query-alert");
+    connect(&app);
     set_mode(&app, 0, 1, "Alert");
     header_token(&app.screen(), "alert");
     put_sql(&app, "SELECT name FROM organizations", "FROM organizations");
@@ -600,7 +613,14 @@ fn classify_shows_the_safety_decision() {
     );
     dismiss(&app);
 
-    set_mode(&app, 1, 2, "Alert (Full)");
+    finish_dirty(&app);
+}
+
+#[test]
+fn classify_alert_full_mode() {
+    let app = open("t03-query-alert-full");
+    connect(&app);
+    set_mode(&app, 0, 2, "Alert (Full)");
     header_token(&app.screen(), "alert+");
     put_sql(&app, "SELECT name FROM organizations", "FROM organizations");
     let full_select = run_key(&app, "ctrl+r", QUERY_TITLE);
@@ -649,7 +669,14 @@ fn classify_shows_the_safety_decision() {
     );
     dismiss(&app);
 
-    set_mode(&app, 2, 3, "Safe Mode");
+    finish_dirty(&app);
+}
+
+#[test]
+fn classify_safe_modes() {
+    let app = open("t03-query-safe");
+    connect(&app);
+    set_mode(&app, 0, 3, "Safe Mode");
     header_token(&app.screen(), "safe");
     put_sql(&app, "SELECT name FROM organizations", "FROM organizations");
     let safe_select = run_key(&app, "ctrl+r", "Showing 500 rows");
@@ -775,7 +802,14 @@ fn classify_shows_the_safety_decision() {
     );
     dismiss(&app);
 
-    set_mode(&app, 4, 5, "Read-Only");
+    finish_dirty(&app);
+}
+
+#[test]
+fn classify_read_only_history_and_deny() {
+    let app = open("t03-query-read-only");
+    connect(&app);
+    set_mode(&app, 0, 5, "Read-Only");
     header_token(&app.screen(), "read-only");
     app.key("ctrl+t");
     let fresh = app.wait_screen("query 2", |screen| {
