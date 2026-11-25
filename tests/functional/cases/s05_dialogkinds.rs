@@ -1545,6 +1545,8 @@ fn form_toggle_hides_an_editing_input_and_reveal_restores_no_session() {
 
     app.key("tab");
     app.key("tab");
+    let focused = app.settle();
+    see(&focused, &["Ctrl+T Toggle host"], &[]);
     app.type_text("edited-host");
     app.wait_text("edited-host");
 
@@ -1558,6 +1560,8 @@ fn form_toggle_hides_an_editing_input_and_reveal_restores_no_session() {
     let after = app.settle();
     see(&after, &["edited-host", "zz"], &["edited-hostzz"]);
     close_to_page(&app);
+    let closed = app.screen();
+    see(&closed, &[], &["Form · Changed(\"host\")"]);
     app.finish();
 }
 
@@ -1577,7 +1581,11 @@ fn form_toggle_hidden_editing_input_does_not_hold_escape() {
 
     app.key("escape");
     let closed = app.wait_absent("Test connection");
-    see(&closed, &["Enter Open"], &["edited-host"]);
+    see(
+        &closed,
+        &["Enter Open", "Form · Toggle · host"],
+        &["edited-host", "Form · Changed(\"host\")"],
+    );
     app.finish();
 }
 
@@ -1605,5 +1613,11 @@ fn form_toggle_hides_an_open_driver_popup_and_keeps_its_choice() {
         &["MySQL", "SQLite", "Form · Changed"],
     );
     close_to_page(&app);
+    let closed = app.screen();
+    see(
+        &closed,
+        &["Form · Toggle · driver"],
+        &["Form · Changed(\"driver\")"],
+    );
     app.finish();
 }
