@@ -1,5 +1,5 @@
 //! Guards the `default_branch` source setting of `.velnor/rust-ci.toml`, which
-//! the generated Rust CI derives its push filter and default-branch cache
+//! the generated CI derives its push filter and default-branch cache
 //! rules from. The key must be present and must equal the repository's default
 //! branch, `main`. velnor-gen would fall back to `main` when the key is absent,
 //! so the guard rejects an absent key rather than inheriting that default. The
@@ -184,7 +184,7 @@ fn repository_config_default_branch_is_main() {
 
 #[test]
 fn generated_workflow_pushes_only_the_default_branch() {
-    let workflow = include_str!("../../../../.github/workflows/rust-ci.yml");
+    let workflow = include_str!("../../../../.github/workflows/ci.yml");
     assert_eq!(push_branches(workflow), ["main"]);
 }
 
@@ -393,7 +393,7 @@ fn the_crates_alone_lint_is_configured_and_required() {
         "the terminal-without-cli (former `product`) pass is missing: {run}"
     );
 
-    let workflow = include_str!("../../../../.github/workflows/rust-ci.yml");
+    let workflow = include_str!("../../../../.github/workflows/ci.yml");
     assert!(workflow.contains("\n  lint-crates-alone:\n"));
     assert!(
         workflow.contains("\n      - lint-crates-alone\n"),

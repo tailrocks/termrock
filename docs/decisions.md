@@ -1742,3 +1742,9 @@ Weakened, accepted, and recorded here so a reviewer can object:
   `velnor-ci check-configurations`.
 
 Revisit when a release ships the macOS asset: use one `github:` pin for velnor-gen. Once the first `main` run after the `tools-v0.1.111` merge has saved the base caches, measure the warm build jobs and lower `timeout_minutes` (45 until then).
+
+## 2026-11-28: The generated workflow is `ci.yml`, named `CI` (velnor-gen 0.1.116)
+
+- Context: velnor-gen writes one workflow per repository, `.github/workflows/ci.yml`, named `CI`. Until 0.1.111 this repository's was `rust-ci.yml`, named `Rust CI`. The bump to `tools-v0.1.116` deletes the old file and writes the new one.
+- Decision: follow the generator. The ruleset requires the `Required` check context from GitHub Actions (app 15368). A status context is the job name, not the workflow name, so `Required` keeps matching and the ruleset needs no change.
+- Consequence: every reference to the old path moved to `ci.yml`: `mise.toml`, `hk.pkl`, `AGENTS.md`, the docs, `.velnor/rust-inputs.lock` (the conformance tests read the workflow with `include_str!`) and the three regression tests. The entries above that name `rust-ci.yml` are a record of what was true then and stay as written.

@@ -54,7 +54,7 @@ const MEASURE_PROFILE: &str = "performance-measure";
 const CI_PROFILE: &str = "ci";
 const RUST_CI_CONFIG: &str = ".velnor/rust-ci.toml";
 const RUST_METADATA: &str = ".velnor/rust-metadata.json";
-const CI_WORKFLOW: &str = ".github/workflows/rust-ci.yml";
+const CI_WORKFLOW: &str = ".github/workflows/ci.yml";
 /// The feature whose counters the contracts need; the CI lane must enable it.
 const WORK_METRICS: &str = "work-metrics";
 /// The one filter the lane may carry: the functional journeys have their own

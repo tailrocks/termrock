@@ -1,4 +1,4 @@
-.github/workflows/rust-ci.yml	termrock-conformance	crates/termrock-conformance/Cargo.toml
+.github/workflows/ci.yml	termrock-conformance	crates/termrock-conformance/Cargo.toml
 .velnor/rust-ci.lock	termrock-conformance	crates/termrock-conformance/Cargo.toml
 .velnor/rust-ci.toml	termrock-conformance	crates/termrock-conformance/Cargo.toml
 Cargo.toml	functional-cross	crates/functional-cross/Cargo.toml

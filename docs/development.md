@@ -4,7 +4,7 @@ Install pinned tools with `mise install` (Rust 1.100.0 and the tool
 pins in `mise.toml`), then install the repository hooks with
 `mise exec -- hk install --mise`. Run both commands from the workspace
 root. The `pre-commit` and `pre-push` hooks run `velnor-gen check`, which fails
-when the generated CI (`.github/workflows/rust-ci.yml`,
+when the generated CI (`.github/workflows/ci.yml`,
 `.velnor/rust-metadata.json`) is stale; fix it with
 `mise exec -- velnor-gen generate` (see [CI](ci.md)). If `mbx` asks for a
 one-time setup, run `mise exec -- mbx setup --yes`.

@@ -39,7 +39,7 @@ the exact authority for product appearance and interaction (see
 | `crates/termrock/` | The facade: explicit re-exports, a small prelude and the feature set (`cli`, `terminal`, `product`, `work-metrics`). |
 | `crates/termrock-functional/tests/functional/` | The `termrock-functional` test estate: live PTY functional/integration tests plus the frozen visual gate. It launches the app binaries through `TERMROCK_TEST_<NAME>` (`bins.rs`, `scripts/run_functional.py`). See [functional testing](functional-testing.md). |
 | `crates/termrock/tests/consumers/` | Four independent consumer fixtures, each its own workspace with a committed lockfile. See [API contract](api-contract.md). |
-| `.velnor/rust-ci.toml` | Source of truth for generated CI (`.github/workflows/rust-ci.yml` and `.velnor/rust-metadata.json` are generated, never hand-edited). See [CI](ci.md). |
+| `.velnor/rust-ci.toml` | Source of truth for generated CI (`.github/workflows/ci.yml` and `.velnor/rust-metadata.json` are generated, never hand-edited). See [CI](ci.md). |
 
 ## Cargo features
 
