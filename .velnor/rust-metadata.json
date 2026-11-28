@@ -1920,7 +1920,12 @@
               "tests": true,
               "doctest": false,
               "source": "apps/jackin/src/bin/jackin-preview/main.rs",
-              "requires_features": true
+              "requires_features": true,
+              "required_features": [
+                {
+                  "name": "demo"
+                }
+              ]
             },
             {
               "name": "account_data",
@@ -2090,7 +2095,12 @@
               "tests": true,
               "doctest": false,
               "source": "apps/jackin/tests/functional/main.rs",
-              "requires_features": true
+              "requires_features": true,
+              "required_features": [
+                {
+                  "name": "demo"
+                }
+              ]
             },
             {
               "name": "gaps",

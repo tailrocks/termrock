@@ -394,7 +394,7 @@ the per-crate all-features jobs (see [decisions](decisions.md), 2026-11-18 and
 
 - `performance_contracts_run_in_a_required_all_features_ci_lane` fails when the
   lane is missing, names no `work-metrics`, carries another filter, omits a
-  package that owns a required test, or when the generated `rust-ci.yml` has no
+  package that owns a required test, or when the generated `ci.yml` has no
   `nextest run --profile ci --features ...work-metrics...` step or its job is
   not in the `required` job's `needs`.
 - `performance_nextest_list_runs_every_required_test` runs in that lane with
